@@ -427,18 +427,17 @@ public class Poe2DataService {
   public List<Poe2.ModPoolSummary> modPools(String itemClass) {
     return mods.pools().stream()
         .filter(p -> blank(itemClass) || itemClass.equals(p.itemClass()))
-        .map(
-            p ->
-                new Poe2.ModPoolSummary(
-                    p.key(),
-                    p.itemClass(),
-                    p.itemClassKo(),
-                    p.category(),
-                    p.variant(),
-                    p.variantKo(),
-                    p.bases() == null ? 0 : p.bases().size(),
-                    p.groups() == null ? 0 : p.groups().size(),
-                    p.bases() == null ? List.of() : p.bases()))
+        .map(p ->
+            new Poe2.ModPoolSummary(
+                p.key(),
+                p.itemClass(),
+                p.itemClassKo(),
+                p.category(),
+                p.variant(),
+                p.variantKo(),
+                p.bases() == null ? 0 : p.bases().size(),
+                p.groups() == null ? 0 : p.groups().size(),
+                p.bases() == null ? List.of() : p.bases()))
         .toList();
   }
 
@@ -460,10 +459,9 @@ public class Poe2DataService {
     return augments.items().stream()
         .filter(a -> byName.test(new String[] {a.name(), a.nameKo()}))
         .filter(a -> blank(kind) || kind.equals(a.kind()))
-        .filter(
-            a ->
-                blank(itemClass)
-                    || !(Boolean.TRUE.equals(a.noJewellery()) && JEWELLERY.contains(itemClass)))
+        .filter(a ->
+            blank(itemClass)
+                || !(Boolean.TRUE.equals(a.noJewellery()) && JEWELLERY.contains(itemClass)))
         .filter(
             a -> blank(itemClass) || a.effects().stream().anyMatch(e -> appliesTo(e, itemClass)))
         .toList();

@@ -1358,13 +1358,12 @@ public class PoeOptimizeService {
       b.path("keystones").forEach(k -> keyCnt.merge(k.asText(), 1, Integer::sum));
       b.path("masteries").forEach(m -> mastCnt.merge(m.asText(), 1, Integer::sum));
       b.path("activeSkills")
-          .forEach(
-              s -> {
-                String name = s.asText();
-                if (!skills.contains(name)) {
-                  coCnt.merge(name, 1, Integer::sum);
-                }
-              });
+          .forEach(s -> {
+            String name = s.asText();
+            if (!skills.contains(name)) {
+              coCnt.merge(name, 1, Integer::sum);
+            }
+          });
     }
     agg.set("topKeystones", topCountNode(mapper, keyCnt, 6));
     agg.set("topCoSkills", topCountNode(mapper, coCnt, 8));
@@ -1386,13 +1385,12 @@ public class PoeOptimizeService {
     counter.entrySet().stream()
         .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
         .limit(n)
-        .forEach(
-            e -> {
-              ObjectNode o = mapper.createObjectNode();
-              o.put("name", e.getKey());
-              o.put("count", e.getValue());
-              arr.add(o);
-            });
+        .forEach(e -> {
+          ObjectNode o = mapper.createObjectNode();
+          o.put("name", e.getKey());
+          o.put("count", e.getValue());
+          arr.add(o);
+        });
     return arr;
   }
 
@@ -1762,31 +1760,30 @@ public class PoeOptimizeService {
           .filter(p -> p.getFileName().toString().endsWith(".json"))
           .sorted(Comparator.comparing((Path p) -> p.getFileName().toString()).reversed())
           .limit(HISTORY_LIMIT)
-          .map(
-              p -> {
-                try {
-                  long id = Long.parseLong(p.getFileName().toString().replace(".json", ""));
-                  PoeOptimizeResult r =
-                      jsonMapper.readValue(Files.readString(p), PoeOptimizeResult.class);
-                  return new OptimizeHistoryEntry(
-                      id,
-                      r.gemName(),
-                      r.gemNameKo(),
-                      r.className(),
-                      r.classNameKo(),
-                      r.ascendancy(),
-                      r.ascendancyKo(),
-                      r.objective(),
-                      r.scenario(),
-                      r.scenarioKo(),
-                      r.combatBuffs(),
-                      r.finalValue(),
-                      r.evalCount(),
-                      r.durationMs());
-                } catch (Exception e) {
-                  return null; // 깨진 파일 한 건이 목록 전체를 막지 않게
-                }
-              })
+          .map(p -> {
+            try {
+              long id = Long.parseLong(p.getFileName().toString().replace(".json", ""));
+              PoeOptimizeResult r =
+                  jsonMapper.readValue(Files.readString(p), PoeOptimizeResult.class);
+              return new OptimizeHistoryEntry(
+                  id,
+                  r.gemName(),
+                  r.gemNameKo(),
+                  r.className(),
+                  r.classNameKo(),
+                  r.ascendancy(),
+                  r.ascendancyKo(),
+                  r.objective(),
+                  r.scenario(),
+                  r.scenarioKo(),
+                  r.combatBuffs(),
+                  r.finalValue(),
+                  r.evalCount(),
+                  r.durationMs());
+            } catch (Exception e) {
+              return null; // 깨진 파일 한 건이 목록 전체를 막지 않게
+            }
+          })
           .filter(java.util.Objects::nonNull)
           .toList();
     } catch (java.io.IOException e) {
@@ -2552,11 +2549,10 @@ public class PoeOptimizeService {
     boolean ciKeystone =
         b.topKeystones() != null
             && b.topKeystones().stream()
-                .anyMatch(
-                    k ->
-                        k != null
-                            && (k.equalsIgnoreCase("Chaos Inoculation")
-                                || k.equalsIgnoreCase("Eldritch Battery")));
+                .anyMatch(k ->
+                    k != null
+                        && (k.equalsIgnoreCase("Chaos Inoculation")
+                            || k.equalsIgnoreCase("Eldritch Battery")));
     // ES 중앙값이 유의미(≥ES_ARCHETYPE_FLOOR)하고 **생명의 2배 이상**이어야 진성 ES 스태킹 — "ES ≥ 생명"
     // 완화 조건은 하이브리드(PB: 생명 3.2k+ES 0.9k 대표, EHP 원천은 럭키 막기)까지 CI 경로로 끌고 가
     // 유리대포 CI 대안을 만들었다(실측 EHP 30k vs 벤치 132.8k — 31단계 분해로 방향 오류 확정).
@@ -3155,10 +3151,8 @@ public class PoeOptimizeService {
         if (!playedAsc.isEmpty()) {
           List<String> narrowedClasses =
               classPool.stream()
-                  .filter(
-                      cls ->
-                          poeTreeGraphService.ascendancies(cls).stream()
-                              .anyMatch(playedAsc::contains))
+                  .filter(cls ->
+                      poeTreeGraphService.ascendancies(cls).stream().anyMatch(playedAsc::contains))
                   .toList();
           if (!narrowedClasses.isEmpty() && narrowedClasses.size() < classPool.size()) {
             log(
@@ -4011,11 +4005,10 @@ public class PoeOptimizeService {
         }
         poeUniqueDataService
             .findBySlug(fixed.getValue())
-            .ifPresent(
-                unique -> {
-                  jewels.put(fixed.getKey(), Equipped.ofUnique(unique));
-                  log("주얼 고정(사용자 지정): " + unique.name());
-                });
+            .ifPresent(unique -> {
+              jewels.put(fixed.getKey(), Equipped.ofUnique(unique));
+              log("주얼 고정(사용자 지정): " + unique.name());
+            });
       }
       // 타임리스는 반경 노드 변환 계산이 무거워(시드→노드 매핑 로드) 자동 탐색 풀에 넣으면 잡 전체가 느려진다.
       // 대신 uniqueItemText() 가 타임리스 문구를 붙여, **트리에서 직접 꽂거나 강제 장착할 때** 제대로 계산되게 했다.
@@ -4485,15 +4478,13 @@ public class PoeOptimizeService {
             List<PoeTreeGraphService.TreeNode> resNotables =
                 poeTreeGraphService.searchCandidates().stream()
                     .filter(n -> "notable".equals(n.type()) && !allocated.contains(n.id()))
-                    .filter(
-                        n ->
-                            n.stats() != null
-                                && n.stats().stream()
-                                    .anyMatch(
-                                        s ->
-                                            s != null
-                                                && s.toLowerCase(Locale.ROOT)
-                                                    .contains("reservation efficiency")))
+                    .filter(n ->
+                        n.stats() != null
+                            && n.stats().stream()
+                                .anyMatch(s ->
+                                    s != null
+                                        && s.toLowerCase(Locale.ROOT)
+                                            .contains("reservation efficiency")))
                     .toList();
             record ResPath(PoeTreeGraphService.TreeNode notable, List<Integer> path) {}
             List<ResPath> resPaths = new ArrayList<>();
@@ -4507,11 +4498,10 @@ public class PoeOptimizeService {
               }
               boolean crossesKeystone =
                   path.stream()
-                      .anyMatch(
-                          id -> {
-                            PoeTreeGraphService.TreeNode pn = poeTreeGraphService.node(id);
-                            return pn != null && "keystone".equals(pn.type());
-                          });
+                      .anyMatch(id -> {
+                        PoeTreeGraphService.TreeNode pn = poeTreeGraphService.node(id);
+                        return pn != null && "keystone".equals(pn.type());
+                      });
               if (crossesKeystone) {
                 continue;
               }
@@ -4811,11 +4801,10 @@ public class PoeOptimizeService {
               // 이득만 보고 오라 기회비용(이미 확정된 단계)을 못 본다.
               boolean crossesKeystone =
                   path.stream()
-                      .anyMatch(
-                          id -> {
-                            PoeTreeGraphService.TreeNode pathNode = poeTreeGraphService.node(id);
-                            return pathNode != null && "keystone".equals(pathNode.type());
-                          });
+                      .anyMatch(id -> {
+                        PoeTreeGraphService.TreeNode pathNode = poeTreeGraphService.node(id);
+                        return pathNode != null && "keystone".equals(pathNode.type());
+                      });
               if (crossesKeystone) {
                 continue;
               }
@@ -5063,11 +5052,10 @@ public class PoeOptimizeService {
           }
           phaseTotal =
               tattooTargets.keySet().stream()
-                  .mapToInt(
-                      key ->
-                          poeTattooDataService
-                              .candidates("normal", key.substring(key.indexOf('|') + 1))
-                              .size())
+                  .mapToInt(key ->
+                      poeTattooDataService
+                          .candidates("normal", key.substring(key.indexOf('|') + 1))
+                          .size())
                   .sum();
           if (!tattooTargets.isEmpty()) {
             log(
@@ -5281,14 +5269,13 @@ public class PoeOptimizeService {
             List<Integer> spots =
                 allocated.stream()
                     .filter(id -> !fixedTattoos.containsKey(id))
-                    .filter(
-                        id -> {
-                          PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(id);
-                          // 전직 노드는 문신을 새길 수 없다(전용 승천 문신은 별도 종류)
-                          return node != null
-                              && nodeType.equals(node.type())
-                              && node.ascendancy() == null;
-                        })
+                    .filter(id -> {
+                      PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(id);
+                      // 전직 노드는 문신을 새길 수 없다(전용 승천 문신은 별도 종류)
+                      return node != null
+                          && nodeType.equals(node.type())
+                          && node.ascendancy() == null;
+                    })
                     .limit(TATTOO_MAX_SPOTS)
                     .toList();
             List<PoeTattooDataService.Tattoo> pool =
@@ -5573,24 +5560,20 @@ public class PoeOptimizeService {
             largeDef == null
                 ? List.of()
                 : largeDef.skills().entrySet().stream()
-                    .map(
-                        e ->
-                            new SkillCand(
-                                e.getKey(),
-                                poeClusterJewelDataService
-                                            .legalNotables(e.getKey(), "Large")
-                                            .stream()
-                                            .map(
-                                                n ->
-                                                    score(
-                                                        statsByName.getOrDefault(n, List.of()),
-                                                        clusterKeywords))
-                                            .sorted(Comparator.reverseOrder())
-                                            .limit(3)
-                                            .mapToLong(Integer::longValue)
-                                            .sum()
-                                        * 10
-                                    + score(e.getValue().stats(), clusterKeywords)))
+                    .map(e ->
+                        new SkillCand(
+                            e.getKey(),
+                            poeClusterJewelDataService.legalNotables(e.getKey(), "Large").stream()
+                                        .map(n ->
+                                            score(
+                                                statsByName.getOrDefault(n, List.of()),
+                                                clusterKeywords))
+                                        .sorted(Comparator.reverseOrder())
+                                        .limit(3)
+                                        .mapToLong(Integer::longValue)
+                                        .sum()
+                                    * 10
+                                + score(e.getValue().stats(), clusterKeywords)))
                     .filter(sc -> sc.score() > 0)
                     .sorted(
                         Comparator.comparingLong(SkillCand::score)
@@ -5631,10 +5614,9 @@ public class PoeOptimizeService {
           for (String skillKey : topSkillKeys) {
             List<String> notables =
                 poeClusterJewelDataService.legalNotables(skillKey, "Large").stream()
-                    .map(
-                        n ->
-                            new ScoredNotable(
-                                n, score(statsByName.getOrDefault(n, List.of()), clusterKeywords)))
+                    .map(n ->
+                        new ScoredNotable(
+                            n, score(statsByName.getOrDefault(n, List.of()), clusterKeywords)))
                     .filter(sn -> sn.score() > 0)
                     .sorted(
                         Comparator.comparingInt(ScoredNotable::score)
@@ -5706,10 +5688,9 @@ public class PoeOptimizeService {
           if (bestKey != null && bestSocket != null) {
             List<String> pool =
                 poeClusterJewelDataService.legalNotables(bestKey, "Large").stream()
-                    .map(
-                        n ->
-                            new ScoredNotable(
-                                n, score(statsByName.getOrDefault(n, List.of()), clusterKeywords)))
+                    .map(n ->
+                        new ScoredNotable(
+                            n, score(statsByName.getOrDefault(n, List.of()), clusterKeywords)))
                     .sorted(
                         Comparator.comparingInt(ScoredNotable::score)
                             .reversed()
@@ -6030,11 +6011,10 @@ public class PoeOptimizeService {
               }
               boolean crossesKeystone =
                   path.stream()
-                      .anyMatch(
-                          id -> {
-                            PoeTreeGraphService.TreeNode pn = poeTreeGraphService.node(id);
-                            return pn != null && "keystone".equals(pn.type());
-                          });
+                      .anyMatch(id -> {
+                        PoeTreeGraphService.TreeNode pn = poeTreeGraphService.node(id);
+                        return pn != null && "keystone".equals(pn.type());
+                      });
               if (crossesKeystone) {
                 continue;
               }
@@ -6226,17 +6206,16 @@ public class PoeOptimizeService {
             tradeProbe.entrySet().stream()
                 .sorted((a, b) -> Double.compare(b.getValue()[1], a.getValue()[1]))
                 .limit(10)
-                .forEach(
-                    e ->
-                        log(
-                            String.format(
-                                "  %s 방어레어: DPS %,.0f (%+.1f%%) · 최약 %,.0f (%+.1f%%) · EHP %,.0f",
-                                e.getKey().slot().ko,
-                                e.getValue()[0],
-                                curDps > 0 ? (e.getValue()[0] / curDps - 1) * 100 : 0,
-                                e.getValue()[1],
-                                curWeak > 0 ? (e.getValue()[1] / curWeak - 1) * 100 : 0,
-                                e.getValue()[2])));
+                .forEach(e ->
+                    log(
+                        String.format(
+                            "  %s 방어레어: DPS %,.0f (%+.1f%%) · 최약 %,.0f (%+.1f%%) · EHP %,.0f",
+                            e.getKey().slot().ko,
+                            e.getValue()[0],
+                            curDps > 0 ? (e.getValue()[0] / curDps - 1) * 100 : 0,
+                            e.getValue()[1],
+                            curWeak > 0 ? (e.getValue()[1] / curWeak - 1) * 100 : 0,
+                            e.getValue()[2])));
           }
           Map.Entry<DefRematch, Double> bestRematch =
               rematchResults.entrySet().stream().max(Map.Entry.comparingByValue()).orElse(null);
@@ -6479,14 +6458,13 @@ public class PoeOptimizeService {
                     + " · 후보: "
                     + fills.stream()
                         .limit(8)
-                        .map(
-                            fill -> {
-                              PoeTreeGraphService.TreeNode fillInfo =
-                                  poeTreeGraphService.node(fill.id());
-                              return fillInfo != null && fillInfo.nameKo() != null
-                                  ? fillInfo.nameKo()
-                                  : String.valueOf(fill.id());
-                            })
+                        .map(fill -> {
+                          PoeTreeGraphService.TreeNode fillInfo =
+                              poeTreeGraphService.node(fill.id());
+                          return fillInfo != null && fillInfo.nameKo() != null
+                              ? fillInfo.nameKo()
+                              : String.valueOf(fill.id());
+                        })
                         .collect(java.util.stream.Collectors.joining(" · ")));
           }
         }
@@ -6719,19 +6697,18 @@ public class PoeOptimizeService {
                   + dropTop3.size()
                   + "개): "
                   + dropTop3.stream()
-                      .map(
-                          node -> {
-                            PoeTreeGraphService.TreeNode dropInfo = poeTreeGraphService.node(node);
-                            Double after = dropCost.get(node);
-                            double loss =
-                                after == null || sacrificeBase <= 0
-                                    ? 0
-                                    : (1.0 - after / sacrificeBase) * 100.0;
-                            return (dropInfo != null && dropInfo.nameKo() != null
-                                    ? dropInfo.nameKo()
-                                    : String.valueOf(node))
-                                + String.format(" −%.2f%%", loss);
-                          })
+                      .map(node -> {
+                        PoeTreeGraphService.TreeNode dropInfo = poeTreeGraphService.node(node);
+                        Double after = dropCost.get(node);
+                        double loss =
+                            after == null || sacrificeBase <= 0
+                                ? 0
+                                : (1.0 - after / sacrificeBase) * 100.0;
+                        return (dropInfo != null && dropInfo.nameKo() != null
+                                ? dropInfo.nameKo()
+                                : String.valueOf(node))
+                            + String.format(" −%.2f%%", loss);
+                      })
                       .collect(java.util.stream.Collectors.joining(" · ")));
           // ② 2pt 로 닿는 후보 — 주요 스킬만(일반 노드는 이미 1:1 교체가 본다)
           List<NotablePromotion> promotions = new ArrayList<>();
@@ -6835,13 +6812,12 @@ public class PoeOptimizeService {
           log(
               "주요 스킬 승격: "
                   + bestPromotion.getKey().drops().stream()
-                      .map(
-                          node -> {
-                            PoeTreeGraphService.TreeNode dropInfo = poeTreeGraphService.node(node);
-                            return dropInfo != null && dropInfo.nameKo() != null
-                                ? dropInfo.nameKo()
-                                : String.valueOf(node);
-                          })
+                      .map(node -> {
+                        PoeTreeGraphService.TreeNode dropInfo = poeTreeGraphService.node(node);
+                        return dropInfo != null && dropInfo.nameKo() != null
+                            ? dropInfo.nameKo()
+                            : String.valueOf(node);
+                      })
                       .collect(java.util.stream.Collectors.joining(" + "))
                   + " → "
                   + (promoteInfo != null && promoteInfo.nameKo() != null
@@ -7401,11 +7377,10 @@ public class PoeOptimizeService {
                   ? String.valueOf(bestMastery.getKey().effect())
                   : swappedNode.masteryEffects().stream()
                       .filter(e -> e.id() == bestMastery.getKey().effect())
-                      .map(
-                          e ->
-                              e.statsKo() != null && !e.statsKo().isEmpty()
-                                  ? e.statsKo().get(0)
-                                  : String.valueOf(e.id()))
+                      .map(e ->
+                          e.statsKo() != null && !e.statsKo().isEmpty()
+                              ? e.statsKo().get(0)
+                              : String.valueOf(e.id()))
                       .findFirst()
                       .orElse(String.valueOf(bestMastery.getKey().effect()));
           log(
@@ -8002,11 +7977,10 @@ public class PoeOptimizeService {
         List<Integer> swapSockets =
             jewels.entrySet().stream()
                 .sorted(
-                    Comparator.comparingInt(
-                        e ->
-                            e.getValue().isUnique()
-                                ? score(e.getValue().unique().explicits(), keywords)
-                                : 0))
+                    Comparator.comparingInt(e ->
+                        e.getValue().isUnique()
+                            ? score(e.getValue().unique().explicits(), keywords)
+                            : 0))
                 .limit(2)
                 .map(Map.Entry::getKey)
                 .toList();
@@ -8161,11 +8135,10 @@ public class PoeOptimizeService {
         Integer swapSocket =
             jewels.entrySet().stream()
                 .min(
-                    Comparator.comparingInt(
-                        e ->
-                            e.getValue().isUnique()
-                                ? score(e.getValue().unique().explicits(), keywords)
-                                : 0))
+                    Comparator.comparingInt(e ->
+                        e.getValue().isUnique()
+                            ? score(e.getValue().unique().explicits(), keywords)
+                            : 0))
                 .map(Map.Entry::getKey)
                 .orElse(null);
         if (swapSocket != null && ranked.size() >= 2) {
@@ -9173,9 +9146,8 @@ public class PoeOptimizeService {
                     final int removed = a;
                     long newOrphans =
                         baselineReach.stream()
-                            .filter(
-                                id ->
-                                    id != removed && allocated.contains(id) && !reach.contains(id))
+                            .filter(id ->
+                                id != removed && allocated.contains(id) && !reach.contains(id))
                             .count();
                     log(
                         "캡 채움 잎 후보: "
@@ -9510,13 +9482,12 @@ public class PoeOptimizeService {
                     + auraSwapResults.entrySet().stream()
                         .sorted(Map.Entry.<AuraSwap, Double>comparingByValue().reversed())
                         .limit(4)
-                        .map(
-                            e ->
-                                e.getKey().out().name()
-                                    + "→"
-                                    + e.getKey().in().name()
-                                    + " "
-                                    + format(e.getValue()))
+                        .map(e ->
+                            e.getKey().out().name()
+                                + "→"
+                                + e.getKey().in().name()
+                                + " "
+                                + format(e.getValue()))
                         .collect(java.util.stream.Collectors.joining(" · ")));
             log(
                 "오라 교체 후보 풀: "
@@ -10665,69 +10636,57 @@ public class PoeOptimizeService {
               bloodlineName,
               bloodlineNameKo,
               supports.stream()
-                  .map(
-                      support -> {
-                        // 속성 보정으로 레벨을 낮춘 젬은 표시에도 드러낸다(표시=실제) — 안 그러면
-                        // 사용자는 20레벨 젬 DPS 로 오해한다
-                        int base = defaultGemLevel(support);
-                        int level = supportLevelOverride.getOrDefault(support.slug(), base);
-                        String suffix = level < base ? " (Lv" + level + ")" : "";
-                        return new PoeOptimizeResult.SupportPick(
-                            support.slug(),
-                            support.name() + suffix,
-                            support.nameKo() != null ? support.nameKo() + suffix : null);
-                      })
+                  .map(support -> {
+                    // 속성 보정으로 레벨을 낮춘 젬은 표시에도 드러낸다(표시=실제) — 안 그러면
+                    // 사용자는 20레벨 젬 DPS 로 오해한다
+                    int base = defaultGemLevel(support);
+                    int level = supportLevelOverride.getOrDefault(support.slug(), base);
+                    String suffix = level < base ? " (Lv" + level + ")" : "";
+                    return new PoeOptimizeResult.SupportPick(
+                        support.slug(),
+                        support.name() + suffix,
+                        support.nameKo() != null ? support.nameKo() + suffix : null);
+                  })
                   .toList(),
               selectedAuras.stream()
-                  .map(
-                      aura ->
-                          new PoeOptimizeResult.SupportPick(
-                              aura.slug(), aura.name(), aura.nameKo()))
+                  .map(aura ->
+                      new PoeOptimizeResult.SupportPick(aura.slug(), aura.name(), aura.nameKo()))
                   .toList(),
               blockedAuraShortfall.entrySet().stream()
-                  .map(
-                      e ->
-                          new PoeOptimizeResult.BlockedAura(
-                              e.getKey().name(), e.getKey().nameKo(), e.getValue()))
+                  .map(e ->
+                      new PoeOptimizeResult.BlockedAura(
+                          e.getKey().name(), e.getKey().nameKo(), e.getValue()))
                   .toList(),
               additionalSkills.stream()
-                  .map(
-                      extra ->
-                          new PoeOptimizeResult.SupportPick(
-                              extra.slug(), extra.name(), extra.nameKo()))
+                  .map(extra ->
+                      new PoeOptimizeResult.SupportPick(extra.slug(), extra.name(), extra.nameKo()))
                   .toList(),
               // 가드 스킬 그룹 — 채택됐으면 [가드젬, 링크 보조젬] 순. 한글명은 젬 데이터에서 조회.
               guardSkill == null
                   ? List.of()
                   : java.util.stream.Stream.of(guardSkill, guardSupport)
                       .filter(java.util.Objects::nonNull)
-                      .map(
-                          nm ->
-                              // 보조젬은 데이터상 이름이 "... Support" 다(XML nameSpec 은 접미 없이 쓴다) —
-                              //   그대로 조회하면 각성한 기원이 slug·한글명 없이 나간다(실측).
-                              poeGemDataService
-                                  .findByName(nm)
-                                  .or(() -> poeGemDataService.findByName(nm + " Support"))
-                                  .map(
-                                      g ->
-                                          new PoeOptimizeResult.SupportPick(
-                                              g.slug(), g.name(), g.nameKo()))
-                                  .orElseGet(() -> new PoeOptimizeResult.SupportPick("", nm, nm)))
+                      .map(nm ->
+                          // 보조젬은 데이터상 이름이 "... Support" 다(XML nameSpec 은 접미 없이 쓴다) —
+                          //   그대로 조회하면 각성한 기원이 slug·한글명 없이 나간다(실측).
+                          poeGemDataService
+                              .findByName(nm)
+                              .or(() -> poeGemDataService.findByName(nm + " Support"))
+                              .map(g ->
+                                  new PoeOptimizeResult.SupportPick(g.slug(), g.name(), g.nameKo()))
+                              .orElseGet(() -> new PoeOptimizeResult.SupportPick("", nm, nm)))
                       .toList(),
               // 저주 그룹 — 채택됐으면 [신성모독, 저주젬]. 가드와 같은 조회 경로(보조젬은 "... Support").
               curseSkill == null
                   ? List.of()
                   : java.util.stream.Stream.of("Blasphemy", curseSkill)
-                      .map(
-                          nm ->
-                              poeGemDataService
-                                  .findByName(nm)
-                                  .or(() -> poeGemDataService.findByName(nm + " Support"))
-                                  .map(
-                                      g ->
-                                          new PoeOptimizeResult.SupportPick(
-                                              g.slug(), g.name(), g.nameKo()))
-                                  .orElseGet(() -> new PoeOptimizeResult.SupportPick("", nm, nm)))
+                      .map(nm ->
+                          poeGemDataService
+                              .findByName(nm)
+                              .or(() -> poeGemDataService.findByName(nm + " Support"))
+                              .map(g ->
+                                  new PoeOptimizeResult.SupportPick(g.slug(), g.name(), g.nameKo()))
+                              .orElseGet(() -> new PoeOptimizeResult.SupportPick("", nm, nm)))
                       .toList(),
               curseOnHitPick(),
               metaPantheonMajor == null ? "" : metaPantheonMajor,
@@ -10737,38 +10696,37 @@ public class PoeOptimizeService {
               notablesEn,
               notableIds,
               jewels.values().stream()
-                  .map(
-                      jewel ->
-                          jewel.isUnique()
-                              // 감시자의 눈·금단 페어는 **우리가 고른 모드가 곧 빌드**다(오라 모드 쌍 /
-                              //   부여 주요 스킬). 이름만 보내면 상세 페이지의 일반 유니크 정보가 뜰 뿐이라
-                              //   어떤 물건을 구해야 하는지 알 수 없다 — 가드·저주와 같은 노출 누락.
-                              ? new PoeOptimizeResult.SupportPick(
-                                  jewel.unique().slug(),
-                                  jewel.unique().name(),
-                                  jewel.unique().nameKo(),
-                                  // 표시 = 계산이 쓴 롤(C154, 장비 고유 C153 짝)
-                                  BUILD_SPECIFIC_JEWELS.contains(jewel.unique().slug())
-                                      ? rolledLines(
-                                          jewel.unique().explicitsKo(),
-                                          jewel.unique().explicits(),
-                                          true)
-                                      : List.of(),
-                                  BUILD_SPECIFIC_JEWELS.contains(jewel.unique().slug())
-                                      ? rolledLines(
-                                          jewel.unique().explicitsKo(),
-                                          jewel.unique().explicits(),
-                                          false)
-                                      : List.of())
-                              // 제작 레어 주얼 — slug 가 없어 상세 링크는 못 걸지만, **붙은 모드는 보여준다**.
-                              //   계산에는 jewelLife/jewelFire 같은 접두가 실제로 들어가는데 화면엔 이름만 떠서
-                              //   "속성이 표기 안 된다"는 보고가 나왔다(장비 슬롯은 ItemPick 으로 이미 줄까지 보낸다).
-                              : new PoeOptimizeResult.SupportPick(
-                                  "",
-                                  "Crafted Jewel",
-                                  "제작 주얼",
-                                  rareModLinesKo(jewel.rare()),
-                                  rareModLinesEn(jewel.rare())))
+                  .map(jewel ->
+                      jewel.isUnique()
+                          // 감시자의 눈·금단 페어는 **우리가 고른 모드가 곧 빌드**다(오라 모드 쌍 /
+                          //   부여 주요 스킬). 이름만 보내면 상세 페이지의 일반 유니크 정보가 뜰 뿐이라
+                          //   어떤 물건을 구해야 하는지 알 수 없다 — 가드·저주와 같은 노출 누락.
+                          ? new PoeOptimizeResult.SupportPick(
+                              jewel.unique().slug(),
+                              jewel.unique().name(),
+                              jewel.unique().nameKo(),
+                              // 표시 = 계산이 쓴 롤(C154, 장비 고유 C153 짝)
+                              BUILD_SPECIFIC_JEWELS.contains(jewel.unique().slug())
+                                  ? rolledLines(
+                                      jewel.unique().explicitsKo(),
+                                      jewel.unique().explicits(),
+                                      true)
+                                  : List.of(),
+                              BUILD_SPECIFIC_JEWELS.contains(jewel.unique().slug())
+                                  ? rolledLines(
+                                      jewel.unique().explicitsKo(),
+                                      jewel.unique().explicits(),
+                                      false)
+                                  : List.of())
+                          // 제작 레어 주얼 — slug 가 없어 상세 링크는 못 걸지만, **붙은 모드는 보여준다**.
+                          //   계산에는 jewelLife/jewelFire 같은 접두가 실제로 들어가는데 화면엔 이름만 떠서
+                          //   "속성이 표기 안 된다"는 보고가 나왔다(장비 슬롯은 ItemPick 으로 이미 줄까지 보낸다).
+                          : new PoeOptimizeResult.SupportPick(
+                              "",
+                              "Crafted Jewel",
+                              "제작 주얼",
+                              rareModLinesKo(jewel.rare()),
+                              rareModLinesEn(jewel.rare())))
                   .toList(),
               // 무기 유니크가 안 뽑히면 XML 에 표준 무기가 주입된다 — 목록에도 넣어야 화면과 실제 계산이 일치한다
               // (없으면 사용자는 "무기 없는 근접 빌드"로 오해한다)
@@ -10779,10 +10737,9 @@ public class PoeOptimizeService {
                   .toList(),
               unmetRequirements(items, finalValues, standardWeapon(gem)),
               poeEngineUnmodeledDataService.unmodeledIn(ascendancyNodes).stream()
-                  .map(
-                      node ->
-                          new PoeOptimizeResult.UnmodeledNode(
-                              node.id(), node.name(), node.nameKo(), node.ascendancy()))
+                  .map(node ->
+                      new PoeOptimizeResult.UnmodeledNode(
+                          node.id(), node.name(), node.nameKo(), node.ascendancy()))
                   .toList(),
               unmodeledAscendancyWarning(ascendancy, ascendancyNodes),
               guardianItemPicks(gem),
@@ -10826,10 +10783,9 @@ public class PoeOptimizeService {
                           Map.Entry::getKey,
                           entry ->
                               entry.getValue().stream()
-                                  .map(
-                                      s ->
-                                          new PoeOptimizeResult.SupportPick(
-                                              s.slug(), s.name(), koName(s)))
+                                  .map(s ->
+                                      new PoeOptimizeResult.SupportPick(
+                                          s.slug(), s.name(), koName(s)))
                                   .toList())));
 
       JsonMapper jsonMapper = JsonMapper.builder().build();
@@ -11044,27 +11000,26 @@ public class PoeOptimizeService {
     for (T candidate : candidates) {
       futures.put(
           candidate,
-          executor.submit(
-              () -> {
-                try {
-                  Map<String, Double> values =
-                      poePobEngineService.calculateValues(xmlFor.apply(candidate));
-                  if (validator != null && !validator.test(candidate, values)) {
-                    return -1d;
-                  }
-                  return objectiveOf(values, objectiveKey);
-                } catch (Exception e) {
-                  // 실패를 숨기지 않는다 — 몇 번, 왜 실패했는지 잡 로그로 드러낸다
-                  evalFailures.incrementAndGet();
-                  if (firstEvalError == null) {
-                    firstEvalError = phase + " 단계: " + e;
-                  }
-                  return -1d;
-                } finally {
-                  evalCount.incrementAndGet();
-                  phaseDone.incrementAndGet();
-                }
-              }));
+          executor.submit(() -> {
+            try {
+              Map<String, Double> values =
+                  poePobEngineService.calculateValues(xmlFor.apply(candidate));
+              if (validator != null && !validator.test(candidate, values)) {
+                return -1d;
+              }
+              return objectiveOf(values, objectiveKey);
+            } catch (Exception e) {
+              // 실패를 숨기지 않는다 — 몇 번, 왜 실패했는지 잡 로그로 드러낸다
+              evalFailures.incrementAndGet();
+              if (firstEvalError == null) {
+                firstEvalError = phase + " 단계: " + e;
+              }
+              return -1d;
+            } finally {
+              evalCount.incrementAndGet();
+              phaseDone.incrementAndGet();
+            }
+          }));
     }
     Map<T, Double> results = new LinkedHashMap<>();
     for (Map.Entry<T, Future<Double>> entry : futures.entrySet()) {
@@ -12139,12 +12094,11 @@ public class PoeOptimizeService {
               ? piece[3]
               : java.util.regex.Pattern.compile("\\+(\\d+) to (maximum Life|Armour)")
                   .matcher(piece[3])
-                  .replaceAll(
-                      m ->
-                          "+"
-                              + (Integer.parseInt(m.group(1)) * PROBE_DEFENCE_SCALE)
-                              + " to "
-                              + m.group(2));
+                  .replaceAll(m ->
+                      "+"
+                          + (Integer.parseInt(m.group(1)) * PROBE_DEFENCE_SCALE)
+                          + " to "
+                          + m.group(2));
       items
           .append("<Item id=\"")
           .append(id)
@@ -12633,19 +12587,18 @@ public class PoeOptimizeService {
   /** ClusterSpec 목록 → 트리 URL 의 c= 형식 문자열(가져오기/링크 왕복용). */
   private String serializeClusters(List<ClusterSpec> specs) {
     return specs.stream()
-        .map(
-            spec ->
-                spec.socket()
-                    + ":"
-                    + spec.sizeName()
-                    + ":"
-                    + spec.nodeCount()
-                    + ":"
-                    + spec.skillKey()
-                    + (spec.notables().isEmpty() && spec.socketCount() == 0
-                        ? ""
-                        : ":" + String.join("|", spec.notables()))
-                    + (spec.socketCount() > 0 ? ":" + spec.socketCount() : ""))
+        .map(spec ->
+            spec.socket()
+                + ":"
+                + spec.sizeName()
+                + ":"
+                + spec.nodeCount()
+                + ":"
+                + spec.skillKey()
+                + (spec.notables().isEmpty() && spec.socketCount() == 0
+                    ? ""
+                    : ":" + String.join("|", spec.notables()))
+                + (spec.socketCount() > 0 ? ":" + spec.socketCount() : ""))
         .collect(java.util.stream.Collectors.joining(","));
   }
 
@@ -12902,18 +12855,17 @@ public class PoeOptimizeService {
     if (!items.containsKey(Slot.WEAPON) && standardWeaponBase != null) {
       poeBaseItemDataService
           .findByName(standardWeaponBase)
-          .ifPresent(
-              base -> {
-                if (base.reqStr() > str) {
-                  unmet.add(unmetOf(base, "str", base.reqStr(), str));
-                }
-                if (base.reqDex() > dex) {
-                  unmet.add(unmetOf(base, "dex", base.reqDex(), dex));
-                }
-                if (base.reqInt() > intel) {
-                  unmet.add(unmetOf(base, "int", base.reqInt(), intel));
-                }
-              });
+          .ifPresent(base -> {
+            if (base.reqStr() > str) {
+              unmet.add(unmetOf(base, "str", base.reqStr(), str));
+            }
+            if (base.reqDex() > dex) {
+              unmet.add(unmetOf(base, "dex", base.reqDex(), dex));
+            }
+            if (base.reqInt() > intel) {
+              unmet.add(unmetOf(base, "int", base.reqInt(), intel));
+            }
+          });
     }
     for (Equipped equipped : items.values()) {
       // 유니크는 자체 요구치, 레어는 베이스 아이템 요구치(우리가 베이스+모드로 조합하므로)
@@ -12974,16 +12926,8 @@ public class PoeOptimizeService {
               + unmet.size()
               + "건: "
               + unmet.stream()
-                  .map(
-                      u ->
-                          u.name()
-                              + "("
-                              + u.attribute()
-                              + " "
-                              + u.required()
-                              + ">"
-                              + u.actual()
-                              + ")")
+                  .map(u ->
+                      u.name() + "(" + u.attribute() + " " + u.required() + ">" + u.actual() + ")")
                   .collect(java.util.stream.Collectors.joining(", ")));
     }
     return unmet;
@@ -13412,11 +13356,10 @@ public class PoeOptimizeService {
           long suffixCount = fams.stream().filter(f -> "suffix".equals(f.gen())).count();
           boolean canReplace =
               fams.stream()
-                  .anyMatch(
-                      f ->
-                          "suffix".equals(f.gen())
-                              && !resKeys.contains(f.key())
-                              && !attrKeys.contains(f.key()));
+                  .anyMatch(f ->
+                      "suffix".equals(f.gen())
+                          && !resKeys.contains(f.key())
+                          && !attrKeys.contains(f.key()));
           if (suffixCount < 3 || canReplace) {
             targetSlot = entry.getKey();
             resFamily = ff;
@@ -13550,11 +13493,10 @@ public class PoeOptimizeService {
     }
     return poeBaseItemDataService
         .findByName(candidate.rare().baseType())
-        .map(
-            base ->
-                meets(base.reqStr(), values.get("Str"))
-                    && meets(base.reqDex(), values.get("Dex"))
-                    && meets(base.reqInt(), values.get("Int")))
+        .map(base ->
+            meets(base.reqStr(), values.get("Str"))
+                && meets(base.reqDex(), values.get("Dex"))
+                && meets(base.reqInt(), values.get("Int")))
         .orElse(true);
   }
 
@@ -14051,12 +13993,11 @@ public class PoeOptimizeService {
         // 그냥 두면 게임에서 만들 수 없는 빌드가 더 높은 점수를 받는다(사이클 110 의 클러스터 소켓과 같은 계열).
         //  · Cluster/Timeless : 전용 소켓·전용 취급
         //  · "… Eye Jewel"    : 어비스 주얼 — **장비의 심연 소켓 전용**이라 트리엔 못 넣는다(4종)
-        .filter(
-            item ->
-                item.baseType() == null
-                    || (!item.baseType().contains("Cluster")
-                        && !item.baseType().contains("Timeless")
-                        && !item.baseType().endsWith("Eye Jewel")))
+        .filter(item ->
+            item.baseType() == null
+                || (!item.baseType().contains("Cluster")
+                    && !item.baseType().contains("Timeless")
+                    && !item.baseType().endsWith("Eye Jewel")))
         // 반경 주얼은 **제외하지 않는다** — PoB 는 소켓 위치 기준으로 반경 안 패시브를 실제로 계산한다.
         // 실측(소켓을 트리에 연결한 상태): 비옥한 정신 지능 82→102, 효율적 훈련 힘 24→44.
         // 예전엔 "반경/근처" 문구를 통째로 걸러 유니크 주얼 179개 중 81개가 후보에서 빠져 있었다.
@@ -14211,30 +14152,25 @@ public class PoeOptimizeService {
         // 지금 리그에서 못 얻는 고유는 추천하지 않는다(명예로운 문신 제외와 같은 이유).
         // 판정 근거는 게임의 고유 수집 탭 표시 플래그 — 실빌드 패싯은 상위 12개로 잘려 근거가 못 된다.
         .filter(item -> !excludeLegacyUniques || !item.legacy())
-        .filter(
-            item ->
-                categories.contains(item.category())
-                    || (spellWeapon
-                        && item.baseType() != null
-                        && item.baseType().contains("Sceptre")))
-        .filter(
-            item ->
-                metaCategories.isEmpty()
-                    || slot != Slot.WEAPON
-                    || metaCategories.contains(item.category())
-                    || (metaWeaponClasses.contains("Sceptre")
-                        && item.baseType() != null
-                        && item.baseType().contains("Sceptre")))
+        .filter(item ->
+            categories.contains(item.category())
+                || (spellWeapon && item.baseType() != null && item.baseType().contains("Sceptre")))
+        .filter(item ->
+            metaCategories.isEmpty()
+                || slot != Slot.WEAPON
+                || metaCategories.contains(item.category())
+                || (metaWeaponClasses.contains("Sceptre")
+                    && item.baseType() != null
+                    && item.baseType().contains("Sceptre")))
         .filter(item -> item.requiredLevel() == null || item.requiredLevel() <= LEVEL)
         .filter(item -> !equippedSlugs.contains(item.slug()))
-        .map(
-            item -> {
-              List<String> lines = new ArrayList<>(item.implicits());
-              lines.addAll(item.explicits());
-              // 메타 고유는 키워드 점수와 무관하게 맨 앞(점수 0 이어도 후보에 남는다)
-              int bonus = meta.contains(item.name()) ? 1_000_000 : 0;
-              return new Scored(item, score(lines, keywords) + bonus);
-            })
+        .map(item -> {
+          List<String> lines = new ArrayList<>(item.implicits());
+          lines.addAll(item.explicits());
+          // 메타 고유는 키워드 점수와 무관하게 맨 앞(점수 0 이어도 후보에 남는다)
+          int bonus = meta.contains(item.name()) ? 1_000_000 : 0;
+          return new Scored(item, score(lines, keywords) + bonus);
+        })
         .filter(scored -> scored.score() > 0)
         .sorted(Comparator.comparingInt(Scored::score).reversed())
         .limit(ITEM_CANDIDATES)
@@ -14905,12 +14841,11 @@ public class PoeOptimizeService {
         String xml = withConfig(finalXml, scenario, buffs);
         futures.put(
             scenario + "|" + buffs,
-            executor.submit(
-                () -> {
-                  Map<String, Double> values = poePobEngineService.calculateValues(xml);
-                  evalCount.incrementAndGet();
-                  return values.getOrDefault("CombinedDPS", 0d);
-                }));
+            executor.submit(() -> {
+              Map<String, Double> values = poePobEngineService.calculateValues(xml);
+              evalCount.incrementAndGet();
+              return values.getOrDefault("CombinedDPS", 0d);
+            }));
       }
     }
     List<PoeOptimizeResult.ScenarioCell> matrix = new ArrayList<>();
@@ -15086,11 +15021,10 @@ public class PoeOptimizeService {
     final String baseVariant = chosenBaseItem != null ? attributeVariantOf(chosenBaseItem) : null;
     List<PoeModPoolDataService.ModFamily> pool =
         poeModPoolDataService.familiesForSlot(category).stream()
-            .filter(
-                f ->
-                    baseClass == null
-                        || poeModDataService.canSpawn(
-                            baseClass, baseVariant, f.pattern(), influenceOf(f)))
+            .filter(f ->
+                baseClass == null
+                    || poeModDataService.canSpawn(
+                        baseClass, baseVariant, f.pattern(), influenceOf(f)))
             .toList();
     List<PoeModPoolDataService.ModFamily> prefixPool =
         new ArrayList<>(pool.stream().filter(f -> "prefix".equals(f.gen())).toList());
@@ -15177,12 +15111,11 @@ public class PoeOptimizeService {
         prefixPool.stream()
             .filter(f -> blockKey.equals(f.key()))
             .findFirst()
-            .ifPresent(
-                f -> {
-                  if (!prefixes.contains(f) && prefixes.size() < 3) {
-                    prefixes.add(f);
-                  }
-                });
+            .ifPresent(f -> {
+              if (!prefixes.contains(f) && prefixes.size() < 3) {
+                prefixes.add(f);
+              }
+            });
       }
     }
     // (활 추가 화살 주입은 롤백 — 완성 문맥 A/B 실측에서 화살 수가 CombinedDPS 에 무기여(문구 무관
@@ -15200,10 +15133,9 @@ public class PoeOptimizeService {
         .filter(s -> s.score() > 0)
         .sorted(Comparator.comparingInt(Scored::score).reversed())
         .map(Scored::family)
-        .forEach(
-            f -> {
-              if (prefixes.size() < 3) prefixes.add(f);
-            });
+        .forEach(f -> {
+          if (prefixes.size() < 3) prefixes.add(f);
+        });
     suffixPool.stream()
         .filter(f -> !suffixes.contains(f))
         .filter(f -> attackSkill || f.keywords() == null || !f.keywords().contains("attack"))
@@ -15211,25 +15143,23 @@ public class PoeOptimizeService {
         .filter(s -> s.score() > 0)
         .sorted(Comparator.comparingInt(Scored::score).reversed())
         .map(Scored::family)
-        .forEach(
-            f -> {
-              if (suffixes.size() < 3) suffixes.add(f);
-            });
+        .forEach(f -> {
+          if (suffixes.size() < 3) suffixes.add(f);
+        });
     List<PoeModPoolDataService.ModFamily> chosen = new ArrayList<>(prefixes);
     chosen.addAll(suffixes);
     // 에센스는 아이템당 1개만 쓸 수 있다(에센스 1개 = 보장 모드 1개). 여러 에센스 계열이 뽑혔으면 최상위(먼저 뽑힌) 1개만
     //   남긴다 — 안 그러면 게임에 존재할 수 없는 "에센스 모드 2개" 아이템이 계산된다.
     boolean[] essenceSeen = {false};
-    chosen.removeIf(
-        f -> {
-          if (f.key() != null && f.key().startsWith("essence")) {
-            if (essenceSeen[0]) {
-              return true;
-            }
-            essenceSeen[0] = true;
-          }
-          return false;
-        });
+    chosen.removeIf(f -> {
+      if (f.key() != null && f.key().startsWith("essence")) {
+        if (essenceSeen[0]) {
+          return true;
+        }
+        essenceSeen[0] = true;
+      }
+      return false;
+    });
     if (chosen.isEmpty()) {
       return null;
     }
@@ -16463,17 +16393,15 @@ public class PoeOptimizeService {
     boolean offhandOccupied = offhand != null;
     return poeBaseItemDataService.search(null, null).stream()
         .filter(base -> base.weapon() != null && allowedClasses.contains(base.itemClass()))
-        .filter(
-            base ->
-                (!offhandOccupied && !metaOffhandShield)
-                    || !TWO_HANDED_CLASSES.contains(base.itemClass()))
+        .filter(base ->
+            (!offhandOccupied && !metaOffhandShield)
+                || !TWO_HANDED_CLASSES.contains(base.itemClass()))
         .filter(base -> base.dropLevel() <= LEVEL)
         .sorted(
-            Comparator.comparingDouble(
-                    (PoeBaseItem base) ->
-                        (base.weapon().damageMin() + base.weapon().damageMax())
-                            / 2.0
-                            * base.weapon().attacksPerSecond())
+            Comparator.comparingDouble((PoeBaseItem base) ->
+                    (base.weapon().damageMin() + base.weapon().damageMax())
+                        / 2.0
+                        * base.weapon().attacksPerSecond())
                 .reversed())
         .limit(limit)
         .toList();
@@ -17424,22 +17352,18 @@ public class PoeOptimizeService {
         String[] spec = entry.getValue().split(":");
         poeUniqueDataService
             .findBySlug(spec[0].trim())
-            .ifPresent(
-                u ->
-                    jewels.put(
-                        entry.getKey(),
-                        Equipped.ofUnique(
-                            withForbiddenClass(
-                                spec.length == 2 && spec[1].trim().matches("v\\d+")
-                                    ? uniqueVariant(
-                                        u, Integer.parseInt(spec[1].trim().substring(1)))
-                                    : spec.length >= 2
-                                        ? withTimeless(
-                                            u,
-                                            spec[1].trim(),
-                                            spec.length >= 3 ? spec[2].trim() : null)
-                                        : u,
-                                className))));
+            .ifPresent(u ->
+                jewels.put(
+                    entry.getKey(),
+                    Equipped.ofUnique(
+                        withForbiddenClass(
+                            spec.length == 2 && spec[1].trim().matches("v\\d+")
+                                ? uniqueVariant(u, Integer.parseInt(spec[1].trim().substring(1)))
+                                : spec.length >= 2
+                                    ? withTimeless(
+                                        u, spec[1].trim(), spec.length >= 3 ? spec[2].trim() : null)
+                                    : u,
+                            className))));
       }
     }
     String xml =

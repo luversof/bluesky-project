@@ -66,11 +66,10 @@ class TooltipConsistencyTest {
   void 툴팁_구현은_공용_조각에만_있다() throws IOException {
     // 공용 조각 자신, daisyUI 견본 화면(dev.jte)은 제외.
     List<String> offenders =
-        scan(
-            (rel, code) ->
-                !rel.startsWith("_components/ui/")
-                    && !rel.equals("dev.jte")
-                    && RAW_TOOLTIP.matcher(code).find());
+        scan((rel, code) ->
+            !rel.startsWith("_components/ui/")
+                && !rel.equals("dev.jte")
+                && RAW_TOOLTIP.matcher(code).find());
     assertThat(offenders)
         .as("아이콘 · 감싸기 툴팁은 @template._components.ui.tooltip / infoTip 으로")
         .isEmpty();

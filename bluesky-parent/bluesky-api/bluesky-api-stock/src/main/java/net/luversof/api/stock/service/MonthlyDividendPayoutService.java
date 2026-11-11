@@ -69,16 +69,14 @@ public class MonthlyDividendPayoutService {
 
     List<MonthlyDividendPayout> filtered =
         payouts.stream()
-            .filter(
-                payout ->
-                    request == null
-                        || request.getStartDate() == null
-                        || !payout.getPayDate().isBefore(request.getStartDate()))
-            .filter(
-                payout ->
-                    request == null
-                        || request.getEndDate() == null
-                        || !payout.getPayDate().isAfter(request.getEndDate()))
+            .filter(payout ->
+                request == null
+                    || request.getStartDate() == null
+                    || !payout.getPayDate().isBefore(request.getStartDate()))
+            .filter(payout ->
+                request == null
+                    || request.getEndDate() == null
+                    || !payout.getPayDate().isAfter(request.getEndDate()))
             .toList();
 
     // 종목 정보는 1회 일괄 조회한다. (행마다 findById 하면 행 수만큼 SELECT 가 나가는 N+1)
@@ -151,16 +149,15 @@ public class MonthlyDividendPayoutService {
     MonthlyDividendPayout payout =
         monthlyDividendPayoutRepository
             .findByStockItemIdAndRecordDateAndPayDate(stockItem.getId(), recordDate, payDate)
-            .orElseThrow(
-                () ->
-                    new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Monthly dividend payout not found: "
-                            + symbol
-                            + " / "
-                            + recordDate
-                            + " / "
-                            + payDate));
+            .orElseThrow(() ->
+                new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Monthly dividend payout not found: "
+                        + symbol
+                        + " / "
+                        + recordDate
+                        + " / "
+                        + payDate));
     monthlyDividendPayoutRepository.delete(payout);
     refreshSnapshotsForStockItem(stockItem);
   }
@@ -182,21 +179,19 @@ public class MonthlyDividendPayoutService {
     // 사용자가 입력한 보유 수량 · 평균 단가가 든 스냅샷을 통째로 지웠다(2026-10-27 감사). 통계를 그대로 두면 지운 이력의 배당이 남아 보인다.
     SnapshotStats stats = computeSnapshotStats(stockItem.getId());
     if (stats == null) {
-      snapshots.forEach(
-          snapshot -> {
-            snapshot.setLatestMonthlyDividendPerShare(BigDecimal.ZERO);
-            snapshot.setAverageMonthlyDividendPerShare1y(BigDecimal.ZERO);
-            snapshot.setUpdatedDate(now);
-          });
+      snapshots.forEach(snapshot -> {
+        snapshot.setLatestMonthlyDividendPerShare(BigDecimal.ZERO);
+        snapshot.setAverageMonthlyDividendPerShare1y(BigDecimal.ZERO);
+        snapshot.setUpdatedDate(now);
+      });
       monthlyDividendSnapshotRepository.saveAll(snapshots);
       return;
     }
 
-    snapshots.forEach(
-        snapshot -> {
-          applyStats(snapshot, stats, snapshot.getUserId());
-          snapshot.setUpdatedDate(now);
-        });
+    snapshots.forEach(snapshot -> {
+      applyStats(snapshot, stats, snapshot.getUserId());
+      snapshot.setUpdatedDate(now);
+    });
     monthlyDividendSnapshotRepository.saveAll(snapshots);
   }
 
@@ -298,11 +293,10 @@ public class MonthlyDividendPayoutService {
         lastYearRows.stream()
             .filter(row -> nz(row.getDividendAmountPerShare()).signum() > 0)
             .filter(row -> row.getTaxableBasePerShare() != null)
-            .map(
-                row ->
-                    row.getTaxableBasePerShare()
-                        .multiply(BigDecimal.valueOf(100))
-                        .divide(nz(row.getDividendAmountPerShare()), 2, RoundingMode.HALF_UP))
+            .map(row ->
+                row.getTaxableBasePerShare()
+                    .multiply(BigDecimal.valueOf(100))
+                    .divide(nz(row.getDividendAmountPerShare()), 2, RoundingMode.HALF_UP))
             .toList();
     // 아는 행이 하나도 없으면 null(모름) - 0 이면 "비과세" 로 읽혀 위탁계좌 자리로 잘못 간다.
     BigDecimal averageTaxableBaseRatio1y =

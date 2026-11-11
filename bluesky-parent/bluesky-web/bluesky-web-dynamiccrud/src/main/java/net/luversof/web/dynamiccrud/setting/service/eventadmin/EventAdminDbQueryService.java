@@ -424,12 +424,11 @@ public class EventAdminDbQueryService implements SettingServiceListSupplier<DbQu
   @Override
   public List<DbQuery> findList(SettingParameter settingParameter) {
     return dbQueryList.stream()
-        .filter(
-            x ->
-                x.getAdminProjectId().equals(settingParameter.adminProjectId())
-                    && x.getProjectId().equals(settingParameter.projectId())
-                    && x.getMainMenuId().equals(settingParameter.mainMenuId())
-                    && x.getSubMenuId().equals(settingParameter.subMenuId()))
+        .filter(x ->
+            x.getAdminProjectId().equals(settingParameter.adminProjectId())
+                && x.getProjectId().equals(settingParameter.projectId())
+                && x.getMainMenuId().equals(settingParameter.mainMenuId())
+                && x.getSubMenuId().equals(settingParameter.subMenuId()))
         .collect(Collectors.toList());
   }
 }

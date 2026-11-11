@@ -350,17 +350,16 @@ public class Poe2CraftController {
           craftClient.pool(new Poe2Craft.Item(poolKey, clamp(ilvl), "RARE", List.of(), false))) {
         byFam.computeIfAbsent(p.gen() + "|" + p.family(), k -> new ArrayList<>()).add(p);
       }
-      byFam.forEach(
-          (k, v) -> {
-            List<Poe2Craft.PoolLine> tiers =
-                v.stream()
-                    .filter(p -> p.tierRank() != null)
-                    .sorted(java.util.Comparator.comparing(Poe2Craft.PoolLine::tierRank))
-                    .toList();
-            if (!tiers.isEmpty()) {
-              labels.put(k, spanLabel(tiers, ko));
-            }
-          });
+      byFam.forEach((k, v) -> {
+        List<Poe2Craft.PoolLine> tiers =
+            v.stream()
+                .filter(p -> p.tierRank() != null)
+                .sorted(java.util.Comparator.comparing(Poe2Craft.PoolLine::tierRank))
+                .toList();
+        if (!tiers.isEmpty()) {
+          labels.put(k, spanLabel(tiers, ko));
+        }
+      });
     } catch (RuntimeException e) {
       // 이름 없이 계열 키로
     }
@@ -1680,13 +1679,12 @@ public class Poe2CraftController {
           bone =
               (o.bones() == null ? List.<Poe2Craft.Bone>of() : o.bones())
                   .stream()
-                      .filter(
-                          b ->
-                              b.classes() != null
-                                  && b.classes().contains(cls)
-                                  && b.maxIlvl() == 0
-                                  && b.minModLevel() == 0
-                                  && !b.breach())
+                      .filter(b ->
+                          b.classes() != null
+                              && b.classes().contains(cls)
+                              && b.maxIlvl() == 0
+                              && b.minModLevel() == 0
+                              && !b.breach())
                       .map(Poe2Craft.Bone::slug)
                       .findFirst()
                       .orElse(null);
@@ -2035,11 +2033,10 @@ public class Poe2CraftController {
       hit =
           dataClient.searchBases(null, cls, null).stream()
               .filter(b -> cls.equals(b.itemClass()))
-              .filter(
-                  b ->
-                      pb != null && !pb.isEmpty()
-                          ? pb.contains(b.name())
-                          : "기본".equals(variant) || variant.equals(b.subType()))
+              .filter(b ->
+                  pb != null && !pb.isEmpty()
+                      ? pb.contains(b.name())
+                      : "기본".equals(variant) || variant.equals(b.subType()))
               .sorted(
                   java.util.Comparator.comparingInt(
                           (Poe2.BaseItem b) -> b.dropLevel() == null ? 0 : b.dropLevel())

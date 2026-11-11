@@ -53,11 +53,10 @@ public class GateDevCheckController {
     Map<Object, Object> map = new LinkedHashMap<>();
     List<Object> keyList =
         messageSource.getProperties().keySet().stream()
-            .filter(
-                key ->
-                    searchKeyword == null
-                        || searchKeyword.isEmpty()
-                        || String.valueOf(key).toLowerCase().contains(searchKeyword.toLowerCase()))
+            .filter(key ->
+                searchKeyword == null
+                    || searchKeyword.isEmpty()
+                    || String.valueOf(key).toLowerCase().contains(searchKeyword.toLowerCase()))
             .sorted()
             .toList();
     keyList.forEach(key -> map.put(key, messageSource.getProperties().get(key)));
@@ -73,11 +72,10 @@ public class GateDevCheckController {
     Map<Object, Object> map = new LinkedHashMap<>();
     List<Object> keyList =
         messageSource.getProperties().keySet().stream()
-            .filter(
-                key ->
-                    searchKeyword == null
-                        || searchKeyword.isEmpty()
-                        || String.valueOf(key).toLowerCase().contains(searchKeyword.toLowerCase()))
+            .filter(key ->
+                searchKeyword == null
+                    || searchKeyword.isEmpty()
+                    || String.valueOf(key).toLowerCase().contains(searchKeyword.toLowerCase()))
             .sorted()
             .toList();
 

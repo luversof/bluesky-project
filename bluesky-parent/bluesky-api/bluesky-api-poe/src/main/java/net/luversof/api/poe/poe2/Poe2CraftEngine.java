@@ -801,12 +801,11 @@ public class Poe2CraftEngine {
     boolean onlyFull = only != null && item.count(only) >= maxPerGen(item, Rarity.RARE);
     List<Affix> cand =
         item.affixes().stream()
-            .filter(
-                a ->
-                    !a.fractured()
-                        && !"corrupted".equals(a.gen())
-                        && (side == null || side.equals(a.gen()))
-                        && (!onlyFull || only.equals(a.gen())))
+            .filter(a ->
+                !a.fractured()
+                    && !"corrupted".equals(a.gen())
+                    && (side == null || side.equals(a.gen()))
+                    && (!onlyFull || only.equals(a.gen())))
             .toList();
     if (cand.isEmpty()) {
       return Result.fail(item, "보장 옵션 자리를 낼 수 없습니다(분열 · 징조 쪽)");
@@ -864,12 +863,8 @@ public class Poe2CraftEngine {
     boolean omen = om.contains("Corruption");
     List<Affix> real =
         item.affixes().stream()
-            .filter(
-                a ->
-                    !a.fractured()
-                        && !unrevealed(a)
-                        && !abyssMark(a)
-                        && !"corrupted".equals(a.gen()))
+            .filter(a ->
+                !a.fractured() && !unrevealed(a) && !abyssMark(a) && !"corrupted".equals(a.gen()))
             .toList();
     List<Mod> enchants =
         data.corruptedPool(item.poolKey()).stream().filter(m -> m.level() <= item.ilvl()).toList();
@@ -1165,12 +1160,11 @@ public class Poe2CraftEngine {
     boolean lichAvailable =
         lich != null
             && data.desecrated(item.poolKey()).stream()
-                .anyMatch(
-                    d ->
-                        lichF.equals(d.lich())
-                            && d.mod().gen().equals(u.gen())
-                            && d.mod().level() <= item.ilvl()
-                            && d.mod().level() >= u.level());
+                .anyMatch(d ->
+                    lichF.equals(d.lich())
+                        && d.mod().gen().equals(u.gen())
+                        && d.mod().level() <= item.ilvl()
+                        && d.mod().level() >= u.level());
     List<String> cand = new ArrayList<>();
     for (DesecratedMod d : data.desecrated(item.poolKey())) {
       Mod m = d.mod();

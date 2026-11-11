@@ -79,14 +79,13 @@ class MoneyDisplayRoundingTest {
       moneyLines =
           files
               .filter(p -> p.toString().endsWith(".jte"))
-              .flatMap(
-                  p -> {
-                    try {
-                      return Files.readAllLines(p, StandardCharsets.UTF_8).stream();
-                    } catch (IOException e) {
-                      throw new IllegalStateException(e);
-                    }
-                  })
+              .flatMap(p -> {
+                try {
+                  return Files.readAllLines(p, StandardCharsets.UTF_8).stream();
+                } catch (IOException e) {
+                  throw new IllegalStateException(e);
+                }
+              })
               .filter(line -> MONEY_FORMATS.stream().anyMatch(line::contains))
               .count();
     }

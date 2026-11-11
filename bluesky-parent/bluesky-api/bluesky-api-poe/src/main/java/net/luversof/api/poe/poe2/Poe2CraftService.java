@@ -434,15 +434,13 @@ public class Poe2CraftService {
           Map<String, Object[]> out = new HashMap<>();
           data2
               .modPool(k)
-              .ifPresent(
-                  p -> {
-                    for (Poe2.ModGroup g :
-                        p.groups() == null ? List.<Poe2.ModGroup>of() : p.groups()) {
-                      for (int i = 0; i < g.tiers().size(); i++) {
-                        out.put(g.tiers().get(i).id(), new Object[] {g.tiers().get(i), i + 1});
-                      }
-                    }
-                  });
+              .ifPresent(p -> {
+                for (Poe2.ModGroup g : p.groups() == null ? List.<Poe2.ModGroup>of() : p.groups()) {
+                  for (int i = 0; i < g.tiers().size(); i++) {
+                    out.put(g.tiers().get(i).id(), new Object[] {g.tiers().get(i), i + 1});
+                  }
+                }
+              });
           return out;
         });
   }
@@ -610,13 +608,12 @@ public class Poe2CraftService {
             item, r == Poe2CraftEngine.Rarity.NORMAL ? Poe2CraftEngine.Rarity.MAGIC : r),
         blocked(item),
         engine.revealOffers(item).stream()
-            .map(
-                id -> {
-                  Poe2CraftEngine.Mod m = modOf(id);
-                  return lineOf(
-                      item.poolKey(),
-                      new Poe2CraftEngine.Affix(id, m.gen(), m.level(), m.groups(), false));
-                })
+            .map(id -> {
+              Poe2CraftEngine.Mod m = modOf(id);
+              return lineOf(
+                  item.poolKey(),
+                  new Poe2CraftEngine.Affix(id, m.gen(), m.level(), m.groups(), false));
+            })
             .toList(),
         note,
         engine.boosted(item),

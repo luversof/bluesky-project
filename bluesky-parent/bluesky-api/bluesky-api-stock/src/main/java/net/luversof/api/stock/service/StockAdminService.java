@@ -158,33 +158,30 @@ public class StockAdminService {
         .map(String::trim)
         .distinct()
         .filter(accountName -> !accountMap.containsKey(accountName))
-        .forEach(
-            accountName -> {
-              var newAccount = new Account();
-              newAccount.setUserId(userId);
-              newAccount.setName(accountName);
-              var savedAccount = accountService.createAccount(newAccount);
-              accountMap.put(accountName, savedAccount.getId());
-              log.debug("Created new account: {} with id: {}", accountName, savedAccount.getId());
-            });
+        .forEach(accountName -> {
+          var newAccount = new Account();
+          newAccount.setUserId(userId);
+          newAccount.setName(accountName);
+          var savedAccount = accountService.createAccount(newAccount);
+          accountMap.put(accountName, savedAccount.getId());
+          log.debug("Created new account: {} with id: {}", accountName, savedAccount.getId());
+        });
 
     // 종목을 못 찾아 버린 이름을 모은다. 이름이 바뀌기만 해도 그 종목 거래가 전부 사라지므로,
     // 몇 행이 어떤 이름 때문에 빠졌는지가 이 작업의 가장 중요한 결과다.
     var unknownStockNames = new LinkedHashSet<String>();
     var tradeList =
         importableGoogleSheetsTradeList.stream()
-            .map(
-                t -> {
-                  Trade trade = toTrade(t, accountMap, stockItemList);
-                  // 계좌 때문에 버린 행은 종목 이름 탓이 아니다 - 종목을 정말 못 찾았을 때만 모르는 이름에 담는다.
-                  if (trade == null
-                      && t.get종목() != null
-                      && stockItemList.stream()
-                          .noneMatch(s -> sameStockName(s.getName(), t.get종목()))) {
-                    unknownStockNames.add(t.get종목());
-                  }
-                  return trade;
-                })
+            .map(t -> {
+              Trade trade = toTrade(t, accountMap, stockItemList);
+              // 계좌 때문에 버린 행은 종목 이름 탓이 아니다 - 종목을 정말 못 찾았을 때만 모르는 이름에 담는다.
+              if (trade == null
+                  && t.get종목() != null
+                  && stockItemList.stream().noneMatch(s -> sameStockName(s.getName(), t.get종목()))) {
+                unknownStockNames.add(t.get종목());
+              }
+              return trade;
+            })
             .filter(Objects::nonNull)
             .toList();
 
@@ -279,14 +276,13 @@ public class StockAdminService {
     var unknownStockNames = new LinkedHashSet<String>();
     var dividends =
         googleSheetsDividendList.stream()
-            .map(
-                googleSheetsDividend -> {
-                  Dividend dividend = toDividend(googleSheetsDividend, accountMap, stockItemMap);
-                  if (dividend == null && googleSheetsDividend.get종목() != null) {
-                    unknownStockNames.add(googleSheetsDividend.get종목());
-                  }
-                  return dividend;
-                })
+            .map(googleSheetsDividend -> {
+              Dividend dividend = toDividend(googleSheetsDividend, accountMap, stockItemMap);
+              if (dividend == null && googleSheetsDividend.get종목() != null) {
+                unknownStockNames.add(googleSheetsDividend.get종목());
+              }
+              return dividend;
+            })
             .filter(Objects::nonNull)
             .toList();
 
@@ -558,18 +554,17 @@ public class StockAdminService {
         .map(GoogleSheetDividend::get계좌)
         .filter(StringUtils::hasText)
         .map(String::trim)
-        .forEach(
-            accountName ->
-                accountMap.computeIfAbsent(
-                    accountName,
-                    name -> {
-                      var newAccount = new Account();
-                      newAccount.setUserId(userId);
-                      newAccount.setName(name);
-                      var savedAccount = accountService.createAccount(newAccount);
-                      log.debug("Created account for dividend import: {}", name);
-                      return savedAccount.getId();
-                    }));
+        .forEach(accountName ->
+            accountMap.computeIfAbsent(
+                accountName,
+                name -> {
+                  var newAccount = new Account();
+                  newAccount.setUserId(userId);
+                  newAccount.setName(name);
+                  var savedAccount = accountService.createAccount(newAccount);
+                  log.debug("Created account for dividend import: {}", name);
+                  return savedAccount.getId();
+                }));
 
     return accountMap;
   }

@@ -181,10 +181,8 @@ public final class CsvImport {
     return categories.stream()
         .filter(c -> Objects.equals(c.parentId(), parent.id()) && c.name().equals(childName))
         .findFirst()
-        .orElseThrow(
-            () ->
-                new RowException(
-                    "bookkeeping.import.error.category", parentName + " > " + childName));
+        .orElseThrow(() ->
+            new RowException("bookkeeping.import.error.category", parentName + " > " + childName));
   }
 
   private static BigDecimal amount(String value) {

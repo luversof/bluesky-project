@@ -147,10 +147,9 @@ public class PoeTattooDataService {
     boolean smallAttr = target.startsWith("Small ");
     return tattoos.stream()
         .filter(PoeTattooDataService::isCurrentLeague)
-        .filter(
-            t ->
-                t.targetType().equals(target)
-                    || (smallAttr && "Small Attribute".equals(t.targetType())))
+        .filter(t ->
+            t.targetType().equals(target)
+                || (smallAttr && "Small Attribute".equals(t.targetType())))
         .toList();
   }
 }

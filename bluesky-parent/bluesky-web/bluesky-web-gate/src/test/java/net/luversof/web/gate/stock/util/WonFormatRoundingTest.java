@@ -53,16 +53,15 @@ class WonFormatRoundingTest {
       offenders =
           files
               .filter(path -> path.toString().endsWith(".jte"))
-              .filter(
-                  path -> {
-                    try {
-                      String squashed =
-                          Files.readString(path, StandardCharsets.UTF_8).replaceAll("\\s+", "");
-                      return squashed.contains("DecimalFormat(\"#,##0\")");
-                    } catch (IOException ex) {
-                      throw new java.io.UncheckedIOException(ex);
-                    }
-                  })
+              .filter(path -> {
+                try {
+                  String squashed =
+                      Files.readString(path, StandardCharsets.UTF_8).replaceAll("\\s+", "");
+                  return squashed.contains("DecimalFormat(\"#,##0\")");
+                } catch (IOException ex) {
+                  throw new java.io.UncheckedIOException(ex);
+                }
+              })
               .map(Path::toString)
               .toList();
     }

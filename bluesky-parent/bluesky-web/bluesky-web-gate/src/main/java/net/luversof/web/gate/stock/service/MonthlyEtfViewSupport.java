@@ -135,28 +135,26 @@ public class MonthlyEtfViewSupport {
         MonthlyEtfPick pick, MonthlyContributionPickSupport.ContributionCandidate candidate) {}
     return rows.stream()
         .filter(row -> row.annualYieldPct() != null && row.payoutTrendPct() != null)
-        .map(
-            row -> {
-              // 카탈로그 원값이 없으면(배당 기준만 쓰는 옛 호출) 행의 값으로 후보를 만든다 - 총수익 · 꾸준함은 낼 수 없다.
-              MonthlyContributionPickSupport.ContributionCandidate candidate =
-                  row.stockItemSymbol() != null && candidates.containsKey(row.stockItemSymbol())
-                      ? candidates.get(row.stockItemSymbol())
-                      : new MonthlyContributionPickSupport.ContributionCandidate(
-                          safeText(row.stockItemSymbol()),
-                          row.stockItemName(),
-                          row.payoutWindow(),
-                          row.averageTaxableBaseRatio1y(),
-                          row.annualYieldPct(),
-                          row.payoutTrendPct(),
-                          null,
-                          row.volatilityPct(),
-                          null,
-                          null);
-              return new Ranked(
-                  new MonthlyEtfPick(
-                      row, MonthlyContributionPickSupport.valueOf(chosen, candidate)),
-                  candidate);
-            })
+        .map(row -> {
+          // 카탈로그 원값이 없으면(배당 기준만 쓰는 옛 호출) 행의 값으로 후보를 만든다 - 총수익 · 꾸준함은 낼 수 없다.
+          MonthlyContributionPickSupport.ContributionCandidate candidate =
+              row.stockItemSymbol() != null && candidates.containsKey(row.stockItemSymbol())
+                  ? candidates.get(row.stockItemSymbol())
+                  : new MonthlyContributionPickSupport.ContributionCandidate(
+                      safeText(row.stockItemSymbol()),
+                      row.stockItemName(),
+                      row.payoutWindow(),
+                      row.averageTaxableBaseRatio1y(),
+                      row.annualYieldPct(),
+                      row.payoutTrendPct(),
+                      null,
+                      row.volatilityPct(),
+                      null,
+                      null);
+          return new Ranked(
+              new MonthlyEtfPick(row, MonthlyContributionPickSupport.valueOf(chosen, candidate)),
+              candidate);
+        })
         .filter(ranked -> ranked.pick().score() != null)
         .sorted(
             Comparator.comparing(Ranked::candidate, MonthlyContributionPickSupport.order(chosen)))
@@ -286,9 +284,8 @@ public class MonthlyEtfViewSupport {
     String resolvedAccount = resolveAccount(account);
     return rows.stream()
         .filter(row -> matchesKeyword(row, keyword))
-        .filter(
-            row ->
-                minAnnualYield == null || nz(row.annualYieldPct()).compareTo(minAnnualYield) >= 0)
+        .filter(row ->
+            minAnnualYield == null || nz(row.annualYieldPct()).compareTo(minAnnualYield) >= 0)
         .filter(row -> resolvedWindow.isEmpty() || resolvedWindow.equals(row.payoutWindow()))
         .filter(row -> matchesHolding(row, resolvedHolding))
         .filter(row -> matchesAccount(row, resolvedAccount))

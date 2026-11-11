@@ -167,11 +167,10 @@ class MonthlyDividendPayoutImportParserTest {
    */
   @Test
   void 분배금액이_대시면_가져오기가_그_줄에서_멈춘다() {
-    assertThatThrownBy(
-            () ->
-                parser.parse(
-                    "381170",
-                    """
+    assertThatThrownBy(() ->
+            parser.parse(
+                "381170",
+                """
                 지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
                 2024-12-30	2025-01-03	-	-
                 2024-11-29	2024-12-03	134	-
@@ -199,11 +198,10 @@ class MonthlyDividendPayoutImportParserTest {
 
   @Test
   void rejectsRowsWhosePayDateIsEarlierThanRecordDateWithExactValues() {
-    assertThatThrownBy(
-            () ->
-                parser.parse(
-                    "466940",
-                    """
+    assertThatThrownBy(() ->
+            parser.parse(
+                "466940",
+                """
                 지급기준일	실지급일	분배금액(원)	주당과세표준액(원)
                 2026-05-15	2025-05-19	390	8
                 2026-04-15	2026-04-17	340	54

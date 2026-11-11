@@ -71,9 +71,8 @@ class PoeCraftActionPoolTest {
           craft.engine().probeFirstPick(item, PoeCraftEngine.Action.FOSSIL, slugs);
       assertThat(p.weights()).as(slugs).isNotNull();
       assertThat(p.weights().keySet()).as(slugs).isEqualTo(calc.keySet());
-      calc.forEach(
-          (id, w) ->
-              assertThat(p.weights().get(id)[0]).as(slugs + " " + id).isCloseTo(w, within(1e-9)));
+      calc.forEach((id, w) ->
+          assertThat(p.weights().get(id)[0]).as(slugs + " " + id).isCloseTo(w, within(1e-9)));
     }
   }
 

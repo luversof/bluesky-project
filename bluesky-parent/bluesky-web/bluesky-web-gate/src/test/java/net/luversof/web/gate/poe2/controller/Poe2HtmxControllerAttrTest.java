@@ -32,14 +32,13 @@ class Poe2HtmxControllerAttrTest {
             "strint", armour(10, 0, 10),
             "dexint", armour(0, 10, 10),
             "strdexint", armour(10, 10, 10));
-    expected.forEach(
-        (want, a) -> {
-          for (String chip : chips) {
-            assertThat(Poe2HtmxController.matchesAttr(a, chip))
-                .as(want + " in " + chip)
-                .isEqualTo(chip.equals(want));
-          }
-        });
+    expected.forEach((want, a) -> {
+      for (String chip : chips) {
+        assertThat(Poe2HtmxController.matchesAttr(a, chip))
+            .as(want + " in " + chip)
+            .isEqualTo(chip.equals(want));
+      }
+    });
   }
 
   @Test

@@ -290,10 +290,9 @@ public final class PoeText {
     String escaped = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     return VALUE_TOKEN
         .matcher(escaped)
-        .replaceAll(
-            match ->
-                "<span class=\"poe-val\">"
-                    + java.util.regex.Matcher.quoteReplacement(match.group())
-                    + "</span>");
+        .replaceAll(match ->
+            "<span class=\"poe-val\">"
+                + java.util.regex.Matcher.quoteReplacement(match.group())
+                + "</span>");
   }
 }

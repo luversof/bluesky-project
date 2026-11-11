@@ -74,12 +74,11 @@ class SoldCostFormulaTest {
       long subtractions =
           source
               .lines()
-              .filter(
-                  line ->
-                      line.contains("subtract") && line.contains("Tax")
-                          || line.contains("subtract(nz(trade.tax()))")
-                          || line.contains("subtract(sellTax)")
-                          || line.contains("subtract(itemSellTax)"))
+              .filter(line ->
+                  line.contains("subtract") && line.contains("Tax")
+                      || line.contains("subtract(nz(trade.tax()))")
+                      || line.contains("subtract(sellTax)")
+                      || line.contains("subtract(itemSellTax)"))
               .count();
       assertThat(subtractions).as(path + " 에 세금을 빼는 원가 계산이 없다").isGreaterThan(0);
     }

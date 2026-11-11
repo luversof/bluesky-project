@@ -933,16 +933,14 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       portfolioAccumulator.acceptHeldDays(periodPrincipalSummary.heldDays());
       periodPrincipalSummary
           .principalCostSumByYear()
-          .forEach(
-              (year, principalCostSum) ->
-                  yearlyAccumulators
-                      .computeIfAbsent(
-                          year,
-                          ignored ->
-                              new YieldAccumulator(
-                                  String.valueOf(year),
-                                  periodDayCountsByYear.getOrDefault(year, 0L)))
-                      .acceptDailyPrincipalCostSum(principalCostSum));
+          .forEach((year, principalCostSum) ->
+              yearlyAccumulators
+                  .computeIfAbsent(
+                      year,
+                      ignored ->
+                          new YieldAccumulator(
+                              String.valueOf(year), periodDayCountsByYear.getOrDefault(year, 0L)))
+                  .acceptDailyPrincipalCostSum(principalCostSum));
     }
 
     List<DividendView> enrichedDividends =
@@ -1157,11 +1155,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
   static Map<PositionKey, List<TradeResponse>> groupTradesByPosition(
       List<TradeResponse> trades, ZoneId zone) {
     return trades.stream()
-        .filter(
-            trade ->
-                trade.accountId() != null
-                    && trade.stockItemId() != null
-                    && trade.tradeDate() != null)
+        .filter(trade ->
+            trade.accountId() != null && trade.stockItemId() != null && trade.tradeDate() != null)
         .collect(
             Collectors.groupingBy(
                 trade -> new PositionKey(trade.accountId(), trade.stockItemId()),
@@ -1169,9 +1164,8 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
                     Collectors.toCollection(ArrayList::new),
                     list -> {
                       list.sort(
-                          Comparator.comparing(
-                                  (TradeResponse trade) ->
-                                      StockZoneUtil.recordedDate(trade.tradeDate(), zone))
+                          Comparator.comparing((TradeResponse trade) ->
+                                  StockZoneUtil.recordedDate(trade.tradeDate(), zone))
                               .thenComparing(trade -> trade.type() == TradeType.BUY ? 0 : 1)
                               .thenComparing(TradeResponse::tradeDate));
                       return list;
@@ -1381,17 +1375,16 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       return dividends;
     }
     return dividends.stream()
-        .filter(
-            d -> {
-              Instant payDate = d.payDate();
-              if (payDate == null) {
-                return false;
-              }
-              if (start != null && payDate.isBefore(start)) {
-                return false;
-              }
-              return end == null || payDate.isBefore(end);
-            })
+        .filter(d -> {
+          Instant payDate = d.payDate();
+          if (payDate == null) {
+            return false;
+          }
+          if (start != null && payDate.isBefore(start)) {
+            return false;
+          }
+          return end == null || payDate.isBefore(end);
+        })
         .toList();
   }
 
@@ -1492,31 +1485,28 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       prevByStock.merge(d.stockItemName() != null ? d.stockItemName() : "-", net, BigDecimal::add);
     }
     Map<String, BigDecimal> curByStock = new HashMap<>();
-    currentViews.forEach(
-        v ->
-            curByStock.merge(
-                v.stockItemName() != null ? v.stockItemName() : "-",
-                nz(v.netAmount()),
-                BigDecimal::add));
+    currentViews.forEach(v ->
+        curByStock.merge(
+            v.stockItemName() != null ? v.stockItemName() : "-",
+            nz(v.netAmount()),
+            BigDecimal::add));
     // 종목명 -> stockItemId (변동 요인 종목 상세 링크용)
     Map<String, UUID> changeStockIdByName = new HashMap<>();
-    stockItems.forEach(
-        s -> {
-          if (s != null && s.name() != null && s.id() != null) {
-            changeStockIdByName.putIfAbsent(s.name(), s.id());
-          }
-        });
+    stockItems.forEach(s -> {
+      if (s != null && s.name() != null && s.id() != null) {
+        changeStockIdByName.putIfAbsent(s.name(), s.id());
+      }
+    });
     Set<String> changeNames = new HashSet<>();
     changeNames.addAll(curByStock.keySet());
     changeNames.addAll(prevByStock.keySet());
     List<DividendChange> contributors =
         changeNames.stream()
-            .map(
-                n -> {
-                  BigDecimal c = curByStock.getOrDefault(n, BigDecimal.ZERO);
-                  BigDecimal p = prevByStock.getOrDefault(n, BigDecimal.ZERO);
-                  return new DividendChange(n, c, p, c.subtract(p), changeStockIdByName.get(n));
-                })
+            .map(n -> {
+              BigDecimal c = curByStock.getOrDefault(n, BigDecimal.ZERO);
+              BigDecimal p = prevByStock.getOrDefault(n, BigDecimal.ZERO);
+              return new DividendChange(n, c, p, c.subtract(p), changeStockIdByName.get(n));
+            })
             .filter(ch -> ch.delta().signum() != 0)
             .sorted((a, b) -> b.delta().abs().compareTo(a.delta().abs()))
             .collect(Collectors.toList());

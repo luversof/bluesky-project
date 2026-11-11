@@ -969,27 +969,26 @@ public class PoeHtmxController {
     if (armourClass && !"all".equals(attr)) {
       matched =
           matched.stream()
-              .filter(
-                  it -> {
-                    var a = it.armour();
-                    if (a == null) {
-                      return false;
-                    }
-                    boolean ar = a.armourMax() > 0;
-                    boolean ev = a.evasionMax() > 0;
-                    boolean es = a.energyShieldMax() > 0;
-                    // 방어타입 완전 분할(겹침 없음): 순수 3 · 이중 3 · 삼중 1.
-                    return switch (attr) {
-                      case "str" -> ar && !ev && !es;
-                      case "dex" -> ev && !ar && !es;
-                      case "int" -> es && !ar && !ev;
-                      case "strdex" -> ar && ev && !es;
-                      case "strint" -> ar && es && !ev;
-                      case "dexint" -> ev && es && !ar;
-                      case "strdexint" -> ar && ev && es;
-                      default -> true;
-                    };
-                  })
+              .filter(it -> {
+                var a = it.armour();
+                if (a == null) {
+                  return false;
+                }
+                boolean ar = a.armourMax() > 0;
+                boolean ev = a.evasionMax() > 0;
+                boolean es = a.energyShieldMax() > 0;
+                // 방어타입 완전 분할(겹침 없음): 순수 3 · 이중 3 · 삼중 1.
+                return switch (attr) {
+                  case "str" -> ar && !ev && !es;
+                  case "dex" -> ev && !ar && !es;
+                  case "int" -> es && !ar && !ev;
+                  case "strdex" -> ar && ev && !es;
+                  case "strint" -> ar && es && !ev;
+                  case "dexint" -> ev && es && !ar;
+                  case "strdexint" -> ar && ev && es;
+                  default -> true;
+                };
+              })
               .toList();
     }
     // 상위 템부터 노출 — 드랍(요구) 레벨 내림차순 정렬 후 상한 적용 (사용자 요청)

@@ -28,13 +28,12 @@ public class BookFxRateRepository {
              WHERE "book_id" = ? AND "month" = ? ORDER BY "currency"
             """)
         .params(bookId, month)
-        .query(
-            (rs, i) ->
-                new BookFxRate(
-                    rs.getObject("book_id", UUID.class),
-                    rs.getString("month"),
-                    rs.getString("currency"),
-                    rs.getBigDecimal("rate")))
+        .query((rs, i) ->
+            new BookFxRate(
+                rs.getObject("book_id", UUID.class),
+                rs.getString("month"),
+                rs.getString("currency"),
+                rs.getBigDecimal("rate")))
         .list();
   }
 

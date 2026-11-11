@@ -48,14 +48,13 @@ public class GateHttpClientPoolConfig {
   ClientHttpRequestFactoryBuilder<HttpComponentsClientHttpRequestFactory>
       clientHttpRequestFactoryBuilder() {
     return ClientHttpRequestFactoryBuilder.httpComponents()
-        .withConnectionManagerCustomizer(
-            manager -> {
-              manager.setMaxConnPerRoute(MAX_CONN_PER_ROUTE);
-              manager.setMaxConnTotal(MAX_CONN_TOTAL);
-              log.info(
-                  "http client pool tuned: maxConnPerRoute={}, maxConnTotal={}",
-                  MAX_CONN_PER_ROUTE,
-                  MAX_CONN_TOTAL);
-            });
+        .withConnectionManagerCustomizer(manager -> {
+          manager.setMaxConnPerRoute(MAX_CONN_PER_ROUTE);
+          manager.setMaxConnTotal(MAX_CONN_TOTAL);
+          log.info(
+              "http client pool tuned: maxConnPerRoute={}, maxConnTotal={}",
+              MAX_CONN_PER_ROUTE,
+              MAX_CONN_TOTAL);
+        });
   }
 }

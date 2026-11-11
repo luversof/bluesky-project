@@ -1050,13 +1050,12 @@ public class PoeUpgradeGuideService {
           needy.size(),
           blocked,
           picks.stream()
-              .map(
-                  p ->
-                      (p.name() == null ? "레어(" + p.baseType() + ")" : p.name())
-                          + "("
-                          + deltasText(p)
-                          + ")"
-                          + (p.needs() == null ? "" : "[보충 " + p.needs() + "]"))
+              .map(p ->
+                  (p.name() == null ? "레어(" + p.baseType() + ")" : p.name())
+                      + "("
+                      + deltasText(p)
+                      + ")"
+                      + (p.needs() == null ? "" : "[보충 " + p.needs() + "]"))
               .toList());
       measured.add(new SlotPicks(s, List.copyOf(picks), list.size(), blocked, rare, rareShown));
     }
@@ -1285,11 +1284,8 @@ public class PoeUpgradeGuideService {
         // 이득이 가장 작은 접미를 뺀다 — 방금 넣은 능력치 옵션은 빼지 않는다(힘을 넣고 민첩을 넣을 때 힘을 도로 빼던 결함, 2026-09-29)
         PoeRareTargetService.Affix weakest =
             c.scored().stream()
-                .filter(
-                    sa ->
-                        !sa.affix().prefix()
-                            && out.contains(sa.affix())
-                            && !added.contains(sa.affix()))
+                .filter(sa ->
+                    !sa.affix().prefix() && out.contains(sa.affix()) && !added.contains(sa.affix()))
                 .min(Comparator.comparingDouble(ScoredAffix::gain))
                 .map(ScoredAffix::affix)
                 .orElse(null);

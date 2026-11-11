@@ -67,13 +67,12 @@ public final class PoeCraftRollFit {
     if (values == null) {
       return out;
     }
-    ranges.forEach(
-        (id, r) -> {
-          Long s = r == null || r.isEmpty() ? null : seed(r, values.get(id));
-          if (s != null) {
-            out.put(id, s);
-          }
-        });
+    ranges.forEach((id, r) -> {
+      Long s = r == null || r.isEmpty() ? null : seed(r, values.get(id));
+      if (s != null) {
+        out.put(id, s);
+      }
+    });
     return out;
   }
 

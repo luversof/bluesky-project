@@ -536,13 +536,12 @@ public class Poe2NinjaService {
     List<ClassGroup> classes = new ArrayList<>();
     java.util.Set<String> grouped = new java.util.HashSet<>();
     tree.classAscendancies()
-        .forEach(
-            (cls, ids) -> {
-              List<Choice> members =
-                  ids.stream().map(id -> ascs.getOrDefault(id, new Choice(id, null))).toList();
-              grouped.addAll(ids);
-              classes.add(new ClassGroup(cls, tree.classKo().get(cls), members));
-            });
+        .forEach((cls, ids) -> {
+          List<Choice> members =
+              ids.stream().map(id -> ascs.getOrDefault(id, new Choice(id, null))).toList();
+          grouped.addAll(ids);
+          classes.add(new ClassGroup(cls, tree.classKo().get(cls), members));
+        });
     List<Choice> others = ascList.stream().filter(c -> !grouped.contains(c.name())).toList();
     if (!others.isEmpty()) {
       classes.add(new ClassGroup("Other", "기타", others));

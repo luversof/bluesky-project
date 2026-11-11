@@ -256,12 +256,11 @@ public abstract class AbstractSettingFragmentController
 
       dbFieldList.stream()
           .filter(dbField -> dbField.getColumnType() == DbFieldColumnType.SPEL_FOR_EDIT)
-          .forEach(
-              dbField -> {
-                var expression = expressionParser.parseExpression(dbField.getColumnFormat());
-                Object value = expression.getValue(evaluationContext);
-                dataMap.put(dbField.getColumnId(), String.valueOf(value));
-              });
+          .forEach(dbField -> {
+            var expression = expressionParser.parseExpression(dbField.getColumnFormat());
+            Object value = expression.getValue(evaluationContext);
+            dataMap.put(dbField.getColumnId(), String.valueOf(value));
+          });
     }
   }
 }

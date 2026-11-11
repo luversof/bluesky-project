@@ -163,25 +163,24 @@ public final class StatsView {
     }
     var total = sums.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
     var result = new ArrayList<Slice>();
-    sums.forEach(
-        (id, amount) -> {
-          var c = byId.get(id);
-          boolean own = parent != null && parent.equals(id);
-          // 표와 차트 범례가 같은 이름을 쓰도록 여기서 정한다
-          var name =
-              c == null
-                  ? "?"
-                  : own ? BookkeepingView.msg("bookkeeping.stats.parentOwn", c.name()) : c.name();
-          var hasChildren = categories.stream().anyMatch(o -> id.equals(o.parentId()));
-          result.add(
-              new Slice(
-                  id,
-                  name,
-                  amount,
-                  percent(amount, total),
-                  parent == null && hasChildren ? id : null,
-                  own));
-        });
+    sums.forEach((id, amount) -> {
+      var c = byId.get(id);
+      boolean own = parent != null && parent.equals(id);
+      // 표와 차트 범례가 같은 이름을 쓰도록 여기서 정한다
+      var name =
+          c == null
+              ? "?"
+              : own ? BookkeepingView.msg("bookkeeping.stats.parentOwn", c.name()) : c.name();
+      var hasChildren = categories.stream().anyMatch(o -> id.equals(o.parentId()));
+      result.add(
+          new Slice(
+              id,
+              name,
+              amount,
+              percent(amount, total),
+              parent == null && hasChildren ? id : null,
+              own));
+    });
     result.sort(Comparator.comparing(Slice::amount).reversed());
     return result;
   }

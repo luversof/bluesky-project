@@ -126,12 +126,11 @@ class DuplicateElementIdTest {
   private static List<String> duplicates(String html) {
     List<String> found = new ArrayList<>();
     idCounts(html)
-        .forEach(
-            (id, count) -> {
-              if (count > 1) {
-                found.add(id + " x" + count);
-              }
-            });
+        .forEach((id, count) -> {
+          if (count > 1) {
+            found.add(id + " x" + count);
+          }
+        });
     return found;
   }
 

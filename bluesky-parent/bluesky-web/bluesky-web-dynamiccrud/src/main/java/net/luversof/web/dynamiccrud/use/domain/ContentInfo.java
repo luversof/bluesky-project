@@ -77,57 +77,55 @@ public class ContentInfo {
     // 조회한 데이터 목록의 첫번째 데이터의 key 목록을 기준으로 contentKeyList를 생성
     firstContent
         .keySet()
-        .forEach(
-            key -> {
+        .forEach(key -> {
 
-              // 저장된 dbField 목록이 없으면 데이터의 key를 그대로 사용
-              if (dbFieldList == null || dbFieldList.isEmpty()) {
-                contentKeyInfoList.add(
-                    new ContentKeyInfo(
-                        key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true, null));
-                return;
-              }
+          // 저장된 dbField 목록이 없으면 데이터의 key를 그대로 사용
+          if (dbFieldList == null || dbFieldList.isEmpty()) {
+            contentKeyInfoList.add(
+                new ContentKeyInfo(
+                    key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true, null));
+            return;
+          }
 
-              // 저장된 dbField 목록에 해당 key에 대한 정보가 없으면 데이터의 key를 그대로 사용
-              var targetField =
-                  dbFieldList.stream()
-                      .filter(x -> x.getColumnId().equals(key))
-                      .findAny()
-                      .orElseGet(() -> null);
-              if (targetField == null) {
-                contentKeyInfoList.add(
-                    new ContentKeyInfo(
-                        key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true, null));
-                return;
-              }
+          // 저장된 dbField 목록에 해당 key에 대한 정보가 없으면 데이터의 key를 그대로 사용
+          var targetField =
+              dbFieldList.stream()
+                  .filter(x -> x.getColumnId().equals(key))
+                  .findAny()
+                  .orElseGet(() -> null);
+          if (targetField == null) {
+            contentKeyInfoList.add(
+                new ContentKeyInfo(
+                    key, key, Short.MAX_VALUE, DbFieldColumnType.STRING, true, null));
+            return;
+          }
 
-              // 사용 불가 설정된 컬럼은 무조건 제외처리
-              if (!targetField.getColumnVisible().equals(DbFieldVisible.NOT_USED)) {
-                contentKeyInfoList.add(
-                    new ContentKeyInfo(
-                        targetField.getColumnId(),
-                        targetField.getColumnName(),
-                        targetField.getColumnOrder(),
-                        targetField.getColumnType(),
-                        targetField.isColumnVisible(),
-                        targetField));
-              }
-            });
+          // 사용 불가 설정된 컬럼은 무조건 제외처리
+          if (!targetField.getColumnVisible().equals(DbFieldVisible.NOT_USED)) {
+            contentKeyInfoList.add(
+                new ContentKeyInfo(
+                    targetField.getColumnId(),
+                    targetField.getColumnName(),
+                    targetField.getColumnOrder(),
+                    targetField.getColumnType(),
+                    targetField.isColumnVisible(),
+                    targetField));
+          }
+        });
 
     // SPEL 타입은 DB에서 획득한 컬럼이 아니기 때문에 별도로 추가해야 함
     dbFieldList.stream()
         .filter(x -> x.getColumnType().equals(DbFieldColumnType.SPEL))
-        .forEach(
-            dbField -> {
-              contentKeyInfoList.add(
-                  new ContentKeyInfo(
-                      dbField.getColumnId(),
-                      dbField.getColumnName(),
-                      dbField.getColumnOrder(),
-                      dbField.getColumnType(),
-                      dbField.isColumnVisible(),
-                      dbField));
-            });
+        .forEach(dbField -> {
+          contentKeyInfoList.add(
+              new ContentKeyInfo(
+                  dbField.getColumnId(),
+                  dbField.getColumnName(),
+                  dbField.getColumnOrder(),
+                  dbField.getColumnType(),
+                  dbField.isColumnVisible(),
+                  dbField));
+        });
 
     contentKeyInfoList.sort(Comparator.comparing(ContentKeyInfo::displayOrder));
   }

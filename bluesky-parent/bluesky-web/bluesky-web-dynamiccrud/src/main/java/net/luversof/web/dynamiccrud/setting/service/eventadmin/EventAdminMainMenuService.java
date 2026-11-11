@@ -46,11 +46,10 @@ public class EventAdminMainMenuService
   @Override
   public MainMenu findOne(SettingParameter settingParameter) {
     return mainMenuList.stream()
-        .filter(
-            x ->
-                x.getAdminProjectId().equals(settingParameter.adminProjectId())
-                    && x.getProjectId().equals(settingParameter.projectId())
-                    && x.getMainMenuId().equals(settingParameter.mainMenuId()))
+        .filter(x ->
+            x.getAdminProjectId().equals(settingParameter.adminProjectId())
+                && x.getProjectId().equals(settingParameter.projectId())
+                && x.getMainMenuId().equals(settingParameter.mainMenuId()))
         .findAny()
         .orElseGet(() -> null);
   }
@@ -58,10 +57,9 @@ public class EventAdminMainMenuService
   @Override
   public List<MainMenu> findList(SettingParameter settingParameter) {
     return mainMenuList.stream()
-        .filter(
-            x ->
-                x.getAdminProjectId().equals(settingParameter.adminProjectId())
-                    && x.getProjectId().equals(settingParameter.projectId()))
+        .filter(x ->
+            x.getAdminProjectId().equals(settingParameter.adminProjectId())
+                && x.getProjectId().equals(settingParameter.projectId()))
         .collect(Collectors.toList());
   }
 }

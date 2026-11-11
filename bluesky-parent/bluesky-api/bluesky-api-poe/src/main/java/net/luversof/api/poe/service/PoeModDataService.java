@@ -334,20 +334,19 @@ public class PoeModDataService {
    */
   public List<ModItemClass> itemClassesForList() {
     return data.itemClasses().stream()
-        .map(
-            c -> {
-              ClassMods mods = forItemClass(c.itemClass(), null);
-              return mods == null
-                  ? c
-                  : new ModItemClass(
-                      c.itemClass(),
-                      c.name(),
-                      c.nameKo(),
-                      c.variants(),
-                      c.influences(),
-                      mods.prefixes().stream().map(NamedFamily::key).toList(),
-                      mods.suffixes().stream().map(NamedFamily::key).toList());
-            })
+        .map(c -> {
+          ClassMods mods = forItemClass(c.itemClass(), null);
+          return mods == null
+              ? c
+              : new ModItemClass(
+                  c.itemClass(),
+                  c.name(),
+                  c.nameKo(),
+                  c.variants(),
+                  c.influences(),
+                  mods.prefixes().stream().map(NamedFamily::key).toList(),
+                  mods.suffixes().stream().map(NamedFamily::key).toList());
+        })
         .toList();
   }
 
@@ -448,21 +447,20 @@ public class PoeModDataService {
       List<ModTier> tiers =
           nf.family().tiers().stream()
               .filter(t -> w.containsKey(t.id()))
-              .map(
-                  t ->
-                      t.weight() == w.get(t.id())
-                          ? t
-                          : new ModTier(
-                              t.id(),
-                              t.name(),
-                              t.nameKo(),
-                              t.ilvl(),
-                              w.get(t.id()),
-                              t.en(),
-                              t.enMin(),
-                              t.ko(),
-                              t.koMin(),
-                              t.rem()))
+              .map(t ->
+                  t.weight() == w.get(t.id())
+                      ? t
+                      : new ModTier(
+                          t.id(),
+                          t.name(),
+                          t.nameKo(),
+                          t.ilvl(),
+                          w.get(t.id()),
+                          t.en(),
+                          t.enMin(),
+                          t.ko(),
+                          t.koMin(),
+                          t.rem()))
               .toList();
       if (!tiers.isEmpty()) {
         out.add(
@@ -557,11 +555,10 @@ public class PoeModDataService {
 
   private List<NamedFamily> resolve(List<String> keys) {
     return keys.stream()
-        .map(
-            k -> {
-              ModFamily f = data.families().get(k);
-              return f == null ? null : new NamedFamily(k, f);
-            })
+        .map(k -> {
+          ModFamily f = data.families().get(k);
+          return f == null ? null : new NamedFamily(k, f);
+        })
         .filter(java.util.Objects::nonNull)
         .toList();
   }

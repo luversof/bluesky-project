@@ -88,10 +88,9 @@ public class AssetService {
     bookAccess.requireMember(bookId, userId);
     var deltas = entryQuery.balanceDeltas(bookId);
     return assetRepository.findByBookIdOrderByDisplayOrder(bookId).stream()
-        .map(
-            a ->
-                new AssetBalance(
-                    a, a.openingBalance().add(deltas.getOrDefault(a.id(), BigDecimal.ZERO))))
+        .map(a ->
+            new AssetBalance(
+                a, a.openingBalance().add(deltas.getOrDefault(a.id(), BigDecimal.ZERO))))
         .toList();
   }
 

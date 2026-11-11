@@ -1028,13 +1028,12 @@ public class Poe2CraftCalcService {
     Poe2CraftService.BoneInfo bone =
         (o.bones() == null ? List.<Poe2CraftService.BoneInfo>of() : o.bones())
             .stream()
-                .filter(
-                    b ->
-                        b.classes() != null
-                            && b.classes().contains(cls)
-                            && b.maxIlvl() == 0
-                            && b.minModLevel() == 0
-                            && !b.breach())
+                .filter(b ->
+                    b.classes() != null
+                        && b.classes().contains(cls)
+                        && b.maxIlvl() == 0
+                        && b.minModLevel() == 0
+                        && !b.breach())
                 .findFirst()
                 .orElse(null);
     if (bone == null) {
@@ -1230,9 +1229,8 @@ public class Poe2CraftCalcService {
     return cand.stream()
         .filter(m -> m.successes() > 0)
         .min(
-            java.util.Comparator.comparing(
-                    (Method m) ->
-                        m.costPerSuccess() == null ? Double.MAX_VALUE : m.costPerSuccess())
+            java.util.Comparator.comparing((Method m) ->
+                    m.costPerSuccess() == null ? Double.MAX_VALUE : m.costPerSuccess())
                 .thenComparing(m -> -m.successRate()))
         .orElse(cand.get(0));
   }
@@ -1775,13 +1773,12 @@ public class Poe2CraftCalcService {
     int total = done;
     List<DistLine> lines =
         fam.entrySet().stream()
-            .map(
-                e ->
-                    new DistLine(
-                        e.getKey().substring(e.getKey().indexOf('|') + 1),
-                        e.getKey().substring(0, e.getKey().indexOf('|')),
-                        (double) e.getValue()[0] / total,
-                        (double) e.getValue()[1] / total))
+            .map(e ->
+                new DistLine(
+                    e.getKey().substring(e.getKey().indexOf('|') + 1),
+                    e.getKey().substring(0, e.getKey().indexOf('|')),
+                    (double) e.getValue()[0] / total,
+                    (double) e.getValue()[1] / total))
             .sorted(java.util.Comparator.comparingDouble(DistLine::share).reversed())
             .toList();
     Map<Integer, Double> affixes = new java.util.TreeMap<>();

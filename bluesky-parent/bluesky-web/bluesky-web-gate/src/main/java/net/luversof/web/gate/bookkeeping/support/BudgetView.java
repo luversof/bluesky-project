@@ -83,24 +83,22 @@ public final class BudgetView {
     budgets.stream()
         .filter(b -> b.categoryId() == null)
         .findFirst()
-        .ifPresent(
-            b ->
-                lines.add(
-                    line(
-                        BookkeepingView.msg("bookkeeping.budget.total"),
-                        b.amount(),
-                        sum(expense, t -> true))));
+        .ifPresent(b ->
+            lines.add(
+                line(
+                    BookkeepingView.msg("bookkeeping.budget.total"),
+                    b.amount(),
+                    sum(expense, t -> true))));
     for (var c : categories) {
       budgets.stream()
           .filter(b -> c.id().equals(b.categoryId()))
           .findFirst()
-          .ifPresent(
-              b ->
-                  lines.add(
-                      line(
-                          c.name(),
-                          b.amount(),
-                          sum(expense, t -> c.id().equals(topId(byId, t.categoryId()))))));
+          .ifPresent(b ->
+              lines.add(
+                  line(
+                      c.name(),
+                      b.amount(),
+                      sum(expense, t -> c.id().equals(topId(byId, t.categoryId()))))));
     }
     return new Status(lines, false, List.copyOf(missing));
   }

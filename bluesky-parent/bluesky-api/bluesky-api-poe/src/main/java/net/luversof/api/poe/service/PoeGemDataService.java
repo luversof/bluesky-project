@@ -148,11 +148,10 @@ public class PoeGemDataService {
 
     return data.gems().stream()
         .filter(gem -> PoeSearchText.matches(normalizedQuery, gem.name(), gem.nameKo()))
-        .filter(
-            gem ->
-                type == null
-                    || "all".equals(type)
-                    || ("support".equals(type) ? gem.isSupport() : !gem.isSupport()))
+        .filter(gem ->
+            type == null
+                || "all".equals(type)
+                || ("support".equals(type) ? gem.isSupport() : !gem.isSupport()))
         .filter(gem -> color == null || "all".equals(color) || color.equals(gem.color()))
         .filter(gem -> tagFilter == null || (gem.tags() != null && gem.tags().contains(tagFilter)))
         .toList();

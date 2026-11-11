@@ -532,17 +532,16 @@ public final class Poe2 {
           variants == null
               ? null
               : variants.stream()
-                  .map(
-                      v ->
-                          new UniqueVariant(
-                              v.index(),
-                              v.name(),
-                              v.nameKo(),
-                              v.implicits(),
-                              v.implicitsKo(),
-                              v.explicits(),
-                              v.explicitsKo(),
-                              null))
+                  .map(v ->
+                      new UniqueVariant(
+                          v.index(),
+                          v.name(),
+                          v.nameKo(),
+                          v.implicits(),
+                          v.implicitsKo(),
+                          v.explicits(),
+                          v.explicitsKo(),
+                          null))
                   .toList();
       return new Unique(
           name,

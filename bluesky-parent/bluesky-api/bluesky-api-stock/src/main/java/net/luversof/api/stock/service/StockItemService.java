@@ -203,8 +203,7 @@ public class StockItemService {
                             Collectors.toCollection(LinkedHashSet::new)),
                         ArrayList::new)));
 
-    stockItems.forEach(
-        stockItem ->
-            stockItem.setTags(tagsByStockItemId.getOrDefault(stockItem.getId(), List.of())));
+    stockItems.forEach(stockItem ->
+        stockItem.setTags(tagsByStockItemId.getOrDefault(stockItem.getId(), List.of())));
   }
 }

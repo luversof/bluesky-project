@@ -349,19 +349,18 @@ public class Poe2BuildService {
 
   private static Map<String, Object> rareJson(Map<String, RareSpec> rares) {
     Map<String, Object> rareJson = new LinkedHashMap<>();
-    rares.forEach(
-        (slot, spec) ->
-            rareJson.put(
-                slot,
-                Map.of(
-                    "base",
-                    spec.base(),
-                    "implicits",
-                    spec.implicits(),
-                    "cands",
-                    spec.cands().stream()
-                        .map(c -> Map.of("gen", c.gen(), "fam", c.modType(), "lines", c.lines()))
-                        .toList())));
+    rares.forEach((slot, spec) ->
+        rareJson.put(
+            slot,
+            Map.of(
+                "base",
+                spec.base(),
+                "implicits",
+                spec.implicits(),
+                "cands",
+                spec.cands().stream()
+                    .map(c -> Map.of("gen", c.gen(), "fam", c.modType(), "lines", c.lines()))
+                    .toList())));
     return rareJson;
   }
 
@@ -480,14 +479,13 @@ public class Poe2BuildService {
       }
       Optional<Poe2.BaseItem> base = data.baseByName(it.baseType());
       List<String> implicits =
-          base.map(
-                  b ->
-                      b.implicits() == null
-                          ? List.<String>of()
-                          : b.implicits().stream()
-                              .map(l -> midRoll(l.en()))
-                              .filter(java.util.Objects::nonNull)
-                              .toList())
+          base.map(b ->
+                  b.implicits() == null
+                      ? List.<String>of()
+                      : b.implicits().stream()
+                          .map(l -> midRoll(l.en()))
+                          .filter(java.util.Objects::nonNull)
+                          .toList())
               .orElse(List.of());
       out.put(
           it.slot(),
@@ -521,11 +519,10 @@ public class Poe2BuildService {
     }
     // 오르는 폭이 큰 칸부터(DPS·EHP 중 큰 쪽)
     out.sort(
-        java.util.Comparator.comparingDouble(
-                (Poe2.GuideRareTarget r) ->
-                    -Math.max(
-                        r.dps() == null || r.dps().dps() == null ? -1e9 : r.dps().dps(),
-                        r.ehp() == null || r.ehp().ehp() == null ? -1e9 : r.ehp().ehp()))
+        java.util.Comparator.comparingDouble((Poe2.GuideRareTarget r) ->
+                -Math.max(
+                    r.dps() == null || r.dps().dps() == null ? -1e9 : r.dps().dps(),
+                    r.ehp() == null || r.ehp().ehp() == null ? -1e9 : r.ehp().ehp()))
             .thenComparing(Poe2.GuideRareTarget::slot));
     return out;
   }
@@ -947,24 +944,20 @@ public class Poe2BuildService {
     for (int i = 0; i + 1 < lines.length; i++) {
       if (lines[i].trim().equalsIgnoreCase("Rarity: UNIQUE")) {
         return data.uniqueByName(lines[i + 1].trim())
-            .map(
-                u -> {
-                  Integer variant =
-                      u.variants() == null
-                          ? null
-                          : net.luversof.api.poe.service.PoePobImportService.matchVariantLines(
-                              u.variants().stream()
-                                  .map(
-                                      v ->
-                                          java.util.Map.entry(
-                                              v.index(),
-                                              v.explicits() == null
-                                                  ? List.<String>of()
-                                                  : v.explicits()))
-                                  .toList(),
-                              text);
-                  return variant == null ? u.slug() : u.slug() + ":" + variant;
-                })
+            .map(u -> {
+              Integer variant =
+                  u.variants() == null
+                      ? null
+                      : net.luversof.api.poe.service.PoePobImportService.matchVariantLines(
+                          u.variants().stream()
+                              .map(v ->
+                                  java.util.Map.entry(
+                                      v.index(),
+                                      v.explicits() == null ? List.<String>of() : v.explicits()))
+                              .toList(),
+                          text);
+              return variant == null ? u.slug() : u.slug() + ":" + variant;
+            })
             .orElse(null);
       }
     }
