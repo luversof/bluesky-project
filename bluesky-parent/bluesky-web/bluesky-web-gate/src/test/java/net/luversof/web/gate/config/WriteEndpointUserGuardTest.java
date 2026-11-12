@@ -16,9 +16,9 @@ import org.junit.jupiter.api.Test;
 /**
  * 블로그 · 게시판 · 가계부 컨트롤러는 사용자 id 를 {@code UserUtil.requireUserId()}(없으면 401)로만 얻는다(2026-10-28 감사).
  *
- * <p>{@code @BlueskyPreAuthorize} 는 메서드 보안이 꺼져 있어 아무것도 막지 않는다(주식 쪽은 {@code
- * StockEndpointAuthGuardTest} 가 같은 사실을 지킨다). {@code getUserId()} 는 비로그인이면 null 이라, 쓰기 경로에서 쓰면 NPE
- * 500 이 나거나 null 사용자로 API 까지 갔다.
+ * <p>{@code @BlueskyPreAuthorize} 는 2026-11-13 부터 동작하지만(GateMethodSecurityConfig) 빠뜨린 엔드포인트를 위해 이
+ * 검사를 두 번째 방어선으로 둔다(주식 쪽은 {@code StockEndpointAuthGuardTest}). {@code getUserId()} 는 비로그인이면 null
+ * 이라, 쓰기 경로에서 쓰면 NPE 500 이 나거나 null 사용자로 API 까지 갔다.
  */
 class WriteEndpointUserGuardTest {
 

@@ -27,9 +27,9 @@ import net.luversof.web.gate.stock.support.StockViewSupport;
 /**
  * 관리자용 대량 적재 API.
  *
- * <p>본문 없이 호출되고 세션 사용자를 그대로 백엔드에 넘기는데, {@code @BlueskyPreAuthorize} 는 메서드 보안이 꺼져 있어 실효가 없다(실측: 같은
- * 방식의 {@code /api/stock/stockItem/search/...} 가 비로그인 200). 그대로 두면 로그인 없이 대량 적재가 트리거되고 userId 로 null
- * 이 넘어간다. 세션 사용자를 직접 확인해 401 로 끊는다.
+ * <p>본문 없이 호출되고 세션 사용자를 그대로 백엔드에 넘긴다. {@code @BlueskyPreAuthorize} 가 비로그인을 먼저 막고(2026-11-13 부터, 그
+ * 전엔 메서드 보안이 꺼져 비로그인 200 이었다), 세션 사용자를 한 번 더 직접 확인해 401 로 끊는다 - 막지 못하면 로그인 없이 대량 적재가 트리거되고 userId 로
+ * null 이 넘어간다.
  */
 @RestController
 @RequestMapping("/api/stock/admin")

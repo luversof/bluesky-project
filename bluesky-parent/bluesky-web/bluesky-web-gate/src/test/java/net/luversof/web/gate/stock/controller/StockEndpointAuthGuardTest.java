@@ -19,10 +19,9 @@ import org.junit.jupiter.api.Test;
  * 주식 컨트롤러의 모든 엔드포인트가 스스로 로그인 여부를 확인하는지 본다.
  *
  * <p>이 앱은 URL 단위 인가가 없다 — 시큐리티 체인이 {@code anyRequest().permitAll()} 이고 CSRF 도 꺼져 있으며,
- * {@code @BlueskyPreAuthorize}({@code @PreAuthorize("hasRole('USER')")}) 는 메서드 보안이 켜져 있지 않아 실효가
- * 없다(실측: 로그인 없이 {@code GET /api/stock/stockItem/search/findByName/…} 가 200 과 종목 정보를 돌려줬다 - 그 엔드포인트는
- * 부르는 곳이 없어 2026-10-22 에 지웠다). 즉 보호는 전적으로 컨트롤러 안의 수동 검사에 달려 있어서, 새 엔드포인트에서 한 번 빠뜨리면 그대로 공개된다. 그 실수를
- * 빌드에서 잡는다.
+ * {@code @BlueskyPreAuthorize}({@code @PreAuthorize("hasRole('USER')")}) 는 2026-11-13 까지 메서드 보안이 꺼져
+ * 실효가 없었다(실측: 로그인 없이 {@code GET /api/stock/stockItem/search/findByName/…} 가 200 과 종목 정보를 돌려줬다). 지금은
+ * GateMethodSecurityConfig 로 동작하지만 어노테이션은 빠뜨리기 쉬워, 컨트롤러 안의 수동 검사를 두 번째 방어선으로 두고 그 누락을 빌드에서 잡는다.
  *
  * <p>소스를 직접 읽는 이유: 검사 여부가 메서드 '본문'에 있어 리플렉션으로는 보이지 않는다.
  */

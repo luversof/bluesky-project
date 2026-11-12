@@ -10,6 +10,7 @@ import org.springframework.context.EnvironmentAware;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -54,6 +55,10 @@ public class StockHtmxErrorResolver implements HandlerExceptionResolver, Environ
       HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
     String uri = request.getRequestURI();
     if (uri == null || !uri.startsWith("/stock")) {
+      return null;
+    }
+    // 인가 실패는 Spring Security 가 로그인 안내 · 403 으로 처리한다(GateMethodSecurityConfig).
+    if (ex instanceof AccessDeniedException) {
       return null;
     }
     // JSON API 는 지금의 오류 응답(problem detail)을 그대로 둔다. HTML 을 돌려주면 규격이 깨진다.

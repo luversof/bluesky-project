@@ -42,8 +42,9 @@ public final class UserUtil {
   /**
    * 로그인한 사용자 id - 없으면 401.
    *
-   * <p>게이트의 @BlueskyPreAuthorize 는 메서드 보안이 꺼져 있어 아무것도 막지 않는다. 그래서 쓰기 경로는 이걸로 직접 확인한다 - 예전엔 비로그인 요청이
-   * getUserId().toString() 에서 NPE 500 이 나거나, null 사용자로 API 까지 갔다(2026-10-28 감사).
+   * <p>게이트의 @BlueskyPreAuthorize 가 먼저 막지만(2026-11-13 부터, 그 전엔 메서드 보안이 꺼져 실효가 없었다) 어노테이션을 빠뜨린 엔드포인트도
+   * 있으니 쓰기 경로는 이걸로 한 번 더 확인한다 - 예전엔 비로그인 요청이 getUserId().toString() 에서 NPE 500 이 나거나, null 사용자로 API
+   * 까지 갔다(2026-10-28 감사).
    *
    * @return 사용자 id
    */

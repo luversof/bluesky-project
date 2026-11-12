@@ -1,8 +1,14 @@
 package net.luversof.client.user.config;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
@@ -15,6 +21,8 @@ import net.luversof.client.user.httpexchange.UserInfoApiClient;
 
 @Service
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
+
+  private static final Logger log = LoggerFactory.getLogger(CustomOAuth2UserService.class);
 
   private final UserInfoApiClient userInfoApiClient;
   private final DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
@@ -54,7 +62,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
       userInfo = userInfoApiClient.saveOAuth2User(request);
     } catch (Exception e) {
       // Log error but allow login to proceed
-      e.printStackTrace();
+      log.warn("saveOAuth2User failed. provider: {}", provider, e);
     }
 
     Map<String, Object> attributes = new HashMap<>(oauth2User.getAttributes());
@@ -69,7 +77,17 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             .getUserInfoEndpoint()
             .getUserNameAttributeName();
 
-    return new DefaultOAuth2User(oauth2User.getAuthorities(), attributes, userNameAttributeName);
+    return new DefaultOAuth2User(withUserRole(oauth2User), attributes, userNameAttributeName);
+  }
+
+  /**
+   * GitHub 가 주는 권한(OAUTH2_USER, SCOPE_*)에 ROLE_USER 를 더한다. 게이트의 {@code @BlueskyPreAuthorize} 가
+   * {@code hasRole('USER')} 라, 이게 없으면 로그인한 사용자도 막힌다.
+   */
+  static Set<GrantedAuthority> withUserRole(OAuth2User oauth2User) {
+    Set<GrantedAuthority> authorities = new LinkedHashSet<>(oauth2User.getAuthorities());
+    authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+    return authorities;
   }
 
   private String normalizeProvider(String provider) {
