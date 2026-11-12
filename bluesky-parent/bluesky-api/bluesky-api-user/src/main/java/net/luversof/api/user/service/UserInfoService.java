@@ -3,6 +3,7 @@ package net.luversof.api.user.service;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -61,38 +62,19 @@ public class UserInfoService {
       String provider, String providerId, String username, String email, String avatarUrl) {
     // Provider 정규화 (github-local → github)
     provider = normalizeProvider(provider);
-    System.out.println(
-        "saveOAuth2User 호출: provider="
-            + provider
-            + ", providerId="
-            + providerId
-            + ", username="
-            + username);
 
     // 기존 사용자 확인
     Optional<UserInfo> existingUser = findByProviderAndProviderId(provider, providerId);
-    System.out.println(
-        "기존 사용자 조회 결과: "
-            + (existingUser.isPresent() ? "존재 (id=" + existingUser.get().getId() + ")" : "없음"));
 
     if (existingUser.isPresent()) {
       // 기존 사용자 업데이트 - email과 avatarUrl만 갱신
       UserInfo userInfo = existingUser.get();
       userInfo.setEmail(email);
       userInfo.setAvatarUrl(avatarUrl);
-      System.out.println(
-          "기존 사용자 업데이트: id=" + userInfo.getId() + ", username=" + userInfo.getUsername());
       return save(userInfo);
     }
 
-    // 신규 사용자 생성 - username을 provider와 결합하여 유니크하게
-    String uniqueUsername = username + "_" + provider;
-
-    // 중복 확인 후 번호 추가
-    Optional<UserInfo> duplicateCheck = findByUsername(uniqueUsername);
-    if (duplicateCheck.isPresent()) {
-      uniqueUsername = username + "_" + provider + "_" + providerId;
-    }
+    String uniqueUsername = uniqueUsername(username, provider, providerId, this::findByUsername);
 
     UserInfo userInfo = new UserInfo();
     // setId()를 호출하지 않음 - BeforeConvertCallback이 자동으로 UUID 생성
@@ -102,9 +84,20 @@ public class UserInfoService {
     userInfo.setEmail(email);
     userInfo.setAvatarUrl(avatarUrl);
 
-    System.out.println("신규 사용자 생성 시도: username=" + uniqueUsername);
-    UserInfo saved = save(userInfo);
-    System.out.println("저장 완료: id=" + saved.getId());
-    return saved;
+    return save(userInfo);
+  }
+
+  /**
+   * 신규 사용자 username: {@code <username>_<provider>}, 이미 있으면 {@code <provider>_<providerId>}. 대체 이름은
+   * (provider, providerId) 유니크라 겹치지 않는다. 예전 대체 이름 {@code <username>_<provider>_<providerId>} 는
+   * GitHub 로그인 39 자면 UserInfo.username VARCHAR(50) 을 넘어 첫 로그인이 실패했다(2026-11-08 감사).
+   */
+  static String uniqueUsername(
+      String username,
+      String provider,
+      String providerId,
+      Function<String, Optional<UserInfo>> findByUsername) {
+    String preferred = username + "_" + provider;
+    return findByUsername.apply(preferred).isPresent() ? provider + "_" + providerId : preferred;
   }
 }

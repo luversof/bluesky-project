@@ -41,7 +41,7 @@ ORIGINAL_SYMBOLS = '498400,476800,0018C0,475720,0094M0,329200,472150,0104P0,0059
 RESULTS = None
 # Past inputs do not change, and each /input call reads the KIS config and calls KIS for the market lines.
 # Delete this folder to rebuild them (after an input change in the API).
-INPUTS = os.path.join(OUT_DIR, 'inputs')
+INPUTS = os.environ.get('BLUESKY_REPLAY_INPUTS') or os.path.join(OUT_DIR, 'inputs')  # other dir: input-change candidates
 
 
 def user_env(name):

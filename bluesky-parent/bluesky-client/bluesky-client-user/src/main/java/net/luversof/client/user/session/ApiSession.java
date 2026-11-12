@@ -6,6 +6,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.session.MapSession;
 import org.springframework.session.Session;
 
@@ -14,6 +16,8 @@ import net.luversof.client.user.httpexchange.UserInfoApiClient;
 public class ApiSession implements Session, Serializable {
 
   private static final long serialVersionUID = 1L;
+
+  private static final Logger log = LoggerFactory.getLogger(ApiSession.class);
 
   private final MapSession delegate;
   private final UserInfoApiClient userInfoApiClient;
@@ -68,9 +72,8 @@ public class ApiSession implements Session, Serializable {
     try {
       ApiSessionRepository.deleteOnServer(userInfoApiClient, oldSessionId);
     } catch (RuntimeException e) {
-      System.err.println(
-          "ApiSession.changeSessionId old session delete failed. id: " + oldSessionId);
-      e.printStackTrace();
+      // The session id is a login credential, so it is not logged.
+      log.warn("old session delete failed after changeSessionId", e);
     }
     return newSessionId;
   }

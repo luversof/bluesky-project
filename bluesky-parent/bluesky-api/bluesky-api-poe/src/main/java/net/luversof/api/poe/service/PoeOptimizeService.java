@@ -373,12 +373,10 @@ public class PoeOptimizeService {
   private final Path facetNamesFile;
 
   private final Path resultFile;
-  // 완료된 결과를 최근 N건까지 남기는 이력 디렉터리(파일명 = 저장 시각 epochMs). optimize-last.json 은 그대로 "마지막 1건" 용도.
-  private final Path historyDir;
+  // 완료된 결과를 최근 N건까지 남기는 이력. optimize-last.json 은 그대로 "마지막 1건" 용도.
+  private final PoeOptimizeHistoryService historyService;
   // poe.ninja 시드 파일(엔진 벤치는 같은 폴더) — 데이터 갱신 후 reloadNinja() 로 다시 읽는다.
   private final Path ninjaSeedFile;
-  // 최근 결과 보관 상한 — 오래된 것부터 정리. 결과 JSON 한 건이 크지 않아 30건이면 화면 목록으로 충분.
-  private static final int HISTORY_LIMIT = 30;
   private final String treeVersion;
   private final int parallelism;
 
@@ -448,6 +446,7 @@ public class PoeOptimizeService {
       PoeEngineUnmodeledDataService poeEngineUnmodeledDataService,
       PoeSpectreDataService poeSpectreDataService,
       PoeMercenaryService poeMercenaryService,
+      PoeOptimizeHistoryService historyService,
       @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir,
       @Value("${poe.sim.tree-version:3_29}") String treeVersion,
       @Value("${poe.sim.parallelism:0}") int parallelism,
@@ -474,7 +473,7 @@ public class PoeOptimizeService {
     this.resultFile = Path.of(dataDir, "sim", "optimize-last.json");
     this.atlasTreeFile = Path.of(dataDir, "atlas-tree.json");
     this.facetNamesFile = Path.of(dataDir, "facet-names-ko.json");
-    this.historyDir = Path.of(dataDir, "sim", "history");
+    this.historyService = historyService;
     this.treeVersion = treeVersion;
     this.pobSourceDir = pobSourceDir;
     // 병렬성 미지정(≤0)이면 엔진 워커 풀 크기와 일치시킨다(executor 스레드마다 워커 1개 배정 →
@@ -1701,129 +1700,6 @@ public class PoeOptimizeService {
     }
   }
 
-  /** 최근 결과 이력 한 건의 목록용 요약(전체 결과 JSON 은 historyResult(id) 로 별도 조회). id = 저장 시각 epochMs. */
-  public record OptimizeHistoryEntry(
-      long id,
-      String gemName,
-      String gemNameKo,
-      String className,
-      String classNameKo,
-      String ascendancy,
-      String ascendancyKo,
-      String objective,
-      String scenario,
-      String scenarioKo,
-      boolean combatBuffs,
-      String finalValue,
-      int evalCount,
-      long durationMs) {}
-
-  /** 완료 결과를 sim/history/&lt;epochMs&gt;.json 으로 남기고 상한(HISTORY_LIMIT)을 넘는 오래된 건을 정리한다. */
-  private void saveHistory(String resultJson) {
-    try {
-      Files.createDirectories(historyDir);
-      Files.writeString(
-          historyDir.resolve(System.currentTimeMillis() + ".json"),
-          resultJson,
-          StandardCharsets.UTF_8);
-      pruneHistory();
-    } catch (Exception e) {
-      logger.warn("PoE 최적화 이력 저장 실패", e);
-    }
-  }
-
-  /** epochMs 파일명은 13자리 고정폭이라 문자열 내림차순 = 시각 내림차순 — 상위 N 건만 남기고 삭제. */
-  private void pruneHistory() throws java.io.IOException {
-    try (var stream = Files.list(historyDir)) {
-      var files =
-          stream
-              .filter(p -> p.getFileName().toString().endsWith(".json"))
-              .sorted(Comparator.comparing((Path p) -> p.getFileName().toString()).reversed())
-              .toList();
-      for (int i = HISTORY_LIMIT; i < files.size(); i++) {
-        try {
-          Files.deleteIfExists(files.get(i));
-        } catch (java.io.IOException ignore) {
-          // 개별 삭제 실패는 무시 — 다음 실행에서 다시 정리된다
-        }
-      }
-    }
-  }
-
-  /** 최근 결과 목록(최신순, 최대 HISTORY_LIMIT). 파일이 없으면 빈 목록. */
-  public List<OptimizeHistoryEntry> history() {
-    if (!Files.exists(historyDir)) {
-      return List.of();
-    }
-    JsonMapper jsonMapper = JsonMapper.builder().build();
-    try (var stream = Files.list(historyDir)) {
-      return stream
-          .filter(p -> p.getFileName().toString().endsWith(".json"))
-          .sorted(Comparator.comparing((Path p) -> p.getFileName().toString()).reversed())
-          .limit(HISTORY_LIMIT)
-          .map(p -> {
-            try {
-              long id = Long.parseLong(p.getFileName().toString().replace(".json", ""));
-              PoeOptimizeResult r =
-                  jsonMapper.readValue(Files.readString(p), PoeOptimizeResult.class);
-              return new OptimizeHistoryEntry(
-                  id,
-                  r.gemName(),
-                  r.gemNameKo(),
-                  r.className(),
-                  r.classNameKo(),
-                  r.ascendancy(),
-                  r.ascendancyKo(),
-                  r.objective(),
-                  r.scenario(),
-                  r.scenarioKo(),
-                  r.combatBuffs(),
-                  r.finalValue(),
-                  r.evalCount(),
-                  r.durationMs());
-            } catch (Exception e) {
-              return null; // 깨진 파일 한 건이 목록 전체를 막지 않게
-            }
-          })
-          .filter(java.util.Objects::nonNull)
-          .toList();
-    } catch (java.io.IOException e) {
-      logger.warn("PoE 최적화 이력 조회 실패", e);
-      return List.of();
-    }
-  }
-
-  /** 이력 결과 한 건 전체 조회(id = 저장 시각 epochMs) — 없거나 깨졌으면 null. */
-  public PoeOptimizeResult historyResult(long id) {
-    Path file = historyDir.resolve(id + ".json");
-    if (!Files.exists(file)) {
-      return null;
-    }
-    try {
-      return JsonMapper.builder()
-          .build()
-          .readValue(Files.readString(file), PoeOptimizeResult.class);
-    } catch (Exception e) {
-      logger.warn("PoE 최적화 이력 로드 실패: {}", id, e);
-      return null;
-    }
-  }
-
-  /** 최근 결과 이력 한 건 삭제(사용자 요청). id = 저장 시각 epochMs. 삭제했으면 true. */
-  public boolean deleteHistory(long id) {
-    Path file = historyDir.resolve(id + ".json");
-    // 디렉토리 이탈 방지 — 정규화 경로가 historyDir 하위인지 확인
-    if (!file.normalize().startsWith(historyDir.normalize())) {
-      return false;
-    }
-    try {
-      return Files.deleteIfExists(file);
-    } catch (Exception e) {
-      logger.warn("PoE 최적화 이력 삭제 실패: {}", id, e);
-      return false;
-    }
-  }
-
   public boolean isAvailable() {
     return poePobEngineService.isAvailable()
         && poeGemDataService.hasData()
@@ -3023,7 +2899,7 @@ public class PoeOptimizeService {
       if (thoroughBestJson != null && !cancelRequested) {
         lastStatus = Status.SUCCESS;
         if (saveHistoryForRun) {
-          saveHistory(thoroughBestJson);
+          historyService.save(thoroughBestJson);
         }
         log("완주 모드 종료: 패스 " + pass + "회 · 최선 목표값 " + format(thoroughBestObjective));
       }
@@ -10812,7 +10688,7 @@ public class PoeOptimizeService {
         this.lastResult = result;
         // 사용자 실행이면 최근 결과 이력에도 남긴다(QA 배터리는 saveHistoryForRun=false 로 제외)
         if (saveHistoryForRun && !thoroughRun) {
-          saveHistory(resultJson);
+          historyService.save(resultJson);
         }
       } else {
         log(

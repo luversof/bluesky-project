@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.session.MapSession;
 import org.springframework.session.SessionRepository;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -25,6 +27,8 @@ import net.luversof.client.user.httpexchange.UserInfoApiClient.CreateSessionRequ
 import net.luversof.client.user.httpexchange.UserInfoApiClient.DeleteSessionRequest;
 
 public class ApiSessionRepository implements SessionRepository<ApiSession> {
+
+  private static final Logger log = LoggerFactory.getLogger(ApiSessionRepository.class);
 
   private final UserInfoApiClient userInfoApiClient;
 
@@ -58,11 +62,11 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
           Object value = session.getAttribute(name);
           Object serialized = serialize(value);
           if (value != null && serialized == null) {
-            System.err.println(
-                "ApiSessionRepository.save serialization failed. key: "
-                    + name
-                    + ", value: "
-                    + value);
+            // Never log the value: it can be a security context or an OAuth2 token.
+            log.warn(
+                "session attribute not serializable. key: {}, type: {}",
+                name,
+                value.getClass().getName());
           }
           attributes.put(name, serialized);
         });
@@ -108,7 +112,8 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
     try {
       var userInfo = userInfoApiClient.validateSession(id);
       if (userInfo == null) {
-        System.err.println("ApiSessionRepository.findById failed. userInfo is null. id: " + id);
+        // The session id is a login credential, so it is not logged.
+        log.debug("session not found on server");
         return null;
       }
 
@@ -137,7 +142,7 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
       apiSession.setSavedAttributes(savedAttributes);
       return apiSession;
     } catch (Exception e) {
-      e.printStackTrace();
+      log.warn("session load failed", e);
       return null;
     }
   }
@@ -163,8 +168,7 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
       out.writeObject(object);
       return Base64.getEncoder().encodeToString(bos.toByteArray());
     } catch (IOException e) {
-      System.err.println("Failed to serialize object: " + object.getClass().getName());
-      e.printStackTrace();
+      log.debug("serialize failed: {}", object.getClass().getName(), e);
       return null;
     }
   }
@@ -176,8 +180,8 @@ public class ApiSessionRepository implements SessionRepository<ApiSession> {
         in.setObjectInputFilter(SESSION_CLASS_FILTER);
         return in.readObject();
       } catch (IOException | ClassNotFoundException e) {
-        System.err.println("Failed to deserialize object: " + object);
-        e.printStackTrace();
+        // The bytes are a serialized session value; log only why it failed.
+        log.warn("session attribute not readable: {}", e.toString());
         return null;
       }
     }

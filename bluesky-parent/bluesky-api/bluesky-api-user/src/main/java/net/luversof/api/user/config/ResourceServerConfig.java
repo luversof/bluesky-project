@@ -21,8 +21,6 @@ public class ResourceServerConfig {
     http.securityMatcher("/api/**")
         .authorizeHttpRequests(authorize ->
             authorize
-                .requestMatchers("/api/oAuth2AuthorizedClient/**")
-                .permitAll()
                 .requestMatchers(
                     "/api/userInfo/oauth2",
                     "/api/userInfo/search/findByProvider",

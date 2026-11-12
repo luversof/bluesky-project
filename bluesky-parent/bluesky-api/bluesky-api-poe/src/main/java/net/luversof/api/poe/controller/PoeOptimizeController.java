@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import net.luversof.api.poe.service.PoeOptimizeHistoryService;
 import net.luversof.api.poe.service.PoeOptimizeResult;
 import net.luversof.api.poe.service.PoeOptimizeService;
 import net.luversof.api.poe.service.PoeRealStartService;
@@ -22,11 +23,15 @@ public class PoeOptimizeController {
 
   private final PoeOptimizeService poeOptimizeService;
   private final PoeRealStartService poeRealStartService;
+  private final PoeOptimizeHistoryService poeOptimizeHistoryService;
 
   public PoeOptimizeController(
-      PoeOptimizeService poeOptimizeService, PoeRealStartService poeRealStartService) {
+      PoeOptimizeService poeOptimizeService,
+      PoeRealStartService poeRealStartService,
+      PoeOptimizeHistoryService poeOptimizeHistoryService) {
     this.poeOptimizeService = poeOptimizeService;
     this.poeRealStartService = poeRealStartService;
+    this.poeOptimizeHistoryService = poeOptimizeHistoryService;
   }
 
   /**
@@ -148,19 +153,19 @@ public class PoeOptimizeController {
 
   /** 최근 결과 목록(최신순) — 목록 표시용 요약만. 전체 결과는 {@code /result?id=} 로 조회. */
   @GetMapping("/history")
-  public List<PoeOptimizeService.OptimizeHistoryEntry> history() {
-    return poeOptimizeService.history();
+  public List<PoeOptimizeHistoryService.OptimizeHistoryEntry> history() {
+    return poeOptimizeHistoryService.list();
   }
 
   /** 이력 결과 한 건 전체 조회 — 없거나 깨졌으면 null. */
   @GetMapping("/result")
   public PoeOptimizeResult result(@RequestParam long id) {
-    return poeOptimizeService.historyResult(id);
+    return poeOptimizeHistoryService.result(id);
   }
 
   /** 이력 한 건 삭제(사용자 요청). 삭제 성공 여부 반환. */
   @DeleteMapping("/history/{id}")
   public boolean deleteHistory(@PathVariable long id) {
-    return poeOptimizeService.deleteHistory(id);
+    return poeOptimizeHistoryService.delete(id);
   }
 }

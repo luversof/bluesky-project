@@ -10,7 +10,6 @@
 	<artifactId>bluesky-app</artifactId>
 	<packaging>pom</packaging>
 	<modules>
-		<module>bluesky-app-statemachine</module>
 		<module>bluesky-app-google</module>
 	</modules>
 </project>
