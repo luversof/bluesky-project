@@ -12,7 +12,7 @@
 			<span class="flex flex-wrap items-center gap-0.5 max-w-full pt-0.5">
 				@for(PoeAnointEntry.OilRef oil : a.oils())
 					@if(oil.icon() != null)
-						<img src="/poe-assets/${oil.icon()}" class="w-6 h-6 object-contain" alt="${ko ? oil.nameKo() : oil.name()}" title="${ko ? oil.nameKo() : oil.name()}" loading="lazy">
+						<img src="/poe-data/poe1/icons/${oil.icon()}" class="w-6 h-6 object-contain" alt="${ko ? oil.nameKo() : oil.name()}" title="${ko ? oil.nameKo() : oil.name()}" loading="lazy">
 					@else
 						<span class="text-[10px]">${oil.slug()}</span>
 					@endif

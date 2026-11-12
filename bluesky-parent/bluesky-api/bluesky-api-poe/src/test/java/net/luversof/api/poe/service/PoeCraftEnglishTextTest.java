@@ -38,7 +38,7 @@ class PoeCraftEnglishTextTest {
 
   @Test
   void 계산기_표와_최적_조합의_영어_판엔_한글이_없다() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
     PoeCraftService craft = new PoeCraftService(data, new PoeModDataService(dir));

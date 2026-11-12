@@ -70,7 +70,7 @@
 						<%-- 인게임 아이템 슬롯 프레임 — 크기를 인벤토리 칸 비율(투구 2x2/갑옷 2x3/양손 2x4 등)로. 파일명 = 베이스 slug --%>
 						!{ int[] cells = net.luversof.web.gate.poe.PoeText.invCells(item.itemClass()); int unit = 58; }
 						<div class="poe-item-slot shrink-0" style="width:${cells[0] * unit}px;height:${cells[1] * unit}px">
-							<img src="/poe-assets/items/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="max-w-full max-h-full object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]" alt="" loading="lazy">
+							<img src="/poe-data/poe1/icons/items/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="max-w-full max-h-full object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]" alt="" loading="lazy">
 						</div>
 						<div class="min-w-0 flex-1 space-y-1">
 					<div class="flex items-baseline gap-2 flex-wrap">

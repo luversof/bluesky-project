@@ -76,7 +76,7 @@
 						     hx-target="#poePreview"
 						     hx-trigger="mouseenter delay:100ms"
 						     hx-swap="innerHTML">
-							<img src="/poe-assets/gems/${gem.slug()}.png?v=${iconVersion}" class="w-14 h-14 object-contain shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" alt="" loading="lazy">
+							<img src="/poe-data/poe1/icons/gems/${gem.slug()}.png?v=${iconVersion}" class="w-14 h-14 object-contain shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]" alt="" loading="lazy">
 							<div class="min-w-0 flex-1">
 								<div class="flex items-baseline gap-1.5">
 									<%-- 이름 클릭 → 상세 페이지 (호버 레이어 내용 + 레벨별 진행표) --%>

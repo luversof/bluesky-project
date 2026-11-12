@@ -87,7 +87,7 @@
 		<div class="poe-tt-band poe-tt-band-2">
 			<%-- 영향력 상징(10-08 C198 — 셰이퍼 · 엘더 고유, 빌드 카드 itemTooltip 과 같은 자리: 둘이면 왼쪽 첫째 · 오른쪽 둘째, 하나면 양쪽 같은 상징) --%>
 			@if(item.influences() != null && !item.influences().isEmpty())
-				!{ String infL = "/poe-data/ui-assets/influence-" + item.influences().get(0) + ".png"; String infR = item.influences().size() > 1 ? "/poe-data/ui-assets/influence-" + item.influences().get(1) + ".png" : infL; }
+				!{ String infL = "/poe-data/poe1/ui-assets/influence-" + item.influences().get(0) + ".png"; String infR = item.influences().size() > 1 ? "/poe-data/poe1/ui-assets/influence-" + item.influences().get(1) + ".png" : infL; }
 				<img src="${infL}" data-tt-influence style="position:absolute;left:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
 				<img src="${infR}" data-tt-influence style="position:absolute;right:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
 			@endif

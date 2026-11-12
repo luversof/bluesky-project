@@ -19,7 +19,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * PoB 엔진이 <b>모델링하지 않는</b> 전직 노드 — tools/poe-extract/parse-engine-unmodeled.mjs 가 만든 {@code
- * ~/.poe-gamedata/engine-unmodeled.json}.
+ * ~/.poe-gamedata/poe1/engine-unmodeled.json}.
  *
  * <p>발단(2026-09-09): 사이온 루미너리는 스탯 노드 17 개 중 15 개가 "Your Mercenary ..." 인데 PoB 계산 엔진에는 용병 액터가 아예 없다
  * — src/Modules · src/Classes 통틀어 mercenary 참조 0 건이고, Data.lua 가 ModMercenary 를
@@ -54,7 +54,7 @@ public class PoeEngineUnmodeledDataService {
   private volatile Set<Integer> nodeIds = Set.of();
 
   public PoeEngineUnmodeledDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "engine-unmodeled.json");
     reload();
   }

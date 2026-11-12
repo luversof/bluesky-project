@@ -23,7 +23,7 @@ class PoeCraftActionPoolTest {
 
   @BeforeEach
   void setUp() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-currencies.json")), "추출 데이터 없음");
     craft = new PoeCraftService(new PoeCraftDataService(dir), new PoeModDataService(dir));
     item =

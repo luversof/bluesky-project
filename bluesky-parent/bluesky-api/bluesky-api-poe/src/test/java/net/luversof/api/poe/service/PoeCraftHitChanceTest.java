@@ -16,7 +16,7 @@ class PoeCraftHitChanceTest {
 
   @Test
   void 남은_자리에_엑잘이면_확률이_있고_정제는_0_변화는_오류() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
     PoeCraftService craft = new PoeCraftService(data, new PoeModDataService(dir));
@@ -61,7 +61,7 @@ class PoeCraftHitChanceTest {
 
   @Test
   void 목표까지_연타는_목표를_채우면_멈추고_못_쓰는_화폐는_오류() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
     PoeCraftService craft = new PoeCraftService(data, new PoeModDataService(dir));

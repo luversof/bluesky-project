@@ -17,7 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 삿된(Foulborn) 모드 풀 — tools/poe-extract/parse-foulborn.mjs 가 만든 {@code
- * ~/.poe-gamedata/foulborn-mods.json}.
+ * ~/.poe-gamedata/poe1/foulborn-mods.json}.
  *
  * <p>삿된 = 현재 리그 화폐(삿된 확장/제왕/엑잘티드 오브)로 <b>유니크의 기존 모드를 다른 모드로 대체</b>하는 기제. 예) 붉은 악몽의 "반경 내 화염 저항 → 공격
  * 막기 50%" 가 "→ 생명력 최대치 50%" 로 바뀐다.
@@ -73,7 +73,7 @@ public class PoeFoulbornDataService {
   private volatile FoulbornData data = new FoulbornData("", List.of(), Map.of());
 
   public PoeFoulbornDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "foulborn-mods.json");
     reload();
   }

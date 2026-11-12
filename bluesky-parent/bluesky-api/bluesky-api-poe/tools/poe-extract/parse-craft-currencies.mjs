@@ -1,5 +1,5 @@
 // 제작 화폐 데이터(10-15 C338 — 사용자 요청 "다양한 제작 컨텐츠들이 엮여 있고, 섞어서 사용이 가능하고 그에 따른 제약도 있다") →
-//   ~/.poe-gamedata/craft-currencies.json
+//   ~/.poe-gamedata/poe1/craft-currencies.json
 //   · fossils: DelveCraftingModifiers — 옵션 태그별 가중치 배수(값/100, 0 = 막음), 화석 전용 추가 옵션 · 강제 옵션, 부패 에센스 확률, 행운(수치 두 번 굴려 높은 쪽)
 //   · resonators: 공명기(연금 = 일반 → 레어, 혼돈 = 레어 다시) 칸 수 1~4
 //   · harvest: HarvestCraftOptions 중 아이템 옵션을 바꾸는 명령(reroll_with_mod · affinity · convert_mod · remove_type_and_add_type_mod ·

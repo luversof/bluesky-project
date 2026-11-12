@@ -1,5 +1,5 @@
 // 스킬젬 아이콘 추출: BaseItemTypes → ItemVisualIdentity → DDS 경로 목록을 config 에 넣어
-// pathofexile-dat 로 PNG 변환(ImageMagick 필요) 후 ~/.poe-gamedata/icons/gems/<slug>.png 로 배치한다.
+// pathofexile-dat 로 PNG 변환(ImageMagick 필요) 후 ~/.poe-gamedata/poe1/icons/gems/<slug>.png 로 배치한다.
 // 사용법: node icons.mjs  (사전 조건: extract.mjs + transform.mjs 실행 완료)
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";

@@ -1,5 +1,5 @@
 // dat 테이블(JSON) → 게이트가 서빙할 표시용 스킬젬 JSON 변환.
-// 사용법: node extract.mjs 후 node transform.mjs → ~/.poe-gamedata/skill-gems.json
+// 사용법: node extract.mjs 후 node transform.mjs → ~/.poe-gamedata/poe1/skill-gems.json
 // GGG 스키마 변경은 이 파일과 config.json 만 고치면 된다 (표시용 스키마는 안정 유지).
 import fs from "node:fs";
 import os from "node:os";

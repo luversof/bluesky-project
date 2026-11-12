@@ -53,7 +53,7 @@
 						<%-- 표시(핵심노드 · 고유 주얼 전용 · 생성 안 됨)는 좁은 폭 + 큰 글꼴에서 다음 줄로(10-29 — 320px+글꼴200% 에서 +152px 넘침) --%>
 						<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
 							@if(clusterIcon != null)
-								<img src="/poe-assets/${clusterIcon}" class="w-12 h-12 object-contain shrink-0" alt="" loading="lazy" data-onerror="hide">
+								<img src="/poe-data/poe1/icons/${clusterIcon}" class="w-12 h-12 object-contain shrink-0" alt="" loading="lazy" data-onerror="hide">
 							@endif
 							<%-- 인게임 색 관례: 주요 스킬 **이름**은 툴팁 제목색(흰색), **스탯 줄**이 모드 파랑(#8888ff).
 							     여기만 반대로 이름이 파랑·스탯이 본문색이라 트리 노드 팝업(.poe-popup-title/.poe-popup-stat)과 어긋났다. --%>

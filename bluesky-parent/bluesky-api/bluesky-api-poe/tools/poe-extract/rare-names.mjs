@@ -1,4 +1,4 @@
-// 레어 아이템 이름 낱말 → ~/.poe-gamedata/rare-name-words.json (10-04 C143)
+// 레어 아이템 이름 낱말 → ~/.poe-gamedata/poe1/rare-name-words.json (10-04 C143)
 // 인게임 레어 이름 = 접두 낱말(Words.Wordlist 1, "Mind") + 접미 낱말(Wordlist 2, 앞에 공백 " Reach"). 한국어 클라이언트는 같은 행의 Text2 로
 //   "마음의 역량" 처럼 보인다. 빌드 화면(PoB 임포트) 레어 이름을 API 가 이 표로 옮긴다. 접미는 앞 공백이 있는 행을 먼저(같은 낱말의 공백 없는 행은 다른 쓰임)
 import fs from "node:fs";

@@ -8,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/** PoE 게임 데이터 산출물(아이콘 등)을 정적 리소스로 서빙한다. 데이터 디렉토리는 git 밖(~/.poe-gamedata). */
+/** PoE 게임 데이터 산출물(아이콘 등)을 정적 리소스로 서빙한다. 데이터 디렉토리는 git 밖(~/.poe-gamedata — 아래 poe1/ · poe2/). */
 @Configuration
 public class PoeWebConfig implements WebMvcConfigurer {
 
@@ -64,14 +64,19 @@ public class PoeWebConfig implements WebMvcConfigurer {
 
   @Override
   public void addResourceHandlers(ResourceHandlerRegistry registry) {
-    registry
-        .addResourceHandler("/poe-assets/**")
-        .addResourceLocations(Path.of(dataDir, "icons").toUri().toString())
-        .setCachePeriod(60 * 60 * 24);
-    // 클라이언트 렌더링용 데이터(패시브 트리 등) — 표시 화면과 같은 공개 데이터라 그대로 서빙한다
+    // 데이터 루트(poe.data-dir)는 게임별로 poe1/ · poe2/ 로 나뉜다 → 주소도 /poe-data/poe1/… · /poe-data/poe2/…
+    // 클라이언트 렌더링용 데이터(패시브 트리 · 아이콘 등) — 표시 화면과 같은 공개 데이터라 그대로 서빙한다.
+    // 두 번째 위치(poe1/)는 옛 주소(/poe-data/passive-tree.json 등, 11-12 poe1 폴더 이동 전) — 캐시된 옛 화면용, 옛 주소가 안
+    // 쓰이면 지운다
     registry
         .addResourceHandler("/poe-data/**")
-        .addResourceLocations(Path.of(dataDir).toUri().toString())
+        .addResourceLocations(
+            Path.of(dataDir).toUri().toString(), Path.of(dataDir, "poe1").toUri().toString())
         .setCachePeriod(60 * 60);
+    // 옛 PoE1 아이콘 주소(/poe-assets/… = /poe-data/poe1/icons/…) — 위와 같은 까닭으로 남겨 둔다
+    registry
+        .addResourceHandler("/poe-assets/**")
+        .addResourceLocations(Path.of(dataDir, "poe1", "icons").toUri().toString())
+        .setCachePeriod(60 * 60 * 24);
   }
 }

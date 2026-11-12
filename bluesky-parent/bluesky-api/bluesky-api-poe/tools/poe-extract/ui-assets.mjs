@@ -1,5 +1,5 @@
 // 인게임 아이템 툴팁 UI 아트 추출: art/uiimages1.txt(atlas 좌표표)를 읽어
-// 4K 시트에서 헤더 밴드(1줄/2줄)·구분선·젬 소켓 배경을 crop → ~/.poe-gamedata/ui-assets/
+// 4K 시트에서 헤더 밴드(1줄/2줄)·구분선·젬 소켓 배경을 crop → ~/.poe-gamedata/poe1/ui-assets/
 // (기존 PoB 저해상 에셋을 게임 원본 4K 로 대체. 2줄 헤더는 레어/유니크 인게임 툴팁용)
 // 사용법: node ui-assets.mjs  (ImageMagick 필요 — 없으면 이 단계만 건너뜀)
 import { execFileSync } from "node:child_process";

@@ -20,8 +20,8 @@ import tools.jackson.databind.json.JsonMapper;
  * PoE 스킬젬 데이터 검색 서비스.
  *
  * <p>데이터는 tools/poe-extract 오프라인 파이프라인이 생성하는 파생 산출물이라 git 으로 관리하지 않고, 기본적으로 {@code
- * ~/.poe-gamedata/skill-gems.json} 에서 부팅 시 1회 로드한다(poe.data-dir 프로퍼티로 변경 가능). 파일이 없으면 부팅은 정상 진행되고
- * 화면에 안내가 표시된다. 시즌 갱신 = 파이프라인 재실행 + 서버 재시작.
+ * ~/.poe-gamedata/poe1/skill-gems.json} 에서 부팅 시 1회 로드한다(poe.data-dir 프로퍼티로 변경 가능). 파일이 없으면 부팅은 정상
+ * 진행되고 화면에 안내가 표시된다. 시즌 갱신 = 파이프라인 재실행 + 서버 재시작.
  */
 @Service
 public class PoeGemDataService {
@@ -93,7 +93,8 @@ public class PoeGemDataService {
   private final Path dataFile;
   private volatile PoeGemData data;
 
-  public PoeGemDataService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+  public PoeGemDataService(
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "skill-gems.json");
     reload();
   }

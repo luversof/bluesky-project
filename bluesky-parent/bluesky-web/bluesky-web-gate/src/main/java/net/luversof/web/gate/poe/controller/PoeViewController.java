@@ -38,7 +38,8 @@ public class PoeViewController {
     this.poeDataClient = poeDataClient;
     this.poeBuildClient = poeBuildClient;
     this.poeExtractClient = poeExtractClient;
-    this.dataDir = dataDir;
+    this.dataDir =
+        dataDir + "/poe1"; // 데이터 루트 아래 PoE1 폴더(11-12 poe1/ 로 정리, Poe2ViewController 와 같은 표기)
   }
 
   @GetMapping
@@ -267,9 +268,10 @@ public class PoeViewController {
     model.addAttribute("activePatch", archived ? patchForVersion(ver) : "");
     return archived
         ? new String[] {
-          "/poe-data/trees/" + ver + "/" + treeFile, "/poe-data/trees/" + ver + "/" + spritesFile
+          "/poe-data/poe1/trees/" + ver + "/" + treeFile,
+          "/poe-data/poe1/trees/" + ver + "/" + spritesFile
         }
-        : new String[] {"/poe-data/" + treeFile, "/poe-data/" + spritesFile};
+        : new String[] {"/poe-data/poe1/" + treeFile, "/poe-data/poe1/" + spritesFile};
   }
 
   /** trees/index.json 에서 해당 ver 의 게임 패치 문자열을 찾는다(없으면 빈 문자열). */
@@ -442,8 +444,8 @@ public class PoeViewController {
   }
 
   /**
-   * 지도 정규식 생성기 — 맵 모드 선택 → 인게임 검색용 정규식 생성·저장(poeregexkr 식). 데이터는 /poe-data/map-mods.json 을 클라이언트가
-   * 직접 로드.
+   * 지도 정규식 생성기 — 맵 모드 선택 → 인게임 검색용 정규식 생성·저장(poeregexkr 식). 데이터는 /poe-data/poe1/map-mods.json 을
+   * 클라이언트가 직접 로드.
    */
   @GetMapping("/regex")
   public String regex(Model model) {

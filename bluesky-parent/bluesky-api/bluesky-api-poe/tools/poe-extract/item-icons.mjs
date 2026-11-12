@@ -1,6 +1,6 @@
 // 베이스 아이템 아이콘 추출(젬 icons.mjs 패턴): BaseItemTypes → ItemVisualIdentity → DDS → PNG.
 // 고유/일반 아이템 목록에서 아이콘으로 쓴다(고유 전용 아트는 추출 데이터에 없어 베이스 아트 사용).
-// 출력: ~/.poe-gamedata/icons/items/<baseSlug>.png  → /poe-assets/items/ 로 서빙.
+// 출력: ~/.poe-gamedata/poe1/icons/items/<baseSlug>.png  → /poe-data/poe1/icons/items/ 로 서빙.
 // 사용법: node item-icons.mjs  (사전: extract.mjs + parse-items.mjs 완료)
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";

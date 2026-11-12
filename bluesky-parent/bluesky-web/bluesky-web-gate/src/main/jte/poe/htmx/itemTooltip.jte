@@ -83,8 +83,8 @@
 <%-- 게임 아이템 툴팁 본문 (호버 레이어용) — 헤더 밴드 + 아이템클래스 + 베이스 속성 + 요구 + 롤 모드 --%>
 <div class="poe-tooltip ${rarityClass} w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarityBorder}">
 	!{
-		String leftInf = influences != null && !influences.isEmpty() ? "/poe-data/ui-assets/influence-" + influences.get(0) + ".png" : null;
-		String rightInf = influences != null && influences.size() > 1 ? "/poe-data/ui-assets/influence-" + influences.get(1) + ".png" : leftInf;
+		String leftInf = influences != null && !influences.isEmpty() ? "/poe-data/poe1/ui-assets/influence-" + influences.get(0) + ".png" : null;
+		String rightInf = influences != null && influences.size() > 1 ? "/poe-data/poe1/ui-assets/influence-" + influences.get(1) + ".png" : leftInf;
 	}
 	<div class="poe-tt-band${twoLine ? " poe-tt-band-2" : ""}">
 		@if(leftInf != null)

@@ -448,10 +448,11 @@ public class PoeOptimizeService {
       PoeEngineUnmodeledDataService poeEngineUnmodeledDataService,
       PoeSpectreDataService poeSpectreDataService,
       PoeMercenaryService poeMercenaryService,
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir,
       @Value("${poe.sim.tree-version:3_29}") String treeVersion,
       @Value("${poe.sim.parallelism:0}") int parallelism,
-      @Value("${poe.pob.src-dir:${user.home}/.poe-gamedata/work/pob-src}") String pobSourceDir) {
+      @Value("${poe.pob.src-dir:${user.home}/.poe-gamedata/poe1/work/pob-src}")
+          String pobSourceDir) {
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poePobEngineService = poePobEngineService;

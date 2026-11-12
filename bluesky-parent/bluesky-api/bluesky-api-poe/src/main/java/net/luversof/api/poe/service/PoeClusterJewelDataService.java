@@ -54,7 +54,7 @@ public class PoeClusterJewelDataService {
   private final Path dataFile;
 
   public PoeClusterJewelDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "cluster-jewels.json");
     reload();
   }

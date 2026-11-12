@@ -1,6 +1,6 @@
 // 패시브 트리 노드 아이콘 추출: passive-tree-raw.json 의 node.icon(Art/2DArt/SkillIcons/passives/*.png)
 // → 게임 DDS 경로로 변환해 pathofexile-dat 로 PNG 추출(캐시된 번들 사용, ImageMagick 필요)
-// → ~/.poe-gamedata/icons/tree/<key>.png 로 배치. key = skillicons 이하 경로를 소문자 '_' 로 평탄화.
+// → ~/.poe-gamedata/poe1/icons/tree/<key>.png 로 배치. key = skillicons 이하 경로를 소문자 '_' 로 평탄화.
 // 사용법: node tree-icons.mjs [limit]   (사전조건: extract.mjs 로 번들 캐시/tables 확보)
 import fs from "node:fs";
 import path from "node:path";

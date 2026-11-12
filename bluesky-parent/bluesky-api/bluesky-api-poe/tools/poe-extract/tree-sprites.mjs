@@ -1,6 +1,6 @@
 // 패시브/아틀라스 트리 공식 스프라이트시트 self-host.
 // GGG data.json 의 sprites 는 web.poecdn.com 시트 + zoom 별 coords 를 담는다. 최고 zoom 시트를
-// 한 번 받아 ~/.poe-gamedata/icons/tree-sprites/{skill,atlas}/ 로 저장하고, 프론트가 blit 할 수 있게
+// 한 번 받아 ~/.poe-gamedata/poe1/icons/tree-sprites/{skill,atlas}/ 로 저장하고, 프론트가 blit 할 수 있게
 // 매니페스트(tree-sprites-{skill,atlas}.json = {spriteKey:{file,coords}})를 emit 한다.
 // 런타임 CDN 금지 관례에 맞춰 self-host. 사용법: node tree-sprites.mjs (parse-tree/parse-atlas-tree 후)
 import { execFileSync } from "node:child_process";
@@ -8,7 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR, WORK_DIR, findImageMagick } from "./paths.mjs";
 
-const SHEET_ROOT = path.join(DATA_DIR, "icons", "tree-sprites"); // → /poe-assets/tree-sprites/ 로 서빙
+const SHEET_ROOT = path.join(DATA_DIR, "icons", "tree-sprites"); // → /poe-data/poe1/icons/tree-sprites/ 로 서빙
 
 // 스킬 아이콘 시트는 .jpg 인데, 서버가 image/jpeg;charset=UTF-8 + nosniff 로 내려주면 일부 브라우저가
 // 이 JPEG 를 캔버스에 못 그린다(프레임 등 PNG 시트는 정상). → .jpg/.webp 는 PNG 로 변환해 self-host.

@@ -45,7 +45,7 @@
 
 			<div class="flex flex-wrap gap-6 items-start">
 				<%-- 젬 그림 — PoE2 젬 상세 · PoE1 고유/아이템 상세와 같은 자리(10-12 C283) --%>
-				<img src="/poe-assets/gems/${gem.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="max-h-64 max-w-40 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" alt="${gem.name()}" data-gem-art>
+				<img src="/poe-data/poe1/icons/gems/${gem.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="max-h-64 max-w-40 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" alt="${gem.name()}" data-gem-art>
 				<%-- 호버 레이어(툴팁)를 그대로 바닥에 — 레벨 전환은 ?level= 링크(pageMode) --%>
 				<div class="shrink-0" data-gem-tooltip>
 					@template.poe.htmx.gemDetail(gem = gem, displayLevel = displayLevel, pageMode = true)

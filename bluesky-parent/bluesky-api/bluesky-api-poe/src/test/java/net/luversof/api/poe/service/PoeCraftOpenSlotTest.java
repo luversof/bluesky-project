@@ -62,7 +62,7 @@ class PoeCraftOpenSlotTest {
 
   @Test
   void 빈_자리_조건만으로는_계산하지_않는다() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
     PoeCraftCalcService calc =

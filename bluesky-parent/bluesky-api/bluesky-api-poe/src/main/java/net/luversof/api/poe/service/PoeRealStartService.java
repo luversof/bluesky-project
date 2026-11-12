@@ -17,7 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * poe.ninja 실빌드 출발점 — 아키타입(전직|메인스킬)의 대표 실빌드(우리 엔진·표준 가정으로 재계산, 여러 명 중 DPS·EHP 중앙값에 가장 가까운 사람)의 정규화
  * PoB 코드. 산출: tools/poe-extract/fetch-ninja-seeds.mjs → {@code
- * ~/.poe-gamedata/ninja/ninja-start-builds.json}.
+ * ~/.poe-gamedata/poe1/ninja/ninja-start-builds.json}.
  *
  * <p>왜: 최적화기(빈 빌드에서 탐욕 선택)는 실빌드 생존력의 원천인 조합(타임리스·Split Personality 같은 주얼, 블록 체계)에 도달하지 못해 balanced
  * 결과 EHP 가 실빌드의 0.17~0.55x 였다(2026-09-30 실측). 시뮬레이터 결과 옆에 "실빌드에서 출발한 빌드"를 함께 보여 주고, 빌드 화면에서 업그레이드
@@ -51,7 +51,8 @@ public class PoeRealStartService {
   private volatile FileTime loadedAt;
   private volatile Map<String, RealStart> byKey = Map.of();
 
-  public PoeRealStartService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+  public PoeRealStartService(
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.file = Path.of(dataDir, "ninja", "ninja-start-builds.json");
   }
 

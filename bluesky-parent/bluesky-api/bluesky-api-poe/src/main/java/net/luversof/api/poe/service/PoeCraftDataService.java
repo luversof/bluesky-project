@@ -274,7 +274,8 @@ public class PoeCraftDataService {
   // 풀 → 옵션 id → 그 풀 안 같은 계열에서의 등급(1 = 아이템 레벨 요구가 가장 높은 것)
   private volatile Map<String, Map<String, Integer>> tierRank = Map.of();
 
-  public PoeCraftDataService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+  public PoeCraftDataService(
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.craftFile = Path.of(dataDir, "craft-mods.json");
     this.essenceFile = Path.of(dataDir, "essences.json");
     this.currencyFile = Path.of(dataDir, "craft-currencies.json");

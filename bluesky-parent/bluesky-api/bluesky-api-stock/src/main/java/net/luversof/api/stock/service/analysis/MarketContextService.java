@@ -113,7 +113,8 @@ public class MarketContextService {
         return past;
       }
       MarketContext result = load(userId, asOf, morning);
-      if (!result.lines().isEmpty()) {
+      // 다 받은 것만 둔다 - 초당 한도(500)로 몇 개 빠진 결과를 두면 그날은 재기동 전까지 계속 빠진 채로 나온다(2026-11-12 리플레이 입력 146 일).
+      if (result.unavailable().isEmpty()) {
         pastCache.put(key, result);
       }
       return result;

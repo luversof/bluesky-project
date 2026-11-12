@@ -49,7 +49,7 @@
 			boolean anyOk = fl.stream().anyMatch(x -> !blocked.containsKey("ESSENCE:" + x.slug()));
 		}
 		<button type="button" class="btn btn-ghost btn-sm h-auto min-h-0 w-[4.5rem] flex-col gap-0.5 p-1 border border-base-300 ${anyOk ? null : "text-base-content/60"}" data-craft-ess-fam="${fe.getKey()}" aria-pressed="false" title="${(ko ? fk + "의 에센스" : "Essence of " + fen) + " · " + fl.size() + (ko ? "등급" : (fl.size() == 1 ? " tier" : " tiers")) + (anyOk ? "" : (ko ? " — 지금 아이템에 못 씀" : " — not usable on this item"))}">
-			@if(top.icon() != null)<img src="/poe-assets/${top.icon()}" alt="" class="w-7 h-7 object-contain ${anyOk ? null : "grayscale opacity-60"}" loading="lazy">@else<span class="w-7 h-7"></span>@endif
+			@if(top.icon() != null)<img src="/poe-data/poe1/icons/${top.icon()}" alt="" class="w-7 h-7 object-contain ${anyOk ? null : "grayscale opacity-60"}" loading="lazy">@else<span class="w-7 h-7"></span>@endif
 			<span class="text-[10px] leading-tight whitespace-normal wrap-anywhere">${ko ? fk : fen}</span>
 		</button>
 	@endfor
@@ -63,7 +63,7 @@
 				String tw = e.tier() >= 1 && e.tier() <= 7 ? (ko ? tierKo[e.tier() - 1] : tierEn[e.tier() - 1]) : (ko ? e.nameKo() : e.name());
 				String desc = (ko ? e.nameKo() : e.name()) + " — " + modText.apply(e) + (why == null ? "" : " (" + why + ")");
 			}
-			<button type="button" class="btn btn-xs btn-ghost border border-base-300 gap-1" data-craft-ess-pick="${e.slug()}" data-tier="${e.tier()}" data-desc="${desc}" data-why="${why}" aria-pressed="false" disabled="${why != null}" title="${desc}">@if(e.icon() != null)<img src="/poe-assets/${e.icon()}" alt="" class="w-4 h-4 object-contain" loading="lazy">@endif${tw}</button>
+			<button type="button" class="btn btn-xs btn-ghost border border-base-300 gap-1" data-craft-ess-pick="${e.slug()}" data-tier="${e.tier()}" data-desc="${desc}" data-why="${why}" aria-pressed="false" disabled="${why != null}" title="${desc}">@if(e.icon() != null)<img src="/poe-data/poe1/icons/${e.icon()}" alt="" class="w-4 h-4 object-contain" loading="lazy">@endif${tw}</button>
 		@endfor
 	</div>
 @endfor

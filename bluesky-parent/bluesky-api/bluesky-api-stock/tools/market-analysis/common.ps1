@@ -101,7 +101,7 @@ function ConvertTo-NativeArg([string]$Arg) {
 # Returns the parsed claude result object.
 function Invoke-Claude([string]$Prompt, [string]$Schema, [int]$TimeoutMinutes = 15) {
     $claudeArgs = @(
-        '-p', '--model', 'sonnet',
+        '-p', '--model', 'opus',
         '--tools', '',
         '--output-format', 'json',
         '--json-schema', $Schema,

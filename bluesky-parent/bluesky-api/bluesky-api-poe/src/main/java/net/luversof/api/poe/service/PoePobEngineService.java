@@ -32,8 +32,8 @@ import tools.jackson.databind.json.JsonMapper;
  * Path of Building 커뮤니티 계산 엔진을 헤드리스(LuaJIT)로 구동해 빌드 스탯을 실제 재계산한다.
  *
  * <p>실행 = {@code luajit tools/poe-pob/calc.lua <build.xml>} (cwd 는 PoB 소스의 src). PoB 소스는 파생 산출물이라
- * git 밖({@code ~/.poe-gamedata/work/pob-src})에 클론해 둔다. 러너는 계산 결과를 {@code @@POB_RESULT@@{json}} 한 줄로
- * 출력한다. 회당 약 1.5초라 코드 sha-256 키 LRU 캐시를 둔다.
+ * git 밖({@code ~/.poe-gamedata/poe1/work/pob-src})에 클론해 둔다. 러너는 계산 결과를 {@code @@POB_RESULT@@{json}}
+ * 한 줄로 출력한다. 회당 약 1.5초라 코드 sha-256 키 LRU 캐시를 둔다.
  */
 @Service
 public class PoePobEngineService {
@@ -155,7 +155,7 @@ public class PoePobEngineService {
   private volatile boolean shuttingDown;
 
   public PoePobEngineService(
-      @Value("${poe.pob.src-dir:${user.home}/.poe-gamedata/work/pob-src}") String sourceDir,
+      @Value("${poe.pob.src-dir:${user.home}/.poe-gamedata/poe1/work/pob-src}") String sourceDir,
       @Value("${poe.pob.runner:tools/poe-pob/calc.lua}") String runnerScript,
       @Value("${poe.pob.worker:tools/poe-pob/worker.lua}") String workerScript,
       @Value("${poe.pob.workers:0}") int poolSize,

@@ -9,8 +9,8 @@
 @param java.util.List<String> treeVersions = java.util.List.of()
 @param String activeVer = ""
 @param String activePatch = ""
-@param String treeSrc = "/poe-data/atlas-tree.json"
-@param String spritesSrc = "/poe-data/tree-sprites-atlas.json"
+@param String treeSrc = "/poe-data/poe1/atlas-tree.json"
+@param String spritesSrc = "/poe-data/poe1/tree-sprites-atlas.json"
 
 !{
 	String pageTitle = MessageUtil.getMessage("poe.atlas.title");

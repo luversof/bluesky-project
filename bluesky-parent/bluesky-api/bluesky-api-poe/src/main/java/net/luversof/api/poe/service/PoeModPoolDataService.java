@@ -13,8 +13,9 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 레어 아이템 크래프팅용 모드 풀 — tools/poe-extract/parse-mods.mjs 가 만든 {@code ~/.poe-gamedata/mod-pool.json}.
- * 패밀리별로 슬롯 적용 범위 + 키워드 + 등급 사다리(best-first, 각 등급의 최대 롤 문장 en/ko)를 담는다. 시뮬레이터의 레어 생성/등급 비교에 쓴다.
+ * 레어 아이템 크래프팅용 모드 풀 — tools/poe-extract/parse-mods.mjs 가 만든 {@code
+ * ~/.poe-gamedata/poe1/mod-pool.json}. 패밀리별로 슬롯 적용 범위 + 키워드 + 등급 사다리(best-first, 각 등급의 최대 롤 문장
+ * en/ko)를 담는다. 시뮬레이터의 레어 생성/등급 비교에 쓴다.
  */
 @Service
 public class PoeModPoolDataService {
@@ -48,7 +49,7 @@ public class PoeModPoolDataService {
   private volatile ModPoolData data = new ModPoolData("", List.of());
 
   public PoeModPoolDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "mod-pool.json");
     reload();
   }

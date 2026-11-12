@@ -1,5 +1,5 @@
 // PoE 지도 정규식 생성기 (/poe/regex) — poeregexkr 식.
-//  - /poe-data/map-mods.json 의 맵 모드를 목록으로 보여주고, 클릭으로 제외(!)/포함을 고른다.
+//  - /poe-data/poe1/map-mods.json 의 맵 모드를 목록으로 보여주고, 클릭으로 제외(!)/포함을 고른다.
 //  - 선택 모드마다 "다른 모드와 겹치지 않는 최단 부분 문자열"을 찾아 |로 압축, 인게임 검색창
 //    형식("!a|b" "c" — 공백 구분 = AND, !는 부정)으로 출력한다. 한도 250자.
 //  - 수치는 롤마다 달라 후보 문자열에서 숫자 구간을 배제한다(숫자 없는 구간의 부분 문자열만 사용).
@@ -13,7 +13,7 @@
 	const authenticated = root.getAttribute("data-authenticated") === "true";
 	// 게임별 차이는 페이지 속성과 데이터 파일로 받는다 — PoE1 지도(/poe/regex)와 PoE2 경로석(/poe2/regex)이 이 생성기를 같이 쓴다.
 	//   데이터 파일에 headers·thresholds·rewardDefs·specialDefs 가 있으면 아래 PoE1 기본값을 덮는다.
-	const modsUrl = root.getAttribute("data-mods-url") || "/poe-data/map-mods.json";
+	const modsUrl = root.getAttribute("data-mods-url") || "/poe-data/poe1/map-mods.json";
 	const presetsUrl = root.getAttribute("data-presets-url") || "/poe/api/regex/presets";
 	const quantShort = root.getAttribute("data-quant-short") || (uiKo ? "수량" : "quant");
 

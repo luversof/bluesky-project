@@ -566,7 +566,7 @@
 						   href="/poe/gems/${support.slug()}"
 						   hx-get="/poe/htmx/gems/detail?slug=${support.slug()}${net.luversof.web.gate.poe.PoeText.gemLevelParam(support.name())}"
 						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-							<img src="/poe-assets/gems/${support.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(support.nameKo(), support.name())}</a>
+							<img src="/poe-data/poe1/icons/gems/${support.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(support.nameKo(), support.name())}</a>
 					@else
 						<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(support.nameKo(), support.name())}</span>
 					@endif
@@ -584,7 +584,7 @@
 						   href="/poe/gems/${aura.slug()}"
 						   hx-get="/poe/htmx/gems/detail?slug=${aura.slug()}"
 						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-							<img src="/poe-assets/gems/${aura.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(aura.nameKo(), aura.name())}</a>
+							<img src="/poe-data/poe1/icons/gems/${aura.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(aura.nameKo(), aura.name())}</a>
 					@else
 						<span class="badge badge-success badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(aura.nameKo(), aura.name())}</span>
 					@endif
@@ -650,7 +650,7 @@
 						   href="/poe/gems/${g.slug()}"
 						   hx-get="/poe/htmx/gems/detail?slug=${g.slug()}"
 						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-							<img src="/poe-assets/gems/${g.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(g.nameKo(), g.name())}</a>
+							<img src="/poe-data/poe1/icons/gems/${g.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(g.nameKo(), g.name())}</a>
 					@else
 						<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(g.nameKo(), g.name())}</span>
 					@endif
@@ -670,7 +670,7 @@
 						   href="/poe/gems/${c.slug()}"
 						   hx-get="/poe/htmx/gems/detail?slug=${c.slug()}"
 						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-							<img src="/poe-assets/gems/${c.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(c.nameKo(), c.name())}</a>
+							<img src="/poe-data/poe1/icons/gems/${c.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(c.nameKo(), c.name())}</a>
 					@else
 						<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(c.nameKo(), c.name())}</span>
 					@endif
@@ -685,7 +685,7 @@
 					   href="/poe/gems/${result.curseOnHit().slug()}"
 					   hx-get="/poe/htmx/gems/detail?slug=${result.curseOnHit().slug()}"
 					   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-						<img src="/poe-assets/gems/${result.curseOnHit().slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(result.curseOnHit().nameKo(), result.curseOnHit().name())}</a>
+						<img src="/poe-data/poe1/icons/gems/${result.curseOnHit().slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(result.curseOnHit().nameKo(), result.curseOnHit().name())}</a>
 				@else
 					<span class="badge badge-info badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(result.curseOnHit().nameKo(), result.curseOnHit().name())}</span>
 				@endif
@@ -758,7 +758,7 @@
 						   href="/poe/gems/${extra.slug()}"
 						   hx-get="/poe/htmx/gems/detail?slug=${extra.slug()}"
 						   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-							<img src="/poe-assets/gems/${extra.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</a>
+							<img src="/poe-data/poe1/icons/gems/${extra.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</a>
 					@else
 						<span class="badge badge-accent badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(extra.nameKo(), extra.name())}</span>
 					@endif
@@ -775,7 +775,7 @@
 								   href="/poe/gems/${linkGem.slug()}"
 								   hx-get="/poe/htmx/gems/detail?slug=${linkGem.slug()}${net.luversof.web.gate.poe.PoeText.gemLevelParam(linkGem.name())}"
 								   hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML">
-									<img src="/poe-assets/gems/${linkGem.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(linkGem.nameKo(), linkGem.name())}</a>
+									<img src="/poe-data/poe1/icons/gems/${linkGem.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" class="w-4 h-4 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">${net.luversof.web.gate.poe.PoeText.name(linkGem.nameKo(), linkGem.name())}</a>
 							@else
 								<span class="badge badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(linkGem.nameKo(), linkGem.name())}</span>
 							@endif
@@ -831,7 +831,7 @@
 						<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm [overflow-wrap:anywhere]">
 							<span class="badge badge-outline badge-sm shrink-0 w-16 justify-center border-purple-400 text-purple-700 dark:text-purple-300">${net.luversof.web.gate.poe.PoeText.isKorean() ? "문신" : "Tattoo"}</span>
 							@if(tattooIconPath != null)
-								<img src="/poe-assets/${tattooIconPath}" class="w-5 h-5 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">
+								<img src="/poe-data/poe1/icons/${tattooIconPath}" class="w-5 h-5 object-contain shrink-0" alt="" loading="lazy" data-onerror="remove">
 							@endif
 							<%-- 문신 아이템 레이어 — 유니크/주얼과 동일한 인게임 호버 툴팁(#poePreview) + 사전 페이지 링크(href) --%>
 							<a class="poe-hover text-purple-700 dark:text-purple-300 link-hover underline decoration-dotted cursor-pointer"
@@ -954,7 +954,7 @@
 				<%-- 인게임 소지품 패널 배경(InventoryPanelUpperBackground) 위에 슬롯 좌표로 아이템을 절대배치.
 				     크기는 실제 <img> 로 확정(aspect-ratio CSS 의존 제거 — 브라우저 무관 정렬 보장). 슬롯은 이 컨테이너(=이미지) % 좌표. --%>
 				<div class="poe-doll mx-auto mb-2" style="position:relative;width:100%;max-width:34rem">
-					<img src="/poe-data/ui-assets/inventory-panel.png" alt="" style="display:block;width:100%;height:auto">
+					<img src="/poe-data/poe1/ui-assets/inventory-panel.png" alt="" style="display:block;width:100%;height:auto">
 					@for(String[] ds : dollSlots)
 						!{ PoeOptimizeResult.ItemPick di = dollBySlot.get(ds[0]); }
 						@if(di != null)
@@ -964,7 +964,7 @@
 								!{ boolean dKo = net.luversof.web.gate.poe.PoeText.isKorean() || di.modLinesEn() == null || di.modLinesEn().isEmpty(); java.util.List<String> dLines = dKo ? di.modLines() : di.modLinesEn(); }
 								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="${di.slug() != null ? "/poe/items/" + di.slug() : "#"}" title="${dName}">
 									@if(di.slug() != null)
-										<img src="/poe-assets/items/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" data-onerror="hide-reveal-next">
+										<img src="/poe-data/poe1/icons/items/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" data-onerror="hide-reveal-next">
 										<span class="hidden max-h-full overflow-hidden text-[8px] font-semibold poe-name-rare text-center leading-[1.15]">${dName}</span>
 									@else
 										<span class="max-h-full overflow-hidden text-[8px] font-semibold poe-name-rare text-center leading-[1.15] drop-shadow-[0_1px_1px_rgba(0,0,0,0.95)]">${dName}</span>
@@ -976,14 +976,14 @@
 								@if(dOv != null)
 									<%-- 삿된 · 변형: 실제 장착 옵션 툴팁을 인라인으로(레어 슬롯과 같은 data-poe-tip 복제, C152) --%>
 									<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="/poe/uniques/${di.slug()}" title="${dName}" data-unique-override>
-										<img src="/poe-assets/uniques/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" data-onerror="hide-reveal-next">
+										<img src="/poe-data/poe1/icons/uniques/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" data-onerror="hide-reveal-next">
 										<span class="hidden text-[8px] font-semibold poe-name-unique text-center leading-tight">${dName}</span>
 										<span data-poe-tip class="hidden">@template.poe.htmx.uniqueDetail(item = dOv, base = uniqueOverrideBases == null ? null : uniqueOverrideBases.get(di.slot()), variant = null)</span>
 									</a>
 								@else
 								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="/poe/uniques/${di.slug()}"
 								   hx-get="/poe/htmx/uniques/detail?slug=${di.slug()}" hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML" title="${dName}">
-									<img src="/poe-assets/uniques/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" data-onerror="hide-reveal-next">
+									<img src="/poe-data/poe1/icons/uniques/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" data-onerror="hide-reveal-next">
 									<span class="hidden text-[8px] font-semibold poe-name-unique text-center leading-tight">${dName}</span>
 								</a>
 								@endif

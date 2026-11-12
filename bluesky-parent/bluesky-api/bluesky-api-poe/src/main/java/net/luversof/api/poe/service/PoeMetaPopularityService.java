@@ -53,7 +53,7 @@ public class PoeMetaPopularityService {
   private volatile Map<String, Integer> facetTotals = Map.of();
 
   public PoeMetaPopularityService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.seedFile = Path.of(dataDir, "ninja", "ninja-archetypes.json");
     reload();
   }

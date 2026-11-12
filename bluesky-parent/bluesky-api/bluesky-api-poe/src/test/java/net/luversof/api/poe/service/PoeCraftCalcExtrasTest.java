@@ -14,7 +14,7 @@ class PoeCraftCalcExtrasTest {
 
   @Test
   void 작업대_값어치_바알_타락_영향력_옵션() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
     PoeCraftCalcService calc =
@@ -53,7 +53,7 @@ class PoeCraftCalcExtrasTest {
 
   @Test
   void 엘드리치_고정속성_목표는_따로_재고_명시_옵션_표에_더한다() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
     PoeCraftCalcService calc =
@@ -113,7 +113,7 @@ class PoeCraftCalcExtrasTest {
 
   @Test
   void 탐광_옵션_목표는_여는_화석_조합으로_비용이_나온다() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
     PoeCraftCalcService calc =
@@ -137,7 +137,7 @@ class PoeCraftCalcExtrasTest {
 
   @Test
   void 에센스_전용_옵션은_목표로_고르면_그_에센스_줄이_채운다() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
     PoeCraftCalcService calc =

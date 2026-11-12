@@ -14,7 +14,8 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 망령(Spectre) 목록 — tools/poe-extract/parse-spectres.mjs 가 만든 {@code ~/.poe-gamedata/spectres.json}.
+ * 망령(Spectre) 목록 — tools/poe-extract/parse-spectres.mjs 가 만든 {@code
+ * ~/.poe-gamedata/poe1/spectres.json}.
  *
  * <p>발단(2026-09-09): 유령 소환 축이 <b>망령을 아예 소환하지 않고</b> 있었다. PoB 는 빌드 XML 의 {@code <Build>} 자식 {@code
  * <Spectre id="Metadata/..."/>} 로만 spectreList 를 채우는데(Build.lua:987-991) 우리가 그 섹션을 안 써서
@@ -48,7 +49,7 @@ public class PoeSpectreDataService {
   private volatile Map<String, Spectre> byId = Map.of();
 
   public PoeSpectreDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "spectres.json");
     reload();
   }

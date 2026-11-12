@@ -26,8 +26,8 @@
 		});
 	}
 	const isKorean = canvas.dataset.locale !== "en";
-	const treeSrc = canvas.dataset.treeSrc || "/poe-data/passive-tree.json";
-	const spritesSrc = canvas.dataset.spritesSrc || "/poe-data/tree-sprites-skill.json";
+	const treeSrc = canvas.dataset.treeSrc || "/poe-data/poe1/passive-tree.json";
+	const spritesSrc = canvas.dataset.spritesSrc || "/poe-data/poe1/tree-sprites-skill.json";
 	// 버전 전환 간 확대/이동을 이어붙이기 위한 저장 키 — treeSrc 는 버전별 경로라 키가 달라지므로
 	// 스킬/아틀라스만 구분하는 버전 무관 키를 쓴다(안 그러면 저장·복원 키가 어긋나 복원 실패).
 	const viewKey = /atlas/i.test(treeSrc) ? "poeTreeView:atlas" : "poeTreeView:skill";
@@ -91,7 +91,7 @@
 			scheduleDraw();
 		};
 		img.onerror = () => sheetCache.set(file, img!);
-		img.src = "/poe-assets/" + file;
+		img.src = "/poe-data/poe1/icons/" + file;
 		sheetCache.set(file, img);
 		return null;
 	}
@@ -242,7 +242,7 @@
 			return;
 		}
 		clusterDefs = {};
-		fetch("/poe-data/cluster-jewels.json", { cache: "no-cache" })
+		fetch("/poe-data/poe1/cluster-jewels.json", { cache: "no-cache" })
 			.then((r) => (r.ok ? r.json() : null))
 			.then((data) => {
 				if (data?.jewels) clusterDefs = data.jewels;
@@ -314,7 +314,7 @@
 	// 인터랙티브 편집: 할당 노드 집합 + 현재 직업/전직. 클래스 시작노드가 루트.
 	const highlighted = new Set<number>();
 	// 아틀라스는 클래스 루트가 없어 규칙이 다르다(자유 시작 + ?nodes= 동기화). 편집은 둘 다 가능.
-	// 아카이브 뷰(/poe-data/trees/<ver>/atlas-tree.json)도 아틀라스로 인식해야 한다 — 정확일치는 아카이브 경로를 놓쳐
+	// 아카이브 뷰(/poe-data/poe1/trees/<ver>/atlas-tree.json)도 아틀라스로 인식해야 한다 — 정확일치는 아카이브 경로를 놓쳐
 	// 옛 아틀라스를 스킬트리 모드로 잘못 렌더했다(밝은 픽셀 반토막). 파일명 부분일치로 판정.
 	const isAtlas = (canvas.dataset.treeSrc || "").includes("atlas-tree.json");
 	const interactive = true;
@@ -3331,7 +3331,7 @@
 			return;
 		}
 		tattooDefs = [];
-		fetch("/poe-data/tattoos.json", { cache: "no-cache" })
+		fetch("/poe-data/poe1/tattoos.json", { cache: "no-cache" })
 			.then((r) => (r.ok ? r.json() : null))
 			.then((data) => {
 				if (Array.isArray(data?.tattoos)) tattooDefs = data.tattoos;
@@ -3549,7 +3549,7 @@
 					const oil = oils[slug];
 					if (!oil) continue;
 					const img = document.createElement("img");
-					img.src = "/poe-assets/" + oil.icon;
+					img.src = "/poe-data/poe1/icons/" + oil.icon;
 					img.className = "w-4 h-4 object-contain";
 					img.title = (isKorean && oil.nameKo) || oil.name;
 					img.alt = img.title; // 단추 안 그림 — 이름에 파일명이 섞이지 않게(10-25 Q204)
@@ -4111,7 +4111,7 @@
 				const oil = oils[slug];
 				if (!oil) continue;
 				const img = document.createElement("img");
-				img.src = "/poe-assets/" + oil.icon;
+				img.src = "/poe-data/poe1/icons/" + oil.icon;
 				img.className = "w-6 h-6 object-contain";
 				img.title = (isKorean && oil.nameKo) || oil.name;
 				img.alt = img.title;

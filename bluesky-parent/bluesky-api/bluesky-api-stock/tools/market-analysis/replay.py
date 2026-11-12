@@ -33,8 +33,12 @@ from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(os.environ.get('LOCALAPPDATA', HERE), 'bluesky-market-analysis', 'replay')
-# BLUESKY_REPLAY_RESULTS: a separate file per process when runs go in parallel (merge afterwards)
-RESULTS = os.environ.get('BLUESKY_REPLAY_RESULTS') or os.path.join(OUT_DIR, 'results.jsonl')
+# Replay covers only these by default (2026-11-12 user decision: 40 targets used up the Claude plan in
+# minutes, cost grows with targets x days x versions). --symbols all = every analysis target.
+ORIGINAL_SYMBOLS = '498400,476800,0018C0,475720,0094M0,329200,472150,0104P0,005930'
+# BLUESKY_REPLAY_RESULTS: a separate file per process when runs go in parallel (merge afterwards).
+# Otherwise one file per target set (results-9t.jsonl for the original 9), set in main().
+RESULTS = None
 # Past inputs do not change, and each /input call reads the KIS config and calls KIS for the market lines.
 # Delete this folder to rebuild them (after an input change in the API).
 INPUTS = os.path.join(OUT_DIR, 'inputs')
@@ -155,7 +159,7 @@ def cmd_run(a):
             # Same chunking as morning.ps1: ~40 targets in one prompt would carry 100k+ characters.
             predictions = []
             try:
-                items = input_json['items']
+                items = [it for it in input_json['items'] if not a.symbol_set or it['symbol'] in a.symbol_set]
                 for i in range(0, len(items), a.chunk):
                     part = dict(input_json, items=items[i:i + a.chunk])
                     result = run_claude(template.replace('{{INPUT_JSON}}', json.dumps(part, ensure_ascii=False)),
@@ -243,7 +247,7 @@ def main():
     r.add_argument('--to', dest='date_to', required=True)
     r.add_argument('--reps', type=int, default=1)
     r.add_argument('--step', type=int, default=1, help='every Nth trading day (long windows at lower cost)')
-    r.add_argument('--model', default='sonnet')
+    r.add_argument('--model', default='opus')  # same as common.ps1 (2026-11-12 user decision)
     r.add_argument('--chunk', type=int, default=10, help='targets per claude call (morning.ps1 uses 10)')
     r.add_argument('--refresh-inputs', action='store_true',
                    help='rebuild cached inputs (after the targets or the input fields change)')
@@ -255,7 +259,15 @@ def main():
     s.add_argument('--split', help='dates before this are "tune", from it on "valid"')
     s.add_argument('--version', nargs='*')
     s.set_defaults(fn=cmd_summary)
+    for p in (r, s):
+        # default Samsung only (2026-11-12 user decision); ORIGINAL_SYMBOLS for the earlier 9
+        p.add_argument('--symbols', default='005930',
+                       help='comma list of targets (default: 005930), ORIGINAL_SYMBOLS value for the 9, or "all"')
     a = ap.parse_args()
+    a.symbol_set = None if a.symbols == 'all' else set(a.symbols.split(','))
+    global RESULTS
+    RESULTS = os.environ.get('BLUESKY_REPLAY_RESULTS') or os.path.join(
+        OUT_DIR, 'results.jsonl' if a.symbol_set is None else 'results-%dt.jsonl' % len(a.symbol_set))
     a.fn(a)
 
 

@@ -143,7 +143,7 @@ public class PoePobImportService {
       PoeRareNameService poeRareNameService,
       PoeModDataService poeModDataService,
       PoeTradeStatDataService poeTradeStatDataService,
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataDir = java.nio.file.Path.of(dataDir);
     this.poeTradeStatDataService = poeTradeStatDataService;
     this.poeRareNameService = poeRareNameService;

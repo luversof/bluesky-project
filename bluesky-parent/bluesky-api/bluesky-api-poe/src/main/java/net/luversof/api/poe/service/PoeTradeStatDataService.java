@@ -15,8 +15,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * PoE 거래소 스탯 필터 사전 — tools/poe-extract/trade-stats.mjs 가 만든 {@code
- * ~/.poe-gamedata/trade-stats.json}({explicit, pseudo} 섹션별 정규화 한글 텍스트 → stat id). 시뮬 결과 레어의 ko 모드
- * 라인을 거래소 검색 쿼리(q JSON)의 스탯 필터로 변환한다. stat id 는 글로벌/한국 서버 공통.
+ * ~/.poe-gamedata/poe1/trade-stats.json}({explicit, pseudo} 섹션별 정규화 한글 텍스트 → stat id). 시뮬 결과 레어의 ko
+ * 모드 라인을 거래소 검색 쿼리(q JSON)의 스탯 필터로 변환한다. stat id 는 글로벌/한국 서버 공통.
  */
 @Service
 public class PoeTradeStatDataService {
@@ -53,7 +53,7 @@ public class PoeTradeStatDataService {
   private volatile java.util.Set<String> types = java.util.Set.of();
 
   public PoeTradeStatDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "trade-stats.json");
     reload();
   }

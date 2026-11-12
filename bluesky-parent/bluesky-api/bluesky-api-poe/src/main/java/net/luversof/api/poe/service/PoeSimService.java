@@ -27,8 +27,8 @@ import tools.jackson.databind.json.JsonMapper;
  * 시뮬레이터 1단계 — 젬 DPS 랭킹 배치.
  *
  * <p>모든 액티브 젬을 동일한 템플릿 빌드(레벨 90 사이온, 트리·지원 젬 없음, 태그별 표준 무기 지급)에 하나씩 끼워 PoB 엔진으로 병렬 평가하고, DPS 내림차순
- * 랭킹을 {@code ~/.poe-gamedata/sim/gem-ranking.json} 에 저장한다. 진행 상태는 관리 탭 추출 파이프라인과 같은 폴링 패턴으로 노출한다.
- * 결과는 조건이 통제된 상대 비교값이다 (오라/커스 등 비피해 스킬은 자연히 하위).
+ * 랭킹을 {@code ~/.poe-gamedata/poe1/sim/gem-ranking.json} 에 저장한다. 진행 상태는 관리 탭 추출 파이프라인과 같은 폴링 패턴으로
+ * 노출한다. 결과는 조건이 통제된 상대 비교값이다 (오라/커스 등 비피해 스킬은 자연히 하위).
  */
 @Service
 public class PoeSimService {
@@ -62,7 +62,7 @@ public class PoeSimService {
   public PoeSimService(
       PoeGemDataService poeGemDataService,
       PoePobEngineService poePobEngineService,
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir,
       @Value("${poe.sim.tree-version:3_28}") String treeVersion,
       @Value("${poe.sim.parallelism:6}") int parallelism) {
     this.poeGemDataService = poeGemDataService;

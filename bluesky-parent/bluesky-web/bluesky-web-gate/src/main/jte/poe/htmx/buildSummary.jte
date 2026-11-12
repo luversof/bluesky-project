@@ -140,8 +140,8 @@
 								// 거래소 링크(10-08) — 시뮬레이터 결과도 이 화면에서 열어 사므로 아이템마다. 고유 = 이름, 레어 · 마법 = 베이스 + 옵션(이 수치의 85% 이상)
 								String tradeHref = net.luversof.web.gate.poe.PoeText.tradeUrl(item.tradeQuery());
 								// 아이템 그림(10-08 C170, PoE2 빌드 카드 짝) — 고유는 고유 그림, 그 밖엔 베이스 그림. 그림이 없으면 칸만 비운다
-								String iconSrc = isUnique && item.uniqueSlug() != null ? "/poe-assets/uniques/" + item.uniqueSlug() + ".png?v=" + net.luversof.web.gate.poe.config.PoeIconVersion.current()
-									: item.baseSlug() != null ? "/poe-assets/items/" + item.baseSlug() + ".png?v=" + net.luversof.web.gate.poe.config.PoeIconVersion.current() : null;
+								String iconSrc = isUnique && item.uniqueSlug() != null ? "/poe-data/poe1/icons/uniques/" + item.uniqueSlug() + ".png?v=" + net.luversof.web.gate.poe.config.PoeIconVersion.current()
+									: item.baseSlug() != null ? "/poe-data/poe1/icons/items/" + item.baseSlug() + ".png?v=" + net.luversof.web.gate.poe.config.PoeIconVersion.current() : null;
 							}
 							@if(isUnique && item.uniqueSlug() != null)
 								<%-- 고유도 실제 굴림 수치의 인게임 툴팁(10-04 C139) — 예전엔 고유 일반 상세(범위 값)를 띄워 이 빌드가 실제로 굴린 값 · 타락 · 변이 옵션이 안 보였다 --%>

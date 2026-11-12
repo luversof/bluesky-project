@@ -201,7 +201,7 @@ html.poe-theme [data-theme-toggle] { display: none; }
 		position: absolute;
 		inset: 0;
 		opacity: 0;
-		background: url(/poe-data/ui-assets/veiled-mod-anim.png) no-repeat 0 50% / 100% 300%;
+		background: url(/poe-data/poe1/ui-assets/veiled-mod-anim.png) no-repeat 0 50% / 100% 300%;
 		animation-delay: -1.8s, 0s;
 	}
 	.craft-veiled > .craft-veiled-f[data-f="2"] {
@@ -1453,34 +1453,34 @@ html:has([data-craft2-page]) {
 	background-size: auto 100%, auto 100%, auto 100%;
 }
 .poe-psheader-normal {
-	--psh-left: url("/poe-data/ui-assets/psheadernormalleft.png");
-	--psh-mid: url("/poe-data/ui-assets/psheadernormalmiddle.png");
-	--psh-right: url("/poe-data/ui-assets/psheadernormalright.png");
+	--psh-left: url("/poe-data/poe1/ui-assets/psheadernormalleft.png");
+	--psh-mid: url("/poe-data/poe1/ui-assets/psheadernormalmiddle.png");
+	--psh-right: url("/poe-data/poe1/ui-assets/psheadernormalright.png");
 }
 .poe-psheader-notable {
-	--psh-left: url("/poe-data/ui-assets/psheadernotableleft.png");
-	--psh-mid: url("/poe-data/ui-assets/psheadernotablemiddle.png");
-	--psh-right: url("/poe-data/ui-assets/psheadernotableright.png");
+	--psh-left: url("/poe-data/poe1/ui-assets/psheadernotableleft.png");
+	--psh-mid: url("/poe-data/poe1/ui-assets/psheadernotablemiddle.png");
+	--psh-right: url("/poe-data/poe1/ui-assets/psheadernotableright.png");
 }
 .poe-psheader-keystone {
-	--psh-left: url("/poe-data/ui-assets/psheaderkeystoneleft.png");
-	--psh-mid: url("/poe-data/ui-assets/psheaderkeystonemiddle.png");
-	--psh-right: url("/poe-data/ui-assets/psheaderkeystoneright.png");
+	--psh-left: url("/poe-data/poe1/ui-assets/psheaderkeystoneleft.png");
+	--psh-mid: url("/poe-data/poe1/ui-assets/psheaderkeystonemiddle.png");
+	--psh-right: url("/poe-data/poe1/ui-assets/psheaderkeystoneright.png");
 }
 .poe-psheader-jewel {
-	--psh-left: url("/poe-data/ui-assets/psheaderjewelleft.png");
-	--psh-mid: url("/poe-data/ui-assets/psheaderjewelmiddle.png");
-	--psh-right: url("/poe-data/ui-assets/psheaderjewelright.png");
+	--psh-left: url("/poe-data/poe1/ui-assets/psheaderjewelleft.png");
+	--psh-mid: url("/poe-data/poe1/ui-assets/psheaderjewelmiddle.png");
+	--psh-right: url("/poe-data/poe1/ui-assets/psheaderjewelright.png");
 }
 .poe-psheader-ascendancy {
-	--psh-left: url("/poe-data/ui-assets/psheaderascendancyleft.png");
-	--psh-mid: url("/poe-data/ui-assets/psheaderascendancymiddle.png");
-	--psh-right: url("/poe-data/ui-assets/psheaderascendancyright.png");
+	--psh-left: url("/poe-data/poe1/ui-assets/psheaderascendancyleft.png");
+	--psh-mid: url("/poe-data/poe1/ui-assets/psheaderascendancymiddle.png");
+	--psh-right: url("/poe-data/poe1/ui-assets/psheaderascendancyright.png");
 }
 .poe-psheader-mastery {
-	--psh-left: url("/poe-data/ui-assets/psheadermasteryleft.png");
-	--psh-mid: url("/poe-data/ui-assets/psheadermasterymiddle.png");
-	--psh-right: url("/poe-data/ui-assets/psheadermasteryright.png");
+	--psh-left: url("/poe-data/poe1/ui-assets/psheadermasteryleft.png");
+	--psh-mid: url("/poe-data/poe1/ui-assets/psheadermasterymiddle.png");
+	--psh-right: url("/poe-data/poe1/ui-assets/psheadermasteryright.png");
 }
 /* PoE2 머리 띠(10-23 Q60) — 게임 PoE2 4K 아트(아치형 캡 등, tools/poe2-extract/ui-assets2.mjs). 주얼 소켓 띠는 PoE2 에 없어 PoE1 그대로 */
 .poe2-psh.poe-psheader-normal {
@@ -1506,7 +1506,7 @@ html:has([data-craft2-page]) {
 .poe-popup-sep {
 	height: 8px;
 	margin: 0.15rem 0.4rem;
-	background-image: url("/poe-data/ui-assets/passivepopupseparator.png");
+	background-image: url("/poe-data/poe1/ui-assets/passivepopupseparator.png");
 	background-repeat: no-repeat;
 	background-position: center;
 	background-size: 100% 100%;
@@ -1522,7 +1522,7 @@ html:has([data-craft2-page]) {
 	color: #fff;
 	text-align: center;
 	background-color: rgba(0, 0, 0, 0.95);
-	background-image: url("/poe-data/ui-assets/passivepopupseparator.png");
+	background-image: url("/poe-data/poe1/ui-assets/passivepopupseparator.png");
 	background-repeat: no-repeat;
 	background-position: center bottom 2px;
 	background-size: calc(100% - 0.8rem) 8px;
@@ -1634,7 +1634,7 @@ html.poe-alt .poe-kw-hint,
 	margin-top: 0.25rem;
 }
 
-/* 게임 원본 아이템 헤더 밴드/구분선 (PoB 에셋, /poe-data/ui-assets 로 서빙).
+/* 게임 원본 아이템 헤더 밴드/구분선 (PoB 에셋, /poe-data/poe1/ui-assets 로 서빙).
    좌/우 장식 캡(no-repeat) + 가운데 텍스처(repeat-x). 희귀도 클래스가 이미지 URL·색을 주입. */
 .poe-tt-band {
 	position: relative;
@@ -1673,37 +1673,37 @@ html.poe-alt .poe-kw-hint,
 }
 .poe-rar-unique {
 	--rarity: #af6025;
-	--band-left: url("/poe-data/ui-assets/itemsheaderuniqueleft.png");
-	--band-mid: url("/poe-data/ui-assets/itemsheaderuniquemiddle.png");
-	--band-right: url("/poe-data/ui-assets/itemsheaderuniqueright.png");
-	--band2-left: url("/poe-data/ui-assets/itemsheader2uniqueleft.png");
-	--band2-mid: url("/poe-data/ui-assets/itemsheader2uniquemiddle.png");
-	--band2-right: url("/poe-data/ui-assets/itemsheader2uniqueright.png");
-	--band-sep: url("/poe-data/ui-assets/itemsseparatorunique.png");
+	--band-left: url("/poe-data/poe1/ui-assets/itemsheaderuniqueleft.png");
+	--band-mid: url("/poe-data/poe1/ui-assets/itemsheaderuniquemiddle.png");
+	--band-right: url("/poe-data/poe1/ui-assets/itemsheaderuniqueright.png");
+	--band2-left: url("/poe-data/poe1/ui-assets/itemsheader2uniqueleft.png");
+	--band2-mid: url("/poe-data/poe1/ui-assets/itemsheader2uniquemiddle.png");
+	--band2-right: url("/poe-data/poe1/ui-assets/itemsheader2uniqueright.png");
+	--band-sep: url("/poe-data/poe1/ui-assets/itemsseparatorunique.png");
 }
 .poe-rar-rare {
 	--rarity: #ffff77;
-	--band-left: url("/poe-data/ui-assets/itemsheaderrareleft.png");
-	--band-mid: url("/poe-data/ui-assets/itemsheaderraremiddle.png");
-	--band-right: url("/poe-data/ui-assets/itemsheaderrareright.png");
-	--band2-left: url("/poe-data/ui-assets/itemsheader2rareleft.png");
-	--band2-mid: url("/poe-data/ui-assets/itemsheader2raremiddle.png");
-	--band2-right: url("/poe-data/ui-assets/itemsheader2rareright.png");
-	--band-sep: url("/poe-data/ui-assets/itemsseparatorrare.png");
+	--band-left: url("/poe-data/poe1/ui-assets/itemsheaderrareleft.png");
+	--band-mid: url("/poe-data/poe1/ui-assets/itemsheaderraremiddle.png");
+	--band-right: url("/poe-data/poe1/ui-assets/itemsheaderrareright.png");
+	--band2-left: url("/poe-data/poe1/ui-assets/itemsheader2rareleft.png");
+	--band2-mid: url("/poe-data/poe1/ui-assets/itemsheader2raremiddle.png");
+	--band2-right: url("/poe-data/poe1/ui-assets/itemsheader2rareright.png");
+	--band-sep: url("/poe-data/poe1/ui-assets/itemsseparatorrare.png");
 }
 .poe-rar-magic {
 	--rarity: #8888ff;
-	--band-left: url("/poe-data/ui-assets/itemsheadermagicleft.png");
-	--band-mid: url("/poe-data/ui-assets/itemsheadermagicmiddle.png");
-	--band-right: url("/poe-data/ui-assets/itemsheadermagicright.png");
-	--band-sep: url("/poe-data/ui-assets/itemsseparatormagic.png");
+	--band-left: url("/poe-data/poe1/ui-assets/itemsheadermagicleft.png");
+	--band-mid: url("/poe-data/poe1/ui-assets/itemsheadermagicmiddle.png");
+	--band-right: url("/poe-data/poe1/ui-assets/itemsheadermagicright.png");
+	--band-sep: url("/poe-data/poe1/ui-assets/itemsseparatormagic.png");
 }
 .poe-rar-white {
 	--rarity: #c8c8c8;
-	--band-left: url("/poe-data/ui-assets/itemsheaderwhiteleft.png");
-	--band-mid: url("/poe-data/ui-assets/itemsheaderwhitemiddle.png");
-	--band-right: url("/poe-data/ui-assets/itemsheaderwhiteright.png");
-	--band-sep: url("/poe-data/ui-assets/itemsseparatorwhite.png");
+	--band-left: url("/poe-data/poe1/ui-assets/itemsheaderwhiteleft.png");
+	--band-mid: url("/poe-data/poe1/ui-assets/itemsheaderwhitemiddle.png");
+	--band-right: url("/poe-data/poe1/ui-assets/itemsheaderwhiteright.png");
+	--band-sep: url("/poe-data/poe1/ui-assets/itemsseparatorwhite.png");
 }
 /* poedb 식 부위 선택 칩 */
 /* 모드 수치 강조 — 페이지(테마 배경)에선 본문 강조색, 고정 다크 레이어에선 흰색.
@@ -1827,17 +1827,17 @@ html.poe-alt .poe-kw-hint,
 /* 화폐(10-23 Q77 — 문신 · 룬 접목은 StackableCurrency, 게임 화폐 이름색 #aa9e82 · ItemsHeaderCurrency 띠) */
 .poe-rar-currency {
 	--rarity: #aa9e82;
-	--band-left: url("/poe-data/ui-assets/itemsheadercurrencyleft.png");
-	--band-mid: url("/poe-data/ui-assets/itemsheadercurrencymiddle.png");
-	--band-right: url("/poe-data/ui-assets/itemsheadercurrencyright.png");
-	--band-sep: url("/poe-data/ui-assets/itemsseparatorcurrency.png");
+	--band-left: url("/poe-data/poe1/ui-assets/itemsheadercurrencyleft.png");
+	--band-mid: url("/poe-data/poe1/ui-assets/itemsheadercurrencymiddle.png");
+	--band-right: url("/poe-data/poe1/ui-assets/itemsheadercurrencyright.png");
+	--band-sep: url("/poe-data/poe1/ui-assets/itemsseparatorcurrency.png");
 }
 .poe-rar-gem {
 	--rarity: #1ba29b;
-	--band-left: url("/poe-data/ui-assets/itemsheadergemleft.png");
-	--band-mid: url("/poe-data/ui-assets/itemsheadergemmiddle.png");
-	--band-right: url("/poe-data/ui-assets/itemsheadergemright.png");
-	--band-sep: url("/poe-data/ui-assets/itemsseparatorgem.png");
+	--band-left: url("/poe-data/poe1/ui-assets/itemsheadergemleft.png");
+	--band-mid: url("/poe-data/poe1/ui-assets/itemsheadergemmiddle.png");
+	--band-right: url("/poe-data/poe1/ui-assets/itemsheadergemright.png");
+	--band-sep: url("/poe-data/poe1/ui-assets/itemsseparatorgem.png");
 }
 
 /* 전역 htmx 로딩바 */

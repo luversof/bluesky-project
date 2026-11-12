@@ -291,7 +291,7 @@
 						<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
 							<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" title="${ko ? "동시 확률 계산에 에센스 확정으로 포함" : "Include as essence-guaranteed"}">
 							@if(topEss.icon() != null)
-								<img src="/poe-assets/${topEss.icon()}" class="w-6 h-6 object-contain shrink-0" alt="${ko ? topEss.nameKo() : topEss.name()}" loading="lazy">
+								<img src="/poe-data/poe1/icons/${topEss.icon()}" class="w-6 h-6 object-contain shrink-0" alt="${ko ? topEss.nameKo() : topEss.name()}" loading="lazy">
 							@endif
 							<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), fam.getValue().size())}</span>
 							<span class="text-[10px] font-mono shrink-0 ${"prefix".equals(topEss.gen()) ? "text-[#8888ff]" : "text-amber-400"}">${"prefix".equals(topEss.gen()) ? (ko ? "접두" : "pre") : (ko ? "접미" : "suf")}</span>
@@ -306,7 +306,7 @@
 							@for(var e : fam.getValue())
 								<div class="flex items-center gap-2 text-[12px]">
 									@if(e.icon() != null)
-										<img src="/poe-assets/${e.icon()}" class="w-5 h-5 object-contain shrink-0" alt="" loading="lazy">
+										<img src="/poe-data/poe1/icons/${e.icon()}" class="w-5 h-5 object-contain shrink-0" alt="" loading="lazy">
 									@endif
 									<span class="shrink-0 font-mono text-base-content/60 w-6" title="${ko ? "에센스 등급" : "Essence tier"}">T${e.tier()}</span>
 									<span class="shrink-0 min-w-0 max-w-[45%] truncate text-base-content/60">${ko ? e.nameKo() : e.name()}</span>
@@ -371,7 +371,7 @@
 									</span>
 									@if(b.cost() != null && !b.cost().isEmpty())
 										<span class="shrink-0 inline-flex items-center gap-1 text-[11px] text-base-content/60">
-											@for(var c : b.cost())${c.count()}×@if(c.icon() != null)<img src="/poe-assets/${c.icon()}" class="w-4 h-4 object-contain inline-block" alt="${ko ? c.nameKo() : c.name()}" title="${ko ? c.nameKo() : c.name()}" loading="lazy" data-onerror="text" data-onerror-text="${ko ? c.nameKo() : c.name()}">@else ${ko ? c.nameKo() : c.name()}@endif @endfor
+											@for(var c : b.cost())${c.count()}×@if(c.icon() != null)<img src="/poe-data/poe1/icons/${c.icon()}" class="w-4 h-4 object-contain inline-block" alt="${ko ? c.nameKo() : c.name()}" title="${ko ? c.nameKo() : c.name()}" loading="lazy" data-onerror="text" data-onerror-text="${ko ? c.nameKo() : c.name()}">@else ${ko ? c.nameKo() : c.name()}@endif @endfor
 										</span>
 									@endif
 								</div>

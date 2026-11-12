@@ -43,7 +43,7 @@
 
 			<%-- 아이템 그림 + 상세 레이어(게임 툴팁) — 그림은 PoE2 베이스 상세와 같은 자리(10-01: PoE2 에만 있었다). 모드 등급표는 아래 "전체 제작 모드". --%>
 			<div class="flex flex-wrap items-start gap-6">
-				<img src="/poe-assets/items/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}"
+				<img src="/poe-data/poe1/icons/items/${item.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}"
 				     class="max-h-64 max-w-40 object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" alt="${item.name()}" data-base-art
 				     data-onerror="remove">
 				<div>

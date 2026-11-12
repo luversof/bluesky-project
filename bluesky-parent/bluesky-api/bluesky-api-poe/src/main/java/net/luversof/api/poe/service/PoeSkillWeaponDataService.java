@@ -73,7 +73,7 @@ public class PoeSkillWeaponDataService {
   private final Path dataFile;
 
   public PoeSkillWeaponDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "skill-weapons.json");
     reload();
   }

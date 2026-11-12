@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * PoE 고유 아이템 검색 서비스. 데이터는 {@code ~/.poe-gamedata/unique-items.json}(파생 산출물, git 미관리)에서 부팅 시 1회
+ * PoE 고유 아이템 검색 서비스. 데이터는 {@code ~/.poe-gamedata/poe1/unique-items.json}(파생 산출물, git 미관리)에서 부팅 시 1회
  * 로드한다. 갱신 = tools/poe-extract 의 parse-uniques.mjs 재실행 + 재시작.
  *
  * <p>고유 데이터의 {@code category} 는 거친 분류(예: "sword")지만, 각 고유의 {@code baseType} 을 베이스 아이템에 조인하면 세부
@@ -69,7 +69,7 @@ public class PoeUniqueDataService {
   private volatile Map<String, String> nameBySlug = Map.of();
 
   public PoeUniqueDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir,
       PoeBaseItemDataService poeBaseItemDataService) {
     this.poeBaseItemDataService = poeBaseItemDataService;
     this.dataFile = Path.of(dataDir, "unique-items.json");

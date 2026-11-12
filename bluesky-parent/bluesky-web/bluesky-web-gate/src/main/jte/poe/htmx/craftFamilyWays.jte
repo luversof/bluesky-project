@@ -16,14 +16,14 @@
 	@else
 		<div class="flex flex-wrap gap-1">
 			@for(var e : ways.essences())
-				<button type="button" class="btn btn-xs btn-ghost border border-base-300 gap-1 h-auto min-h-6 py-0.5" data-craft-way="ESSENCE" data-craft-way-value="${e.slug()}" title="${ko ? "이 에센스는 이 계열 T" + e.rank() + " 이상을 보장합니다" : "This essence guarantees T" + e.rank() + " or better"}"><img src="/poe-assets/${e.icon()}" alt="" class="w-4 h-4 object-contain" loading="lazy">${ko && e.nameKo() != null ? e.nameKo() : e.name()} <span class="text-base-content/60">T${e.rank()}</span></button>
+				<button type="button" class="btn btn-xs btn-ghost border border-base-300 gap-1 h-auto min-h-6 py-0.5" data-craft-way="ESSENCE" data-craft-way-value="${e.slug()}" title="${ko ? "이 에센스는 이 계열 T" + e.rank() + " 이상을 보장합니다" : "This essence guarantees T" + e.rank() + " or better"}"><img src="/poe-data/poe1/icons/${e.icon()}" alt="" class="w-4 h-4 object-contain" loading="lazy">${ko && e.nameKo() != null ? e.nameKo() : e.name()} <span class="text-base-content/60">T${e.rank()}</span></button>
 			@endfor
 			@if(ways.bench() != null)
 				<button type="button" class="btn btn-xs btn-ghost border border-base-300 h-auto min-h-6 py-0.5" data-craft-way="BENCH" data-craft-way-value="${ways.bench().modId()}" title="${ko ? "작업대 옵션 — 이 계열 T" + ways.bench().tier() + " 상당" : "Bench craft — equal to T" + ways.bench().tier()}">${ko ? "작업대: " : "Bench: "}${String.join(", ", ko && ways.bench().ko() != null && !ways.bench().ko().isEmpty() ? ways.bench().ko() : ways.bench().en())} <span class="text-base-content/60">T${ways.bench().tier()}</span></button>
 			@endif
 			@for(var f : ways.fossils())
 				@if(f.mult() > 1)
-					<button type="button" class="btn btn-xs btn-ghost border border-base-300 gap-1 h-auto min-h-6 py-0.5" data-craft-way="FOSSIL" data-craft-way-value="${f.slug()}" title="${ko ? "이 화석은 이 계열 가중치를 " + net.luversof.web.gate.poe.CraftPoolGroups.multText(f.mult()) + " 합니다" : "This fossil multiplies this family's weight " + net.luversof.web.gate.poe.CraftPoolGroups.multText(f.mult())}"><img src="/poe-assets/${f.icon()}" alt="" class="w-4 h-4 object-contain" loading="lazy">${ko && f.nameKo() != null ? f.nameKo() : f.name()} <span class="badge badge-info badge-xs">${net.luversof.web.gate.poe.CraftPoolGroups.multText(f.mult())}</span></button>
+					<button type="button" class="btn btn-xs btn-ghost border border-base-300 gap-1 h-auto min-h-6 py-0.5" data-craft-way="FOSSIL" data-craft-way-value="${f.slug()}" title="${ko ? "이 화석은 이 계열 가중치를 " + net.luversof.web.gate.poe.CraftPoolGroups.multText(f.mult()) + " 합니다" : "This fossil multiplies this family's weight " + net.luversof.web.gate.poe.CraftPoolGroups.multText(f.mult())}"><img src="/poe-data/poe1/icons/${f.icon()}" alt="" class="w-4 h-4 object-contain" loading="lazy">${ko && f.nameKo() != null ? f.nameKo() : f.name()} <span class="badge badge-info badge-xs">${net.luversof.web.gate.poe.CraftPoolGroups.multText(f.mult())}</span></button>
 				@endif
 			@endfor
 			@for(var h : ways.harvests())

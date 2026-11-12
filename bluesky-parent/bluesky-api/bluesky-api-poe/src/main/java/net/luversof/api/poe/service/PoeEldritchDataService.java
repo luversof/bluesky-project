@@ -15,8 +15,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 섬뜩한 고정 속성(총주교/포식자) 풀 — tools/poe-extract/parse-eldritch.mjs 가 만든 {@code
- * ~/.poe-gamedata/eldritch-implicits.json}. 특정 방어/장신구 슬롯에 화폐로 부여하는 고정 속성을 아이템 종류별로 팩션(exarch=총주교,
- * eater=포식자) × 계열(등급 사다리)로 제공한다.
+ * ~/.poe-gamedata/poe1/eldritch-implicits.json}. 특정 방어/장신구 슬롯에 화폐로 부여하는 고정 속성을 아이템 종류별로
+ * 팩션(exarch=총주교, eater=포식자) × 계열(등급 사다리)로 제공한다.
  */
 @Service
 public class PoeEldritchDataService {
@@ -49,7 +49,7 @@ public class PoeEldritchDataService {
   private volatile EldritchData data = new EldritchData("", Map.of(), Map.of());
 
   public PoeEldritchDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "eldritch-implicits.json");
     reload();
   }

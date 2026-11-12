@@ -30,7 +30,8 @@ public class PoeCraftPriceService {
   private volatile Prices prices = new Prices(null, null, Map.of());
   private volatile FileTime loadedAt;
 
-  public PoeCraftPriceService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+  public PoeCraftPriceService(
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.file = Path.of(dataDir, "ninja", "craft-prices.json");
   }
 

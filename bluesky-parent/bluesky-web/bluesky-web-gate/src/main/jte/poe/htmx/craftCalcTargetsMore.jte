@@ -41,7 +41,7 @@
 							<option value="${t.tier()}">${f.tiers().size() > 1 && t != top ? tw + (ko ? " 이상" : "+") : tw}</option>
 						@endfor
 					</select>
-					@if(f.icon() != null)<img src="/poe-assets/${f.icon()}" alt="" class="w-5 h-5 object-contain shrink-0" loading="lazy">@endif
+					@if(f.icon() != null)<img src="/poe-data/poe1/icons/${f.icon()}" alt="" class="w-5 h-5 object-contain shrink-0" loading="lazy">@endif
 					<span class="min-w-0 wrap-anywhere">${"prefix".equals(f.gen()) ? (ko ? "접두 " : "P ") : (ko ? "접미 " : "S ")}@for(int i = 0; i < mx.size(); i++)$unsafe{PoeText.highlightValues(mx.get(i))}@if(i < mx.size() - 1), @endif@endfor@if(!tg.isEmpty())<span class="text-[10px] text-base-content/60"> — ${String.join(", ", tg)}</span>@endif
 						<span class="block text-[10px] text-base-content/70">${fname}</span></span>
 				</label>

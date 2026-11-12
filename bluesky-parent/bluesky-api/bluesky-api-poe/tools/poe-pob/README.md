@@ -7,13 +7,13 @@ PoB 커뮤니티(MIT)의 계산 엔진을 LuaJIT 로 헤드리스 구동해 빌�
 
 - `calc.lua` — 러너. 빌드 XML(zlib 해제된 PoB XML)을 받아 `@@POB_RESULT@@{json}` 한 줄 출력.
   cwd 가 PoB 소스의 `src/` 여야 한다 (HeadlessWrapper/Launch 가 상대 경로를 쓴다).
-- PoB 소스는 파생 산출물이라 **git 밖** `~/.poe-gamedata/work/pob-src` 에 클론해 둔다.
+- PoB 소스는 파생 산출물이라 **git 밖** `~/.poe-gamedata/poe1/work/pob-src` 에 클론해 둔다.
 
 ## 셋업 (1회)
 
 ```
 winget install --id DEVCOM.LuaJIT        # LuaJIT (%LOCALAPPDATA%\Programs\LuaJIT)
-cd ~/.poe-gamedata/work
+cd ~/.poe-gamedata/poe1/work
 git clone --depth 1 https://github.com/PathOfBuildingCommunity/PathOfBuilding.git pob-src
 ```
 
@@ -24,7 +24,7 @@ lua-utf8.dll 은 lua51 ABI 라 LuaJIT 에서 그대로 로드된다.
 ## 수동 실행
 
 ```
-cd ~/.poe-gamedata/work/pob-src/src
+cd ~/.poe-gamedata/poe1/work/pob-src/src
 luajit <repo>/tools/poe-pob/calc.lua <build.xml>   # 회당 약 1.5초
 ```
 
@@ -38,5 +38,5 @@ luajit <repo>/tools/poe-pob/calc.lua <build.xml>   # 회당 약 1.5초
 
 ## 시즌 갱신
 
-PoB 소스만 최신으로 당기면 된다: `cd ~/.poe-gamedata/work/pob-src && git pull`
+PoB 소스만 최신으로 당기면 된다: `cd ~/.poe-gamedata/poe1/work/pob-src && git pull`
 (트리 버전은 PoB 의 `src/TreeData/<버전>` 지원 범위를 따른다.)

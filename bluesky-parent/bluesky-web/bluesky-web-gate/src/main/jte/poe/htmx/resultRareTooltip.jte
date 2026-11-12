@@ -51,7 +51,7 @@
 		}
 	}
 	// 헤더 좌우 모서리 심볼 — 인게임 배치. 엘드리치는 총주교=좌/포식자=우, 단일이면 양쪽 동일. 영향력은 양쪽 동일.
-	String uiBase = "/poe-data/ui-assets/";
+	String uiBase = "/poe-data/poe1/ui-assets/";
 	String exarchIco = uiBase + "influence-exarch.png", eaterIco = uiBase + "influence-eater.png";
 	String shaperIco = uiBase + "influence-shaper.png", elderIco = uiBase + "influence-elder.png";
 	String leftIco = null, rightIco = null;

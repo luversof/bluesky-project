@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * 베이스 → 변형(10-20 C516) — 주얼 색 · 심연 주얼 종류는 베이스마다 붙는 옵션이 달라 베이스 하나 = 변형 하나, 군집 주얼(인챈트마다)과 고유 전용 베이스는
- * null. 실제 추출 데이터(~/.poe-gamedata)로, 없으면 건너뛴다.
+ * null. 실제 추출 데이터(~/.poe-gamedata/poe1)로, 없으면 건너뛴다.
  */
 class PoeModVariantOfBaseTest {
 
@@ -19,7 +19,7 @@ class PoeModVariantOfBaseTest {
 
   @BeforeAll
   static void setUp() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "mods.json")), "추출 데이터 없음");
     mods = new PoeModDataService(dir);
   }

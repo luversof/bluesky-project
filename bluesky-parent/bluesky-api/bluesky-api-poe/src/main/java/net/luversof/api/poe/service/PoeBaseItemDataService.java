@@ -19,7 +19,10 @@ import org.springframework.stereotype.Service;
 
 import tools.jackson.databind.json.JsonMapper;
 
-/** PoE 일반(베이스) 아이템 검색 서비스. 데이터는 {@code ~/.poe-gamedata/base-items.json}(파생 산출물, git 미관리)에서 로드한다. */
+/**
+ * PoE 일반(베이스) 아이템 검색 서비스. 데이터는 {@code ~/.poe-gamedata/poe1/base-items.json}(파생 산출물, git 미관리)에서
+ * 로드한다.
+ */
 @Service
 public class PoeBaseItemDataService {
 
@@ -99,7 +102,7 @@ public class PoeBaseItemDataService {
   private volatile PoeBaseItemData data;
 
   public PoeBaseItemDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "base-items.json");
     reload();
   }

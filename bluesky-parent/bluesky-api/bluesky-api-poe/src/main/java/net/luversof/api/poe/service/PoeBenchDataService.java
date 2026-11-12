@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 작업대(벤치크래프트) 모드 — tools/poe-extract/parse-bench.mjs 가 만든 {@code ~/.poe-gamedata/bench.json}.
+ * 작업대(벤치크래프트) 모드 — tools/poe-extract/parse-bench.mjs 가 만든 {@code ~/.poe-gamedata/poe1/bench.json}.
  * "작업대에서 이 클래스에 붙일 수 있는 모드 + 제작 비용"(poedb/craftofexile 의 Crafting Bench 섹션식)을 클래스별로 제공한다.
  */
 @Service
@@ -42,7 +42,8 @@ public class PoeBenchDataService {
   private final Path dataFile;
   private volatile BenchData data = new BenchData("", Map.of());
 
-  public PoeBenchDataService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+  public PoeBenchDataService(
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "bench.json");
     reload();
   }

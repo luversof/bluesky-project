@@ -43,7 +43,7 @@ public class PoeNinjaSyncService {
 
   public PoeNinjaSyncService(
       @Value("${poe.extract-dir:tools/poe-extract}") String extractDir,
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir,
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir,
       @Value("${poe.ninja-sync.enabled:true}") boolean enabled,
       @Value("${poe.ninja-sync.interval:PT30M}") Duration interval,
       @Value("${poe.ninja-sync.engine-cron:0 0 5 * * *}") String engineCron,

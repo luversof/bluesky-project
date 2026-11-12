@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * 젬 아이콘 캐시버스터 값 제공. {@code icons/version.txt}(icons.mjs 가 재생성 때마다 갱신하는 타임스탬프)를 읽어 {@code
- * /poe-assets/gems/*.png?v=} 쿼리에 붙인다. patch 만으로는 같은 patch 에서 아이콘 생성 방식만 바꿔 재생성하면 URL 이 동일해 브라우저가 옛
- * 아이콘을 계속 재사용하는 문제가 있어 별도 버전으로 분리한다.
+ * /poe-data/poe1/icons/gems/*.png?v=} 쿼리에 붙인다. patch 만으로는 같은 patch 에서 아이콘 생성 방식만 바꿔 재생성하면 URL 이 동일해
+ * 브라우저가 옛 아이콘을 계속 재사용하는 문제가 있어 별도 버전으로 분리한다.
  */
 @Component
 public class PoeIconVersion {
@@ -20,7 +20,7 @@ public class PoeIconVersion {
   private static volatile PoeIconVersion instance;
 
   public PoeIconVersion(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
-    this.versionFile = Path.of(dataDir, "icons", "version.txt");
+    this.versionFile = Path.of(dataDir, "poe1", "icons", "version.txt");
     instance = this;
   }
 

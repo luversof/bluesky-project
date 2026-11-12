@@ -9,7 +9,7 @@
 //   4) 컬럼 배열을 zip + dictionary join → per-build 레코드
 //   5) 아키타입(전직×메인스킬)별 집계 → 최적화기 시드 후보
 //
-// 산출물: ~/.poe-gamedata/ninja/ninja-builds-{league}.json, ninja-archetypes-{league}.json
+// 산출물: ~/.poe-gamedata/poe1/ninja/ninja-builds-{league}.json, ninja-archetypes-{league}.json
 //
 // 컬럼 인코딩(각 field#5 엔트리 = {#1:컬럼명, #2:행엔트리 반복}):
 //   문자열(name,account,ehp,dps): 행엔트리 내부 #1 = 표시문자열

@@ -10,14 +10,14 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-/** 게임 아이템 복사 글 가져오기(10-20 C485) — 실제 추출 데이터(~/.poe-gamedata)로. 데이터가 없으면 건너뛴다. */
+/** 게임 아이템 복사 글 가져오기(10-20 C485) — 실제 추출 데이터(~/.poe-gamedata/poe1)로. 데이터가 없으면 건너뛴다. */
 class PoeCraftImportServiceTest {
 
   private static PoeCraftImportService importer;
 
   @BeforeAll
   static void setUp() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
     PoeModDataService mods = new PoeModDataService(dir);

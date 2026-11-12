@@ -203,14 +203,14 @@
 		<div class="grid grid-cols-4 min-[380px]:grid-cols-5 gap-1.5 sm:flex sm:flex-wrap sm:items-stretch" data-craft-actions data-swap-anchor-key="actions">
 			@for(Btn b : btns)
 				<button type="submit" name="action" value="${b.action()}" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 ${recommend != null && recommend.actionId() != null && (recommend.actionId().equals(b.action()) || recommend.actionId().startsWith(b.action() + ":") || ("FALLBACK".equals(recommend.actionId()) && "SCOUR".equals(b.action())) || ("UNVEIL".equals(recommend.actionId()) && "UNVEIL_OPEN".equals(b.action()))) ? "ring-2 ring-primary ring-offset-1 ring-offset-base-100" : ""} ${b.action().equals(lastAction) ? "btn-ghost border border-primary" : "btn-ghost border border-base-300"}" data-craft-action="${b.action()}" disabled="${"UNVEIL_OPEN".equals(b.action()) ? !b.enabled() : view.blocked() != null ? blocked.containsKey(b.action()) : !b.enabled()}" data-craft-blocked="${blocked.get(b.action())}" title="${blocked.containsKey(b.action()) ? (ko ? b.ko() : b.en()) + " — " + blocked.get(b.action()) : (tip.apply(b.en()) != null ? tip.apply(b.en()) : (ko ? b.ko() : b.en()))}">
-					@if(b.icon() != null)<img src="/poe-assets/currency/${b.icon()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">@else<span class="w-7 h-7 grid place-items-center text-lg leading-none" aria-hidden="true">◈</span>@endif
+					@if(b.icon() != null)<img src="/poe-data/poe1/icons/currency/${b.icon()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">@else<span class="w-7 h-7 grid place-items-center text-lg leading-none" aria-hidden="true">◈</span>@endif
 					<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal break-normal hyphens-auto">${ko ? b.ko().replace(" 오브", "").replace("의", "") : b.en().replace("Orb of ", "").replace(" Orb", "").replace("Transmutation", "Transmute").replace("Augmentation", "Augment")}</span>
 				</button>
 			@endfor
 			<%-- 신성 · 축복 · 머리카락도 같은 줄(C455 — CoE 처럼 제작 수단은 위 한 줄). 되돌리기 · 새 아이템은 C546 에서 위 줄로 --%>
 			<span class="hidden sm:block w-px self-stretch bg-base-300 mx-1" aria-hidden="true"></span>
-			<button type="submit" name="action" value="DIVINE" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="DIVINE" disabled="${item.corrupted() || lines.stream().allMatch(PoeCraft.Line::fractured)}" title="${ko ? "신성한 오브 — 옵션 수치를 다시 굴립니다(분열 옵션 제외). 되돌리기로 돌아가지 않습니다" : "Divine Orb — rerolls modifier values (not fractured). Not undoable"}"><img src="/poe-assets/currency/currencymodvalues.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "신성한 오브" : "Divine Orb"}</span></button>
-			<button type="submit" name="action" value="BLESSED" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="BLESSED" disabled="${item.corrupted() || implicits.isEmpty()}" title="${ko ? "축복의 오브 — 고정 속성(고정 속성) 수치를 다시 굴립니다. 되돌리기로 돌아가지 않습니다" : "Blessed Orb — rerolls implicit values. Not undoable"}"><img src="/poe-assets/currency/currencyrerollimplicit.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "축복의 오브" : "Blessed Orb"}</span></button>
+			<button type="submit" name="action" value="DIVINE" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="DIVINE" disabled="${item.corrupted() || lines.stream().allMatch(PoeCraft.Line::fractured)}" title="${ko ? "신성한 오브 — 옵션 수치를 다시 굴립니다(분열 옵션 제외). 되돌리기로 돌아가지 않습니다" : "Divine Orb — rerolls modifier values (not fractured). Not undoable"}"><img src="/poe-data/poe1/icons/currency/currencymodvalues.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "신성한 오브" : "Divine Orb"}</span></button>
+			<button type="submit" name="action" value="BLESSED" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="BLESSED" disabled="${item.corrupted() || implicits.isEmpty()}" title="${ko ? "축복의 오브 — 고정 속성(고정 속성) 수치를 다시 굴립니다. 되돌리기로 돌아가지 않습니다" : "Blessed Orb — rerolls implicit values. Not undoable"}"><img src="/poe-data/poe1/icons/currency/currencyrerollimplicit.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "축복의 오브" : "Blessed Orb"}</span></button>
 			<button type="submit" name="action" value="FORESEE" class="btn btn-sm h-auto min-h-12 w-full sm:w-[4.75rem] flex-col gap-0.5 px-1 py-1 btn-ghost border border-base-300" data-craft-action="FORESEE" disabled="${!foresee.isEmpty()}" title="${ko ? "히네코라의 머리카락 — 다음에 쓸 화폐의 결과를 미리 봅니다. 아이템이 바뀌면 사라집니다" : "Hinekora's Lock — foresee the result of the next currency. Lost once the item is modified"}"><img src="/poe-data/poe2/icons/currency/currencyhinekoraslock.png" alt="" class="w-7 h-7 object-contain" loading="lazy"><span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? "히네코라의 머리카락" : "Hinekora's Lock"}</span></button>
 		</div>
 		<%-- 최적 조합 따라 하기(C464) — 계산기의 최적 조합 정책이 지금 아이템에 쓸 다음 수단(단추는 테두리로 강조) --%>
@@ -507,14 +507,14 @@
 								}
 								<label class="flex items-start gap-2 text-xs min-w-0 ${!blocked.containsKey("FOSSIL:" + f.slug()) ? "" : "opacity-50"}" data-craft-fossil="${f.slug()}" title="${blocked.get("FOSSIL:" + f.slug())}">
 									<input type="checkbox" name="fossil" value="${f.slug()}" class="checkbox checkbox-xs mt-0.5" disabled="${magic || blocked.containsKey("FOSSIL:" + f.slug())}">
-									<img src="/poe-assets/${f.icon()}" alt="" class="w-5 h-5 object-contain shrink-0" loading="lazy">
+									<img src="/poe-data/poe1/icons/${f.icon()}" alt="" class="w-5 h-5 object-contain shrink-0" loading="lazy">
 									<span class="min-w-0 wrap-anywhere"><span class="font-medium">${ko ? f.nameKo() : f.name()}</span> <span class="text-base-content/60">${effect}</span></span>
 								</label>
 							@endfor
 						</div>
 						<div class="flex flex-wrap items-center gap-2">
 							@for(PoeCraft.Resonator r : resos)
-								<img src="/poe-assets/${r.icon()}" alt="${ko ? r.nameKo() : r.name()}" title="${ko ? r.nameKo() : r.name()} (${r.sockets()}${ko ? "칸" : " sockets"})" class="w-6 h-6 object-contain" loading="lazy">
+								<img src="/poe-data/poe1/icons/${r.icon()}" alt="${ko ? r.nameKo() : r.name()}" title="${ko ? r.nameKo() : r.name()} (${r.sockets()}${ko ? "칸" : " sockets"})" class="w-6 h-6 object-contain" loading="lazy">
 							@endfor
 							<button type="submit" name="action" value="FOSSIL" class="btn btn-sm" data-craft-action="FOSSIL" disabled="${magic || item.corrupted() || outcomeMeta || fosWhy != null}" title="${outcomeMeta ? (ko ? "속성의 결과에 영향을 미치는 속성 부여가 포함된 아이템에는 해당 화폐를 사용할 수 없습니다." : "You can't use this currency on items with a modifier that affects mod outcomes.") : null}">${ko ? (normal ? "화석 적용 · 연금 공명기" : "화석 적용 · 혼돈 공명기") : (normal ? "Apply fossils (alchemical)" : "Apply fossils (chaotic)")}</button>
 						</div>
@@ -595,7 +595,7 @@
 						@for(String c : options.conquerors())
 							!{ String[] ci = conq.getOrDefault(c, new String[] {c, c, "currencyaddmodtorare", "", ""}); }
 							<button type="submit" name="action" value="CONQUEROR:${c}" class="btn btn-sm h-auto min-h-12 flex-col gap-0.5 py-1 btn-ghost border border-base-300" data-craft-action="CONQUEROR:${c}" disabled="${view.blocked() != null ? blocked.containsKey("CONQUEROR:" + c) : (!rare || !inf.isEmpty() || full)}" data-craft-blocked="${blocked.get("CONQUEROR:" + c)}" title="${blocked.containsKey("CONQUEROR:" + c) ? (ko ? ci[0] : ci[1]) + " — " + blocked.get("CONQUEROR:" + c) : (tip.apply(ci[4]) != null ? tip.apply(ci[4]) : (ko ? ci[0] : ci[1]))}">
-								<img src="/poe-assets/currency/${ci[2]}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
+								<img src="/poe-data/poe1/icons/currency/${ci[2]}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
 								<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? ci[0] : ci[1]}</span>
 							</button>
 						@endfor
@@ -605,7 +605,7 @@
 						!{ PoeCraft.CurrencyInfo dom = infoByName.get("Orb of Dominance"); String domWhy = blocked.get("DOMINANCE"); }
 						<div class="px-3 pb-3">
 							<button type="submit" name="action" value="DOMINANCE" class="btn btn-sm h-auto min-h-12 gap-2 py-1 ${"DOMINANCE".equals(lastAction) ? "btn-ghost border border-primary" : "btn-ghost border border-base-300"}" data-craft-action="DOMINANCE" disabled="${domWhy != null}" data-craft-blocked="${domWhy}" title="${(ko && dom != null ? dom.nameKo() : "Orb of Dominance") + (domWhy != null ? " — " + domWhy : "")}">
-								<img src="/poe-assets/currency/currencyupgradeinfluencemod.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
+								<img src="/poe-data/poe1/icons/currency/currencyupgradeinfluencemod.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
 								<span class="text-xs leading-tight whitespace-normal text-left">${ko ? "지배의 오브 — 영향력 옵션 하나 올림(최고면 고양) · 다른 하나 지움" : "Orb of Dominance — upgrade one influenced mod (top tier → Elevated), remove another"}</span>
 							</button>
 						</div>
@@ -617,7 +617,7 @@
 							@for(String c : options.conquerors())
 								!{ String[] ci = conq.getOrDefault(c, new String[] {c, c, "currencyaddmodtorare", "", ""}); String aw = "AWAKENER:" + c; String awWhy = blocked.get(aw); }
 								<button type="submit" name="action" value="${aw}" class="btn btn-sm h-auto min-h-10 gap-1 py-1 btn-ghost border border-base-300" data-craft-action="${aw}" disabled="${awWhy != null}" data-craft-blocked="${awWhy}" title="${(ko ? "각성자의 오브 + " + ci[0] : "Awakener's Orb + " + ci[1]) + (awWhy != null ? " — " + awWhy : "")}">
-									<img src="/poe-assets/currency/applyinfluence.png" alt="" class="w-5 h-5 object-contain" loading="lazy">
+									<img src="/poe-data/poe1/icons/currency/applyinfluence.png" alt="" class="w-5 h-5 object-contain" loading="lazy">
 									<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? ci[0] : ci[1]}</span>
 								</button>
 							@endfor
@@ -641,7 +641,7 @@
 										String why = blocked.get(kind);
 									}
 									<button type="submit" name="action" value="${act}" class="btn btn-sm h-auto min-h-12 flex-col gap-0.5 py-1 ${act.equals(lastAction) ? "btn-ghost border border-primary" : "btn-ghost border border-base-300"}" data-craft-action="${act}" disabled="${why != null}" data-craft-blocked="${why}" title="${(ko && ci != null ? ci.nameKo() : en) + (why != null ? " — " + why : "")}">
-										<img src="/poe-assets/currency/${ci == null ? "" : ci.slug().toLowerCase()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
+										<img src="/poe-data/poe1/icons/currency/${ci == null ? "" : ci.slug().toLowerCase()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
 										<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? tierKo[t - 1] + ("EMBER".equals(kind) ? " 불씨" : " 영액") : tierEn[t - 1] + ("EMBER".equals(kind) ? " Ember" : " Ichor")}</span>
 									</button>
 								@endfor
@@ -654,7 +654,7 @@
 									String why = blocked.get(eo[0]);
 								}
 								<button type="submit" name="action" value="${eo[0]}" class="btn btn-sm h-auto min-h-12 flex-col gap-0.5 py-1 ${eo[0].equals(lastAction) ? "btn-ghost border border-primary" : "btn-ghost border border-base-300"}" data-craft-action="${eo[0]}" disabled="${why != null}" data-craft-blocked="${why}" title="${(ko && ci != null ? ci.nameKo() : eo[1]) + (why != null ? " — " + why : "")}">
-									<img src="/poe-assets/currency/${ci == null ? "" : ci.slug().toLowerCase()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
+									<img src="/poe-data/poe1/icons/currency/${ci == null ? "" : ci.slug().toLowerCase()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
 									<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? eo[2] : eo[1].replace("Eldritch ", "").replace(" Orb", "").replace("Orb of ", "")}</span>
 								</button>
 							@endfor
@@ -662,7 +662,7 @@
 						<%-- 갈등의 오브(C398) — 총주교 · 포식자 고정 속성 둘 다: 하나 올리고 하나 내림(관련 강도 — 커뮤니티 측정 50% ± 11%/등급) --%>
 						!{ PoeCraft.CurrencyInfo cf = infoByName.get("Orb of Conflict"); String cfWhy = blocked.get("CONFLICT"); String cfD = cf == null ? null : ko && cf.directionsKo() != null ? cf.directionsKo() : cf.directions(); }
 						<button type="submit" name="action" value="CONFLICT" class="btn btn-sm h-auto min-h-12 gap-2 py-1 w-full justify-start ${"CONFLICT".equals(lastAction) ? "btn-ghost border border-primary" : "btn-ghost border border-base-300"}" data-craft-action="CONFLICT" disabled="${cfWhy != null}" data-craft-blocked="${cfWhy}" title="${(ko ? "갈등의 오브" : "Orb of Conflict") + (cfWhy != null ? " — " + cfWhy : cfD != null ? " — " + cfD : "")}">
-							<img src="/poe-assets/currency/currencyconflictorb.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
+							<img src="/poe-data/poe1/icons/currency/currencyconflictorb.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
 							<span class="text-xs leading-tight whitespace-normal text-left">${ko ? "갈등의 오브 — 하나 올리고 하나 내림(등급이 같으면 반반, 차이 1당 약 11% — 커뮤니티 측정, 하급을 내리면 지움)" : "Orb of Conflict — raise one, lower the other (50/50 at equal tiers, ~11% per tier of difference — community-measured; a Lesser one lowered is removed)"}</span>
 						</button>
 					</div>
@@ -685,7 +685,7 @@
 									String cAct = "CATALYST:" + c.catalyst();
 								}
 								<button type="submit" name="action" value="${cAct}" class="btn btn-sm h-auto min-h-12 flex-col gap-0.5 py-1 ${cAct.equals(lastAction) ? "btn-ghost border border-primary" : "btn-ghost border border-base-300"}" data-craft-action="${cAct}" disabled="${why != null}" data-craft-blocked="${why}" title="${(ko ? c.nameKo() : c.name()) + (why != null ? " — " + why : d != null ? " — " + d : "")}">
-									<img src="/poe-assets/currency/${c.slug().toLowerCase()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
+									<img src="/poe-data/poe1/icons/currency/${c.slug().toLowerCase()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
 									<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? c.nameKo() : c.name().replace(" Catalyst", "")}</span>
 								</button>
 							@endfor
@@ -716,7 +716,7 @@
 					<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
 						@for(Ducat dc : ducats)
 							<button type="submit" name="action" value="DUCAT:${dc.arg()}" class="btn btn-sm h-auto min-h-12 flex-col gap-0.5 py-1 ${("DUCAT:" + dc.arg()).equals(lastAction) ? "btn-ghost border border-primary" : "btn-ghost border border-base-300"}" data-craft-action="DUCAT:${dc.arg()}" disabled="${dc.off()}" data-craft-blocked="${dc.off() ? (ko ? "이 아이템엔 쓸 수 없습니다(대상 종류 · 희귀도 · 타락)" : "Cannot be used on this item (class / rarity / corruption)") : null}" title="${(dc.off() ? (ko ? "이 아이템엔 쓸 수 없습니다 — " : "Cannot be used on this item — ") : "") + (ko ? dc.ko() + " — " + dc.effKo() : dc.en() + " — " + dc.effEn())}">
-								<img src="/poe-assets/currency/${dc.icon()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
+								<img src="/poe-data/poe1/icons/currency/${dc.icon()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
 								<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? dc.ko() : dc.en()}</span>
 							</button>
 						@endfor
@@ -736,7 +736,7 @@
 								String d = ci == null ? null : ko && ci.directionsKo() != null ? ci.directionsKo() : ci.directions();
 							}
 							<button type="submit" name="action" value="${tc[0]}" class="btn btn-sm h-auto min-h-12 flex-col gap-0.5 py-1 ${tc[0].equals(lastAction) ? "btn-ghost border border-primary" : "btn-ghost border border-base-300"}" data-craft-action="${tc[0]}" disabled="${why != null}" data-craft-blocked="${why}" title="${(ko && ci != null ? ci.nameKo() : tc[1]) + (why != null ? " — " + why : d != null ? " — " + d : "")}">
-								<img src="/poe-assets/currency/${ci == null ? "" : ci.slug().toLowerCase()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
+								<img src="/poe-data/poe1/icons/currency/${ci == null ? "" : ci.slug().toLowerCase()}.png" alt="" class="w-7 h-7 object-contain" loading="lazy">
 								<span class="text-[10px] max-[379px]:text-[9px] leading-tight whitespace-normal hyphens-auto">${ko ? tc[2] : tc[1].replace("Tainted ", "").replace(" Orb", "")}</span>
 							</button>
 						@endfor
@@ -821,8 +821,8 @@
 			<%-- 레어 = 인게임 2줄 머리 그림(이름 + 베이스, 10-23 Q24 — 1줄 그림에 두 줄을 눌러 넣었다, itemTooltip 과 같은 poe-tt-band-2) --%>
 			<div class="poe-tt-band${rare ? " poe-tt-band-2" : ""}">
 				@if(infInfo != null)
-					<img src="/poe-data/ui-assets/${infInfo[3]}.png" alt="" style="position:absolute;left:8px;top:6px;width:28px;height:28px;object-fit:contain" data-craft-influence="${inf}">
-					<img src="/poe-data/ui-assets/${iconR != null ? iconR : infInfo[3]}.png" alt="" style="position:absolute;right:8px;top:6px;width:28px;height:28px;object-fit:contain" data-craft-influence-right="${iconR}">
+					<img src="/poe-data/poe1/ui-assets/${infInfo[3]}.png" alt="" style="position:absolute;left:8px;top:6px;width:28px;height:28px;object-fit:contain" data-craft-influence="${inf}">
+					<img src="/poe-data/poe1/ui-assets/${iconR != null ? iconR : infInfo[3]}.png" alt="" style="position:absolute;right:8px;top:6px;width:28px;height:28px;object-fit:contain" data-craft-influence-right="${iconR}">
 				@endif
 				<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${headColor}" data-craft-name>${rare ? (shownName != null && !shownName.isBlank() ? shownName : (ko ? "레어 아이템" : "Rare Item")) : magicName}</div>
 				@if(rare)<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${headColor}" data-craft-base>${baseLabel}</div>@endif
@@ -957,7 +957,7 @@
 							<span class="text-[10px] font-mono text-white/40 block leading-tight" data-craft-line-tag title="${ko ? (l.nameKo() != null ? l.nameKo() : l.name()) + (("prefix".equals(l.gen())) ? " · 접두" : " · 접미") + " · 아이템 레벨 " + l.ilvl() : l.name() + (("prefix".equals(l.gen())) ? " · prefix" : " · suffix") + " · item level " + l.ilvl()}">${"prefix".equals(l.gen()) ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}@if(l.tierRank() != null) T${l.tierRank()}@endif@if(l.id().startsWith("Veiled")) <span class="font-sans" data-craft-line-veiled>${ko ? "장막 — 해제 전(쥰)" : "Veiled — not yet unveiled"}</span>@endif@if(!l.id().startsWith("Veiled") && !l.id().startsWith("Unrevealed") && (ko ? (l.nameKo() != null && !l.nameKo().isBlank()) : (l.name() != null && !l.name().isBlank()))) <span class="font-sans text-white/75" data-craft-line-affix>${(ko ? l.nameKo() : l.name()).replaceFirst("^- ", "")}</span>@endif!{ java.util.List<String> lineTags = ko ? (view.tagsKo() == null ? null : view.tagsKo().get(l.id())) : (view.tags() == null ? null : view.tags().get(l.id())); }@if(lineTags != null && !lineTags.isEmpty()) <span class="font-sans text-white/50" data-craft-line-tags>— ${String.join(", ", lineTags)}</span>@endif@if(l.essence()) ${ko ? "에센스" : "Ess"}@endif@if(l.crafted()) ${ko ? "제작" : "Crafted"}@endif@if(l.fractured()) ${ko ? "분열" : "Fractured"}@endif@if(l.name() != null && l.name().contains("Elevated")) ${ko ? "고양" : "Elevated"}@endif@if(rolls.containsKey("lucky:" + l.id())) <span data-craft-line-lucky title="${ko ? "축성된 화석 — 수치 행운(두 번 굴려 큰 값)" : "Sanctified Fossil — lucky values (higher of two rolls)"}">${ko ? "행운" : "Lucky"}</span>@endif@if(boostedIds.contains(l.id()) && qAmt > 0) <span data-craft-line-boosted title="${ko ? "기폭제 퀄리티로 수치 +" + qAmt + "%" : "Values +" + qAmt + "% from catalyst quality"}">${ko ? "퀄리티" : "Q"}</span>@endif</span>
 							@if(l.id().startsWith("Veiled"))
 								<%-- 장막 옵션(10-20 C482 — "게임 내랑 동일한 디자인") — 인게임 툴팁처럼 룬처럼 뒤섞인 글자 그림(게임 튜토리얼 그림에서 잘라 냄, ui-assets.mjs 5)) --%>
-								<span class="craft-veiled" data-craft-veiled><img src="/poe-data/ui-assets/veiled-mod.png" alt="${ko ? l.nameKo() : l.name()}" data-craft-veiled-img><span class="craft-veiled-f" data-f="1" aria-hidden="true"></span><span class="craft-veiled-f" data-f="2" aria-hidden="true"></span></span>
+								<span class="craft-veiled" data-craft-veiled><img src="/poe-data/poe1/ui-assets/veiled-mod.png" alt="${ko ? l.nameKo() : l.name()}" data-craft-veiled-img><span class="craft-veiled-f" data-f="1" aria-hidden="true"></span><span class="craft-veiled-f" data-f="2" aria-hidden="true"></span></span>
 							@else
 								@for(int i = 0; i < mx.size(); i++)
 									!{ String rangeTxt = PoeModRange.range(i < mn.size() ? mn.get(i) : null, mx.get(i)); Long rs = rolls.get(l.id()); String rolledTxt = net.luversof.web.gate.poe.PoeModRoll.scale(rs != null ? (rolls.containsKey("lucky:" + l.id()) ? net.luversof.web.gate.poe.PoeModRoll.rollLucky(rangeTxt, rangeTxt, rs + i) : net.luversof.web.gate.poe.PoeModRoll.roll(rangeTxt, rs + i)) : rangeTxt, boostedIds.contains(l.id()) ? qAmt : 0); }

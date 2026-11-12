@@ -117,7 +117,8 @@ public class PoeTreeGraphService {
   private volatile Map<String, Oil> oils = Map.of();
   private volatile List<ClusterNotable> clusterNotables = List.of();
 
-  public PoeTreeGraphService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+  public PoeTreeGraphService(
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "passive-tree.json");
     reload();
   }

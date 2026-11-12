@@ -14,7 +14,7 @@ class PoeCraftDistributionTest {
 
   @Test
   void 연금은_옵션_4에서_6개_생명력이_나오고_변화는_오류() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "craft-mods.json")), "추출 데이터 없음");
     PoeCraftDataService data = new PoeCraftDataService(dir);
     PoeCraftCalcService calc =

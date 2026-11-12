@@ -1,8 +1,8 @@
 // 트리 데이터 버전별 아카이브: 현재 패치의 passive/atlas 트리 JSON + 스프라이트 시트를
 // major.minor(예: 3.28) 폴더로 스냅샷해 이전 버전도 다시 볼 수 있게 한다.
-//  - JSON:   ~/.poe-gamedata/trees/<ver>/{passive-tree,atlas-tree,tree-sprites-skill,tree-sprites-atlas}.json
-//  - 시트:   ~/.poe-gamedata/icons/trees/<ver>/{skill,atlas}/  (매니페스트 file 경로도 여기로 재작성)
-//  - 색인:   ~/.poe-gamedata/trees/index.json = [{ver, patch}] (게이트 버전 선택 드롭다운용)
+//  - JSON:   ~/.poe-gamedata/poe1/trees/<ver>/{passive-tree,atlas-tree,tree-sprites-skill,tree-sprites-atlas}.json
+//  - 시트:   ~/.poe-gamedata/poe1/icons/trees/<ver>/{skill,atlas}/  (매니페스트 file 경로도 여기로 재작성)
+//  - 색인:   ~/.poe-gamedata/poe1/trees/index.json = [{ver, patch}] (게이트 버전 선택 드롭다운용)
 // tree-layers(직업 일러스트)는 버전 간 사실상 불변이라 공용을 그대로 쓴다.
 // 사용법: node archive-trees.mjs (parse-tree/parse-atlas-tree/tree-sprites 후)
 import fs from "node:fs";

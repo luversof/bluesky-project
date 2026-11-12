@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 에센스 제작 정보 — tools/poe-extract/parse-essences.mjs 가 만든 {@code ~/.poe-gamedata/essences.json}. "이
- * 에센스를 쓰면 이 아이템 종류에 어떤 모드가 보장되는가"(poedb/craftofexile 의 에센스 섹션식)를 클래스별로 제공한다.
+ * 에센스 제작 정보 — tools/poe-extract/parse-essences.mjs 가 만든 {@code ~/.poe-gamedata/poe1/essences.json}.
+ * "이 에센스를 쓰면 이 아이템 종류에 어떤 모드가 보장되는가"(poedb/craftofexile 의 에센스 섹션식)를 클래스별로 제공한다.
  */
 @Service
 public class PoeEssenceDataService {
@@ -43,7 +43,7 @@ public class PoeEssenceDataService {
   private volatile EssenceData data = new EssenceData("", Map.of());
 
   public PoeEssenceDataService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "essences.json");
     reload();
   }

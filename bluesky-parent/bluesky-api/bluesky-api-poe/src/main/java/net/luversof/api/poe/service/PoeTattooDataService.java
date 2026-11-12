@@ -54,7 +54,8 @@ public class PoeTattooDataService {
 
   private final Path dataFile;
 
-  public PoeTattooDataService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+  public PoeTattooDataService(
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "tattoos.json");
     reload();
   }

@@ -37,7 +37,8 @@ public class PoeRareNameService {
   private final JsonMapper jsonMapper = JsonMapper.builder().build();
   private volatile Words words;
 
-  public PoeRareNameService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+  public PoeRareNameService(
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.file = Path.of(dataDir, "rare-name-words.json");
   }
 

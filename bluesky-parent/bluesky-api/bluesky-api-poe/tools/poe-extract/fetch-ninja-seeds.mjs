@@ -7,7 +7,7 @@
 // 대표 1명(calibrate-archetypes)은 개인차로 흔들린다(RF 대표 0.05x) → 여러 명을 재서 중앙값 근처를 고른다.
 //
 // 사용: node fetch-ninja-seeds.mjs [상위 N=60] [아키타입당 인원=5]   (api-poe 가 40135 에 떠 있어야 함)
-// 산출물(Config 는 병합 — mergeConfig): ~/.poe-gamedata/ninja/ninja-start-builds.json  { "전직|스킬": { code, name, account, level, dps, ehp, life, es, n, medianDps, medianEhp, … } }
+// 산출물(Config 는 병합 — mergeConfig): ~/.poe-gamedata/poe1/ninja/ninja-start-builds.json  { "전직|스킬": { code, name, account, level, dps, ehp, life, es, n, medianDps, medianEhp, … } }
 import fs from "node:fs";
 import path from "node:path";
 import { DATA_DIR } from "./paths.mjs";

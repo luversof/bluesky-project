@@ -35,7 +35,7 @@ public class PoeRegexPresetService {
   private final Path presetDir;
 
   public PoeRegexPresetService(
-      @Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.presetDir = Path.of(dataDir, "regex-presets");
   }
 

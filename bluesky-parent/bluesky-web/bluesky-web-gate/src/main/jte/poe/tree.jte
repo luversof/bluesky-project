@@ -11,8 +11,8 @@
 @param java.util.List<String> treeVersions = java.util.List.of()
 @param String activeVer = ""
 @param String activePatch = ""
-@param String treeSrc = "/poe-data/passive-tree.json"
-@param String spritesSrc = "/poe-data/tree-sprites-skill.json"
+@param String treeSrc = "/poe-data/poe1/passive-tree.json"
+@param String spritesSrc = "/poe-data/poe1/tree-sprites-skill.json"
 
 !{
 	String pageTitle = MessageUtil.getMessage("poe.tree.title");

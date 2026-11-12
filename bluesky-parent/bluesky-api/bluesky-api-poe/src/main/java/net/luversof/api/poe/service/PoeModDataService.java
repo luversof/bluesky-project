@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 전체 크래프팅 모드 풀 — tools/poe-extract/parse-mods-full.mjs 가 만든 {@code ~/.poe-gamedata/mods.json}.
+ * 전체 크래프팅 모드 풀 — tools/poe-extract/parse-mods-full.mjs 가 만든 {@code ~/.poe-gamedata/poe1/mods.json}.
  * poedb Modifiers 페이지식으로 아이템 종류별 접두/접미 패밀리 + 등급 사다리(ilvl·수치범위·스폰웨이트)를 제공한다. 최적화기용 큐레이션({@link
  * PoeModPoolDataService})과는 별개의 "표시/탐색용" 전체 데이터.
  */
@@ -169,7 +169,8 @@ public class PoeModDataService {
     this.craftData = craftData;
   }
 
-  public PoeModDataService(@Value("${poe.data-dir:${user.home}/.poe-gamedata}") String dataDir) {
+  public PoeModDataService(
+      @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this.dataFile = Path.of(dataDir, "mods.json");
     this.tiersFile = Path.of(dataDir, "mod-pool-tiers.json");
     reload();

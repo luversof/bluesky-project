@@ -1,4 +1,4 @@
-// 추출 파이프라인 공용 경로 — 게임 데이터(중간 산출물 포함)는 전부 repo 밖(~/.poe-gamedata)에 둔다.
+// 추출 파이프라인 공용 경로 — 게임 데이터(중간 산출물 포함)는 전부 repo 밖(~/.poe-gamedata/poe1)에 둔다.
 // repo 에는 스크립트와 config.json 만 남는다.
 import { execSync } from "node:child_process";
 import fs from "node:fs";
@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const REPO_DIR = path.dirname(fileURLToPath(import.meta.url));
-export const DATA_DIR = path.join(os.homedir(), ".poe-gamedata");
+export const DATA_DIR = path.join(os.homedir(), ".poe-gamedata", "poe1"); // PoE2 는 ../poe2 (poe2-extract/paths.mjs)
 export const WORK_DIR = path.join(DATA_DIR, "work"); // CLI 작업 디렉토리 (번들 캐시/tables/files)
 export const TABLES_DIR = path.join(WORK_DIR, "tables");
 export const FILES_DIR = path.join(WORK_DIR, "files");

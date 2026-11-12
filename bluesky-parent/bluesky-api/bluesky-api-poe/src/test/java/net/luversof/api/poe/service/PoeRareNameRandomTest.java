@@ -17,7 +17,7 @@ class PoeRareNameRandomTest {
 
   @Test
   void 장갑_이름은_장갑_낱말로_끝나고_한국어로_옮겨진다() {
-    String dir = System.getProperty("user.home") + "/.poe-gamedata";
+    String dir = System.getProperty("user.home") + "/.poe-gamedata/poe1";
     Assumptions.assumeTrue(Files.exists(Path.of(dir, "rare-name-words.json")), "낱말표 없음");
     PoeRareNameService names = new PoeRareNameService(dir);
     Assumptions.assumeTrue(
