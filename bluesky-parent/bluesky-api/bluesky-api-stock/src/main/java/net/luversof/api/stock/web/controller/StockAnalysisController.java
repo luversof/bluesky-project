@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import net.luversof.api.stock.service.analysis.MarketDailyCollectService;
 import net.luversof.api.stock.service.analysis.StockAnalysisService;
 import net.luversof.api.stock.service.analysis.StockNewsCollectService;
 
@@ -30,6 +31,23 @@ public class StockAnalysisController {
   @Autowired private StockAnalysisService stockAnalysisService;
 
   @Autowired private StockNewsCollectService stockNewsCollectService;
+
+  @Autowired private MarketDailyCollectService marketDailyCollectService;
+
+  /** 시장 일별 시세 최근분(KOSPI200 선물 주간 · 야간 종가, 지난 2 주). 아침 · 저녁 작업이 부른다. */
+  @PostMapping("/market-daily")
+  public MarketDailyCollectService.CollectResult collectMarketDaily(@RequestParam UUID userId) {
+    return marketDailyCollectService.collectRecent(userId);
+  }
+
+  /** 시장 일별 시세 되채우기(2022-06 부터 가능). */
+  @PostMapping("/market-daily/backfill")
+  public MarketDailyCollectService.CollectResult backfillMarketDaily(
+      @RequestParam UUID userId,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+    return marketDailyCollectService.backfill(userId, from, to);
+  }
 
   @PostMapping("/news")
   public StockNewsCollectService.CollectResult collectNews(@RequestParam UUID userId) {

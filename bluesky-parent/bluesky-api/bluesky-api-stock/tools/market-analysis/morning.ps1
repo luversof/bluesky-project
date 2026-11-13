@@ -12,6 +12,7 @@ try {
     $grade = Invoke-Api POST '/api/stock/analysis/grades'
     Write-Log ("grades: graded {0}, pending {1}" -f $grade.graded, $grade.pending)
     Update-News
+    Update-MarketDaily
 
     $promptTemplate = Get-Content "$PSScriptRoot\prompt.md" -Raw -Encoding UTF8
     if ($promptTemplate -notmatch 'promptVersion:\s*(\S+)') { throw 'prompt.md has no promptVersion line' }
@@ -47,7 +48,8 @@ try {
     }
 
     $modelId = @($result.modelUsage.PSObject.Properties.Name) | Select-Object -First 1
-    if (-not $modelId) { $modelId = 'sonnet' }
+    # Invoke-Claude always runs --model opus, so a missing modelUsage still means opus.
+    if (-not $modelId) { $modelId = 'opus' }
     $submit = Invoke-Api POST '/api/stock/analysis/predictions' @{
         modelId       = $modelId
         promptVersion = $promptVersion

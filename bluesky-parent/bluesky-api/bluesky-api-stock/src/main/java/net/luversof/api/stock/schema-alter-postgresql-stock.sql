@@ -160,3 +160,20 @@ CREATE INDEX IF NOT EXISTS idx_stockPrediction_runId ON "StockPrediction" ("runI
 -- DROP INDEX IF EXISTS idx_stockPrediction_runId, idx_stockPrediction_stockItemId_baseDate_horizonDays;
 -- CREATE UNIQUE INDEX uk_stockPrediction_stockItemId_baseDate_horizonDays ON "StockPrediction" ("stockItem_id", "baseDate", "horizonDays");
 -- ALTER TABLE "StockPrediction" DROP COLUMN "runId";
+
+-- =====================================================================
+-- 2026-11-13
+-- =====================================================================
+
+-- (1) 시장 일별 시세: KOSPI200 선물 최근월물 주간 종가(K200F_DAY) · 야간 종가(K200F_NIGHT). 시황 분석 입력 · 리플레이.
+CREATE TABLE IF NOT EXISTS "StockMarketDaily" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"code" VARCHAR(30) NOT NULL,
+	"tradeDate" DATE NOT NULL,
+	"closePrice" NUMERIC NOT NULL,
+	"contract" VARCHAR(20),
+	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_stockMarketDaily_code_tradeDate ON "StockMarketDaily" ("code", "tradeDate");
+-- 되돌리기
+-- DROP TABLE IF EXISTS "StockMarketDaily";

@@ -75,6 +75,17 @@ function Update-News {
     Write-Log ("news: naver {0}, dart {1}. {2}" -f $result.naverSaved, $result.dartSaved, ($result.messages -join ' / '))
 }
 
+# KOSPI200 futures day / night closes (last 2 weeks), kept in the DB for the analysis input and replays.
+# Non-fatal: an api-stock deployed before 2026-11-13 has no /market-daily endpoint.
+function Update-MarketDaily {
+    try {
+        $result = Invoke-Api POST "/api/stock/analysis/market-daily?userId=$UserId"
+        Write-Log ("market-daily: {0} contracts, {1} rows" -f $result.contracts, $result.saved)
+    } catch {
+        Write-Log "market-daily skipped: $_"
+    }
+}
+
 function Resolve-Claude {
     if ($env:BLUESKY_CLAUDE_EXE) { return $env:BLUESKY_CLAUDE_EXE }
     # Only a real claude.exe: npm also puts claude.ps1 / claude.cmd shims on PATH, which

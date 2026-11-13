@@ -78,6 +78,14 @@ public class MarketContextService {
   @Autowired private KisAuthService kisAuthService;
   @Autowired private RestTemplate kisRestTemplate;
 
+  @Autowired
+  private net.luversof.api.stock.repository.StockMarketDailyRepository stockMarketDailyRepository;
+
+  /**
+   * KOSPI200 야간선물 줄의 key. 값은 KIS 가 아니라 DB(StockMarketDaily, MarketDailyCollectService 가 쌓는다)에서 읽는다.
+   */
+  static final String NIGHT_FUTURES_KEY = "K200NF";
+
   @Value("${kis.api.base-url:https://openapi.koreainvestment.com:9443}")
   private String baseUrl;
 
@@ -165,7 +173,56 @@ public class MarketContextService {
         unavailable.add(def.key());
       }
     }
+    // 야간 거래는 기준일 18:00 ~ 다음 날 05:00 - 저녁 분석(20:00) 때는 아직 열려 있어 넣지 않는다.
+    if (asOf == null || morning) {
+      MarketLine night = nightFuturesLine(today);
+      if (night == null) {
+        unavailable.add(NIGHT_FUTURES_KEY);
+      } else {
+        lines.add(night);
+      }
+    }
     return new MarketContext(Instant.now(), lines, unavailable);
+  }
+
+  /** cutoff 까지 마지막 주간 종가 날짜의 야간선물(prompt v9, 2026-11-13 채택). 그날 야간 종가가 아직 없으면 null. */
+  private MarketLine nightFuturesLine(LocalDate cutoff) {
+    LocalDate from = cutoff.minusDays(LOOKBACK_DAYS);
+    return nightFuturesLineOf(
+        stockMarketDailyRepository.findByCodeAndTradeDateBetweenOrderByTradeDate(
+            net.luversof.api.stock.domain.StockMarketDaily.K200F_DAY, from, cutoff),
+        stockMarketDailyRepository.findByCodeAndTradeDateBetweenOrderByTradeDate(
+            net.luversof.api.stock.domain.StockMarketDaily.K200F_NIGHT, from, cutoff));
+  }
+
+  /** change1dPct = 야간 종가 / 같은 날 주간 종가, change5dPct = 야간 종가 / 5 거래일 전 주간 종가. 날짜 오름차순 입력. */
+  static MarketLine nightFuturesLineOf(
+      List<net.luversof.api.stock.domain.StockMarketDaily> days,
+      List<net.luversof.api.stock.domain.StockMarketDaily> nights) {
+    if (days.isEmpty()) {
+      return null;
+    }
+    var day = days.getLast();
+    var night =
+        nights.stream().filter(n -> n.getTradeDate().equals(day.getTradeDate())).findFirst();
+    if (night.isEmpty()) {
+      return null;
+    }
+    BigDecimal close = night.get().getClosePrice();
+    return new MarketLine(
+        NIGHT_FUTURES_KEY,
+        "KOSPI200 야간선물",
+        day.getTradeDate(),
+        close,
+        pct(close, day.getClosePrice()),
+        days.size() > 5 ? pct(close, days.get(days.size() - 6).getClosePrice()) : null);
+  }
+
+  private static BigDecimal pct(BigDecimal now, BigDecimal before) {
+    return now.divide(before, 8, java.math.RoundingMode.HALF_UP)
+        .subtract(BigDecimal.ONE)
+        .movePointRight(2)
+        .setScale(4, java.math.RoundingMode.HALF_UP);
   }
 
   @SuppressWarnings("unchecked")

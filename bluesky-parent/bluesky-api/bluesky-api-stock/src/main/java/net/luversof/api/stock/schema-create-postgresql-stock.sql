@@ -171,6 +171,20 @@ CREATE TABLE IF NOT EXISTS "StockNews" (
 CREATE UNIQUE INDEX IF NOT EXISTS uk_stockNews_stockItemId_source_externalId ON "StockNews" ("stockItem_id", "source", "externalId");
 CREATE INDEX IF NOT EXISTS idx_stockNews_publishedDate ON "StockNews" ("publishedDate");
 
+-- 시장 일별 시세(2026-11-13): KIS 에서 매번 받지 않고 쌓아 둘 시장 지표. 지금은 KOSPI200 선물 최근월물의 주간 종가(K200F_DAY)와
+-- 그날 저녁 시작한 야간 거래 종가(K200F_NIGHT, 다음 날 05:00 마감) - 둘의 차이가 간밤 한국 시장의 반응이다.
+CREATE TABLE IF NOT EXISTS "StockMarketDaily" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"code" VARCHAR(30) NOT NULL,
+	"tradeDate" DATE NOT NULL,
+	"closePrice" NUMERIC NOT NULL,
+	-- 선물이면 종목 코드(최근월물, 예: A01612)
+	"contract" VARCHAR(20),
+	"updatedDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_stockMarketDaily_code_tradeDate ON "StockMarketDaily" ("code", "tradeDate");
+
 CREATE TABLE IF NOT EXISTS "StockPrediction" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	-- 분석 회차: 한 번의 제출로 저장한 예측 묶음(하루 몇 번이든 쌓인다). NULL 허용 - 회차 기능 전 앱이 배포 전까지 넣는 행

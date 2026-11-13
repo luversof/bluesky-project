@@ -8,6 +8,7 @@ try {
     Wait-Api
     Update-PriceHistory
     Update-News
+    Update-MarketDaily
     $grade = Invoke-Api POST '/api/stock/analysis/grades'
     Write-Log ("grades: graded {0}, pending {1}" -f $grade.graded, $grade.pending)
     exit 0

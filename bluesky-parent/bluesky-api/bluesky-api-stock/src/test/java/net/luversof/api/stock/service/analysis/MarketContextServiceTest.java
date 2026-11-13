@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import net.luversof.api.stock.domain.StockMarketDaily;
 import net.luversof.api.stock.service.analysis.MarketContextService.Def;
 import net.luversof.api.stock.service.analysis.MarketContextService.Kind;
 import net.luversof.api.stock.service.analysis.MarketContextService.MarketLine;
@@ -56,5 +57,35 @@ class MarketContextServiceTest {
   @Test
   void 종가가_하루뿐이면_싣지_않는다() {
     assertThat(MarketContextService.lineOf(SPX, List.of(overseas("20261109", "110")))).isNull();
+  }
+
+  private static StockMarketDaily md(String code, String date, String close) {
+    StockMarketDaily m = new StockMarketDaily();
+    m.setCode(code);
+    m.setTradeDate(LocalDate.parse(date));
+    m.setClosePrice(new BigDecimal(close));
+    return m;
+  }
+
+  @Test
+  void 야간선물은_마지막_주간_종가_날의_야간_종가로_변화율을_낸다() {
+    List<StockMarketDaily> days =
+        List.of(
+            md("K200F_DAY", "2026-11-03", "400"),
+            md("K200F_DAY", "2026-11-04", "410"),
+            md("K200F_DAY", "2026-11-05", "420"),
+            md("K200F_DAY", "2026-11-06", "430"),
+            md("K200F_DAY", "2026-11-09", "440"),
+            md("K200F_DAY", "2026-11-10", "500"));
+    List<StockMarketDaily> nights =
+        List.of(md("K200F_NIGHT", "2026-11-09", "1"), md("K200F_NIGHT", "2026-11-10", "505"));
+    MarketLine line = MarketContextService.nightFuturesLineOf(days, nights);
+    assertThat(line.key()).isEqualTo("K200NF");
+    assertThat(line.lastDate()).isEqualTo(LocalDate.of(2026, 11, 10));
+    assertThat(line.change1dPct()).isEqualByComparingTo("1.0000");
+    // 5 거래일 전(11-03) 주간 종가 400 대비.
+    assertThat(line.change5dPct()).isEqualByComparingTo("26.2500");
+    // 마지막 주간 종가 날의 야간 종가가 아직 없으면(그날 저녁 거래 중) 싣지 않는다.
+    assertThat(MarketContextService.nightFuturesLineOf(days, nights.subList(0, 1))).isNull();
   }
 }

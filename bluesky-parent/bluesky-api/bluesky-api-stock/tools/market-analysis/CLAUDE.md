@@ -33,6 +33,9 @@
 
 - 결과: `%LOCALAPPDATA%/bluesky-market-analysis/replay/` - 대상 수별 파일(`results-1t.jsonl` 삼성전자, `results-9t.jsonl` 처음 9 종목, `results.jsonl` 전체).
   입력 캐시 `inputs/<날짜>[@am].json` 은 PC 마다 따로다(DB 도 PC 마다 따로).
+  입력을 바꾸는 후보는 캐시를 다른 폴더에 복사해 새 정보만 끼우고 `BLUESKY_REPLAY_INPUTS=<폴더>` 로 돌린다(v8 처럼) - 기준 버전과 나머지 입력이 같아진다.
+  v9 부터 입력에 KOSPI200 야간선물(K200NF) 줄이 있다. 기준 캐시는 `inputs-night`(v3 캐시 + K200NF), 새로 받는 /input 은 API 가 DB 에서 직접 붙인다(아침 · 실시간만, 저녁 분석에는 없음).
+- `BLUESKY_STOCK_API` 가 사용자 환경변수(k8s)로 잡혀 있다. 로컬 api-stock 을 쓰려면 명령에서 덮어쓴다(`os.environ.setdefault` 로는 안 바뀐다).
 - 후보 프롬프트는 `candidates/prompt-vN.md`. 채택하면 `prompt.md` 로 옮기고 promptVersion 을 올린다.
 
 ## 함정
@@ -40,7 +43,12 @@
 - `/input` 은 KIS 설정을 읽고 KIS 시장 지표를 부른다. 병렬로 부르면 초당 한도(500)에 걸린다 - 입력 캐시는 한 프로세스로 채운다.
   (2026-11-12 까지는 일부 지표가 빠진 결과도 서버에 캐시돼 재기동 전까지 계속 빠졌다 - MarketContextService 에서 고침.) 캐시한 입력의 `market.unavailable` 이 비었는지 확인한다.
 - 종가는 수정주가라 배당락 하락이 채점 가격에 나타나지 않는다.
-- 수급(investorFlows)은 KIS 가 최근 약 30 거래일만 줘서 1 년 리플레이가 안 된다.
+- 수급(investorFlows, 입력의 flows=true)은 KIS 주식현재가 투자자(FHKST01010900)라 최근 약 30 거래일만 준다. 과거 수급은 종목별(FHPTJ04160001, 기준일까지 30 일) ·
+  시장별(FHPTJ04040000, 300 일) 투자자매매동향(일별)으로 받을 수 있다(삼성전자 2024-11-21, KOSPI 2024-05-27 부터). DB 에 쌓아 시험했으나 정보가 없어 테이블 · 코드를 지웠다(2026-11-13, EXPERIMENTS.md).
+- KOSPI200 선물 주간 · 야간 종가는 DB `StockMarketDaily`(K200F_DAY · K200F_NIGHT, 최근월물)에 쌓는다: `POST /analysis/market-daily`(아침 · 저녁 작업이 매일, 지난 2 주) ·
+  `POST /analysis/market-daily/backfill?from=&to=`(2022-06 부터). 선물 코드는 2025 년까지 `101` + 연도 글자(S 2022 · T 2023 · V 2024 · W 2025) + 월, 2026 년부터 `A01` + 연도 끝자리 + 월(예: A01612).
+  야간 행의 날짜는 그날 18:00 에 열린 거래(다음 날 05:00 마감) - 만기일에는 그 물의 야간 거래가 없어 다음 물로 넘어간다.
+- 분석 데이터 위치: 종가 · 뉴스 · 예측 · KOSPI200 선물은 k8s DB(두 PC 공유). 그 밖의 시장 지표(SPX · SOX 등)는 저장하지 않고 /input 때마다 KIS 에서 받는다. 리플레이 입력 · 결과는 PC 로컬.
 - 과거 뉴스는 `/analysis/news/backfill` 로 채우지만 네이버가 100 쪽까지만 줘서 대형주는 며칠치뿐이다 - 리플레이는 사실상 뉴스 없이 돈다.
 - `--resume` 은 이번 결과 파일만 본다. 병렬 실행(`BLUESKY_REPLAY_RESULTS`) 결과를 합친 뒤 다시 돌리면 끝난 날짜도 다시 돈다.
 - 회사망 PC 는 TLS 가로채기로 네이버 호출이 PKIX 로 실패한다 - 로컬 api-stock 을 `-Djavax.net.ssl.trustStoreType=Windows-ROOT` 로 띄운다.
