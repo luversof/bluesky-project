@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ public class PoeOptimizeHistoryService {
 
   private final Path historyDir;
 
+  @Autowired // 테스트용 Path 생성자가 따로 있어 Spring 이 쓸 생성자를 지정
   public PoeOptimizeHistoryService(
       @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir) {
     this(Path.of(dataDir, "sim", "history"));
