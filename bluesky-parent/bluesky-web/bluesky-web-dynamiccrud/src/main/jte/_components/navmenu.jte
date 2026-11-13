@@ -11,8 +11,9 @@
         @for(Menu menu : menuList)
                 @if(menu.isDisplay())
                         <li class="${isDropdown ? "" : (menu.isCurrentMenu() ? "" : "hidden lg:flex")}">
-                                <a class="font-bold h-14 rounded-none flex ${menu.isCurrentMenu() ? "active" : ""}"
-                                        href="${menu.getUrl()}">
+                                <a class="${isDropdown ? "" : "h-14 flex items-center px-3 text-base-content/70 hover:text-base-content hover:bg-transparent"}"
+                                        href="${menu.getUrl()}"
+                                        aria-current="${menu.isCurrentMenu() ? "page" : null}">
                                         ${menu.getName()}
                                 </a>
                         </li>

@@ -15,15 +15,15 @@
 --%>
 
 @if(hasSearchField)
-<div class="flex items-center h-16 px-10 sticky top-14 z-1 bg-base-100 bg-opacity-80" id="searchArea">
-        <div class="flex gap-x-1">
+<div class="sticky top-14 z-10 -mx-6 px-6 py-3 bg-base-100 border-b border-base-300" id="searchArea">
+        <div class="flex flex-wrap items-end gap-x-3 gap-y-2">
                 @for(DbField dbField : dbFieldList)
                         @if(dbField.isEnableSearch())
                         <fieldset class="fieldset py-0">
-                                <legend class="fieldset-legend text-gray-600 ${dbField.isEnableSearchRequired() ? "required" : ""}">
+                                <legend class="fieldset-legend font-normal text-base-content/70${dbField.isEnableSearchRequired() ? "required" : ""}">
                                         ${dbField.getColumnName()}
                                         @if(dbField.getColumnSearchType() != null && dbField.getColumnSearchType() != DbFieldSearchType.EQUALS)
-                                                <span class="text-gray-600 cursor-pointer tooltip tooltip-right" data-tip="${MessageUtil.getMessage("use.text.columnSearchType." + dbField.getColumnSearchType().name())}">
+                                                <span class="cursor-pointer tooltip tooltip-right" data-tip="${MessageUtil.getMessage("use.text.columnSearchType." + dbField.getColumnSearchType().name())}">
                                                         @template._components.icon.help()
                                                 </span>
                                         @endif
@@ -67,11 +67,11 @@ $unsafe{inputHtml}
                         @endif
                 @endfor
 
-                <button class="btn btn-outline btn-sm btn-info self-end searchButton">
+                <button class="btn btn-sm btn-primary searchButton">
                         @template._components.icon.search()
                         ${MessageUtil.getMessage("button.text.search")}
                 </button>
-                <button class="btn btn-outline btn-sm self-end resetButton">
+                <button class="btn btn-sm btn-ghost resetButton">
                         @template._components.icon.reset()
                         ${MessageUtil.getMessage("button.text.reset")}
                 </button>

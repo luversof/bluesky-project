@@ -1,4 +1,4 @@
-package net.luversof.web.dynamiccrud.thymeleaf;
+package net.luversof.web.dynamiccrud;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +16,6 @@ public class SimpleTest {
 
   @Test
   void linkTest() {
-    //		 Thymeleaf 관련 검색
     //		 이것도 쓰기 애매
     //		AssignationUtils.parseAssignationSequence(null, url, false);
     //		이걸 막아놨네...

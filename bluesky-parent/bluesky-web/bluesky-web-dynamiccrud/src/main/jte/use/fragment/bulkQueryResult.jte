@@ -5,28 +5,26 @@
 @param List<BulkQueryResult> results = null
 @param String parseError = null
 
-<div class="mt-2 flex flex-col gap-3">
+<div class="mt-2 flex flex-col gap-4">
 @if(parseError != null)
-        <div class="text-sm" style="color: var(--color-danger)">
-                실행 오류: ${parseError}
-        </div>
+        <div class="text-sm text-error">실행 오류: ${parseError}</div>
 @elseif(results != null)
         @for(var r : results)
         <div>
-                <div class="text-xs text-neutral-500 mb-1 whitespace-pre-wrap">${r.sql()}</div>
+                <div class="mb-1 font-mono text-xs text-base-content/60 whitespace-pre-wrap">${r.sql()}</div>
                 @if("error".equals(r.type()))
-                <div class="text-sm" style="color: var(--color-danger)">실행 오류: ${r.error()}</div>
+                <div class="text-sm text-error">실행 오류: ${r.error()}</div>
                 @elseif("update".equals(r.type()))
-                <div class="text-sm text-base-content"><b>${String.valueOf(r.affectedRows())}</b> 행이 반영되었습니다.</div>
+                <div class="text-sm"><span class="font-mono font-medium tabular-nums">${String.format("%,d", r.affectedRows())}</span>행 반영</div>
                 @elseif("select".equals(r.type()))
-                <div class="text-xs text-neutral-500 mb-1">조회 결과 ${r.rows().size()} 건</div>
+                <div class="mb-1 text-xs text-base-content/60">조회 결과 <span class="font-mono tabular-nums">${String.format("%,d", r.rows().size())}</span>건</div>
                 @if(!r.rows().isEmpty())
-                <div class="overflow-auto" style="max-height: 32vh">
-                        <table class="table table-compact bg-neutral-50">
-                                <thead class="bg-neutral-50">
+                <div class="overflow-auto border border-base-300" style="max-height: 32vh">
+                        <table class="table table-xs table-pin-rows tabular-nums">
+                                <thead>
                                         <tr>
                                                 @for(var key : r.rows().get(0).keySet())
-                                                <th class="whitespace-nowrap">${key}</th>
+                                                <th class="whitespace-nowrap font-medium">${key}</th>
                                                 @endfor
                                         </tr>
                                 </thead>

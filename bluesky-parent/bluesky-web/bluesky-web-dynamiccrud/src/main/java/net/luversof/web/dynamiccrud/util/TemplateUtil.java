@@ -1,12 +1,10 @@
 package net.luversof.web.dynamiccrud.util;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,46 +32,6 @@ public final class TemplateUtil {
   private TemplateUtil() {}
 
   private static final String URL_PATTERN = "(\\{)([\\w\\d]*)([\\:\\w\\|]*)(})";
-
-  private static final String[] THEMES =
-      new String[] {
-        "bluesky",
-        "light",
-        "dark",
-        "cupcake",
-        "bumblebee",
-        "emerald",
-        "corporate",
-        "synthwave",
-        "retro",
-        "cyberpunk",
-        "valentine",
-        "halloween",
-        "garden",
-        "forest",
-        "aqua",
-        "lofi",
-        "pastel",
-        "fantasy",
-        "wireframe",
-        "black",
-        "luxury",
-        "dracula",
-        "cmyk",
-        "autumn",
-        "business",
-        "acid",
-        "lemonade",
-        "night",
-        "coffee",
-        "winter",
-        "dim",
-        "nord",
-        "sunset",
-        "caramellatte",
-        "abyss",
-        "silk"
-      };
 
   public static List<Menu> getMainMenuList(String adminProjectId, String projectId) {
     var mainMenuList = SettingUtil.getMainMenuList(adminProjectId, projectId);
@@ -249,17 +207,6 @@ public final class TemplateUtil {
         getAttribute(SettingConstant.PROJECT_ID),
         getAttribute(SettingConstant.MAINMENU_ID),
         getAttribute(SettingConstant.SUBMENU_ID));
-  }
-
-  private static Random random = new Random();
-
-  public static String getRandomTheme(String... themes) {
-    var themeList = List.of(themes.length == 0 ? THEMES : themes);
-    return themeList.get(random.nextInt(themeList.size()));
-  }
-
-  public static List<String> getThemeList() {
-    return Arrays.asList(THEMES);
   }
 
   public static UriComponentsBuilder getUriComponentsBuilder() {

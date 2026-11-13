@@ -1,72 +1,135 @@
 @import "tailwindcss";
-@source "../resources/templates";
+@source "../jte";
+@source "../resources/static/js";
 @plugin "@tailwindcss/typography";
 @plugin "daisyui" {
-	themes: all;
+	themes: false;
 }
+
+/* 운영 대장 톤: graphite 중립색 한 벌 + 잉크 블루 강조색 하나. 직각 모서리는 브랜드라 유지 */
 @plugin "daisyui/theme" {
 	name: "bluesky";
-	default: true;	/* set as default */
-	prefersdark: false;	/* set as default dark mode (prefers-color-scheme:dark) */
-	color-scheme: light;	/* color of browser-provided UI */
-	--font-family: "'Inter','Noto Sans KR','Noto Sans JP','Microsoft YaHei','Microsoft JhengHei','Segoe UI','Roboto','Arial','sans-serif','Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol','Noto Color Emoji'";
-	--color-primary: "#3e6cdf";
-	--color-primary-content: "#ffffff";
-	--color-secondary: "#4b5563";
-	--color-secondary-content: "#ffffff";
-	--color-accent: "#ffffff";
-	--color-neutral: "#111827";
-	--color-neutral-content: "#ffffff";
-	--color-base-100: "#ffffff";
-	--color-info: "#e3f1fa";
-	--color-info-content: "#2062ab";
-	--color-success: "#d0fbca";
-	--color-success-content: "#008a00";
-	--color-warning: "#fffac3";
-	--color-warning-content: "#e07303";
-	--color-error: "#ffebee";
-	--color-error-content: "#c30115";
+	default: true;
+	prefersdark: false;
+	color-scheme: light;
+	--color-base-100: #ffffff;
+	--color-base-200: #f5f5f6;
+	--color-base-300: #e6e6e8;
+	--color-base-content: #1c1c1f;
+	--color-primary: #3e6cdf;
+	--color-primary-content: #ffffff;
+	--color-secondary: #4b5563;
+	--color-secondary-content: #ffffff;
+	--color-accent: #3e6cdf;
+	--color-accent-content: #ffffff;
+	--color-neutral: #1c1c1f;
+	--color-neutral-content: #ffffff;
+	--color-info: #2f6fb0;
+	--color-info-content: #ffffff;
+	--color-success: #2f7d4f;
+	--color-success-content: #ffffff;
+	--color-warning: #9a5b00;
+	--color-warning-content: #ffffff;
+	--color-error: #c0362c;
+	--color-error-content: #ffffff;
 	--radius-selector: 0rem;
 	--radius-field: 0rem;
 	--radius-box: 0rem;
-	--tab-radius: "0";
-	--animation-btn: "0";
-	--animation-input: "0";
-	--btn-focus-scale: "1";
+	--size-selector: 0.25rem;
+	--size-field: 0.25rem;
+	--border: 1px;
+	--depth: 0;
+	--noise: 0;
 }
 
-/*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
+@plugin "daisyui/theme" {
+	name: "bluesky-dark";
+	default: false;
+	prefersdark: true;
+	color-scheme: dark;
+	--color-base-100: #18181b;
+	--color-base-200: #202024;
+	--color-base-300: #2c2c31;
+	--color-base-content: #e6e6e9;
+	--color-primary: #7c9cf2;
+	--color-primary-content: #0f1424;
+	--color-secondary: #a1a1aa;
+	--color-secondary-content: #18181b;
+	--color-accent: #7c9cf2;
+	--color-accent-content: #0f1424;
+	--color-neutral: #e6e6e9;
+	--color-neutral-content: #18181b;
+	--color-info: #6aa6e6;
+	--color-info-content: #0b1622;
+	--color-success: #5bb382;
+	--color-success-content: #0b1a12;
+	--color-warning: #d9a03f;
+	--color-warning-content: #1f1505;
+	--color-error: #e8695e;
+	--color-error-content: #1f0b09;
+	--radius-selector: 0rem;
+	--radius-field: 0rem;
+	--radius-box: 0rem;
+	--size-selector: 0.25rem;
+	--size-field: 0.25rem;
+	--border: 1px;
+	--depth: 0;
+	--noise: 0;
+}
 
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
+@theme {
+	--font-sans: "Inter", "Noto Sans KR", "Noto Sans JP", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+}
+
 @layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
-  }
+	/* 테두리는 본문 색 10% 헤어라인 */
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: color-mix(in oklab, var(--color-base-content) 10%, transparent);
+	}
 }
 
-/* pagination 비활성화 버튼 배경색 처리 제거 */
-.navButton.btn.btn-disabled {
-	--tw-bg-opacity: 0.0;
+/* pagination 비활성화 버튼은 배경 없이 흐리게 */
+.navButton.btn-disabled {
+	background: transparent;
 }
 
-/* 필수 입력 폼 빨간 별 마크 처리 */
+/* 필수 입력 폼 별 마크 */
 .required:after {
-    content: "*";
-    margin-left: .05rem;
-    vertical-align: text-top;
-    @apply text-red-500;
+	content: "*";
+	margin-left: 0.125rem;
+	color: var(--color-error);
 }
 
-/* moadlForm input 사이 border 겹치도록 처리 */
-.flex .form-control:not(:first-child) {
-	margin-left:-1px;
+/* 메뉴 현재 위치: 가로 메뉴는 밑줄, 세로·드롭다운은 면 한 단계 */
+.menu a[aria-current="page"] {
+	background: var(--color-base-200);
+	color: var(--color-base-content);
+}
+.menu-horizontal a[aria-current="page"] {
+	background: transparent;
+	box-shadow: inset 0 -2px 0 var(--color-primary);
+}
+
+/* 목록 테이블: 헤더 / hover / 체크된 행이 각각 구분되게 */
+#contentTable {
+	font-variant-numeric: tabular-nums;
+}
+#contentTable thead th {
+	font-weight: 500;
+	color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+	white-space: nowrap;
+}
+#contentTable tbody tr {
+	transition: background-color 120ms ease-out;
+}
+#contentTable tbody tr:hover {
+	background: var(--color-base-200);
+}
+#contentTable tbody tr.active {
+	background: color-mix(in oklab, var(--color-primary) 8%, transparent);
+	box-shadow: inset 2px 0 0 var(--color-primary);
 }

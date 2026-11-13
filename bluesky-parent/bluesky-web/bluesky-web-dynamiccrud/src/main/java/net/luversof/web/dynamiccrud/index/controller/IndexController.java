@@ -12,9 +12,4 @@ public class IndexController {
   public String index() {
     return "redirect:/eventAdmin/setting/menu/project"; // 임시 처리
   }
-
-  @GetMapping("/dev")
-  public String dev() {
-    return "dev";
-  }
 }

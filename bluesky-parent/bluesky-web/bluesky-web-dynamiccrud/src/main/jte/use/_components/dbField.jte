@@ -9,7 +9,7 @@
 
 @if(dbField.getColumnPreset() == null || dbField.getColumnPreset().isEmpty())
         @if(dbField.getColumnType() == DbFieldColumnType.BOOLEAN)
-                <input type="checkbox" class="toggle toggle-lg toggle-primary ml-2"
+                <input type="checkbox" class="toggle toggle-primary"
                         name="${dbField.getColumnId() + "_checkbox"}"
                         checked="${"true".equalsIgnoreCase(dbField.getColumnDefaultValue())}"
                 />
@@ -56,7 +56,7 @@ $unsafe{defaultHtml}
         <select class="select select-sm join-item w-full"
                 name="${dbField.getColumnId()}"
                 required="${dbField.isEnableEditRequired(modalMode)}">
-                <option value="">Select</option>
+                <option value="">${net.luversof.web.dynamiccrud.util.MessageUtil.getMessage("use.text.select.empty")}</option>
                 @for(String presetPart : Arrays.asList(dbField.getColumnPreset().split(",")))
 !{
         String optionValue = presetPart.contains("|") ? presetPart.split("\\|")[0] : presetPart;

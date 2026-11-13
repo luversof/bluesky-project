@@ -1,10 +1,12 @@
-@import net.luversof.web.dynamiccrud.util.TemplateUtil
 @param gg.jte.Content content
 
 <!DOCTYPE html>
-<html data-theme="${TemplateUtil.getRandomTheme()}">
+<html lang="ko" data-theme="bluesky">
 
 <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Dynamic CRUD</title>
         <link href="/main.css" rel="stylesheet" />
         <script type="text/javascript" src="/webjars/theme-change/index.js"></script>
         <script type="text/javascript" src="/webjars/htmx.org/dist/htmx.min.js"></script>
@@ -12,20 +14,16 @@
         <script src="/js/common.js"></script>
 </head>
 
-<body>
-        <div>
-                @template._components.navbar()
+<body class="min-h-screen flex flex-col bg-base-100 text-base-content">
+        @template._components.navbar()
 
-                <div id="fragmentArea"></div>
+        <div id="fragmentArea"></div>
 
-                <div class="px-2">${content}</div>
+        <main class="grow px-6">${content}</main>
 
-                <footer class="footer footer-center p-4 bg-base-100 text-base-content">
-                        <aside>
-                                <p>Copyright  2023 - All right reserved by Bluesky</p>
-                        </aside>
-                </footer>
-        </div>
+        <footer class="px-6 py-4 text-xs text-base-content/50">
+                &copy; Bluesky
+        </footer>
 </body>
 
 </html>

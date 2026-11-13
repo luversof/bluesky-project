@@ -9,12 +9,11 @@
         content = @`
                 @template.use._components.searchArea(hasSearchField = hasSearchField, dbFieldList = dbFieldList)
 
-                <div id="indicator" class="text-center my-10 hidden">
-                        <span class="loading loading-ring loading-lg"></span>
+                <div id="indicator" class="py-12 text-center hidden">
+                        <span class="loading loading-spinner loading-sm text-base-content/50"></span>
                 </div>
 
                 <div id="listArea"
-                        class="px-10 text-center"
                         hx-get="${TemplateUtil.getUrl("FRAGMENT_LIST")}"
                         hx-vals="js:{'page' : param.getRequestPage()}"
                         hx-include="#searchArea .searchInput"
