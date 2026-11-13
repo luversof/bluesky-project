@@ -9,7 +9,7 @@
 <div data-submit-overlay-panel="true" class="hidden fixed inset-0 m-0 z-50 flex items-center justify-center bg-black/50">
 	<div class="flex flex-col items-center gap-4 rounded-2xl bg-base-100 px-8 py-8 shadow-xl">
 		<span class="loading loading-spinner loading-lg text-primary"></span>
-		<div data-submit-overlay-heading="true" class="text-lg font-bold">${MessageUtil.getMessage("common.message.submit.overlay.title")}</div>
+		<div data-submit-overlay-heading="true" class="text-lg font-semibold">${MessageUtil.getMessage("common.message.submit.overlay.title")}</div>
 		<div data-submit-overlay-note="true" class="text-sm opacity-70">${MessageUtil.getMessage("stock.admin.message.please.wait")}</div>
 	</div>
 </div>

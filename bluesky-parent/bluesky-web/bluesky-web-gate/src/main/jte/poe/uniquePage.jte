@@ -29,7 +29,7 @@
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-baseline gap-3">
 				<a href="/poe/uniques" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe.uniques.title")}</a>
-				<h1 class="text-2xl font-bold">${displayName}</h1>
+				<h1 class="text-2xl font-semibold">${displayName}</h1>
 				@if(ko)<span class="text-base-content/60 text-sm">${item.name()}</span>@endif
 				<span class="badge badge-ghost">${patchLabel}</span>
 				<%-- 거래소에서 찾기(10-08 C173 — 빌드 화면 거래소 링크와 같은 쿼리: 이름 · 즉시 구입 · 가격순) + 최적화 단추. 주얼처럼 최적화 단추가 없는 고유도 거래소는 보인다 --%>
@@ -49,7 +49,7 @@
 
 				<div class="flex-1 min-w-0 sm:min-w-[20rem] space-y-4">
 					<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
-						<h2 class="font-bold mb-2">${MessageUtil.getMessage("poe.uniques.info")}</h2>
+						<h2 class="font-semibold mb-2">${MessageUtil.getMessage("poe.uniques.info")}</h2>
 						<table class="table table-xs [overflow-wrap:anywhere]">
 							<tbody>
 								<tr><td class="text-base-content/60">${MessageUtil.getMessage("poe.uniques.info.name")}</td><td>${item.name()}</td></tr>
@@ -97,7 +97,7 @@
 					@if(foulborn != null && !foulborn.isEmpty())
 						<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 							<div class="mb-2 flex flex-wrap items-baseline gap-2">
-								<h2 class="font-bold text-fuchsia-500">${ko ? "삿된 고유 속성" : "Foulborn Unique Modifiers"}</h2>
+								<h2 class="font-semibold text-fuchsia-500">${ko ? "삿된 고유 속성" : "Foulborn Unique Modifiers"}</h2>
 								<span class="text-xs font-mono text-base-content/60">${foulborn.stream().mapToInt(g -> g.mods().size()).sum()}</span>
 								<span class="text-xs text-base-content/60">${ko ? "삿된 고유 아이템은 원래 속성 하나가 아래 중 하나로 바뀌어 있습니다" : "A Foulborn version has one original modifier replaced by one of these"}</span>
 								<a class="ml-auto link link-hover text-xs text-base-content/60" href="/poe/foulborn?q=${item.name()}">${ko ? "삿된 사전에서 보기 →" : "Open in Foulborn list →"}</a>
@@ -110,7 +110,7 @@
 
 					@if(ko && engMods != null && !engMods.isEmpty())
 						<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
-							<h2 class="font-bold mb-2">옵션 원문 (영문)</h2>
+							<h2 class="font-semibold mb-2">옵션 원문 (영문)</h2>
 							@for(String line : engMods)
 								<div class="text-xs text-base-content/60 whitespace-pre-line">${line}</div>
 							@endfor

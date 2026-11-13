@@ -92,7 +92,7 @@
 				@endfor
 			</div>
 		@endif
-		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/60">${ko ? "방어층" : "Defences"}</div>
+		<div class="pt-1 text-2xs text-base-content/60">${ko ? "방어층" : "Defences"}</div>
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
 			$unsafe{cell.apply(ko ? "방어도" : "Armour", fmt.apply(ninjaBenchmark.armour()))}
 			$unsafe{cell.apply(ko ? "회피" : "Evasion", fmt.apply(ninjaBenchmark.evasion()))}
@@ -104,7 +104,7 @@
 			$unsafe{cell.apply(ko ? "저항" : "Res", (ko ? "화" : "F") + ninjaBenchmark.fireRes() + NBSP + (ko ? "냉" : "C") + ninjaBenchmark.coldRes() + NBSP + (ko ? "번" : "L") + ninjaBenchmark.lightningRes() + NBSP + (ko ? "카" : "Ch") + ninjaBenchmark.chaosRes())}
 			$unsafe{cell.apply(ko ? "최대피격(최약)" : "Max hit (min)", ninjaBenchmark.lowestMax() > 0 ? fmt.apply(ninjaBenchmark.lowestMax()) : "—")}
 		</div>
-		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/60">${ko ? "자원·능력치" : "Resources & attributes"}</div>
+		<div class="pt-1 text-2xs text-base-content/60">${ko ? "자원·능력치" : "Resources & attributes"}</div>
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
 			$unsafe{cell.apply(MessageUtil.getMessage("poe.build.stat.ward"), fmt.apply(ninjaBenchmark.ward()))}
 			$unsafe{cell.apply(ko ? "마나" : "Mana", fmt.apply(ninjaBenchmark.mana()))}
@@ -112,7 +112,7 @@
 			$unsafe{cell.apply(ko ? "희귀도" : "Rarity", ninjaBenchmark.itemRarity() + "%")}
 			$unsafe{cell.apply(ko ? "힘·민·지" : "Str·Dex·Int", ninjaBenchmark.str() + NBSP + "·" + NBSP + ninjaBenchmark.dex() + NBSP + "·" + NBSP + ninjaBenchmark.intel())}
 		</div>
-		<div class="pt-1 text-[10px] uppercase tracking-wide text-base-content/60">${ko ? "구성" : "Setup"}</div>
+		<div class="pt-1 text-2xs text-base-content/60">${ko ? "구성" : "Setup"}</div>
 		<div class="grid grid-cols-3 gap-1 sm:grid-cols-4 lg:grid-cols-5">
 			$unsafe{cell.apply(ko ? "충전(인·격·권)" : "Charges E·F·P", ninjaBenchmark.enduranceCharges() + NBSP + "·" + NBSP + ninjaBenchmark.frenzyCharges() + NBSP + "·" + NBSP + ninjaBenchmark.powerCharges())}
 			$unsafe{cell.apply(ko ? "스킬 군 주얼(대·중·소)" : "Cluster L·M·S", ninjaBenchmark.largeCluster() + NBSP + "·" + NBSP + ninjaBenchmark.mediumCluster() + NBSP + "·" + NBSP + ninjaBenchmark.smallCluster())}
@@ -130,9 +130,9 @@
 		@if(realStart != null)
 			<div class="flex flex-wrap items-center gap-2 pt-1" data-real-start-hint>
 				<a class="btn btn-outline btn-xs" href="/poe/build?ascendancy=${java.net.URLEncoder.encode(realStart.ascendancy(), java.nio.charset.StandardCharsets.UTF_8)}&skill=${java.net.URLEncoder.encode(realStart.mainSkill(), java.nio.charset.StandardCharsets.UTF_8)}">${ko ? "실빌드에서 출발하기" : "Start from a real build"}</a>
-				<span class="text-[11px] text-base-content/60">${ko ? "대표 실빌드(" + (realStart.ascendancy() != null && realStart.ascendancy().equals(ninjaBenchmark.ascendancy()) ? ascLabel : realStart.ascendancy()) + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — 빌드 화면에서 가이드·자동 다듬기" : "Representative build (" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — refine it in the build view"}</span>
+				<span class="text-2xs text-base-content/60">${ko ? "대표 실빌드(" + (realStart.ascendancy() != null && realStart.ascendancy().equals(ninjaBenchmark.ascendancy()) ? ascLabel : realStart.ascendancy()) + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — 빌드 화면에서 가이드·자동 다듬기" : "Representative build (" + realStart.ascendancy() + ") DPS " + fmt.apply(realStart.dps() == null ? 0L : Math.round(realStart.dps())) + " · EHP " + fmt.apply(realStart.ehp() == null ? 0L : Math.round(realStart.ehp())) + " — refine it in the build view"}</span>
 			</div>
 		@endif
-		<div class="text-[10px] text-base-content/60">${ko ? "poe.ninja 96레벨+ 실빌드 전 컬럼 — 이상치 캐릭터 제외 후 중앙값. 이 성향에 맞춰 시뮬이 강점 축을 밉니다" : "poe.ninja lv96+ all columns — median after dropping outlier characters; sim pushes this build's strong axis"}</div>
+		<div class="text-2xs text-base-content/60">${ko ? "poe.ninja 96레벨+ 실빌드 전 컬럼 — 이상치 캐릭터 제외 후 중앙값. 이 성향에 맞춰 시뮬이 강점 축을 밉니다" : "poe.ninja lv96+ all columns — median after dropping outlier characters; sim pushes this build's strong axis"}</div>
 	</div>
 @endif

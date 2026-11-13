@@ -44,11 +44,11 @@
 						<span class="font-semibold truncate text-[#aa9e82]">${PoeText.name(a.nameKo(), a.name())}</span>
 						<span class="shrink-0 badge badge-xs badge-ghost">${PoeText.name(a.kindKo(), MessageUtil.getMessage("poe2.augments.kind." + a.kind(), a.kind()))}</span>
 						@if(nz(a.level()) > 0)
-							<span class="ml-auto shrink-0 text-[10px] text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.augments.level"), a.level())}</span>
+							<span class="ml-auto shrink-0 text-2xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.augments.level"), a.level())}</span>
 						@endif
 					</div>
 					@if(korean)
-						<div class="text-[11px] text-base-content/60 truncate">${a.name()}</div>
+						<div class="text-2xs text-base-content/60 truncate">${a.name()}</div>
 					@endif
 					<dl class="mt-1.5 space-y-1 text-sm">
 						@for(Poe2.AugmentEffect e : effects)
@@ -85,10 +85,10 @@
 					@endif
 					<%-- 중첩 개수(10-13 C297 — CurrencyItems.StackSize, 게임 ClientStrings ItemDisplayStackSize · ItemDisplayStackSizeValue. poe2db 사막 룬 · 뱀 우상 "1 / 10", 1 짜리 · 행 없는 것은 줄 없음) --%>
 					@if(nz(a.stackSize()) > 1)
-						<div class="mt-1 text-[11px] text-base-content/60" data-augment-stack>${MessageUtil.getMessage("poe2.augments.stack")}: ${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.augments.stack.value"), 1, a.stackSize())}</div>
+						<div class="mt-1 text-2xs text-base-content/60" data-augment-stack>${MessageUtil.getMessage("poe2.augments.stack")}: ${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.augments.stack.value"), 1, a.stackSize())}</div>
 					@endif
 					@if(a.limitText() != null || a.limitTextKo() != null)
-						<div class="mt-1 text-[11px] text-base-content/60">${MessageUtil.getMessage("poe2.augments.limit")}: ${PoeText.name(a.limitTextKo(), a.limitText())}</div>
+						<div class="mt-1 text-2xs text-base-content/60">${MessageUtil.getMessage("poe2.augments.limit")}: ${PoeText.name(a.limitTextKo(), a.limitText())}</div>
 					@endif
 				</article>
 			@endfor

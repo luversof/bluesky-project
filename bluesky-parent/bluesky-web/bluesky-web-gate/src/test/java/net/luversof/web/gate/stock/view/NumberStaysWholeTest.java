@@ -113,9 +113,9 @@ class NumberStaysWholeTest {
     // 종목 · 계좌 카드는 dividendYieldGroupCard.jte - 그려지는 대로 펼쳐 본다(2026-10-22).
     String source = YieldAnalyticsSource.expanded();
     assertThat(source)
-        .doesNotContain("</div><div class=\"text-[11px] whitespace-nowrap")
-        .doesNotContain("</span><div class=\"text-[11px] whitespace-nowrap")
-        .doesNotContain("</div><div class=\"text-[11px] font-normal whitespace-nowrap")
-        .contains("</div> <div class=\"text-[11px] whitespace-nowrap\">");
+        .doesNotContain("</div><div class=\"text-2xs whitespace-nowrap")
+        .doesNotContain("</span><div class=\"text-2xs whitespace-nowrap")
+        .doesNotContain("</div><div class=\"text-2xs font-normal whitespace-nowrap")
+        .contains("</div> <div class=\"text-2xs whitespace-nowrap\">");
   }
 }

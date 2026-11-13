@@ -29,7 +29,7 @@
 				<h2 id="bk-assets-total-title" class="text-sm text-base-content/60 mb-1">${BookkeepingView.msg("bookkeeping.assets.total")}</h2>
 				<div class="flex flex-wrap gap-x-6 gap-y-1">
 					@for(var t : page.totals())
-						<p class="text-xl font-bold amount-value">${BookkeepingView.amount(t.amount(), t.currency())} <span class="text-sm font-normal text-base-content/60">${t.currency()}</span></p>
+						<p class="text-xl font-semibold amount-value">${BookkeepingView.amount(t.amount(), t.currency())} <span class="text-sm font-normal text-base-content/60">${t.currency()}</span></p>
 					@endfor
 				</div>
 			</section>

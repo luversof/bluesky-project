@@ -55,10 +55,10 @@
 										<span class="shrink-0 badge badge-xs badge-outline">${MessageUtil.getMessage("poe2.gems.kind." + gem.kind())}</span>
 									@endif
 									@if(korean)
-										<span class="text-[11px] text-base-content/60 truncate">${gem.name()}</span>
+										<span class="text-2xs text-base-content/60 truncate">${gem.name()}</span>
 									@endif
 									@if(gem.tier() != null && gem.tier() > 0)
-										<span class="ml-auto shrink-0 text-[10px] text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.tier"), gem.tier())}</span>
+										<span class="ml-auto shrink-0 text-2xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.tier"), gem.tier())}</span>
 									@endif
 								</div>
 								@if(shownTags != null && !shownTags.isEmpty())

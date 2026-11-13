@@ -28,7 +28,7 @@
 		<%-- 머리 + 스탯 = PoE1 빌드 요약 첫 카드와 같은 차림(10-12 C281): "직업 · 전직"(굵게) + 레벨 배지 --%>
 		@template._components.ui.card(bodyClass = "gap-3", body = @`
 		<div class="flex flex-wrap items-center gap-3">
-			<h2 class="text-lg font-bold">${className != null ? className : "?"}@if(asc != null) · ${asc}@endif</h2>
+			<h2 class="text-lg font-semibold">${className != null ? className : "?"}@if(asc != null) · ${asc}@endif</h2>
 			@if(build.level() != null)<span class="badge badge-primary badge-outline">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.build.summary.level"), build.level())}</span>@endif
 		</div>
 
@@ -69,7 +69,7 @@
 		<%-- 스킬 묶음 --%>
 		@if(build.skills() != null && !build.skills().isEmpty())
 			@template._components.ui.card(bodyClass = "gap-3", body = @`
-				<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.build.skills")}</h2>
+				<h2 class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("poe.build.skills")}</h2>
 				<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
 					@for(Poe2.BuildSkill g : build.skills())
 						<div class="rounded-lg border ${Boolean.TRUE.equals(g.main()) ? "border-primary/60" : "border-base-200"} bg-base-100 px-3 py-2 ${Boolean.FALSE.equals(g.enabled()) ? "opacity-60" : ""}">
@@ -107,7 +107,7 @@
 		<%-- 장비 --%>
 		@if(build.items() != null && !build.items().isEmpty())
 			@template._components.ui.card(bodyClass = "gap-3", body = @`
-				<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.build.items")}</h2>
+				<h2 class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("poe.build.items")}</h2>
 				<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
 					@for(Poe2.BuildItem it : build.items())
 						!{
@@ -147,7 +147,7 @@
 								@if(it.mods() != null && !it.mods().isEmpty() && !"UNIQUE".equals(it.rarity()))
 									<%-- 레어 · 마법은 PoE1 빌드 요약처럼 옵션 세 줄 요약 + 올리면 인게임 툴팁(10-04 C132 — 예전엔 "옵션 N개" 접이식 목록).
 									     한국어는 API 가 옵션 풀·고유·증강물 영/한 쌍으로 옮긴 줄(못 옮긴 줄은 영문 그대로) --%>
-									<div class="text-[11px] leading-4 text-[#8888ff]/80 line-clamp-3 mt-0.5">${String.join(" / ", korean && it.modsKo() != null && it.modsKo().size() == it.mods().size() ? it.modsKo() : it.mods())}</div>
+									<div class="text-2xs leading-4 text-[#8888ff]/80 line-clamp-3 mt-0.5">${String.join(" / ", korean && it.modsKo() != null && it.modsKo().size() == it.mods().size() ? it.modsKo() : it.mods())}</div>
 								@endif
 							</div>
 							@if(it.mods() != null && !it.mods().isEmpty())
@@ -163,7 +163,7 @@
 		@if(tree != null)
 			@template._components.ui.card(bodyClass = "gap-3", body = @`
 				<div class="flex flex-wrap items-baseline gap-3">
-					<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe2.build.tree")}</h2>
+					<h2 class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("poe2.build.tree")}</h2>
 					<span class="text-xs text-base-content/60">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.build.points"), tree.allocated(), tree.ascendancyPoints())}</span>
 					@if(build.treeLink() != null)
 						<a class="link link-primary text-sm" href="${build.treeLink()}">${MessageUtil.getMessage("poe.build.summary.tree.view")}</a>

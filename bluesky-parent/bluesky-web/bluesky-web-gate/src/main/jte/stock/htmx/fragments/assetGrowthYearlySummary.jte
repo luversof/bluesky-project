@@ -54,7 +54,7 @@
 						@for(TradeProfitYearlySummary row : yearlySummaries)
 							@if(previousYear != null && previousYear - row.year() > 1)
 								<tr data-yearly-gap="${(row.year() + 1) + "-" + (previousYear - 1)}">
-									<td colspan="5" class="text-center text-[11px] text-base-content/60">${MessageFormat.format(gapTemplate, String.valueOf(row.year() + 1), String.valueOf(previousYear - 1))}</td>
+									<td colspan="5" class="text-center text-2xs text-base-content/60">${MessageFormat.format(gapTemplate, String.valueOf(row.year() + 1), String.valueOf(previousYear - 1))}</td>
 								</tr>
 							@endif
 							!{previousYear = row.year();}
@@ -75,7 +75,7 @@
 									${String.valueOf(row.year())}
 									@if(!row.fullYear() && row.fromDate() != null && row.toDate() != null)
 										<%-- 조회 기간에 잘린 해. 구간을 밝히지 않으면 그 해 전체 성과로 오해한다. --%>
-										<div class="text-[11px] font-normal leading-4 text-base-content/60">
+										<div class="text-2xs font-normal leading-4 text-base-content/60">
 											${partialLabel} <span class="whitespace-nowrap date-whole">${row.fromDate().toString().substring(5)}</span> ~ <span class="whitespace-nowrap date-whole">${row.toDate().toString().substring(5)}</span>
 										</div>
 									@endif
@@ -156,6 +156,6 @@
 			<%-- 손익(금액)과 투자 수익률(시간가중)은 축이 다르다. 원금을 많이 넣은 해에는 부호가 갈려
 			     한 줄이 모순처럼 읽힌다 - 실측 2026-09-13: 2021 년 손익 +12,459,027 인데 수익률 -1.93%
 			     (그 해 원금 변동 +136,526,730). 기준은 위 요약 카드에만 적혀 있었다. --%>
-			<p class="text-[11px] leading-4 text-base-content/60 mt-2" data-yearly-return-basis>${returnBasisNote}</p>
+			<p class="text-2xs leading-4 text-base-content/60 mt-2" data-yearly-return-basis>${returnBasisNote}</p>
 	`)
 @endif

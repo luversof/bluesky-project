@@ -36,7 +36,7 @@
 	String optimizeRun = MessageUtil.getMessage("poe.sim.opt.run");
 	String rankingTitle = MessageUtil.getMessage("poe.sim.ranking.title");
 	// 탭 스타일은 아이템 탭(poe/itemTabs.jte)과 동일 — 같은 사이트에서 탭이 두 가지로 보이면 안 된다
-	String tabActive = "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm";
+	String tabActive = "tab tab-lg flex-1 font-semibold tab-active !bg-primary !text-primary-content shadow-sm";
 	String tabInactive = "tab tab-lg flex-1 text-base-content/60 hover:text-base-content";
 }
 
@@ -49,7 +49,7 @@
 	contentPoe = @`
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-baseline gap-3">
-				<h1 class="text-2xl font-bold">${pageTitle}</h1>
+				<h1 class="text-2xl font-semibold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
 			</div>
 

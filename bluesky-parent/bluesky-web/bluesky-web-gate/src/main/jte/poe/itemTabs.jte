@@ -5,7 +5,7 @@
 !{
 	String uniquesTabLabel = MessageUtil.getMessage("poe.tab.uniques");
 	String baseItemsTabLabel = MessageUtil.getMessage("poe.tab.items");
-	String activeClass = "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm";
+	String activeClass = "tab tab-lg flex-1 font-semibold tab-active !bg-primary !text-primary-content shadow-sm";
 	String inactiveClass = "tab tab-lg flex-1 text-base-content/60 hover:text-base-content";
 }
 

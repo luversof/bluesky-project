@@ -166,7 +166,7 @@
 		<%-- 보유 전체 기준 보유 기간 · 연평균은 아래 카드 줄로 옮겼다(사용자 선택 2026-09-17 - 이 자리의 작은 줄은 눈에 띄지 않았다).
 		     배당이 지금 평가손실을 얼마나 덮었는지만 여기 남긴다. --%>
 		@if(holdingReturnShown && holdingReturn.coveragePct() != null && holdingReturn.coveragePct() > 0)
-			<p class="mt-2 border-t border-base-300/60 pt-2 text-[11px] leading-4" data-holding-coverage-line>
+			<p class="mt-2 border-t border-base-300/60 pt-2 text-2xs leading-4" data-holding-coverage-line>
 				<span class="text-dividend" data-holding-coverage="${holdingReturn.coveragePct()}">${holdingReturn.coveragePct() >= 100 ? MessageUtil.getMessage("stock.asset.status.cell.coverage.all") : StockViewSupport.msg("stock.asset.status.cell.coverage", String.valueOf(holdingReturn.coveragePct()))}</span>
 			</p>
 		@endif
@@ -532,7 +532,7 @@
 								<td class="tabular-nums whitespace-nowrap date-whole">${dividend.payDate() != null ? StockZoneUtil.recordedDate(dividend.payDate(), zone).toString() : "-"}</td>
 								<td class="text-right amount-value hidden sm:table-cell opacity-70">${String.format("%,d", StockFormatUtil.displayWon(dividend.grossAmount()))}</td>
 								<td class="text-right amount-value hidden sm:table-cell opacity-60 tooltip" data-tip="${dividendTaxZero ? zeroAmountTitle : null}" aria-label="${dividendTaxZero ? zeroAmountTitle : null}">${dividendTaxZero ? "-" : String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>
-								<td class="text-right font-bold amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(dividend.netAmount()))}</td>
+								<td class="text-right font-semibold amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(dividend.netAmount()))}</td>
 							</tr>
 						@endfor
 					</tbody>

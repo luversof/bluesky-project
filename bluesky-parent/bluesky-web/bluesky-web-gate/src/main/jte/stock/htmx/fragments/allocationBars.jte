@@ -54,7 +54,7 @@
 					<div class="h-2 rounded-full" style="width: ${allocationShown.get(allocationRowIndex).replace("%", "")}%; background: ${barColor}"></div>
 				</div>
 				<span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${allocationShown.get(allocationRowIndex)}</span>
-				<span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0 tooltip" data-tip="${StockFormatUtil.fullKrw(row.amount())}">${String.format("%,d", row.amount())}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(row.amount()), visible = String.format("%,d", row.amount()))</span>
+				<span class="font-mono font-semibold text-xs amount-value whitespace-nowrap text-right shrink-0 tooltip" data-tip="${StockFormatUtil.fullKrw(row.amount())}">${String.format("%,d", row.amount())}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(row.amount()), visible = String.format("%,d", row.amount()))</span>
 			</div>
 		@endfor
 		@if(othersRow != null)
@@ -64,7 +64,7 @@
 					<div class="h-2 rounded-full" style="width: ${allocationShown.get(allocationRows.size()).replace("%", "")}%; background: rgba(156,163,175,0.8)"></div>
 				</div>
 				<span class="text-xs text-base-content/60 tabular-nums w-11 text-right shrink-0">${allocationShown.get(allocationRows.size())}</span>
-				<span class="font-mono font-bold text-xs amount-value whitespace-nowrap text-right shrink-0 tooltip" data-tip="${StockFormatUtil.fullKrw(othersRow.amount())}">${String.format("%,d", othersRow.amount())}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(othersRow.amount()), visible = String.format("%,d", othersRow.amount()))</span>
+				<span class="font-mono font-semibold text-xs amount-value whitespace-nowrap text-right shrink-0 tooltip" data-tip="${StockFormatUtil.fullKrw(othersRow.amount())}">${String.format("%,d", othersRow.amount())}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(othersRow.amount()), visible = String.format("%,d", othersRow.amount()))</span>
 			</div>
 		@endif
 	</div>

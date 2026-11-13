@@ -83,9 +83,9 @@
 						<button class="btn btn-xs join-item" data-regex-combine="or">OR</button>
 						<button class="btn btn-xs join-item" data-regex-combine="and">AND</button>
 					</div>
-					<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("poe2.regex.combine.hint")}</span>
+					<span class="text-2xs text-base-content/60">${MessageUtil.getMessage("poe2.regex.combine.hint")}</span>
 				</div>
-				<div class="text-[11px] text-base-content/60">${ko ? "옵션 클릭: 선택/해제(선택하면 제외 — 빨강, !로 거름) · \"제외\" 배지 클릭: 포함(초록, 강조)으로 전환 · 배지: 심연 = 심연 옵션, N등급+ = 그 등급 이상 경로석에만 붙음, 보상 = 최대 롤" : "Click a mod: select/clear (selected = exclude, red) · click the \"excl\" badge to switch it to include (green) · badges: Abyss, T6+ = tier 6+ only, reward = max roll"}</div>
+				<div class="text-2xs text-base-content/60">${ko ? "옵션 클릭: 선택/해제(선택하면 제외 — 빨강, !로 거름) · \"제외\" 배지 클릭: 포함(초록, 강조)으로 전환 · 배지: 심연 = 심연 옵션, N등급+ = 그 등급 이상 경로석에만 붙음, 보상 = 최대 롤" : "Click a mod: select/clear (selected = exclude, red) · click the \"excl\" badge to switch it to include (green) · badges: Abyss, T6+ = tier 6+ only, reward = max roll"}</div>
 			</div>
 
 			<%-- 옵션 목록 (TS 렌더) --%>

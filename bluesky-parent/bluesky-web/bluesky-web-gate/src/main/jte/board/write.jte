@@ -24,7 +24,7 @@
 				@template._components.ui.pageHeader(title = "글쓰기", description = "새로운 글을 작성해주세요", size = "text-3xl")
 				
 				<!-- 작성 폼 -->
-				<div class="bg-base-100 rounded-box shadow-xl p-6">
+				<div class="bg-base-100 rounded-box shadow-sm p-6">
 					<div class="form-control mb-6">
 						<label class="label" for="title">
 							<span class="label-text font-semibold">제목</span>

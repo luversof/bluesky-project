@@ -65,14 +65,14 @@
 												<span data-poe-tip class="hidden">
 													<div class="poe-tooltip poe-rar-rare w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:#ffff77" data-rare-tip>
 														<div class="poe-tt-band poe-tt-band-2">
-															<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:#ffff77">${focus}</div>
-															<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:#ffff77">${tipBase}</div>
+															<div class="text-center font-semibold text-base leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:#ffff77">${focus}</div>
+															<div class="text-center text-sm leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:#ffff77">${tipBase}</div>
 														</div>
 														@if(tipLines != null && !tipLines.isEmpty())
 															<div class="poe-tt-sepimg"></div>
 															<div class="px-4 py-2 text-center space-y-0.5">
 																@for(String line : tipLines)
-																	<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+																	<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 																@endfor
 															</div>
 														@endif
@@ -82,7 +82,7 @@
 										</summary>
 										<div class="poe-tooltip poe-rar-rare mt-1 px-3 py-1.5 space-y-0.5">
 											@for(String line : korean && r.linesKo() != null && !r.linesKo().isEmpty() ? r.linesKo() : r.lines())
-												<div class="text-[12px] leading-snug text-[#8888ff] text-center">$unsafe{PoeText.highlightValues(line)}</div>
+												<div class="text-xs leading-snug text-[#8888ff] text-center">$unsafe{PoeText.highlightValues(line)}</div>
 											@endfor
 										</div>
 										<%-- 거래소(10-08 C172, PoE1 가이드 레어 목표 짝) — 분류 + 옵션, 옵션 5개 이상이면 2개는 빠져도 --%>

@@ -72,7 +72,7 @@
 	     CSS 수정 후 이 페이지(light/dark 각각)만 훑으면 깨진 컴포넌트를 빠르게 잡는다.
 	     ============================================================ -->
 	<div class="space-y-10 mt-8">
-		<h1 class="text-2xl font-bold">UI Component 쇼케이스</h1>
+		<h1 class="text-2xl font-semibold">UI Component 쇼케이스</h1>
 		<p class="text-sm text-base-content/60">main.css 에서 직접 소유하는 컴포넌트 목록. 우측 상단 토글로 dark 테마도 확인할 것.</p>
 
 		<section>

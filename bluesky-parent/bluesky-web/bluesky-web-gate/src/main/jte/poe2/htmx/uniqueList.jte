@@ -62,12 +62,12 @@
 						</div>
 						<div class="min-w-0 flex-1 space-y-1">
 							<div class="flex items-baseline gap-2 min-w-0">
-								<a class="font-bold poe-name-unique truncate link-hover" href="/poe2/uniques/${u.slug()}" title="${u.name()}">${PoeText.name(u.nameKo(), u.name())}</a>
+								<a class="font-semibold poe-name-unique truncate link-hover" href="/poe2/uniques/${u.slug()}" title="${u.name()}">${PoeText.name(u.nameKo(), u.name())}</a>
 								@if(korean)
 									<span class="text-xs text-base-content/60 truncate">${u.name()}</span>
 								@endif
 							</div>
-							<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-base-content/60">
+							<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-base-content/60">
 								<span class="truncate">${PoeText.name(u.baseTypeKo(), u.baseType())} · ${net.luversof.web.gate.poe.PoeClassNames.poe2(u.itemClassKo(), u.itemClass())}</span>
 								@if(u.requiredLevel() != null && u.requiredLevel() > 1)
 									<span class="text-base-content/60" data-req-level>${MessageUtil.getMessage("poe.gems.detail.required.level")} ${u.requiredLevel()}</span>
@@ -86,13 +86,13 @@
 							@if(!imps.isEmpty() || !exps.isEmpty())
 								<div class="mt-1 space-y-0.5" data-card-mods>
 									@for(String imp : imps)
-										<div class="text-[11px] leading-5 text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(imp)}</div>
+										<div class="text-2xs leading-5 text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(imp)}</div>
 									@endfor
 									@if(!imps.isEmpty() && !exps.isEmpty())
 										<div class="my-1 border-t border-base-content/15"></div>
 									@endif
 									@for(String ex : exps)
-										<div class="text-[11px] leading-5 text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(ex)}</div>
+										<div class="text-2xs leading-5 text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(ex)}</div>
 									@endfor
 								</div>
 							@endif

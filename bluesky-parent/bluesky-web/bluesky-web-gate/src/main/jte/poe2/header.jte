@@ -14,7 +14,7 @@
 	@if(backHref != null)
 		<a href="${backHref}" class="link link-hover text-sm text-base-content/60">← ${backLabel}</a>
 	@endif
-	<h1 class="text-2xl font-bold">${title}</h1>
+	<h1 class="text-2xl font-semibold">${title}</h1>
 	@if(subtitle != null && !subtitle.isBlank())
 		<span class="text-base-content/60 text-sm" data-poe-orig>${subtitle}</span>
 	@endif

@@ -38,7 +38,7 @@
 					<tr>
 						<th>${korean ? "항목" : "Stat"}</th>
 						<th class="text-right">${korean ? "PoB 저장값" : "Saved in PoB"}</th>
-						<th class="text-right">${korean ? "엔진 재계산" : "Recalculated"}@if(split)<div class="text-[10px] font-normal text-base-content/60">${korean ? "저장 세트 " + recalc.savedSet() : "saved set " + recalc.savedSet()}</div>@endif</th>
+						<th class="text-right">${korean ? "엔진 재계산" : "Recalculated"}@if(split)<div class="text-2xs font-normal text-base-content/60">${korean ? "저장 세트 " + recalc.savedSet() : "saved set " + recalc.savedSet()}</div>@endif</th>
 						<th class="text-right">${korean ? "차이" : "Diff"}</th>
 						@if(split)
 							@for(int ws = 1; ws <= 2; ws++)

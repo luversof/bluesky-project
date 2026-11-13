@@ -117,19 +117,19 @@
 		<div class="grid gap-4 @lg:grid-cols-2 @4xl:grid-cols-4">
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 					<div class="text-xs font-semibold text-base-content/60">${summaryFinalLabel}</div>
-					<div id="stockCompoundFinalValue" class="font-mono text-xl font-bold tabular-nums amount-value">-</div>
+					<div id="stockCompoundFinalValue" class="font-mono text-xl font-semibold tabular-nums amount-value">-</div>
 			`)
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 					<div class="text-xs font-semibold text-base-content/60">${summaryPrincipalLabel}</div>
-					<div id="stockCompoundTotalPrincipal" class="font-mono text-xl font-bold tabular-nums amount-value">-</div>
+					<div id="stockCompoundTotalPrincipal" class="font-mono text-xl font-semibold tabular-nums amount-value">-</div>
 			`)
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 					<div class="text-xs font-semibold text-base-content/60">${summaryProfitLabel}</div>
-					<div id="stockCompoundTotalProfit" class="font-mono text-xl font-bold tabular-nums amount-value text-profit">-</div>
+					<div id="stockCompoundTotalProfit" class="font-mono text-xl font-semibold tabular-nums amount-value text-profit">-</div>
 			`)
 			@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 					<div class="text-xs font-semibold text-base-content/60">${summaryReturnLabel}</div>
-					<div id="stockCompoundTotalReturn" class="font-mono text-xl font-bold tabular-nums text-profit">-</div>
+					<div id="stockCompoundTotalReturn" class="font-mono text-xl font-semibold tabular-nums text-profit">-</div>
 			`)
 		</div>
 

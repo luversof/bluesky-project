@@ -96,14 +96,14 @@
 								${tradeTypeLabel.apply(trade.type())}
 							</span>
 						</td>
-						<td class="font-bold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${trade.stockItemName()}</a></td>
+						<td class="font-semibold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${trade.stockItemName()}</a></td>
 						<td class="whitespace-nowrap hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(trade.accountId() != null ? trade.accountId().toString() : "")}" class="link link-hover">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</a></td>
 						<td class="text-right amount-value">${trade.price() != null ? decimalFormat.format(trade.price()) : "0"}</td>
 						<td class="text-right amount-value">${decimalFormat.format(trade.quantity())}</td>
 						<td class="text-right amount-value">${trade.amount() != null ? decimalFormat.format(trade.amount()) : "0"}</td>
 						<td class="text-right text-xs text-base-content/60 amount-value hidden min-[1300px]:table-cell print:table-cell">@if(trade.fee() == null || trade.fee().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(trade.fee())}@endif</td>
 						<td class="text-right text-xs text-base-content/60 amount-value hidden min-[1300px]:table-cell print:table-cell">@if(trade.tax() == null || trade.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(trade.tax())}@endif</td>
-						<td class="text-right font-bold amount-value ${StockFormatUtil.amountTone(trade.realizedProfit())}">
+						<td class="text-right font-semibold amount-value ${StockFormatUtil.amountTone(trade.realizedProfit())}">
 							<%-- 손익은 부호가 뜻을 바꾼다 - 실측 2026-09-12: 이 열의 55 값 중 음수 6 개만 "-" 를 달고 양수 49 개는
 								 맨 숫자였다. 색만으로 방향을 말하면 고대비 모드(실측: 손익 색이 모두 검정 한 가지로 합쳐짐)와
 								 색을 구분하기 어려운 눈에는 뜻이 사라진다. 다른 화면은 StockFormatUtil.signedWon 으로 이미 부호를 붙인다. --%>
@@ -118,7 +118,7 @@
 					@endif
 					</tbody>
 					<tfoot>
-						<tr class="font-bold bg-base-200">
+						<tr class="font-semibold bg-base-200">
 							<%-- 합계 라벨의 colspan 은 고정인데 그 범위 안의 계좌 열은 sm 미만에서 숨는다. 그대로 두면 합계 줄이 헤더보다
 						     한 칸 넓어져 값이 다른 열 밑에 붙는다 - 실측 2026-09-11 375px: 헤더 보임 7 칸인데 합계 줄은 8 칸.
 						     숨는 열은 colspan 밖으로 빼고 헤더와 같은 클래스를 단 빈 칸으로 둔다. --%>

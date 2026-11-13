@@ -34,7 +34,7 @@
 }
 
 @template._components.ui.card(cssClass = "mb-4", bodyClass = "p-4", body = @`
-		<h2 class="font-bold text-sm" data-page-section>${title}</h2>
+		<h2 class="font-semibold text-sm" data-page-section>${title}</h2>
 		<p class="text-xs text-base-content/60 mb-3">${description}</p>
 
 		<%-- 짧은 구간을 고르면 연도별은 한 줄이라 아무것도 말해 주지 않는다 - 그럴 때는 월별을 먼저 보여 준다
@@ -46,7 +46,7 @@
 
 		<div id="dividendPeriodPanel-year" role="tabpanel" data-panel-group="dividendPeriod" data-panel="year">
 			<%-- 인쇄에서는 탭이 없어 두 표가 나란히 찍힌다 - 어느 표인지 이름이 있어야 한다(자산 성장 패널들과 같은 방식). --%>
-			<h3 class="mb-2 text-sm font-bold">${yearTabLabel}</h3>
+			<h3 class="mb-2 text-sm font-semibold">${yearTabLabel}</h3>
 			@if(yearlyRows == null || yearlyRows.isEmpty())
 				<p class="text-sm text-base-content/60 py-4">${emptyLabel}</p>
 			@else
@@ -68,7 +68,7 @@
 										${row.label()}
 										@if(row.partial())
 											<%-- 그 해가 조회 구간에 다 담기지 않았다. 구간을 밝히지 않으면 그 해 전체로 오해한다(자산 성장 연도별 성과와 같은 표기). --%>
-											<div class="text-[11px] font-normal leading-4 text-base-content/60">
+											<div class="text-2xs font-normal leading-4 text-base-content/60">
 												${partialLabel}
 												@if(row.coveredFrom() != null && row.coveredTo() != null)
 													<span class="whitespace-nowrap date-whole">${row.coveredFrom().toString().substring(5)}</span> ~ <span class="whitespace-nowrap date-whole">${row.coveredTo().toString().substring(5)}</span>
@@ -79,7 +79,7 @@
 									<td class="text-right tabular-nums">${decimalFormat.format(row.count())}</td>
 									<td class="text-right amount-value">${decimalFormat.format(StockFormatUtil.displayWon(row.grossAmount()))}</td>
 									<td class="text-right amount-value">@if(row.tax() == null || row.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(row.tax()))}@endif</td>
-									<td class="text-right font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(row.netAmount()))}</td>
+									<td class="text-right font-semibold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(row.netAmount()))}</td>
 								</tr>
 							@endfor
 						</tbody>
@@ -92,7 +92,7 @@
 									<td class="text-right tabular-nums">${decimalFormat.format(yearlyTotal.count())}</td>
 									<td class="text-right amount-value">${decimalFormat.format(StockFormatUtil.displayWon(yearlyTotal.grossAmount()))}</td>
 									<td class="text-right amount-value">@if(yearlyTotal.tax() == null || yearlyTotal.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(yearlyTotal.tax()))}@endif</td>
-									<td class="text-right font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(yearlyTotal.netAmount()))}</td>
+									<td class="text-right font-semibold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(yearlyTotal.netAmount()))}</td>
 								</tr>
 						</tfoot>
 					</table>
@@ -102,7 +102,7 @@
 
 		<div id="dividendPeriodPanel-month" role="tabpanel" data-panel-group="dividendPeriod" data-panel="month">
 			<%-- 인쇄에서는 탭이 없어 두 표가 나란히 찍힌다 - 어느 표인지 이름이 있어야 한다(자산 성장 패널들과 같은 방식). --%>
-			<h3 class="mb-2 text-sm font-bold">${monthTabLabel}</h3>
+			<h3 class="mb-2 text-sm font-semibold">${monthTabLabel}</h3>
 			@if(monthlyRows == null || monthlyRows.isEmpty())
 				<p class="text-sm text-base-content/60 py-4">${emptyLabel}</p>
 			@else
@@ -124,7 +124,7 @@
 									<td class="text-right tabular-nums">${decimalFormat.format(row.count())}</td>
 									<td class="text-right amount-value">${decimalFormat.format(StockFormatUtil.displayWon(row.grossAmount()))}</td>
 									<td class="text-right amount-value">@if(row.tax() == null || row.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(row.tax()))}@endif</td>
-									<td class="text-right font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(row.netAmount()))}</td>
+									<td class="text-right font-semibold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(row.netAmount()))}</td>
 								</tr>
 							@endfor
 						</tbody>
@@ -137,7 +137,7 @@
 									<td class="text-right tabular-nums">${decimalFormat.format(monthlyTotal.count())}</td>
 									<td class="text-right amount-value">${decimalFormat.format(StockFormatUtil.displayWon(monthlyTotal.grossAmount()))}</td>
 									<td class="text-right amount-value">@if(monthlyTotal.tax() == null || monthlyTotal.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${decimalFormat.format(StockFormatUtil.displayWon(monthlyTotal.tax()))}@endif</td>
-									<td class="text-right font-bold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(monthlyTotal.netAmount()))}</td>
+									<td class="text-right font-semibold amount-value text-dividend">${decimalFormat.format(StockFormatUtil.displayWon(monthlyTotal.netAmount()))}</td>
 								</tr>
 						</tfoot>
 					</table>

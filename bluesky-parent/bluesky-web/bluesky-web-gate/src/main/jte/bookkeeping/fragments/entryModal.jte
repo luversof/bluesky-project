@@ -17,7 +17,7 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="bk-entry-title">
 	<a href="${closeHref}" class="absolute inset-0 bg-black/40" aria-label="${BookkeepingView.msg("bookkeeping.entry.close")}"></a>
 	<div class="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-box bg-base-100 p-6 shadow-xl">
-		<h2 id="bk-entry-title" class="text-lg font-bold mb-3">${title}</h2>
+		<h2 id="bk-entry-title" class="text-lg font-semibold mb-3">${title}</h2>
 		<a href="${closeHref}" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" aria-label="${BookkeepingView.msg("bookkeeping.entry.close")}">✕</a>
 
 		@if(!editing && !page.favorites().isEmpty())

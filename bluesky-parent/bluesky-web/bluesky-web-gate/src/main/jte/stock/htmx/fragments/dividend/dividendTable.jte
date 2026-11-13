@@ -106,13 +106,13 @@
 					@for(DividendView item : dividendList)
 					<tr>
 						<td class="whitespace-nowrap date-whole">${item.payDate() != null ? dateFormatter.format(StockZoneUtil.recordedDate(item.payDate(), zone)) : ""}</td>
-						<td class="font-bold"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName()}</a></td>
+						<td class="font-semibold"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName()}</a></td>
 						<td class="hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(item.accountId() != null ? item.accountId().toString() : "")}" class="link link-hover">${item.accountName()}</a></td>
 						<td class="text-right amount-value">${item.grossAmount() != null ? decimalFormat.format(item.grossAmount()) : "0"}</td>
 						<%-- 이 표에서 "-" 는 두 뜻으로 읽힌다 - 0 원(세금 147 · 과세금액 119 줄)과 값 없음(기준 가격 등 5 줄, 까닭 tooltip 있음).
 						     0 을 그대로 적으면 표가 0 으로 도배되므로(2026-09-08 결정) 기호는 두고 0 쪽에만 까닭을 붙인다. --%>
 						<td class="text-right hidden lg:table-cell print:table-cell amount-value tooltip" data-tip="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}" aria-label="${item.tax() != null && item.tax().signum() == 0 ? zeroAmountTitle : null}">${item.tax() != null && item.tax().signum() != 0 ? decimalFormat.format(item.tax()) : "-"}</td>
-						<td class="text-right text-dividend font-bold amount-value">${item.netAmount() != null ? decimalFormat.format(item.netAmount()) : "0"}</td>
+						<td class="text-right text-dividend font-semibold amount-value">${item.netAmount() != null ? decimalFormat.format(item.netAmount()) : "0"}</td>
 						<td class="text-right hidden md:table-cell amount-value">${item.quantity() != null ? decimalFormat.format(item.quantity()) : "-"}</td>
 						<td class="text-right hidden xl:table-cell print:table-cell amount-value">${item.referencePrice() != null ? decimalFormat.format(item.referencePrice()) : "-"}</td>
 						<td class="text-right hidden xl:table-cell print:table-cell amount-value">${item.principalCost() != null ? decimalFormat.format(item.principalCost()) : "-"}</td>
@@ -127,7 +127,7 @@
 					@endif
 					</tbody>
 					<tfoot>
-						<tr class="font-bold bg-base-200">
+						<tr class="font-semibold bg-base-200">
 							<%-- 합계 라벨의 colspan 은 고정인데 그 범위 안의 계좌 열은 sm 미만에서 숨는다. 그대로 두면 합계 줄이 헤더보다
 						     한 칸 넓어져 값이 다른 열 밑에 붙는다 - 실측 2026-09-11 375px: 헤더 보임 6 칸인데 합계 줄은 7 칸.
 						     숨는 열은 colspan 밖으로 빼고 헤더와 같은 클래스를 단 빈 칸으로 둔다. --%>

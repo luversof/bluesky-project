@@ -89,8 +89,8 @@
 	}
 	<div class="space-y-3 rounded-box border border-primary/25 bg-primary/5 p-4 mt-2">
 		<div class="flex flex-wrap items-center gap-2">
-			<span class="text-sm font-bold text-primary">${MessageUtil.getMessage("poe.sim.opt.result.title")}</span>
-			<span class="font-bold">${gemLabel}</span>
+			<span class="text-sm font-semibold text-primary">${MessageUtil.getMessage("poe.sim.opt.result.title")}</span>
+			<span class="font-semibold">${gemLabel}</span>
 			<span class="badge badge-primary badge-outline badge-sm">${net.luversof.web.gate.poe.PoeText.name(result.classNameKo(), result.className())}${result.ascendancyKo() != null ? " · " + net.luversof.web.gate.poe.PoeText.name(result.ascendancyKo(), result.ascendancy()) : ""}</span>
 			@if(result.bloodline() != null)
 				<span class="badge badge-sm text-rose-500 border-rose-500/40">${MessageUtil.getMessage("poe.sim.opt.result.bloodline")}: ${net.luversof.web.gate.poe.PoeText.name(result.bloodlineKo(), result.bloodline())}</span>
@@ -107,7 +107,7 @@
 
 		@if(fragile)
 			<div class="flex flex-wrap items-center gap-2 rounded border border-warning/50 bg-warning/10 px-3 py-2 text-xs">
-				<span class="font-bold text-warning">${MessageUtil.getMessage("poe.sim.opt.result.fragile")}</span>
+				<span class="font-semibold text-warning">${MessageUtil.getMessage("poe.sim.opt.result.fragile")}</span>
 				@if(!uncapped.isEmpty())
 					<span class="text-base-content/70">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.sim.opt.result.fragile.res"), String.join(", ", uncapped))}</span>
 				@endif
@@ -128,7 +128,7 @@
 		<%-- P3 메타 기준선 게이트 — 공격·생존 모두 실빌드 중앙값 하회(지배당함)면 명시 경고. 비교표에서 축별 확인. --%>
 		@if(Boolean.TRUE.equals(result.belowMeta()))
 			<div class="flex flex-wrap items-center gap-2 rounded border border-error/50 bg-error/10 px-3 py-2 text-xs">
-				<span class="font-bold text-error">${net.luversof.web.gate.poe.PoeText.isKorean() ? "실빌드 중앙값 하회" : "Below real-build median"}</span>
+				<span class="font-semibold text-error">${net.luversof.web.gate.poe.PoeText.isKorean() ? "실빌드 중앙값 하회" : "Below real-build median"}</span>
 				<span class="text-base-content/70">${net.luversof.web.gate.poe.PoeText.isKorean() ? "이 결과는 같은 스킬×전직의 poe.ninja 실빌드 중앙값보다 공격(DPS)·생존(EHP) 모두 낮습니다 — 아래 비교표에서 부족 축을 확인하세요" : "Both DPS and EHP are below the poe.ninja real-build median for this skill × ascendancy — see the comparison table below"}</span>
 			</div>
 		@endif
@@ -157,7 +157,7 @@
 		}
 		@if(bigMeta || realisticText != null)
 			<div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
-				<span class="font-bold text-warning">${koAssume ? "가정 주의" : "Optimistic assumptions"}</span>
+				<span class="font-semibold text-warning">${koAssume ? "가정 주의" : "Optimistic assumptions"}</span>
 				@if(bigMeta)
 					<span class="text-warning">${koAssume ? "실빌드 중앙값의 " + String.format("%.1f", result.metaRatio()) + "배" : String.format("%.1f", result.metaRatio()) + "x real-build median"}</span>
 				@endif
@@ -170,8 +170,8 @@
 
 		<div class="flex flex-wrap items-baseline gap-3">
 			<span class="text-sm text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.baseline")} <span class="font-mono">${result.baselineValue()}</span></span>
-			<span class="text-lg font-bold font-mono text-primary">→ ${result.finalValue()}</span>
-			<span class="text-[11px] text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "(모든 레어 최상위 등급 가정)" : "(all rares at top tier)"}</span>
+			<span class="text-lg font-semibold font-mono text-primary">→ ${result.finalValue()}</span>
+			<span class="text-2xs text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "(모든 레어 최상위 등급 가정)" : "(all rares at top tier)"}</span>
 		</div>
 
 		<%-- poe.ninja 실빌드 벤치마크 — 이 (전직×스킬)의 실 유저 빌드 중앙값과 비교. 결과가 실데이터에 근거함을 보여준다. --%>
@@ -380,7 +380,7 @@
 			}
 			<div class="rounded-box bg-base-100 px-3 py-2 text-xs space-y-1">
 				<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-					<span class="font-bold text-info">${ko ? "poe.ninja 실빌드 중앙값" : "poe.ninja real-build median"}</span>
+					<span class="font-semibold text-info">${ko ? "poe.ninja 실빌드 중앙값" : "poe.ninja real-build median"}</span>
 					<span class="badge badge-ghost badge-xs">${net.luversof.web.gate.poe.PoeText.name(ninjaBenchmark.mainSkillKo(), ninjaBenchmark.mainSkill())}${ninjaBenchmark.ascendancy() != null && !ninjaBenchmark.ascendancy().isBlank() ? " · " + net.luversof.web.gate.poe.PoeText.name(ninjaBenchmark.ascendancyKo(), ninjaBenchmark.ascendancy()) : ""}</span>
 					@if(lean != null)
 						<%-- 실빌드 성향 배지 — 이 조합의 실 유저 분포가 공격/생존 어느 쪽인지(시뮬이 미는 방향의 근거) --%>
@@ -430,7 +430,7 @@
 					@endfor
 				</div>
 				@if(ninjaBenchmark.skillDps() != null && ninjaBenchmark.skillDps().size() > 1)
-					<div class="text-[10px] text-base-content/60">${ko ? "DPS(주 스킬)·내 DPS 는 주 스킬 전용 — 추가 스킬 DPS 는 실빌드 참고값(DPS·스킬명 행)" : "Main-skill DPS on both sides; extra-skill rows are real-build reference"}</div>
+					<div class="text-2xs text-base-content/60">${ko ? "DPS(주 스킬)·내 DPS 는 주 스킬 전용 — 추가 스킬 DPS 는 실빌드 참고값(DPS·스킬명 행)" : "Main-skill DPS on both sides; extra-skill rows are real-build reference"}</div>
 				@endif
 				@if(ninjaBenchmark.topKeystones() != null && !ninjaBenchmark.topKeystones().isEmpty())
 					<div class="text-base-content/60">${MessageUtil.getMessage("poe.sim.bench.keystones")}: ${String.join(", ", ninjaBenchmark.topKeystones())}</div>
@@ -474,7 +474,7 @@
 				<div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
 					<span class="font-semibold">${koRs ? "실빌드에서 출발한 빌드" : "Start from a real build"}</span>
 					<span class="badge badge-ghost badge-xs">poe.ninja${realStart.level() != null ? " · Lv" + realStart.level() : ""}</span>
-					<span class="text-[11px] text-base-content/60">${koRs ? "같은 스킬·전직 " + realStart.sample() + "명 중 중앙값에 가장 가까운 빌드 · 이 결과와 같은 가정(보스·충전·전투 버프)에 그 빌드의 운용 설정(공명·낙인 부착 등)을 더해 다시 계산" : "closest to the median of " + realStart.sample() + " real builds · recalculated under the same assumptions (boss, charges, combat buffs) plus the build's own settings (resonance, attached brands, …)"}</span>
+					<span class="text-2xs text-base-content/60">${koRs ? "같은 스킬·전직 " + realStart.sample() + "명 중 중앙값에 가장 가까운 빌드 · 이 결과와 같은 가정(보스·충전·전투 버프)에 그 빌드의 운용 설정(공명·낙인 부착 등)을 더해 다시 계산" : "closest to the median of " + realStart.sample() + " real builds · recalculated under the same assumptions (boss, charges, combat buffs) plus the build's own settings (resonance, attached brands, …)"}</span>
 				</div>
 				<%-- 좁은 화면 · 큰 글꼴(320px + 200%)에서 표 최소 폭이 부모를 넓혀 화면이 가로로 넘쳤다(10-03 nightly) — 표만 가로 스크롤 --%>
 				<div class="overflow-x-auto max-w-full">
@@ -510,7 +510,7 @@
 				@for(var point : result.affixBudget())
 					<%-- 칩이 줄바꿈 없는 flex 라 영어 320px + 글꼴 200% 에서 21px 넘쳤다(10-04 야간 점검) — 칩 안에서도 줄바꿈 · 숫자는 어디서든 --%>
 					<span class="flex min-w-0 flex-wrap items-baseline gap-x-1">
-						<span class="text-[11px] text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "필수 " + point.essentialCount() + "개" : point.essentialCount() + " essential"}</span>
+						<span class="text-2xs text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "필수 " + point.essentialCount() + "개" : point.essentialCount() + " essential"}</span>
 						<span class="min-w-0 font-mono text-warning [overflow-wrap:anywhere]">${point.value()}</span>
 					</span>
 				@endfor
@@ -526,8 +526,8 @@
 					!{ String sv = stat.value() == null ? "" : stat.value().replace(",", "").trim(); boolean isZero = sv.equals("0") || sv.equals("0.0") || sv.equals("0.00"); }
 					@if(!(hideIfZero.contains(stat.key()) && isZero))
 						<div class="rounded-box bg-base-100 px-3 py-2">
-							<div class="text-[11px] font-semibold text-base-content/60">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
-							<div class="text-sm font-bold font-mono ${statColor.apply(stat.key(), stat.value())}">${stat.value()}</div>
+							<div class="text-2xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
+							<div class="text-sm font-semibold font-mono ${statColor.apply(stat.key(), stat.value())}">${stat.value()}</div>
 						</div>
 					@endif
 				@endfor
@@ -548,8 +548,8 @@
 				<div class="grid grid-cols-[repeat(auto-fit,minmax(min(5.5rem,100%),1fr))] sm:grid-cols-5 gap-2">
 					@for(PoeOptimizeResult.DefenseHit hit : result.defenseHits())
 						<div class="rounded-box bg-base-100 px-3 py-2">
-							<div class="text-[11px] font-semibold ${defColor.getOrDefault(hit.type(), "text-base-content/60")}">${MessageUtil.getMessage("poe.sim.opt.result.defense." + hit.type())}</div>
-							<div class="text-sm font-bold font-mono">${hit.value()}</div>
+							<div class="text-2xs font-semibold ${defColor.getOrDefault(hit.type(), "text-base-content/60")}">${MessageUtil.getMessage("poe.sim.opt.result.defense." + hit.type())}</div>
+							<div class="text-sm font-semibold font-mono">${hit.value()}</div>
 						</div>
 					@endfor
 				</div>
@@ -597,7 +597,7 @@
 				<span class="text-xs font-semibold text-base-content/60 mr-1" title="${MessageUtil.getMessage("poe.sim.opt.result.blocked.hint")}">${MessageUtil.getMessage("poe.sim.opt.result.blocked")}</span>
 				@for(PoeOptimizeResult.BlockedAura blocked : result.blockedAuras())
 					<span class="badge badge-sm badge-ghost text-base-content/60 line-through decoration-base-content/30">${net.luversof.web.gate.poe.PoeText.name(blocked.nameKo(), blocked.name())}</span>
-					<span class="text-[10px] font-mono text-base-content/60 -ml-1">−${blocked.shortfall()}</span>
+					<span class="text-2xs font-mono text-base-content/60 -ml-1">−${blocked.shortfall()}</span>
 				@endfor
 			</div>
 		@endif
@@ -708,7 +708,7 @@
 		}
 		@if(ehpLowestHit != null)
 			<div class="flex flex-wrap items-center gap-2 rounded border border-info/40 bg-info/10 px-3 py-2 text-xs">
-				<span class="font-bold text-info">${net.luversof.web.gate.poe.PoeText.isKorean() ? "EHP 는 지속 기준" : "EHP is a sustained figure"}</span>
+				<span class="font-semibold text-info">${net.luversof.web.gate.poe.PoeText.isKorean() ? "EHP 는 지속 기준" : "EHP is a sustained figure"}</span>
 				<span class="text-base-content/70">${net.luversof.web.gate.poe.PoeText.isKorean()
 					? "PoB 의 EHP 는 피격 사이 회복(막기·재생 등)까지 반영해 막기·회복 스택 빌드에서 크게 커집니다 — 단일 피격 기준 실질 생존은 최약 최대피격 " + String.format("%,d", ehpLowestHit) + " 입니다"
 					: "PoB's EHP counts recovery between hits, so it inflates on block/recovery builds — the single-hit figure is a lowest max hit of " + String.format("%,d", ehpLowestHit)}</span>
@@ -928,7 +928,7 @@
 				<span class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.sim.opt.result.items")}</span>
 				<%-- 플라스크 상시 활성은 PoB 빌드 계획의 표준 가정 — 명중 +2000 처럼 가정은 화면에 드러낸다(표시=실제) --%>
 				@if(resultHasFlask)
-					<span class="ml-2 text-[11px] text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "· 플라스크는 상시 활성 가정(PoB 표준)" : "· Flasks assumed permanently active"}</span>
+					<span class="ml-2 text-2xs text-base-content/60">${net.luversof.web.gate.poe.PoeText.isKorean() ? "· 플라스크는 상시 활성 가정(PoB 표준)" : "· Flasks assumed permanently active"}</span>
 				@endif
 				<%-- 인게임 캐릭터창식 페이퍼돌 — 슬롯을 실제 게임 배치로. 유니크는 slug 아이콘, 레어는 이름(테두리색=레어리티).
 				     호버는 상세 리스트와 동일(유니크=#poePreview, 레어=베이스 상세 링크). 인증 슬롯 프레임 텍스처는 미추출이라 CSS 게임풍 박스로 대체. --%>
@@ -965,9 +965,9 @@
 								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="${di.slug() != null ? "/poe/items/" + di.slug() : "#"}" title="${dName}">
 									@if(di.slug() != null)
 										<img src="/poe-data/poe1/icons/items/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" data-onerror="hide-reveal-next">
-										<span class="hidden max-h-full overflow-hidden text-[8px] font-semibold poe-name-rare text-center leading-[1.15]">${dName}</span>
+										<span class="hidden max-h-full overflow-hidden text-2xs font-semibold poe-name-rare text-center leading-[1.15]">${dName}</span>
 									@else
-										<span class="max-h-full overflow-hidden text-[8px] font-semibold poe-name-rare text-center leading-[1.15] drop-shadow-[0_1px_1px_rgba(0,0,0,0.95)]">${dName}</span>
+										<span class="max-h-full overflow-hidden text-2xs font-semibold poe-name-rare text-center leading-[1.15] drop-shadow-[0_1px_1px_rgba(0,0,0,0.95)]">${dName}</span>
 									@endif
 									<span data-poe-tip class="hidden">@template.poe.htmx.resultRareTooltip(name = di.name(), nameKo = di.nameKo(), modLines = dLines, modTiers = di.modTiers(), base = rareBases == null ? null : rareBases.get(di.slug()), reminders = dKo ? di.modRemindersKo() : di.modReminders())</span>
 								</a>
@@ -977,14 +977,14 @@
 									<%-- 삿된 · 변형: 실제 장착 옵션 툴팁을 인라인으로(레어 슬롯과 같은 data-poe-tip 복제, C152) --%>
 									<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="/poe/uniques/${di.slug()}" title="${dName}" data-unique-override>
 										<img src="/poe-data/poe1/icons/uniques/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" data-onerror="hide-reveal-next">
-										<span class="hidden text-[8px] font-semibold poe-name-unique text-center leading-tight">${dName}</span>
+										<span class="hidden text-2xs font-semibold poe-name-unique text-center leading-tight">${dName}</span>
 										<span data-poe-tip class="hidden">@template.poe.htmx.uniqueDetail(item = dOv, base = uniqueOverrideBases == null ? null : uniqueOverrideBases.get(di.slot()), variant = null)</span>
 									</a>
 								@else
 								<a class="poe-doll-slot poe-hover cursor-pointer" style="${pos}" href="/poe/uniques/${di.slug()}"
 								   hx-get="/poe/htmx/uniques/detail?slug=${di.slug()}" hx-target="#poePreview" hx-trigger="mouseenter delay:100ms" hx-swap="innerHTML" title="${dName}">
 									<img src="/poe-data/poe1/icons/uniques/${di.slug()}.png?v=${net.luversof.web.gate.poe.config.PoeIconVersion.current()}" alt="" loading="lazy" data-onerror="hide-reveal-next">
-									<span class="hidden text-[8px] font-semibold poe-name-unique text-center leading-tight">${dName}</span>
+									<span class="hidden text-2xs font-semibold poe-name-unique text-center leading-tight">${dName}</span>
 								</a>
 								@endif
 							@endif

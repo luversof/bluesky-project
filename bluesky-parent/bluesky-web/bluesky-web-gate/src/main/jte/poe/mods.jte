@@ -33,7 +33,7 @@
 	contentPoe = @`
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-baseline gap-3">
-				<h1 class="text-2xl font-bold">${pageTitle}</h1>
+				<h1 class="text-2xl font-semibold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
 				<span class="text-sm text-base-content/60">${MessageUtil.getMessage("poe.mods.desc")}</span>
 			</div>
@@ -55,7 +55,7 @@
 								   hx-swap="innerHTML"
 								   hx-push-url="/poe/mods?itemClass=${java.net.URLEncoder.encode(c.itemClass(), java.nio.charset.StandardCharsets.UTF_8)}"
 								   aria-current="${on ? "page" : null}"
-								   data-chip-value="${c.itemClass()}">${net.luversof.web.gate.poe.PoeClassNames.poe1(c.nameKo(), c.itemClass())}<span class="ml-1 text-[10px] opacity-60">${c.prefixes().size() + c.suffixes().size()}</span></a>
+								   data-chip-value="${c.itemClass()}">${net.luversof.web.gate.poe.PoeClassNames.poe1(c.nameKo(), c.itemClass())}<span class="ml-1 text-2xs opacity-60">${c.prefixes().size() + c.suffixes().size()}</span></a>
 							@endfor
 						</div>
 					@endif

@@ -23,7 +23,7 @@
 					<a href="${entry.href()}" class="${entry.current() ? "active font-semibold" : ""} justify-between gap-3">
 						<span class="max-w-full min-w-0 inline-block tooltip" data-tip="${entry.label()}"><span class="truncate block">${entry.label()}</span></span>
 						@if(entry.detail() != null && !entry.detail().isEmpty())
-							<span class="amount-value shrink-0 text-[11px] text-base-content/60">${entry.detail()}</span>
+							<span class="amount-value shrink-0 text-2xs text-base-content/60">${entry.detail()}</span>
 						@endif
 					</a>
 				</li>

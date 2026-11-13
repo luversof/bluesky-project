@@ -105,7 +105,7 @@
 				<div id="poe2TreeStats" class="hidden absolute right-2 top-2 z-10 w-72 max-h-[60%] overflow-y-auto poe-node-popup">
 					<div class="sticky top-0 poe-popup-head text-xs">${MessageUtil.getMessage("poe.tree.stats.total")}</div>
 					<%-- 기준 세트(10-02) — 인게임은 켜진 무기 세트 전용 패시브만 적용. 세트 노드가 있을 때만 보인다(tree2.js) --%>
-					<div id="poe2TreeStatsSet" class="hidden flex justify-center gap-3 border-b border-white/10 px-3 py-1 text-[11px]" role="group" aria-label="${MessageUtil.getMessage("poe2.tree.summary.set")}">
+					<div id="poe2TreeStatsSet" class="hidden flex justify-center gap-3 border-b border-white/10 px-3 py-1 text-2xs" role="group" aria-label="${MessageUtil.getMessage("poe2.tree.summary.set")}">
 						<button type="button" data-summary-set="1"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#e0803a"></span>${MessageUtil.getMessage("poe2.tree.summary.set1")}</button>
 						<button type="button" data-summary-set="2"><span class="inline-block w-2 h-2 rounded-full mr-1" style="background:#4aa3df"></span>${MessageUtil.getMessage("poe2.tree.summary.set2")}</button>
 					</div>

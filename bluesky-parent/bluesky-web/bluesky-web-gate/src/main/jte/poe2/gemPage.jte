@@ -72,7 +72,7 @@
 						boolean hasReq = gem.levels().stream().anyMatch(l -> l.requiredLevel() != null);
 					}
 					<div class="flex-1 min-w-0 sm:min-w-[20rem] rounded-2xl bg-base-100 p-4 shadow-sm">
-						<h2 class="font-bold mb-2">${MessageUtil.getMessage("poe.gems.progression")}</h2>
+						<h2 class="font-semibold mb-2">${MessageUtil.getMessage("poe.gems.progression")}</h2>
 						<div class="overflow-x-auto">
 							<table class="table table-xs">
 								<thead>
@@ -114,7 +114,7 @@
 				!{java.util.List<String> displayTags = PoeText.lines(gem.tagsKo(), gem.tags());}
 				@if(displayTags != null && !displayTags.isEmpty())
 					<div class="rounded-2xl bg-base-100 p-4 shadow-sm" data-gem-tags>
-						<h2 class="font-bold mb-2">${MessageUtil.getMessage("poe.gems.tags")}</h2>
+						<h2 class="font-semibold mb-2">${MessageUtil.getMessage("poe.gems.tags")}</h2>
 						<div class="flex flex-wrap gap-1.5">
 							@for(String tag : displayTags)
 								<span class="badge badge-outline badge-sm">${tag}</span>

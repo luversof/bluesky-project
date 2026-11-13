@@ -270,11 +270,11 @@
 						<td class="text-right amount-value text-base-content/60">
 							${String.format("%,d", StockFormatUtil.displayWon(buyAmount))}
 						</td>
-						<td class="text-right font-bold amount-value text-principal">
+						<td class="text-right font-semibold amount-value text-principal">
 							${String.format("%,d", StockFormatUtil.displayWon(evaluationAmount))}
 						</td>
 						<td class="text-right">
-							<div class="font-bold amount-value ${StockFormatUtil.amountTone(evaluationProfitAmount)}">
+							<div class="font-semibold amount-value ${StockFormatUtil.amountTone(evaluationProfitAmount)}">
 								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(evaluationProfitAmount))}
 							</div>
 							<div class="text-xs font-semibold ${StockFormatUtil.amountTone(evaluationProfitAmount)}">
@@ -294,7 +294,7 @@
 							@endif
 						</td>
 						<td class="text-right ${StockFormatUtil.amountTone(principalReturnAmount)}">
-							<div class="font-bold amount-value">
+							<div class="font-semibold amount-value">
 								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(principalReturnAmount))}
 							</div>
 							<div class="text-xs font-semibold">
@@ -345,7 +345,7 @@
 														<td class="text-right hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(holding.currentPrice()))}</td>
 														<td class="text-right amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holding.evaluationAmount()))}</td>
 														<%-- 금액만 가린다 - 수익률(%)은 금액 숨김에도 보여야 한다(사용자 요청 2026-09-23). --%>
-														<td class="text-right font-bold ${StockFormatUtil.amountTone(holding.evaluationProfit())}">
+														<td class="text-right font-semibold ${StockFormatUtil.amountTone(holding.evaluationProfit())}">
 															<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holding.evaluationProfit()))}</span>
 															<span class="text-xs">(${StockFormatUtil.signedPct(holding.evaluationProfitRatePct() != null ? holding.evaluationProfitRatePct().doubleValue() : 0.0, 1)})</span>
 														</td>
@@ -364,7 +364,7 @@
 					@endif
 				@endfor
 				</tbody>
-				<tfoot class="bg-base-200 font-bold">
+				<tfoot class="bg-base-200 font-semibold">
 					!{var accountTotals = StockAssetStatusUtil.accountTotals(accountTotalMap, accountProfitBasisMap);}
 					!{BigDecimal totalAccountEvaluationAmount = accountTotals.evaluationAmount();}
 					!{BigDecimal totalBuyAmount = accountTotals.buyAmount();}
@@ -382,7 +382,7 @@
 							${String.format("%,d", StockFormatUtil.displayWon(totalAccountEvaluationAmount))}
 						</td>
 						<td class="text-right ${StockFormatUtil.amountTone(totalAccountEvaluationProfit)}">
-							<div class="font-bold amount-value">
+							<div class="font-semibold amount-value">
 								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalAccountEvaluationProfit))}
 							</div>
 							<div class="text-xs font-semibold">
@@ -393,7 +393,7 @@
 							${String.format("%,d", StockFormatUtil.displayWon(totalPrincipal))}
 						</td>
 						<td class="text-right ${StockFormatUtil.amountTone(totalPrincipalReturnAmount)}">
-							<div class="font-bold amount-value">
+							<div class="font-semibold amount-value">
 								${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalPrincipalReturnAmount))}
 							</div>
 							<div class="text-xs font-semibold">
@@ -625,7 +625,7 @@
 								<td class="text-right hidden sm:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(item.totalBuyCost()))}</td>
 								<td class="text-right hidden lg:table-cell print:table-cell amount-value">${String.format("%,d", StockFormatUtil.displayWon(item.currentPrice()))}</td>
 								<td class="text-right font-semibold amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(item.evaluationAmount()))}</td>
-								<td class="text-right font-bold ${StockFormatUtil.amountTone(item.evaluationProfit())}">
+								<td class="text-right font-semibold ${StockFormatUtil.amountTone(item.evaluationProfit())}">
 									<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(item.evaluationProfit()))}</span>
 									<span class="text-xs">(${StockFormatUtil.signedPct(evalProfitRate.doubleValue(), 1)})</span>
 								@if(!coverageText.isEmpty())
@@ -652,7 +652,7 @@
 										<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${MessageUtil.getMessage("stock.dividend.received.none")}">-</span><span class="sr-only">${MessageUtil.getMessage("stock.dividend.received.none")}</span>
 									@endif
 								</td>
-								<td class="text-right font-bold hidden lg:table-cell print:table-cell ${StockFormatUtil.amountTone(breakdown.combinedProfit())}">
+								<td class="text-right font-semibold hidden lg:table-cell print:table-cell ${StockFormatUtil.amountTone(breakdown.combinedProfit())}">
 									<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(breakdown.combinedProfit()))}</span>
 								@if(!annualizedText.isEmpty())
 									<%-- 1 년이 안 된 보유의 연평균은 흐리게 둔다(요구: 표시하되 약하게). 다만 /50 은 대비 3.55:1 로
@@ -700,7 +700,7 @@
 																<td class="text-right hidden md:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(holdingAccount.buyAmount()))}</td>
 																<td class="text-right amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(holdingAccount.evaluationAmount()))}</td>
 																<%-- 금액만 가린다 - 수익률(%)은 금액 숨김에도 보여야 한다(사용자 요청 2026-09-23). --%>
-																<td class="text-right font-bold ${StockFormatUtil.amountTone(holdingAccount.evaluationProfit())}">
+																<td class="text-right font-semibold ${StockFormatUtil.amountTone(holdingAccount.evaluationProfit())}">
 																	<span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(holdingAccount.evaluationProfit()))}</span>
 																	<span class="text-xs">(${StockFormatUtil.signedPct(holdingAccount.evaluationProfitRatePct() != null ? holdingAccount.evaluationProfitRatePct().doubleValue() : 0.0, 1)})</span>
 																</td>
@@ -720,7 +720,7 @@
 						@endfor
 					@endif
 				</tbody>
-				<tfoot class="bg-base-200 font-bold">
+				<tfoot class="bg-base-200 font-semibold">
 					!{BigDecimal totalStockBuyAmount = StockAssetStatusUtil.totalBuyCost(stockAggregated);}
 					<tr>
 						<th scope="row">${totalLabel}</th>
@@ -731,10 +731,10 @@
 						<td class="text-right hidden sm:table-cell print:table-cell amount-value text-base-content/60">${String.format("%,d", StockFormatUtil.displayWon(totalStockBuyAmount))}</td>
 						<td class="hidden lg:table-cell print:table-cell"></td>
 						<td class="text-right amount-value text-principal">${String.format("%,d", StockFormatUtil.displayWon(totalEvaluationAmount))}</td>
-						<td class="text-right font-bold amount-value ${StockFormatUtil.amountTone(totalEvaluationProfit)}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalEvaluationProfit))}</td>
+						<td class="text-right font-semibold amount-value ${StockFormatUtil.amountTone(totalEvaluationProfit)}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalEvaluationProfit))}</td>
 						<td class="text-right hidden min-[1340px]:table-cell print:table-cell ${StockFormatUtil.amountTone(stockProfitBreakdownTotal.realizedProfit())}"><span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockProfitBreakdownTotal.realizedProfit()))}</span></td>
 						<td class="text-right hidden min-[1340px]:table-cell print:table-cell"><span class="amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(stockProfitBreakdownTotal.dividendTotal()))}</span></td>
-						<td class="text-right font-bold hidden lg:table-cell print:table-cell ${StockFormatUtil.amountTone(stockProfitBreakdownTotal.combinedProfit())}"><span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockProfitBreakdownTotal.combinedProfit()))}</span></td>
+						<td class="text-right font-semibold hidden lg:table-cell print:table-cell ${StockFormatUtil.amountTone(stockProfitBreakdownTotal.combinedProfit())}"><span class="amount-value">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(stockProfitBreakdownTotal.combinedProfit()))}</span></td>
 						<td class="text-right text-base-content/70">${totalEvaluationAmount != null && totalEvaluationAmount.compareTo(BigDecimal.ZERO) > 0 ? "100.0%" : "0.0%"}</td>
 					</tr>
 				</tfoot>

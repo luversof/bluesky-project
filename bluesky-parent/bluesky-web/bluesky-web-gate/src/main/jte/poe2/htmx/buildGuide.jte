@@ -309,7 +309,7 @@
 								@for(int k = 0; k < 2; k++)
 									!{ java.util.List<Poe2.GuideMod> mods = k == 0 ? t.dps() : t.ehp(); }
 									@if(!mods.isEmpty())
-										<div class="mt-1 text-[11px] text-base-content/60">${k == 0 ? (korean ? "피해(DPS)" : "DPS") : (korean ? "생존(EHP)" : "EHP")}</div>
+										<div class="mt-1 text-2xs text-base-content/60">${k == 0 ? (korean ? "피해(DPS)" : "DPS") : (korean ? "생존(EHP)" : "EHP")}</div>
 										@for(Poe2.GuideMod m : mods)
 											<div class="flex items-baseline gap-2">
 												<span class="flex-1 text-[#8888ff]">${String.join(" / ", korean && m.linesKo() != null && !m.linesKo().isEmpty() ? m.linesKo() : m.lines())}</span>
@@ -334,7 +334,7 @@
 					<tbody>
 						@for(Poe2.GuideSlot s : guide.slots())
 							<tr title="${korean && s.itemKo() != null ? s.itemKo() : s.item()}">
-								<td class="whitespace-nowrap">${Poe2View.slotName(s.slot())}<div class="text-[10px] text-base-content/60 truncate max-w-[10rem]">${korean && s.itemKo() != null ? s.itemKo() : s.item()}</div></td>
+								<td class="whitespace-nowrap">${Poe2View.slotName(s.slot())}<div class="text-2xs text-base-content/60 truncate max-w-[10rem]">${korean && s.itemKo() != null ? s.itemKo() : s.item()}</div></td>
 								<td class="text-right font-mono ${tone.apply(s.dps())}">${pct.apply(s.dps())}</td>
 								<td class="text-right font-mono ${tone.apply(s.ehp())}">${pct.apply(s.ehp())}</td>
 							</tr>

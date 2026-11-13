@@ -30,7 +30,7 @@
 	contentPoe = @`
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-baseline gap-3">
-				<h1 class="text-2xl font-bold">${pageTitle}</h1>
+				<h1 class="text-2xl font-semibold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
 				@if(!treeVersions.isEmpty())
 					<%-- 버전별 아카이브 조회 — 빈 값=현행(최신) 데이터 --%>

@@ -91,9 +91,9 @@
 			<img src="${leftInf}" data-tt-influence style="position:absolute;left:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
 			<img src="${rightInf}" data-tt-influence style="position:absolute;right:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
 		@endif
-		<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${name}</div>
+		<div class="text-center font-semibold text-base leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${name}</div>
 		@if(twoLine)
-			<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${base}</div>
+			<div class="text-center text-sm leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${base}</div>
 		@endif
 	</div>
 	<%-- 종류 줄은 무기만 속성 칸 첫 줄(10-23 Q43) --%>
@@ -101,7 +101,7 @@
 
 	@if(hasWeapon || hasArmour || quality > 0 || intangibility > 0)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
+		<div class="px-4 py-1.5 text-xs space-y-0.5 text-center">
 			<%-- 품질은 인게임 속성 블록의 **첫 줄**이고 값은 매직 파랑이다
 			     (PoB ItemsTab 이 무기/방어구/플라스크 세 분기 모두 같은 순서·색으로 그린다).
 			     PoB 텍스트의 "Quality: N" 을 ITEM_META 로 걸러내기만 해서 임포트하면 품질이 사라졌다. --%>
@@ -134,7 +134,7 @@
 	     여기가 비어 있어 빌드에 장착한 플라스크는 회복량·지속·충전이 통째로 안 보였다. --%>
 	@if(flask != null)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
+		<div class="px-4 py-1.5 text-center text-xs space-y-0.5">
 			@if(flask.type() == 4)
 				<div class="${label}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), fdur)}</div>
 			@else
@@ -163,7 +163,7 @@
 		<div class="poe-tt-sepimg"></div>
 		<%-- 인게임/상세 페이지(itemDetail·uniqueDetail)와 같은 한 줄 형식: "요구 능력치 레벨 68, 155 힘, 60 민첩".
 		     여기만 레벨이 빠지고 쉼표 없이 나열돼 같은 아이템이 화면마다 다르게 보였다. --%>
-		<div class="px-4 py-1 text-center text-[12px]">
+		<div class="px-4 py-1 text-center text-xs">
 			<%-- ⚠ 한 줄로 붙여 쓸 것. @if 사이에 줄바꿈을 넣으면 그 개행이 공백으로 렌더돼
 			     "레벨 62 , 180 힘"처럼 쉼표 앞이 벌어진다(itemDetail 도 같은 이유로 한 줄이다). --%>
 			<span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>@if(reqLevel > 0)<span class="${label}">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="${value}">${reqLevel}</span>@endif@if(req.str().present())<span class="${value}">${reqLevel > 0 ? ", " : ""}${req.str().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(req.dex().present())<span class="${value}">${reqLevel > 0 || req.str().present() ? ", " : ""}${req.dex().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(req.intel().present())<span class="${value}">${reqLevel > 0 || req.str().present() || req.dex().present() ? ", " : ""}${req.intel().text()} </span><span class="${label}">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
@@ -177,10 +177,10 @@
 		<div class="px-4 py-2 text-center space-y-0.5">
 			@for(int ii = 0; ii < implicitLines.size(); ii++)
 				@if(!implicitLines.get(ii).isBlank())
-				<div class="text-[12px] leading-snug ${net.luversof.web.gate.poe.PoeText.modKindClass(implicitKinds, implicitLines.size(), ii)} whitespace-pre-line" data-mod-kind="${implicitKinds != null && implicitKinds.size() == implicitLines.size() ? implicitKinds.get(ii) : ""}">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(implicitLines.get(ii))}</div>
+				<div class="text-xs leading-snug ${net.luversof.web.gate.poe.PoeText.modKindClass(implicitKinds, implicitLines.size(), ii)} whitespace-pre-line" data-mod-kind="${implicitKinds != null && implicitKinds.size() == implicitLines.size() ? implicitKinds.get(ii) : ""}">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(implicitLines.get(ii))}</div>
 				@if(implicitReminders != null && implicitReminders.size() == implicitLines.size() && implicitReminders.get(ii) != null)
 					@for(String rem : implicitReminders.get(ii))
-						<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+						<div class="text-2xs leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
 					@endfor
 				@endif
 				@endif
@@ -193,10 +193,10 @@
 		<div class="px-4 py-2 text-center space-y-0.5">
 			@for(int mi = 0; mi < modLines.size(); mi++)
 				@if(!modLines.get(mi).isBlank())
-				<div class="text-[12px] leading-snug ${net.luversof.web.gate.poe.PoeText.modKindClass(modKinds, modLines.size(), mi)} whitespace-pre-line" data-mod-kind="${modKinds != null && modKinds.size() == modLines.size() ? modKinds.get(mi) : ""}">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(modLines.get(mi))}</div>
+				<div class="text-xs leading-snug ${net.luversof.web.gate.poe.PoeText.modKindClass(modKinds, modLines.size(), mi)} whitespace-pre-line" data-mod-kind="${modKinds != null && modKinds.size() == modLines.size() ? modKinds.get(mi) : ""}">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(modLines.get(mi))}</div>
 				@if(modReminders != null && modReminders.size() == modLines.size() && modReminders.get(mi) != null)
 					@for(String rem : modReminders.get(mi))
-						<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+						<div class="text-2xs leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
 					@endfor
 				@endif
 				@endif
@@ -207,13 +207,13 @@
 	<%-- 타락 줄 = 옵션 바로 아래 · 로어 위(10-09 C216 — poedb 목소리 · poe2db 신념의 프리즘 툴팁 순서: 옵션 → Corrupted → 로어 → 사용 설명. 예전(C157)엔 맨 아래) --%>
 	@if(corrupted)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${MessageUtil.getMessage("poe.items.corrupted")}</div>
+		<div class="px-4 py-1.5 text-center text-xs font-semibold text-[#d20000]" data-tt-corrupted>${MessageUtil.getMessage("poe.items.corrupted")}</div>
 	@endif
 	@if(flavourLines != null && !flavourLines.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-2 text-center space-y-0.5" data-tt-flavour>
 			@for(String fl : flavourLines)
-				<div class="text-[12px] leading-snug italic text-[#af6025]">${fl}</div>
+				<div class="text-xs leading-snug italic text-[#af6025]">${fl}</div>
 			@endfor
 		</div>
 	@endif
@@ -221,7 +221,7 @@
 	!{ String helpKey = baseItem == null ? null : net.luversof.web.gate.poe.PoeItemDescription.key(baseItem.category(), baseItem.name()); }
 	@if(helpKey != null)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${MessageUtil.getMessage(helpKey)}</div>
+		<div class="px-4 py-2 text-center text-xs leading-snug text-[#7f7f7f]" data-tt-help>${MessageUtil.getMessage(helpKey)}</div>
 	@endif
 
 </div>

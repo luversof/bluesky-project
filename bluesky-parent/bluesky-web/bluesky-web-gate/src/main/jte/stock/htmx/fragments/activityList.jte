@@ -150,7 +150,7 @@
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${tradeStatusLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
-					<span class="text-xl font-bold amount-value" data-activity-kind="buy-amount">₩${df.format(safeBuy)}</span>
+					<span class="text-xl font-semibold amount-value" data-activity-kind="buy-amount">₩${df.format(safeBuy)}</span>
 					<span class="text-xs text-base-content/60">${buyLabel}</span>
 				</div>
 				<div class="flex gap-4 text-xs text-base-content/60">
@@ -163,7 +163,7 @@
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${dividendReceivedLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
-					<span class="text-xl font-bold text-dividend amount-value" data-activity-kind="dividend-amount">₩${df.format(safeDividend)}</span>
+					<span class="text-xl font-semibold text-dividend amount-value" data-activity-kind="dividend-amount">₩${df.format(safeDividend)}</span>
 				</div>
 				<div class="text-xs text-base-content/60" data-activity-kind="dividend-count">${countMessage.apply(dividendCount)}</div>
 		`)
@@ -174,7 +174,7 @@
 				<%-- activities.size() 는 (날짜·유형·종목·매매구분) 으로 묶인 '줄' 수다. 그걸 "건" 으로 쓰면 바로 아래
 				     매매·배당 건수와도, 매매/배당 화면과도 어긋난다 - 실측 2026-09-10: 전체 310 인데 매매 258 + 배당 202 = 460.
 				     묶이기 전 원본 건수(recordCount)를 더한다. --%>
-				<div class="text-xl font-bold" data-activity-kind="total-count">${countMessage.apply(buyCount + sellCount + dividendCount)}</div>
+				<div class="text-xl font-semibold" data-activity-kind="total-count">${countMessage.apply(buyCount + sellCount + dividendCount)}</div>
 				<div class="flex gap-4 text-xs text-base-content/60 mt-1">
 					<span>${tradeLabel} <span class="font-medium text-base-content/70" data-activity-kind="trade-count">${countMessage.apply(buyCount + sellCount)}</span></span>
 					<span>${dividendLabel} <span class="font-medium text-base-content/70" data-activity-kind="total-dividend-count">${countMessage.apply(dividendCount)}</span></span>
@@ -274,7 +274,7 @@
 					<details class="rounded-2xl bg-base-100 p-3 shadow-sm" open="${activityMonth.equals(latestActivityMonth)}">
 						!{BigDecimal[] monthSummary = monthlyChartAmounts.getOrDefault(activityMonth, new BigDecimal[] { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO });}
 						<summary class="flex flex-wrap items-baseline gap-x-2 gap-y-1 cursor-pointer select-none tap-target-24">
-							<span class="text-sm font-bold">${monthTitle}</span>
+							<span class="text-sm font-semibold">${monthTitle}</span>
 							<span class="text-xs text-base-content/60">${countMessage.apply(monthActivityCount)}</span>
 							<%-- 접힌 채로도 그 달에 무슨 일이 있었는지 읽히게. 0 인 항목은 적지 않는다. --%>
 							<span class="ml-auto flex flex-wrap gap-x-3 text-xs tabular-nums" data-activity-month-summary>
@@ -294,7 +294,7 @@
 						</summary>
 						<div class="mt-2">
 						<%-- 날짜 그리드와 동일한 gap/패딩 + 가운데 정렬로 컬럼 라인을 맞춘다. 토/일은 빨간색 --%>
-						<div class="grid grid-cols-7 gap-1 text-[11px] text-base-content/60 mb-1 text-center">
+						<div class="grid grid-cols-7 gap-1 text-2xs text-base-content/60 mb-1 text-center">
 							@for(int weekdayIndex = 0; weekdayIndex < weekdayLabels.length; weekdayIndex++)
 								<div class="p-1${weekdayIndex == 0 || weekdayIndex == 6 ? " text-error" : ""}">${weekdayLabels[weekdayIndex]}</div>
 							@endfor
@@ -335,7 +335,7 @@
 									     낭독기에는 온 날짜를 준다 - '6' 만 들으면 어느 달인지 알 수 없다. --%>
 									<div class="cal-day-num${isToday ? " text-primary" : (isRedDay ? " text-error" : "")}"><span aria-hidden="true">${cellDate.getDayOfMonth()}</span><span class="sr-only">${cellDate.toString()}</span></div>
 									@if(holidayName != null)
-										<div class="block tooltip" data-tip="${holidayName}"><div class="text-[9px] leading-tight text-error/80 truncate">${holidayName}</div></div>
+										<div class="block tooltip" data-tip="${holidayName}"><div class="text-2xs leading-tight text-error/80 truncate">${holidayName}</div></div>
 									@endif
 									@if(hasActivity)
 										<div class="flex flex-wrap gap-x-1 justify-center leading-tight">
@@ -346,7 +346,7 @@
 											@if(daySellCount > 0)<span class="text-loss tooltip" data-tip="${sellLabel}"><span aria-hidden="true">●</span>${daySellCount}<span class="sr-only"> ${sellLabel}</span></span>@endif
 											@if(dayDividendCount > 0)<span class="text-dividend tooltip" data-tip="${dividendLabel}"><span aria-hidden="true">●</span>${dayDividendCount}<span class="sr-only"> ${dividendLabel}</span></span>@endif
 										</div>
-										<div class="block tooltip" data-tip="${dayNetAmount.signum() < 0 ? "-" : ""}₩${df.format(dayNetAmount.abs())}"><div class="amount-value text-[10px] text-base-content/60 truncate">${dayNetAmount.signum() < 0 ? "-" : ""}₩${df.format(dayNetAmount.abs())}</div></div>
+										<div class="block tooltip" data-tip="${dayNetAmount.signum() < 0 ? "-" : ""}₩${df.format(dayNetAmount.abs())}"><div class="amount-value text-2xs text-base-content/60 truncate">${dayNetAmount.signum() < 0 ? "-" : ""}₩${df.format(dayNetAmount.abs())}</div></div>
 									@endif
 								</div>
 							@endfor
@@ -356,7 +356,7 @@
 							<div>
 								@for(Map.Entry<LocalDate, List<Activity>> dayEntry : activityByDate.subMap(monthFirstDay, true, activityMonth.atEndOfMonth(), true).entrySet())
 									<div class="hidden rounded-xl bg-base-200/50 p-2 mb-1" id="cal-detail-${dayEntry.getKey().toString()}" data-cal-detail="${dayEntry.getKey().toString()}">
-										<div class="text-xs font-bold mb-1">${dayEntry.getKey().toString()}</div>
+										<div class="text-xs font-semibold mb-1">${dayEntry.getKey().toString()}</div>
 										<div class="space-y-1">
 											@for(Activity dayDetailActivity : dayEntry.getValue())
 												!{
@@ -373,7 +373,7 @@
 													@else
 														<span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
 													@endif
-													<a href="${StockDetailLinkUtil.item(dayDetailActivity.stockItemId() != null ? dayDetailActivity.stockItemId().toString() : "")}" class="link link-hover font-bold">${dayDetailActivity.stockItemName()}</a>
+													<a href="${StockDetailLinkUtil.item(dayDetailActivity.stockItemId() != null ? dayDetailActivity.stockItemId().toString() : "")}" class="link link-hover font-semibold">${dayDetailActivity.stockItemName()}</a>
 													<span class="text-base-content/60 whitespace-nowrap">
 														@if(detailIsTrade)
 															${sharesBefore}<span class="amount-value">${dayDetailActivity.quantity()}</span>${Integer.valueOf(1).equals(dayDetailActivity.quantity()) ? sharesAfterOne : sharesAfter}
@@ -397,7 +397,7 @@
 														</span>
 													@endif
 													@template.stock.htmx.fragments.components.mergedRecordBadge(recordCount = dayDetailActivity.recordCount(), accountCount = dayDetailActivity.accountIds() == null ? 0 : dayDetailActivity.accountIds().size())
-													<span class="ml-auto font-mono font-bold amount-value ${detailAmountColor}">₩${String.format("%,d", StockFormatUtil.displayWon(dayDetailActivity.amount()))}</span>
+													<span class="ml-auto font-mono font-semibold amount-value ${detailAmountColor}">₩${String.format("%,d", StockFormatUtil.displayWon(dayDetailActivity.amount()))}</span>
 												</div>
 											@endfor
 										</div>
@@ -456,14 +456,14 @@
 							tlPrevMonth = tlMonth;
 						}
 						@if(tlMonthChanged)
-							<h2 class="text-sm font-bold -ml-[31px] pl-[31px] pt-1" data-page-section="${tlMonth.toString()}">${tlMonth.toString()}</h2>
+							<h2 class="text-sm font-semibold -ml-[31px] pl-[31px] pt-1" data-page-section="${tlMonth.toString()}">${tlMonth.toString()}</h2>
 						@endif
 						<div class="relative">
 							<span class="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-primary border-2 border-base-100"></span>
 							<div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-1">
-								<span class="text-sm font-bold">${tlDateTitle}</span>
+								<span class="text-sm font-semibold">${tlDateTitle}</span>
 								<span class="text-xs text-base-content/60">${tlSummaryText}</span>
-								<span class="text-xs font-mono font-bold amount-value ${tlNetPositive ? "text-profit" : "text-loss"}">${tlNetAmount.signum() == 0 ? "" : (tlNetPositive ? "+" : "-")}₩${df.format(tlNetAmount.abs())}</span>
+								<span class="text-xs font-mono font-semibold amount-value ${tlNetPositive ? "text-profit" : "text-loss"}">${tlNetAmount.signum() == 0 ? "" : (tlNetPositive ? "+" : "-")}₩${df.format(tlNetAmount.abs())}</span>
 							</div>
 							<div class="space-y-1">
 								@for(Activity tlRowActivity : tlActivities)
@@ -479,7 +479,7 @@
 										@else
 											<span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
 										@endif
-										<a href="${StockDetailLinkUtil.item(tlRowActivity.stockItemId() != null ? tlRowActivity.stockItemId().toString() : "")}" class="link link-hover font-bold">${tlRowActivity.stockItemName()}</a>
+										<a href="${StockDetailLinkUtil.item(tlRowActivity.stockItemId() != null ? tlRowActivity.stockItemId().toString() : "")}" class="link link-hover font-semibold">${tlRowActivity.stockItemName()}</a>
 										<span class="text-base-content/60 whitespace-nowrap">
 											@if(tlIsTrade)
 												${sharesBefore}<span class="amount-value">${tlRowActivity.quantity()}</span>${Integer.valueOf(1).equals(tlRowActivity.quantity()) ? sharesAfterOne : sharesAfter}
@@ -501,7 +501,7 @@
 											</span>
 										@endif
 										@template.stock.htmx.fragments.components.mergedRecordBadge(recordCount = tlRowActivity.recordCount(), accountCount = tlRowActivity.accountIds() == null ? 0 : tlRowActivity.accountIds().size())
-										<span class="ml-auto font-mono font-bold amount-value ${tlAmountColor}">₩${String.format("%,d", StockFormatUtil.displayWon(tlRowActivity.amount()))}</span>
+										<span class="ml-auto font-mono font-semibold amount-value ${tlAmountColor}">₩${String.format("%,d", StockFormatUtil.displayWon(tlRowActivity.amount()))}</span>
 									</div>
 								@endfor
 							</div>
@@ -544,7 +544,7 @@
 											<span class="badge badge-sm badge-outline badge-success">${dividendLabel}</span>
 										@endif
 									</td>
-									<td class="font-bold"><a href="${StockDetailLinkUtil.item(activity.stockItemId() != null ? activity.stockItemId().toString() : "")}" class="link link-hover">${activity.stockItemName()}</a></td>
+									<td class="font-semibold"><a href="${StockDetailLinkUtil.item(activity.stockItemId() != null ? activity.stockItemId().toString() : "")}" class="link link-hover">${activity.stockItemName()}</a></td>
 									<td>
 										<div class="flex items-center gap-2 whitespace-nowrap">
 											<span>
@@ -573,7 +573,7 @@
 											@template.stock.htmx.fragments.components.mergedRecordBadge(recordCount = activity.recordCount(), accountCount = activity.accountIds() == null ? 0 : activity.accountIds().size())
 										</div>
 									</td>
-									<td class="text-right font-bold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">
+									<td class="text-right font-semibold amount-value ${"DIVIDEND".equals(activity.type()) ? "text-dividend" : ""}">
 										₩${String.format("%,d", StockFormatUtil.displayWon(activity.amount()))}
 									</td>
 								</tr>

@@ -51,7 +51,7 @@
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${periodStatusLabel}</div>
 				<div class="flex items-baseline gap-1 mb-2">
-					<span class="text-xl font-bold amount-value">&#8361;${decimalFormat.format(safeBuy)}</span>
+					<span class="text-xl font-semibold amount-value">&#8361;${decimalFormat.format(safeBuy)}</span>
 					<span class="text-xs text-base-content/60">${buyLabel}</span>
 				</div>
 				<div class="flex gap-4 text-xs text-base-content/60">
@@ -73,7 +73,7 @@
 					<span>${realizedProfitLabel}</span>
 					@template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.realized.tooltip.source"))
 				</div>
-				<div class="text-xl font-bold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
+				<div class="text-xl font-semibold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
 					${StockFormatUtil.displayWon(safeRp) > 0 ? "+" : ""}&#8361;${decimalFormat.format(safeRp)}
 				</div>
 				!{
@@ -94,7 +94,7 @@
 		<%-- Card 3: 거래 비용 --%>
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${tradingCostLabel}</div>
-				<div class="text-xl font-bold amount-value">&#8361;${decimalFormat.format(safeFee.add(safeTax))}</div>
+				<div class="text-xl font-semibold amount-value">&#8361;${decimalFormat.format(safeFee.add(safeTax))}</div>
 				<div class="flex gap-4 text-xs text-base-content/60 mt-1">
 					<span>${feeLabel} <span class="font-medium text-base-content/70 amount-value">&#8361;${decimalFormat.format(safeFee)}</span></span>
 					<span>${tradingTaxLabel} <span class="font-medium text-base-content/70 amount-value">&#8361;${decimalFormat.format(safeTax)}</span></span>

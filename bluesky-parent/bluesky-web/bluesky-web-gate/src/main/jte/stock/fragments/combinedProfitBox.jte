@@ -39,19 +39,19 @@
 <div class="mb-3 rounded-2xl border border-base-300/60 bg-base-100/80 px-4 py-3" data-combined-profit-box>
 	<div class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("stock.item.detail.combined.profit")}</div>
 	<div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-		<span class="text-3xl font-bold leading-none amount-value ${combinedColor} tooltip"
+		<span class="text-3xl font-semibold leading-none amount-value ${combinedColor} tooltip"
 			  data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(combinedProfit))}">
 			${StockFormatUtil.signedWon(StockFormatUtil.displayWon(combinedProfit))}
 		</span>
 		@if(combinedRateAvailable)
-			<span class="text-lg font-bold ${combinedColor}">
+			<span class="text-lg font-semibold ${combinedColor}">
 				${StockFormatUtil.signedPct(combinedRatePct, 2)}
 			</span>
-			<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.basis")}</span>
+			<span class="text-2xs text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.basis")}</span>
 		@endif
 	</div>
 	<%-- 셋을 그대로 적어 화면에서 더해 볼 수 있게 한다. --%>
-	<p class="mt-1 text-[11px] leading-4 flex flex-wrap items-baseline gap-x-1.5" data-combined-breakdown>
+	<p class="mt-1 text-2xs leading-4 flex flex-wrap items-baseline gap-x-1.5" data-combined-breakdown>
 		<span class="text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.unrealized.delta")}</span>
 		<span class="amount-value ${deltaColor}">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(unrealizedDelta))}</span>
 		@if(componentRateAvailable)<span class="${deltaColor}" data-component-rate="unrealized">(${StockFormatUtil.signedPct(unrealizedDeltaRatePct, 2)})</span>@endif
@@ -64,6 +64,6 @@
 		<span class="amount-value text-dividend">${StockFormatUtil.signedWon(StockFormatUtil.displayWon(totalDividend))}</span>
 		@if(componentRateAvailable)<span class="text-dividend" data-component-rate="dividend">(${StockFormatUtil.signedPct(dividendRatePct, 2)})</span>@endif
 	</p>
-	<p class="mt-0.5 text-[11px] leading-4 text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.note")}</p>
+	<p class="mt-0.5 text-2xs leading-4 text-base-content/60">${MessageUtil.getMessage("stock.item.detail.combined.note")}</p>
 	@if(extra != null)${extra}@endif
 </div>

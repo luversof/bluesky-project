@@ -60,13 +60,13 @@
 					<%-- 제목 (고유색) --%>
 					<div class="flex items-baseline gap-2">
 						<%-- 이름 클릭 → 상세 페이지 --%>
-						<a class="font-bold poe-name-unique truncate link-hover" href="/poe/uniques/${item.slug()}" title="${item.name()}">${displayName}</a>
+						<a class="font-semibold poe-name-unique truncate link-hover" href="/poe/uniques/${item.slug()}" title="${item.name()}">${displayName}</a>
 						@if(PoeText.isKorean())
 							<span class="text-xs text-base-content/60 truncate">${item.name()}</span>
 						@endif
 					</div>
 					<%-- 베이스 + 요구조건(레벨·힘·민첩·지능, 0 은 생략) --%>
-					<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-base-content/60">
+					<div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-base-content/60">
 						<span class="truncate">${displayBase}</span>
 						@if(item.requiredLevel() != null)
 							<span class="text-base-content/60">${levelLabel} ${item.requiredLevel()}</span>
@@ -109,14 +109,14 @@
 						<div class="mt-1 space-y-0.5">
 							@if(!displayImplicits.isEmpty())
 								@for(String imp : displayImplicits)
-									<div class="text-[11px] leading-5 text-[#8888ff]">$unsafe{PoeText.highlightValues(imp)}</div>
+									<div class="text-2xs leading-5 text-[#8888ff]">$unsafe{PoeText.highlightValues(imp)}</div>
 								@endfor
 								@if(!displayExplicits.isEmpty())
 									<div class="my-1 border-t border-base-content/15"></div>
 								@endif
 							@endif
 							@for(String ex : displayExplicits)
-								<div class="text-[11px] leading-5 text-[#8888ff]">$unsafe{PoeText.highlightValues(ex)}</div>
+								<div class="text-2xs leading-5 text-[#8888ff]">$unsafe{PoeText.highlightValues(ex)}</div>
 							@endfor
 						</div>
 					@endif

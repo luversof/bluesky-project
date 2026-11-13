@@ -35,7 +35,7 @@
 
 			<%-- ===== D: 밀도 ===== --%>
 			<section aria-labelledby="cat-density" class="space-y-3">
-				<h2 id="cat-density" class="text-lg font-bold">D · 밀도(글자 크기와 칸 여백)</h2>
+				<h2 id="cat-density" class="text-lg font-semibold">D · 밀도(글자 크기와 칸 여백)</h2>
 				@for(var v : List.of(List.of("D1", "table-xs", "아주 촘촘 - 열이 많은 표용 (9)"), List.of("D2", "table-sm", "촘촘 - 지금 가장 많이 씀 (30)"), List.of("D3", "", "기본 - daisyUI 기본 크기 (0)")))
 					<div class="space-y-1">
 						<h3 class="text-sm font-semibold">${v.get(0)} <span class="font-normal text-base-content/60">${v.get(2)}</span></h3>
@@ -64,7 +64,7 @@
 
 			<%-- ===== Z: 줄 구분 ===== --%>
 			<section aria-labelledby="cat-zebra" class="space-y-3">
-				<h2 id="cat-zebra" class="text-lg font-bold">Z · 줄 구분</h2>
+				<h2 id="cat-zebra" class="text-lg font-semibold">Z · 줄 구분</h2>
 				@for(var v : List.of(List.of("Z1", "table-zebra", "", "줄무늬 (14)"), List.of("Z2", "", "", "구분 없음 - 줄 사이 선만 (25)"), List.of("Z3", "", "hover:bg-base-200", "구분 없음 + 마우스를 올린 줄 강조 (0)")))
 					<div class="space-y-1">
 						<h3 class="text-sm font-semibold">${v.get(0)} <span class="font-normal text-base-content/60">${v.get(3)}</span></h3>
@@ -91,7 +91,7 @@
 
 			<%-- ===== B: 표를 감싸는 상자 ===== --%>
 			<section aria-labelledby="cat-box" class="space-y-3">
-				<h2 id="cat-box" class="text-lg font-bold">B · 표를 감싸는 상자</h2>
+				<h2 id="cat-box" class="text-lg font-semibold">B · 표를 감싸는 상자</h2>
 				<div class="space-y-1">
 					<h3 class="text-sm font-semibold">B1 <span class="font-normal text-base-content/60">가로 스크롤 상자만 - 배경 · 테두리 없음 (21, 상자 없이 표만 5)</span></h3>
 					<div class="overflow-x-auto">
@@ -140,7 +140,7 @@
 
 			<%-- ===== H: 머리글 ===== --%>
 			<section aria-labelledby="cat-head" class="space-y-3">
-				<h2 id="cat-head" class="text-lg font-bold">H · 머리글</h2>
+				<h2 id="cat-head" class="text-lg font-semibold">H · 머리글</h2>
 				<div class="space-y-1">
 					<h3 class="text-sm font-semibold">H1 <span class="font-normal text-base-content/60">글자만 - 정렬 없음</span></h3>
 					<div class="overflow-x-auto rounded-box border border-base-300/60 bg-base-100">
@@ -189,7 +189,7 @@
 
 			<%-- ===== N: 숫자 열 ===== --%>
 			<section aria-labelledby="cat-num" class="space-y-3">
-				<h2 id="cat-num" class="text-lg font-bold">N · 숫자 열</h2>
+				<h2 id="cat-num" class="text-lg font-semibold">N · 숫자 열</h2>
 				@for(var v : List.of(List.of("N1", "tabular-nums", "본문 글꼴 + 자릿수 맞춤 (amountCell 기본)"), List.of("N2", "font-mono", "고정폭 글꼴 (일부 합계 · 배당 표)")))
 					<div class="space-y-1">
 						<h3 class="text-sm font-semibold">${v.get(0)} <span class="font-normal text-base-content/60">${v.get(2)}</span></h3>
@@ -214,7 +214,7 @@
 
 			<%-- ===== W: 긴 글자 ===== --%>
 			<section aria-labelledby="cat-wrap" class="space-y-3">
-				<h2 id="cat-wrap" class="text-lg font-bold">W · 긴 글자(좁은 화면에서 차이가 큽니다)</h2>
+				<h2 id="cat-wrap" class="text-lg font-semibold">W · 긴 글자(좁은 화면에서 차이가 큽니다)</h2>
 				@for(var v : List.of(List.of("W1", "whitespace-nowrap", "줄바꿈 안 함 - 넘치면 가로 스크롤 (7)"), List.of("W2", "", "줄바꿈 - 칸 안에서 접힘 (32)")))
 					<div class="space-y-1">
 						<h3 class="text-sm font-semibold">${v.get(0)} <span class="font-normal text-base-content/60">${v.get(2)}</span></h3>
@@ -234,7 +234,7 @@
 
 			<%-- ===== BT: 버튼 ===== --%>
 			<section aria-labelledby="cat-btn" class="space-y-3">
-				<h2 id="cat-btn" class="text-lg font-bold">BT · 버튼(보조 동작의 모양)</h2>
+				<h2 id="cat-btn" class="text-lg font-semibold">BT · 버튼(보조 동작의 모양)</h2>
 				<p class="text-sm text-base-content/70">주 동작은 btn-primary 하나로 둡니다. 고를 것은 보조 동작(취소 · 내보내기 · 펼치기 등)의 모양입니다. 크기는 본문 sm, 표 · 도구 막대 안 xs 로 맞춥니다.</p>
 				@for(var v : List.of(List.of("BT1", "btn", "회색 바탕 (21)"), List.of("BT2", "btn btn-outline", "테두리 (18)"), List.of("BT3", "btn btn-ghost", "바탕 없음 - 지금 도구 막대 (28)")))
 					<div class="space-y-1">
@@ -253,7 +253,7 @@
 
 			<%-- ===== BG: 배지 ===== --%>
 			<section aria-labelledby="cat-badge" class="space-y-3">
-				<h2 id="cat-badge" class="text-lg font-bold">BG · 배지(상태 · 분류 · 개수)</h2>
+				<h2 id="cat-badge" class="text-lg font-semibold">BG · 배지(상태 · 분류 · 개수)</h2>
 				@for(var v : List.of(List.of("BG1", "badge-outline", "테두리 (25)"), List.of("BG2", "badge-ghost", "회색 바탕 - 색 없이 (15)"), List.of("BG3", "", "진한 바탕 (11)")))
 					<div class="space-y-1">
 						<h3 class="text-sm font-semibold">${v.get(0)} <span class="font-normal text-base-content/60">${v.get(2)}</span></h3>
@@ -272,7 +272,7 @@
 
 			<%-- ===== AL: 알림 ===== --%>
 			<section aria-labelledby="cat-alert" class="space-y-3">
-				<h2 id="cat-alert" class="text-lg font-bold">AL · 알림 상자</h2>
+				<h2 id="cat-alert" class="text-lg font-semibold">AL · 알림 상자</h2>
 				<div class="space-y-1">
 					<h3 class="text-sm font-semibold">AL1 <span class="font-normal text-base-content/60">진한 바탕 - daisyUI 기본 (8)</span></h3>
 					<div class="space-y-2 rounded-box border border-base-300/60 bg-base-100 p-3">
@@ -295,7 +295,7 @@
 
 			<%-- ===== CT: 카드 제목 ===== --%>
 			<section aria-labelledby="cat-ct" class="space-y-3">
-				<h2 id="cat-ct" class="text-lg font-bold">CT · 카드 제목 크기</h2>
+				<h2 id="cat-ct" class="text-lg font-semibold">CT · 카드 제목 크기</h2>
 				<div class="grid gap-3 md:grid-cols-2">
 					@for(var v : List.of(List.of("CT1", "text-base", "16px - 공용 card 기본 (16)"), List.of("CT2", "text-lg", "18px (16)")))
 						<div class="space-y-1">
@@ -311,7 +311,7 @@
 
 			<%-- ===== LK: 링크 ===== --%>
 			<section aria-labelledby="cat-link" class="space-y-3">
-				<h2 id="cat-link" class="text-lg font-bold">LK · 본문 · 표 안 링크</h2>
+				<h2 id="cat-link" class="text-lg font-semibold">LK · 본문 · 표 안 링크</h2>
 				@for(var v : List.of(List.of("LK1", "link link-hover", "마우스를 올리면 밑줄 (35)"), List.of("LK2", "link link-hover no-underline", "밑줄 없음 - 색만 (24)"), List.of("LK3", "link link-primary", "늘 강조색 + 밑줄 (2)")))
 					<div class="space-y-1">
 						<h3 class="text-sm font-semibold">${v.get(0)} <span class="font-normal text-base-content/60">${v.get(2)}</span></h3>
@@ -324,7 +324,7 @@
 
 			<%-- ===== IN: 입력 ===== --%>
 			<section aria-labelledby="cat-input" class="space-y-3">
-				<h2 id="cat-input" class="text-lg font-bold">IN · 입력 · 선택 크기</h2>
+				<h2 id="cat-input" class="text-lg font-semibold">IN · 입력 · 선택 크기</h2>
 				@for(var v : List.of(List.of("IN1", "", "기본 높이 (28)"), List.of("IN2", "-sm", "작게 (14)")))
 					<div class="space-y-1">
 						<h3 class="text-sm font-semibold">${v.get(0)} <span class="font-normal text-base-content/60">${v.get(2)}</span></h3>
@@ -340,7 +340,7 @@
 
 			<%-- ===== TB: 탭 ===== --%>
 			<section aria-labelledby="cat-tab" class="space-y-3">
-				<h2 id="cat-tab" class="text-lg font-bold">TB · 탭</h2>
+				<h2 id="cat-tab" class="text-lg font-semibold">TB · 탭</h2>
 				@for(var v : List.of(List.of("TB1", "tabs tabs-box w-full bg-base-200/70 p-1", "tab flex-1", "상자형 · 칸 나눔 (자산 성장 · 배당 기간별, 9)"), List.of("TB2", "tabs tabs-box tabs-xs w-fit", "tab", "상자형 · 작게 (3)"), List.of("TB3", "flex gap-1", "tab", "상자 없이 탭 글자만 (6)")))
 					<div class="space-y-1">
 						<h3 class="text-sm font-semibold">${v.get(0)} <span class="font-normal text-base-content/60">${v.get(3)}</span></h3>

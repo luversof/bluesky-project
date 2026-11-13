@@ -22,7 +22,7 @@
 		<%-- 제목과 지표 탭은 자리가 모자라면 탭을 아래 줄로 내린다 - 한 줄에 밀어 넣으면 글꼴 200% 의 320px 에서 제목 "매수 집중도" 가
 		     한 글자씩 세로로 쌓였다(실측 2026-09-17). --%>
 		<div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-			<h2 class="text-sm font-bold" id="${titleId}" data-page-section>${resolvedTitle}</h2>
+			<h2 class="text-sm font-semibold" id="${titleId}" data-page-section>${resolvedTitle}</h2>
 			<div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1">
 				<a class="tab flex-1" id="${metricProfitId}" data-trade-donut-metric="profit" tabindex="0" role="tab" aria-controls="${canvasId}Panel">${profitLabel}</a>
 				<a class="tab flex-1 tab-active" id="${metricBuyId}" data-trade-donut-metric="buy" tabindex="0" role="tab" aria-controls="${canvasId}Panel">${buyAmountLabel}</a>

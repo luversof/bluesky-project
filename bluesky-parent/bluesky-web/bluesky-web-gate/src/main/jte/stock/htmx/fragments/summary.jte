@@ -112,7 +112,7 @@
 				<span>${currentTotalAssetLabel}</span>
 				@template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.summary.tooltip.total.asset"))
 			</div>
-			<div class="text-3xl lg:text-4xl font-bold text-principal amount-value mt-1 tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset)), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset)))</div>
+			<div class="text-3xl lg:text-4xl font-semibold text-principal amount-value mt-1 tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalAsset)), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(totalAsset)))</div>
 			<div class="text-sm text-base-content/70 mt-2">
 				${principalLabel} <span class="font-mono amount-value tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentPrincipal))}">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(currentPrincipal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentPrincipal)), visible = StockFormatUtil.compactKrw(StockFormatUtil.displayWon(currentPrincipal)))</span>
 			</div>
@@ -185,7 +185,7 @@
 					`)
 				</div>
 				<div class="text-right">
-					<span class="text-xl font-bold amount-value ${combinedColor} tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit))}">${StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(totalCombinedProfit))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit)), visible = StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(totalCombinedProfit)))</span>
+					<span class="text-xl font-semibold amount-value ${combinedColor} tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit))}">${StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(totalCombinedProfit))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(totalCombinedProfit)), visible = StockFormatUtil.signedCompactKrw(StockFormatUtil.displayWon(totalCombinedProfit)))</span>
 					<span class="ml-2 text-sm font-semibold ${combinedColor} tooltip" data-tip="${combinedRateBasisText}" data-amount-basis="${combinedRateBasisText}">${StockFormatUtil.signedPct(combinedRate, 2)}@template._components.ui.srExact(text = combinedRateBasisText, visible = StockFormatUtil.signedPct(combinedRate, 2))</span>
 				</div>
 			</div>
@@ -260,7 +260,7 @@
 		!{ BigDecimal periodCostPct = StockAmountUtil.percentOrNull(periodTradeCost, (periodSummary.buyAmount() != null ? periodSummary.buyAmount() : BigDecimal.ZERO).add(periodSummary.sellAmount() != null ? periodSummary.sellAmount() : BigDecimal.ZERO), 2); }
 		<div class="mt-4">
 			<div class="mb-2 flex items-baseline gap-2">
-				<h2 class="text-sm font-bold" data-page-section>${periodTitleLabel}</h2>
+				<h2 class="text-sm font-semibold" data-page-section>${periodTitleLabel}</h2>
 				@if(periodSummaryFrom != null && periodSummaryTo != null)
 					<span class="text-xs text-base-content/60"><span class="whitespace-nowrap date-whole">${periodSummaryFrom.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${periodSummaryTo.toString()}</span></span>
 				@endif

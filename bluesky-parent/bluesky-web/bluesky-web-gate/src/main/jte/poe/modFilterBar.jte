@@ -68,7 +68,7 @@
 			}
 			statBox.innerHTML = divs
 				.map(function (d) {
-					return '<span class="text-[13px] text-[#8888ff] block truncate">' + d.innerHTML + "</span>";
+					return '<span class="text-sm text-[#8888ff] block truncate">' + d.innerHTML + "</span>";
 				})
 				.join("");
 		}

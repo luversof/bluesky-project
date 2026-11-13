@@ -42,7 +42,7 @@
 			@if(baseUniques != null && !baseUniques.isEmpty())
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm" data-base-uniques>
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
-						<h2 class="font-bold text-orange-500">${MessageUtil.getMessage("poe.items.base.uniques")}</h2>
+						<h2 class="font-semibold text-orange-500">${MessageUtil.getMessage("poe.items.base.uniques")}</h2>
 						<span class="text-xs font-mono text-base-content/60">${baseUniques.size()}</span>
 					</div>
 					<div class="flex flex-wrap gap-x-4 gap-y-1">

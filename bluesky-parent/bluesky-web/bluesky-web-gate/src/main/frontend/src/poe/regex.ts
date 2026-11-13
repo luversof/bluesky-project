@@ -497,7 +497,7 @@
 		outEl.textContent = text;
 		lenEl.textContent = text.length + " / " + LIMIT;
 		lenEl.classList.toggle("text-error", text.length > LIMIT);
-		lenEl.classList.toggle("font-bold", text.length > LIMIT);
+		lenEl.classList.toggle("font-semibold", text.length > LIMIT);
 		if (text.length > LIMIT)
 			warnings.push(uiKo ? "250자 초과 — 선택을 줄이세요(인게임 검색창 한도)" : "Over 250 chars (in-game limit)");
 		warnEl.textContent = warnings.join(" · ");
@@ -513,7 +513,7 @@
 		customEl.classList.toggle("hidden", chips.length === 0);
 		if (chips.length === 0) return;
 		const label = document.createElement("span");
-		label.className = "text-[11px] text-base-content/60";
+		label.className = "text-2xs text-base-content/60";
 		label.textContent = uiKo ? "수동 항:" : "Custom terms:";
 		customEl.appendChild(label);
 		for (const chip of chips) {
@@ -523,7 +523,7 @@
 			span.textContent = (chip.kind === "exclude" ? "!" : "") + chip.term;
 			const x = document.createElement("button");
 			x.type = "button";
-			x.className = "cursor-pointer font-bold";
+			x.className = "cursor-pointer font-semibold";
 			x.textContent = "×";
 			x.setAttribute("aria-label", (uiKo ? "제거: " : "Remove: ") + chip.term); // 10-25 Q204
 			x.addEventListener("click", () => {
@@ -839,7 +839,7 @@
 			const col = document.createElement("div");
 			col.className = "space-y-1.5 min-w-0";
 			const head = document.createElement("h2");
-			head.className = "mb-1 flex items-baseline gap-2 px-1 font-bold text-[#8888ff]";
+			head.className = "mb-1 flex items-baseline gap-2 px-1 font-semibold text-[#8888ff]";
 			head.appendChild(
 				document.createTextNode(
 					gen === "prefix" ? (uiKo ? "접두" : "Prefixes") : uiKo ? "접미" : "Suffixes",
@@ -953,7 +953,7 @@
 			const targets = state.customTargets[m.id];
 			if (targets && targets.length) {
 				const tb = document.createElement("div");
-				tb.className = "mt-0.5 text-[11px] font-mono text-warning";
+				tb.className = "mt-0.5 text-2xs font-mono text-warning";
 				tb.textContent = (uiKo ? "가져온 항이 이 옵션의 특정 롤을 노림: " : "Imported term targets a specific roll: ") + targets.join(" , ");
 				row.appendChild(tb);
 				row.className += " ring-1 ring-warning/50";
@@ -963,14 +963,14 @@
 			// 어픽스 이름을 대신 띄운다 — 안 그러면 보상 배지만 뜬 정체불명의 빈 줄이 된다.
 			if (displayLines.length === 0) {
 				const div = document.createElement("div");
-				div.className = "text-[13px] leading-5 text-[#8888ff] italic";
+				div.className = "text-sm leading-5 text-[#8888ff] italic";
 				div.textContent = (uiKo ? m.nameKo : m.name) + (uiKo ? " (효과 문구 없음 — 이름으로 거름)" : " (no mod text — name filter)");
 				row.appendChild(div);
 			}
 			// 모드 문구는 인게임 아이템과 같게 — 모드 파랑 + 수치만 강조(.poe-val), 모드 페이지/툴팁과 동일 스택
 			for (const line of displayLines) {
 				const div = document.createElement("div");
-				div.className = "text-[13px] leading-5 text-[#8888ff] whitespace-pre-line";
+				div.className = "text-sm leading-5 text-[#8888ff] whitespace-pre-line";
 				appendHighlighted(div, line);
 				row.appendChild(div);
 			}
@@ -1032,10 +1032,10 @@
 				name.className = "text-sm font-semibold";
 				name.textContent = p.name;
 				const date = document.createElement("span");
-				date.className = "text-[11px] text-base-content/60 font-mono";
+				date.className = "text-2xs text-base-content/60 font-mono";
 				date.textContent = fmtDate(p.updatedMs);
 				const preview = document.createElement("code");
-				preview.className = "flex-1 min-w-[8rem] truncate text-[11px] font-mono text-base-content/60";
+				preview.className = "flex-1 min-w-[8rem] truncate text-2xs font-mono text-base-content/60";
 				preview.textContent = p.regex;
 				const loadBtn = document.createElement("button");
 				loadBtn.className = "btn btn-xs";

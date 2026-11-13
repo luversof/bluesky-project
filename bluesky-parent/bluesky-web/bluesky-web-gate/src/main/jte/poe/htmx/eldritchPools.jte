@@ -15,7 +15,7 @@
 			java.util.List<PoeEldritch.Family> fams = pair.getValue();
 		}
 		<div>
-			<h3 class="mb-2 flex items-baseline gap-2 font-bold">
+			<h3 class="mb-2 flex items-baseline gap-2 font-semibold">
 				<span class="text-amber-500">${ko ? faction.nameKo() : faction.name()}</span>
 				<span class="text-xs text-base-content/60">${fams.size()}</span>
 			</h3>
@@ -31,14 +31,14 @@
 							<span class="min-w-0 flex-1">
 								@if(top != null)
 									@for(String line : (ko ? top.ko() : top.en()))
-										<span class="text-[13px] text-amber-300 block truncate">$unsafe{PoeText.highlightValues(line)}</span>
+										<span class="text-sm text-amber-300 block truncate">$unsafe{PoeText.highlightValues(line)}</span>
 									@endfor
 								@endif
 							</span>
 						</summary>
 						<div class="border-t border-base-200 px-3 py-1.5 space-y-0.5">
 							@for(PoeEldritch.Tier t : fam.tiers())
-								<div class="flex items-baseline gap-2 text-[12px]">
+								<div class="flex items-baseline gap-2 text-xs">
 									<%-- 등급 = 게임 이름(10-23 Q91 — ClientStrings EldritchCurrencyTier1~6 하급 · 상급 · 우수한 · 특출난 · 정교한 · 완벽한, 예전 'T6' 숫자) --%>
 									!{ String[] eldTierKo = {"하급", "상급", "우수한", "특출난", "정교한", "완벽한"}; String[] eldTierEn = {"Lesser", "Greater", "Grand", "Exceptional", "Exquisite", "Perfect"}; int ti = t.tier() - 1; }
 									<span class="shrink-0 text-base-content/60 w-16" data-eldritch-tier="${t.tier()}">${ti >= 0 && ti < 6 ? (ko ? eldTierKo[ti] : eldTierEn[ti]) : "T" + t.tier()}</span>

@@ -85,7 +85,7 @@
 								     구별이 안 됐다. 한국어 종목명은 빈칸 없는 긴 낱말이라 낱말 안에서도 줄을 바꾼다. --%>
 								<div class="flex items-start gap-1.5 mb-0.5">
 									<span class="badge mt-0.5 shrink-0 badge-sm badge-outline ${badgeClass}">${badgeText}</span>
-									<a href="${StockDetailLinkUtil.item(activity.stockItemId() != null ? activity.stockItemId().toString() : "")}" class="font-bold text-sm line-clamp-2 wrap-anywhere link link-hover tooltip" data-tip="${activity.stockItemName()}">${activity.stockItemName()}</a>
+									<a href="${StockDetailLinkUtil.item(activity.stockItemId() != null ? activity.stockItemId().toString() : "")}" class="font-semibold text-sm line-clamp-2 wrap-anywhere link link-hover tooltip" data-tip="${activity.stockItemName()}">${activity.stockItemName()}</a>
 								</div>
 								<%-- 이 카드는 계좌를 아예 보여주지 않으므로(폭이 없다) 묶인 줄은 건수로만 드러난다.
 								     그래서 accountCount 는 0 이다 - 배지 규칙은 "화면이 보여 주는 것으로 설명되지 않으면 건수를 적는다".
@@ -104,7 +104,7 @@
 								</div>
 							</div>
 							<div class="text-right shrink-0">
-								<div class="font-mono font-bold text-xs amount-value ${amountColor}">
+								<div class="font-mono font-semibold text-xs amount-value ${amountColor}">
 									₩${String.format("%,d", StockFormatUtil.displayWon(activity.amount()))}
 								</div>
 								<div class="text-xs text-base-content/60 mt-0.5">
@@ -126,7 +126,7 @@
 					<span class="badge badge-error badge-outline badge-sm">${buyLabel}</span>
 					<div class="text-right ml-auto">
 						<div class="text-xs text-base-content/60">${countMessage.apply(buyCount)}</div>
-						<div class="font-mono text-xs font-bold amount-value text-base-content whitespace-nowrap">
+						<div class="font-mono text-xs font-semibold amount-value text-base-content whitespace-nowrap">
 							₩${String.format("%,d", StockFormatUtil.displayWon(buyAmount))}
 						</div>
 					</div>
@@ -135,7 +135,7 @@
 					<span class="badge badge-info badge-outline badge-sm">${sellLabel}</span>
 					<div class="text-right ml-auto">
 						<div class="text-xs text-base-content/60">${countMessage.apply(sellCount)}</div>
-						<div class="font-mono text-xs font-bold amount-value text-base-content whitespace-nowrap">
+						<div class="font-mono text-xs font-semibold amount-value text-base-content whitespace-nowrap">
 							₩${String.format("%,d", StockFormatUtil.displayWon(sellAmount))}
 						</div>
 					</div>
@@ -144,7 +144,7 @@
 					<span class="badge badge-success badge-outline badge-sm">${dividendLabel}</span>
 					<div class="text-right ml-auto">
 						<div class="text-xs text-base-content/60">${countMessage.apply(dividendCount)}</div>
-						<div class="font-mono text-xs font-bold amount-value text-dividend whitespace-nowrap">
+						<div class="font-mono text-xs font-semibold amount-value text-dividend whitespace-nowrap">
 							₩${String.format("%,d", StockFormatUtil.displayWon(dividendAmount))}
 						</div>
 					</div>

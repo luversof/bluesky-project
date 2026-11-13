@@ -61,7 +61,7 @@
 					!{ java.util.List<String> ox = ko && !nz.apply(l.ko()).isEmpty() ? l.ko() : nz.apply(l.en()); java.util.List<String> on2 = ko && !nz.apply(l.koMin()).isEmpty() ? l.koMin() : nz.apply(l.enMin()); }
 					<div class="rounded border-l-4 border-primary bg-primary/10 px-2 py-1.5 text-xs min-w-0 wrap-anywhere" data-craft-fam-outside="${l.id()}">
 						@for(int i = 0; i < ox.size(); i++)<div>$unsafe{PoeText.highlightValues(PoeModRange.range(i < on2.size() ? on2.get(i) : null, ox.get(i)))}</div>@endfor
-						<div class="text-[10px] text-base-content/70"><span class="badge badge-primary badge-xs">${ko ? "적용" : "on"}@if(l.tierRank() != null) T${l.tierRank()}@endif</span> ${l.crafted() ? (ko ? "작업대 옵션" : "bench craft") : l.essence() ? (ko ? "에센스 옵션" : "essence mod") : (ko ? "이 표 밖 옵션" : "outside this table")}@if(lineTags.get(l.id()) != null) — ${String.join(", ", lineTags.get(l.id()))}@endif@if(l.fractured()) · ${ko ? "분열" : "fractured"}@endif@if(added != null && added.contains(l.id())) <span class="badge badge-success badge-xs">${ko ? "방금" : "new"}</span>@endif</div>
+						<div class="text-2xs text-base-content/70"><span class="badge badge-primary badge-xs">${ko ? "적용" : "on"}@if(l.tierRank() != null) T${l.tierRank()}@endif</span> ${l.crafted() ? (ko ? "작업대 옵션" : "bench craft") : l.essence() ? (ko ? "에센스 옵션" : "essence mod") : (ko ? "이 표 밖 옵션" : "outside this table")}@if(lineTags.get(l.id()) != null) — ${String.join(", ", lineTags.get(l.id()))}@endif@if(l.fractured()) · ${ko ? "분열" : "fractured"}@endif@if(added != null && added.contains(l.id())) <span class="badge badge-success badge-xs">${ko ? "방금" : "new"}</span>@endif</div>
 					</div>
 				@endfor
 				@for(var f : gf)
@@ -83,7 +83,7 @@
 						<summary class="cursor-pointer select-none grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-2 py-1.5" title="${ko ? "누르면 등급별 상세" : "Click for every tier"}">
 							<div class="min-w-0 text-xs wrap-anywhere ${!f.rollable() && on == null ? "text-base-content/60" : null}">
 								@for(int i = 0; i < fx.size(); i++)<div>$unsafe{PoeText.highlightValues(PoeModRange.range(i < fn.size() ? fn.get(i) : null, fx.get(i)))}</div>@endfor
-								<div class="text-[10px] leading-tight text-base-content/60">@if(topRank != null)T${topRank}@if(lastRank != null && !lastRank.equals(topRank))~T${lastRank}@endif · @endif${f.tiers().size()}${ko ? "단계" : (f.tiers().size() == 1 ? " tier" : " tiers")} · ${ko ? "레벨 " : "iLvl "}${fl}@if(fw > 0) · <span data-craft-fam-weight="${fw}">${ko ? "가중 " : "weight "}${String.format(java.util.Locale.ROOT, "%,d", fw)}</span>@endif@if(!ftags.isEmpty())<span data-craft-fam-tags> — ${String.join(", ", ftags)}</span>@endif
+								<div class="text-2xs leading-tight text-base-content/60">@if(topRank != null)T${topRank}@if(lastRank != null && !lastRank.equals(topRank))~T${lastRank}@endif · @endif${f.tiers().size()}${ko ? "단계" : (f.tiers().size() == 1 ? " tier" : " tiers")} · ${ko ? "레벨 " : "iLvl "}${fl}@if(fw > 0) · <span data-craft-fam-weight="${fw}">${ko ? "가중 " : "weight "}${String.format(java.util.Locale.ROOT, "%,d", fw)}</span>@endif@if(!ftags.isEmpty())<span data-craft-fam-tags> — ${String.join(", ", ftags)}</span>@endif
 									@if(on != null) <span class="badge badge-primary badge-xs" data-craft-fam-applied="${on.line().tierRank()}">${ko ? "적용" : "on"}@if(on.line().tierRank() != null) T${on.line().tierRank()}@endif</span>@endif
 									@if(on != null && on.fresh()) <span class="badge badge-success badge-xs" data-craft-fam-fresh>${ko ? "방금" : "new"}</span>@endif
 								</div>
@@ -93,7 +93,7 @@
 								@if(fm != null)<span class="badge badge-info badge-xs" data-craft-fam-mult="${fm}">${net.luversof.web.gate.poe.CraftPoolGroups.multText(fm)}</span>@endif
 								@if(f.rollable())
 									${String.format("%.2f%%", f.sum() * 100)}
-									@if(topRank != null)<div class="text-[10px] text-base-content/60" data-craft-fam-top>T${topRank} ${String.format("%.2f%%", f.topChance() * 100)}</div>@endif
+									@if(topRank != null)<div class="text-2xs text-base-content/60" data-craft-fam-top>T${topRank} ${String.format("%.2f%%", f.topChance() * 100)}</div>@endif
 								@else
 									<span class="text-base-content/60" title="${on != null ? (ko ? "이미 붙은 계열은 다시 붙지 않습니다" : "Already on the item — can't roll again") : actionPicked ? (ko ? "고른 화폐로는 붙지 않습니다(화석 태그 ×0 · 자리 · 같은 그룹 · 메타)" : "Can't roll with the armed currency (fossil tag ×0, slots, same group or meta)") : (ko ? "지금 아이템에는 붙지 않습니다(자리 · 같은 그룹 · 희귀도)" : "Can't roll on this item now (slots, same group or rarity)")}">—</span>
 								@endif
@@ -114,8 +114,8 @@
 											if (affix != null && (affix.isBlank() || affix.equals(p.id()))) affix = null;
 										}
 										<tr data-craft-pool-line="${t.rollable() ? p.id() : null}" data-craft-pool-tier="${p.id()}" data-craft-pool-on="${t.applied() ? "1" : null}" class="${t.applied() ? "bg-primary/10" : !t.rollable() ? "text-base-content/70" : null}">
-											<td class="font-mono text-xs whitespace-nowrap">@if(p.tierRank() != null)T${p.tierRank()}@endif@if(affix != null)<div class="font-sans text-[11px] leading-tight text-base-content/80" data-craft-affix-name>${affix}</div>@endif
-												<div class="text-[10px] leading-tight text-base-content/60" data-craft-pool-meta>${ko ? "레벨 " : "iLvl "}${p.ilvl()}<br>${ko ? "가중 " : "w "}${p.weight()}@if(t.rollable() && actionMult.get(p.id()) != null) <span class="badge badge-info badge-xs" data-craft-tier-mult>${net.luversof.web.gate.poe.CraftPoolGroups.multText(actionMult.get(p.id()))}</span>@endif</div>
+											<td class="font-mono text-xs whitespace-nowrap">@if(p.tierRank() != null)T${p.tierRank()}@endif@if(affix != null)<div class="font-sans text-2xs leading-tight text-base-content/80" data-craft-affix-name>${affix}</div>@endif
+												<div class="text-2xs leading-tight text-base-content/60" data-craft-pool-meta>${ko ? "레벨 " : "iLvl "}${p.ilvl()}<br>${ko ? "가중 " : "w "}${p.weight()}@if(t.rollable() && actionMult.get(p.id()) != null) <span class="badge badge-info badge-xs" data-craft-tier-mult>${net.luversof.web.gate.poe.CraftPoolGroups.multText(actionMult.get(p.id()))}</span>@endif</div>
 											</td>
 											<td class="min-w-0 wrap-anywhere">
 												@for(int i = 0; i < mx.size(); i++)

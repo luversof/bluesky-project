@@ -36,12 +36,12 @@
 		<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}" data-family-tiers data-tiers-format="${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), "{0}")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), tiers.size())}</span>
 		<%-- 최상위 등급 요구 아이템 레벨 — 접힌 상태에서도 "이 옵션 T1 을 뜨게 하려면 몇 렙 아이템이 필요한지" 바로 보이게 --%>
 		@if(top != null)
-			<span class="text-[10px] font-mono text-base-content/60 shrink-0" data-top-ilvl title="${MessageUtil.getMessage("poe.mods.toptier.ilvl")}">i${top.ilvl()}</span>
+			<span class="text-2xs font-mono text-base-content/60 shrink-0" data-top-ilvl title="${MessageUtil.getMessage("poe.mods.toptier.ilvl")}">i${top.ilvl()}</span>
 		@endif
 		<span class="min-w-0 flex-1">
 			@if(top != null)
 				@for(String line : (ko ? top.ko() : top.en()))
-					<span class="text-[13px] text-[#8888ff] block truncate">$unsafe{PoeText.highlightValues(line)}</span>
+					<span class="text-sm text-[#8888ff] block truncate">$unsafe{PoeText.highlightValues(line)}</span>
 				@endfor
 			@endif
 			@if(onlyFor != null)
@@ -49,7 +49,7 @@
 			@endif
 		</span>
 		<%-- 내부 계열 Id 는 영어 화면에만(10-23 Q87 — 한국어 화면에 영어 Id 가 카드마다 보였다) --%>
-		@if(!ko)<span class="text-[10px] text-base-content/60 min-w-0 max-w-32 truncate max-sm:hidden" title="${key}">${key}</span>@endif
+		@if(!ko)<span class="text-2xs text-base-content/60 min-w-0 max-w-32 truncate max-sm:hidden" title="${key}">${key}</span>@endif
 	</summary>
 	<div class="border-t border-base-200 overflow-x-auto">
 		<table class="table table-xs w-full">
@@ -73,19 +73,19 @@
 						<td class="font-mono text-base-content/60">T${idx}</td>
 						<td class="font-mono text-base-content/60">${t.ilvl()}</td>
 						<td>
-							<div class="text-[11px] text-base-content/60">${ko ? t.nameKo() : t.name()}</div>
+							<div class="text-2xs text-base-content/60">${ko ? t.nameKo() : t.name()}</div>
 							!{java.util.List<String> mx = ko ? t.ko() : t.en();}
 							!{java.util.List<String> mn = ko ? t.koMin() : t.enMin();}
 							@for(int i = 0; i < mx.size(); i++)
-								<div class="text-[12px] whitespace-pre-line">
+								<div class="text-xs whitespace-pre-line">
 									$unsafe{PoeText.highlightValues(net.luversof.web.gate.poe.PoeModRange.rangeAscending(mn != null && i < mn.size() ? mn.get(i) : null, mx.get(i)))}
 								</div>
 							@endfor
 						</td>
-						<td class="text-right font-mono text-[11px] text-base-content/60">${t.weight()}</td>
+						<td class="text-right font-mono text-2xs text-base-content/60">${t.weight()}</td>
 						@if(poolWeight > 0)
 							!{double pct = t.weight() * 100.0 / poolWeight;}
-							<td class="text-right font-mono text-[11px] text-base-content/60"
+							<td class="text-right font-mono text-2xs text-base-content/60"
 							    title="${MessageUtil.getMessage("poe.mods.odds.avg")}${pct > 0 ? String.valueOf(Math.round(100.0 / pct)) : "∞"}">
 								${pct >= 1 ? String.format("%.1f%%", pct) : String.format("%.2f%%", pct)}
 							</td>

@@ -91,16 +91,16 @@
 				<img src="${infL}" data-tt-influence style="position:absolute;left:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
 				<img src="${infR}" data-tt-influence style="position:absolute;right:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
 			@endif
-			<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayName}</div>
-			<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayBase}</div>
+			<div class="text-center font-semibold text-base leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayName}</div>
+			<div class="text-center text-sm leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayBase}</div>
 		</div>
 
 		<%-- 아이템 종류 + 영문 병기 --%>
 		<%-- 종류 줄은 무기만 속성 칸 첫 줄(10-23 Q43 — 인게임은 방어구 · 장신구 · 주얼에 종류 줄이 없고, 무기는 단수 'Bow' · '양손 검') --%>
 		!{ String weaponCls = net.luversof.web.gate.poe.PoeClassNames.poe1Weapon(base != null ? base.itemClass() : null); boolean abyss = base != null && "AbyssJewel".equals(base.itemClass()); }
 		@if(PoeText.isKorean())
-			<div class="px-4 pt-1.5 text-center text-[11px]">
-				@if(PoeText.isKorean())<div class="text-[10px] text-white/30">${item.name()} · ${base != null ? base.name() : item.baseType()}</div>@endif
+			<div class="px-4 pt-1.5 text-center text-2xs">
+				@if(PoeText.isKorean())<div class="text-2xs text-white/30">${item.name()} · ${base != null ? base.name() : item.baseType()}</div>@endif
 			</div>
 		@endif
 
@@ -108,7 +108,7 @@
 		<%-- 중복 사용 제한(10-08 C197 — 게임 ClientStrings JewelItemLimit "중복 사용 제한: 1" · HistoricJewelLimit "1 역사적인 순간") · 반경 — 인게임은 같은 속성 칸 --%>
 		@if(abyss || (item.radius() != null && !item.radius().isBlank()) || (item.limit() != null && !item.limit().isBlank()) || item.talismanTier() != null)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
+			<div class="px-4 py-1.5 text-center text-xs space-y-0.5">
 				<%-- 심연 주얼(Q43 — 게임 ItemDisplayAbyssalJewel '심연' · 'Abyss', 속성 칸 첫 줄 회색) --%>
 				@if(abyss)<div class="${label}" data-tt-abyss>${PoeText.isKorean() ? "심연" : "Abyss"}</div>@endif
 				<%-- 부적 등급(10-09 C214 — 게임 ClientStrings ItemDisplayStringTalismanTier "부적 등급", 같은 속성 칸) --%>
@@ -122,7 +122,7 @@
 		     "비활성화 시 재사용 대기시간 {0}초", 회색 문장에 흰 숫자 · 옵션이 바꾼 숫자는 파랑) --%>
 		@if(tp != null)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center ${label}" data-tt-tincture>
+			<div class="px-4 py-1.5 text-xs space-y-0.5 text-center ${label}" data-tt-tincture>
 				<div>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.tincture.burn"), "<span class=\"" + (tp.manaBurn().changed() ? aug : value) + "\">" + tp.manaBurnText() + "</span>")}</div>
 				<div>$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.tincture.cooldown"), "<span class=\"" + (tp.cooldown().changed() ? aug : value) + "\">" + tp.cooldownText() + "</span>")}</div>
 			</div>
@@ -131,7 +131,7 @@
 		<%-- 속성 (무기/방어) --%>
 		@if(hasProps)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
+			<div class="px-4 py-1.5 text-xs space-y-0.5 text-center">
 				@if(weaponCls != null)<div class="${label}" data-tt-weapon-class>${weaponCls}</div>@endif
 				<div><span class="${label}">${MessageUtil.getMessage("poe.items.detail.quality")}: </span><span class="${aug}">+${quality}%</span></div>
 				@if(hasWeapon)
@@ -159,7 +159,7 @@
 		<%-- 플라스크 회복/지속 + 충전 (인게임: 베이스 속성) --%>
 		@if(flask != null)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
+			<div class="px-4 py-1.5 text-center text-xs space-y-0.5">
 				@if(flask.type() == 4)
 					<div class="${label}">$unsafe{java.text.MessageFormat.format(MessageUtil.getMessage("poe.items.detail.flask.duration"), fdur)}</div>
 				@else
@@ -188,7 +188,7 @@
 		<%-- 내용 없는 "요구 사항" 제목만 남지 않게(10-09 C217 — 레벨 없는 주얼 186개: 베이스 요구 {} · PoB 원문에 레벨 없음) --%>
 		@if(item.requiredLevel() != null || (req != null && (req.str().present() || req.dex().present() || req.intel().present())))
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-center text-[12px]" data-tt-requirements>
+			<div class="px-4 py-1.5 text-center text-xs" data-tt-requirements>
 				<span class="${label}">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>
 				<%-- 쉼표는 앞에 항목이 있을 때만(10-25 Q188 — 요구 레벨 없는 고유 23개가 "요구 사항 , 12 힘" 으로 시작했다, PoE2 requirements.jte 와 같은 규칙) --%>
 				!{ boolean rqL = item.requiredLevel() != null; boolean rqS = req != null && req.str().present(); boolean rqD = req != null && req.dex().present(); }
@@ -201,7 +201,7 @@
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-1.5 text-center space-y-0.5 bg-white/[0.03]">
 				@for(String line : displayImplicits)
-					<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(line)}</div>
+					<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(line)}</div>
 				@endfor
 			</div>
 		@endif
@@ -212,16 +212,16 @@
 			<div class="px-4 py-2 text-center space-y-0.5">
 				@for(int li = 0; li < displayExplicits.size(); li++)
 					@if(!corruptedWords.contains(displayExplicits.get(li)))
-					<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(displayExplicits.get(li))}</div>
+					<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{net.luversof.web.gate.poe.PoeText.highlightValues(displayExplicits.get(li))}</div>
 					@endif
 					@if(remindersPerLine && reminders.get(li) != null)
 						@for(String rem : reminders.get(li))
-							<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+							<div class="text-2xs leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
 						@endfor
 					@endif
 				@endfor
 				@for(String rem : remindersAtEnd)
-					<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+					<div class="text-2xs leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
 				@endfor
 			</div>
 		@endif
@@ -230,13 +230,13 @@
 		<%-- 타락 줄 = 옵션 바로 아래 · 로어 위(10-09 C216 — poedb 목소리 · poe2db 신념의 프리즘 툴팁 순서: 옵션 → Corrupted → 로어 → 사용 설명. 예전(C157)엔 맨 아래) --%>
 		@if(corruptedItem)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${MessageUtil.getMessage("poe.items.corrupted")}</div>
+			<div class="px-4 py-1.5 text-center text-xs font-semibold text-[#d20000]" data-tt-corrupted>${MessageUtil.getMessage("poe.items.corrupted")}</div>
 		@endif
 		@if(flavourLines != null && !flavourLines.isEmpty())
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-2 text-center space-y-0.5" data-tt-flavour>
 				@for(String line : flavourLines)
-					<div class="text-[12px] leading-snug italic text-[#af6025]">${line}</div>
+					<div class="text-xs leading-snug italic text-[#af6025]">${line}</div>
 				@endfor
 			</div>
 		@endif
@@ -244,6 +244,6 @@
 		!{ String helpKey = net.luversof.web.gate.poe.PoeItemDescription.key(item.category(), item.baseType()); }
 		@if(helpKey != null)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${MessageUtil.getMessage(helpKey)}</div>
+			<div class="px-4 py-2 text-center text-xs leading-snug text-[#7f7f7f]" data-tt-help>${MessageUtil.getMessage(helpKey)}</div>
 		@endif
 	</div>

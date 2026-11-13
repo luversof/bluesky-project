@@ -119,7 +119,7 @@
 	String assumptionsTitle = MessageUtil.getMessage("stock.simulator.section.assumptions.title");
 	String yearlyTitle = MessageUtil.getMessage("stock.simulator.section.yearly.title");
 	String yearlyDescription = MessageUtil.getMessage("stock.simulator.section.yearly.desc");
-	String activeSimulatorTabClass = "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm";
+	String activeSimulatorTabClass = "tab tab-lg flex-1 font-semibold tab-active !bg-primary !text-primary-content shadow-sm";
 	String inactiveSimulatorTabClass = "tab tab-lg flex-1 text-base-content/60 hover:text-base-content";
 }
 
@@ -206,14 +206,14 @@
 				</script>
 			@endif
 
-			<div class="rounded-3xl border border-base-300 bg-gradient-to-br from-base-100 via-base-100 to-base-200 shadow-sm">
+			<div class="rounded-box border border-base-300 bg-base-100 shadow-sm">
 				<div class="flex flex-col gap-6 px-6 py-6 lg:flex-row lg:items-end lg:justify-between">
 					<div class="space-y-3">
 						<div class="badge badge-primary badge-outline h-auto min-h-6 whitespace-normal py-0.5 text-center badge-sm">${toolTitle}</div>
-						<h1 class="text-3xl font-bold tracking-tight">${pageTitle}</h1>
+						<h1 class="text-3xl font-semibold tracking-tight">${pageTitle}</h1>
 						<p class="max-w-3xl text-sm leading-6 text-base-content/70">${description}</p>
 					</div>
-					<div class="max-w-sm rounded-2xl border border-primary/20 bg-primary/5 px-4 py-4 text-sm leading-6 text-base-content/70">
+					<div class="max-w-sm rounded-field border border-primary/20 bg-primary/5 px-4 py-4 text-sm leading-6 text-base-content/70">
 						<p class="font-semibold text-base-content">${toolDescription}</p>
 						<p class="mt-2">${storageNote}</p>
 					</div>
@@ -361,7 +361,7 @@
 								</label>
 								<div class="form-control md:col-span-2 xl:col-span-2">
 									<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.simulator.field.reinvest")}</span></div>
-									<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4">
+									<div class="rounded-field border border-base-300 bg-base-100 px-4 py-4">
 										<label class="label cursor-pointer justify-start gap-3 p-0">
 											<input id="stockSimulatorReinvestDividends" name="reinvestDividends" type="checkbox" class="checkbox checkbox-primary" />
 											<span class="label-text leading-6">${MessageUtil.getMessage("stock.simulator.field.reinvest.help")}</span>
@@ -386,7 +386,7 @@
 										<h3 class="card-title">${cashFlowTitle}</h3>
 										<p class="text-sm leading-6 text-base-content/60">${cashFlowDescription}</p>
 									</div>
-									<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
+									<div class="h-80 w-full rounded-field bg-base-100 p-2">
 										<canvas id="stockSimulatorCashFlowChart" role="img" aria-label="${cashFlowTitle}" class="amount-chart"></canvas>
 									</div>
 							`)
@@ -395,7 +395,7 @@
 										<h3 class="card-title">${assetTitle}</h3>
 										<p class="text-sm leading-6 text-base-content/60">${assetDescription}</p>
 									</div>
-									<div class="h-80 w-full rounded-2xl bg-base-100 p-2">
+									<div class="h-80 w-full rounded-field bg-base-100 p-2">
 										<canvas id="stockSimulatorAssetChart" role="img" aria-label="${assetTitle}" class="amount-chart"></canvas>
 									</div>
 							`)

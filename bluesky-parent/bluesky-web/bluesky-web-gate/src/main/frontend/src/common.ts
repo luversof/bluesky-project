@@ -56,7 +56,7 @@ document.addEventListener("click", (event) => {
 const ACTIVITY_VIEW_KEY = "activityViewMode";
 const ACTIVITY_TAB_ACTIVE_CLASSES = [
 	"tab-active",
-	"font-bold",
+	"font-semibold",
 	"!bg-primary",
 	"!text-primary-content",
 	"shadow-sm",
@@ -668,7 +668,7 @@ document.addEventListener("htmx:configRequest", (event: any) => {
 		(document.documentElement.lang || "ko").toLowerCase().indexOf("en") === 0 ? "Loading…" : "불러오는 중…";
 	// 서버 왕복(hx-get) 동안 띄우는 로딩 툴팁 — 빈 화면 대신 스피너를 보여준다(afterSwap 이 교체).
 	const LOADING_TIP =
-		'<div class="poe-tooltip poe-rar-white shadow-2xl" style="border-color:#c8c8c8"><div class="px-6 py-4 flex items-center justify-center gap-2"><span class="loading loading-spinner loading-sm text-primary"></span><span class="text-[12px] text-white/60">' + (LOADING_LABEL) + '</span></div></div>';
+		'<div class="poe-tooltip poe-rar-white shadow-2xl" style="border-color:#c8c8c8"><div class="px-6 py-4 flex items-center justify-center gap-2"><span class="loading loading-spinner loading-sm text-primary"></span><span class="text-xs text-white/60">' + (LOADING_LABEL) + '</span></div></div>';
 	// WCAG 1.4.13(10-02 C31) — 툴팁 위로 포인터를 옮겨도 닫히지 않게(hoverable): 트리거에서 벗어나면 바로 닫지 않고 잠깐 기다렸다가,
 	//   그 사이 툴팁(#poePreview)이나 같은 트리거로 들어오면 취소한다. 예전엔 툴팁이 pointer-events:none 이라 옮기는 순간 사라졌다.
 	let hideTimer: number | undefined;

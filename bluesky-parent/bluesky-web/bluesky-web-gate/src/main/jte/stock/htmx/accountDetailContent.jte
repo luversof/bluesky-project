@@ -418,7 +418,7 @@
 								<td class="font-semibold"><a href="${StockDetailLinkUtil.item(dividend.stockItemId() != null ? dividend.stockItemId().toString() : "")}" class="link link-hover">${dName}</a></td>
 								<td class="text-right amount-value hidden sm:table-cell opacity-70">${String.format("%,d", StockFormatUtil.displayWon(dividend.grossAmount()))}</td>
 								<td class="text-right amount-value hidden sm:table-cell opacity-60 tooltip" data-tip="${dividendTaxZero ? zeroAmountTitle : null}" aria-label="${dividendTaxZero ? zeroAmountTitle : null}">${dividendTaxZero ? "-" : String.format("%,d", StockFormatUtil.displayWon(dividend.tax()))}</td>
-								<td class="text-right font-bold amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(dividend.netAmount()))}</td>
+								<td class="text-right font-semibold amount-value text-dividend">${String.format("%,d", StockFormatUtil.displayWon(dividend.netAmount()))}</td>
 							</tr>
 						@endfor
 					</tbody>

@@ -76,7 +76,7 @@
 									${row.label()}
 									@if(!row.complete() && row.fromDate() != null && row.toDate() != null)
 										<%-- 조회 기간에 잘린 구간. 밝히지 않으면 그 달/해 전체 성과로 오해한다. --%>
-										<div class="text-[11px] font-normal leading-4 text-base-content/60">
+										<div class="text-2xs font-normal leading-4 text-base-content/60">
 											${partialLabel} <span class="whitespace-nowrap date-whole">${row.fromDate().toString().substring(5)}</span> ~ <span class="whitespace-nowrap date-whole">${row.toDate().toString().substring(5)}</span>
 										</div>
 									@endif
@@ -137,7 +137,7 @@
 			<%-- 손익(금액)과 수익률(시간가중)은 축이 다르다. 실현·배당이 큰 해에는 부호가 갈려
 			     한 줄이 모순처럼 읽힌다 - 실측 2026-09-13: 삼성전자 2021 년 손익 +9,445,170 인데 수익률 -0.71%.
 			     값은 둘 다 맞으므로 기준을 밝힌다. --%>
-			<p class="text-[11px] leading-4 text-base-content/60 mt-2" data-breakdown-return-basis>${returnBasisNote}</p>
+			<p class="text-2xs leading-4 text-base-content/60 mt-2" data-breakdown-return-basis>${returnBasisNote}</p>
 	`)
 @elseif(periodBreakdownNote != null && !periodBreakdownNote.isEmpty())
 	<%-- 표를 낼 수 없는 구간이면 자리를 비우지 않고 까닭을 적는다. 말없이 사라지면

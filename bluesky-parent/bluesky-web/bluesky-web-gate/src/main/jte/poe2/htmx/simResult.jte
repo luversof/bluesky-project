@@ -35,7 +35,7 @@
 }
 <div class="space-y-3 rounded-2xl bg-base-100 p-4 shadow-sm" data-sim-result>
 	<div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-		<span class="text-lg font-bold">${ko && r.skillKo() != null ? r.skillKo() : r.skill()}</span>
+		<span class="text-lg font-semibold">${ko && r.skillKo() != null ? r.skillKo() : r.skill()}</span>
 		<%-- 전직(10-14 C311 사용자 요청 "어떤 전직인지 표시가 안 보인다") — 한국어 이름 + 자동으로 골랐으면 그 표시. 예전엔 영문 이름만 꾸밈없는 배지로 --%>
 		<span class="badge badge-outline border-primary/60 font-semibold" data-sim-ascendancy>${ko ? "전직" : "Ascendancy"}: ${ko && r.ascendancyKo() != null ? r.ascendancyKo() : r.ascendancy()}@if(Boolean.TRUE.equals(r.ascendancyAuto()))<span class="ml-1 font-normal text-base-content/60" data-sim-ascendancy-auto>· ${ko ? "자동 선택" : "auto"}</span>@endif</span>
 		<span class="badge badge-ghost">${ko ? "목표" : "Objective"}: ${objLabel.apply(r.objective())}</span>
@@ -63,7 +63,7 @@
 					<th class="text-right" title="${ko ? "실빌드 후보 중 엔진 계산이 가장 나은 한 명의 장비 · 젬 · 트리(공통 특성을 입히기 전)" : "Gear, gems and tree of the best-measured candidate, before common traits"}">${ko ? "출발 빌드" : "Start"}</th>
 					<th class="text-right">${MessageUtil.getMessage("poe.refine.after")}</th>
 					<th class="text-right">${MessageUtil.getMessage("poe.refine.change")}</th>
-					<th class="text-right">${ko ? "poe.ninja 중앙값" : "poe.ninja median"}@if(bm != null && bm.sample() != null)<div class="text-[10px] font-normal text-base-content/60">n=${bm.sample()}</div>@endif</th>
+					<th class="text-right">${ko ? "poe.ninja 중앙값" : "poe.ninja median"}@if(bm != null && bm.sample() != null)<div class="text-2xs font-normal text-base-content/60">n=${bm.sample()}</div>@endif</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -142,7 +142,7 @@
 				</table>
 			</div>
 			@if(byAsc.size() == 1)
-				<div class="text-[11px] text-base-content/60">${ko ? "이 스킬의 실빌드 후보가 한 전직에만 있었습니다." : "All candidates were from one ascendancy."}</div>
+				<div class="text-2xs text-base-content/60">${ko ? "이 스킬의 실빌드 후보가 한 전직에만 있었습니다." : "All candidates were from one ascendancy."}</div>
 			@endif
 		</div>
 	@endif
@@ -167,7 +167,7 @@
 				</tbody>
 			</table>
 		</div>
-		<div class="text-[11px] text-base-content/60">${ko ? "장비 · 젬 출발점을 정하려고 같은 시나리오로 우리 엔진에서 다시 계산했습니다(균형은 DPS·EHP 로그 합) — 가장 나은 한 명에서 출발해 공통 특성을 견줍니다." : "Recalculated under the same scenario to pick the gear and gem starting point (balanced = log DPS + log EHP); common traits are then compared on top of it."}</div>
+		<div class="text-2xs text-base-content/60">${ko ? "장비 · 젬 출발점을 정하려고 같은 시나리오로 우리 엔진에서 다시 계산했습니다(균형은 DPS·EHP 로그 합) — 가장 나은 한 명에서 출발해 공통 특성을 견줍니다." : "Recalculated under the same scenario to pick the gear and gem starting point (balanced = log DPS + log EHP); common traits are then compared on top of it."}</div>
 	</details>
 	<%-- 결과 PoB 코드 + 복사 — PoE1 시뮬 결과와 같은 자리(10-01: PoE2 엔 "빌드 화면에서 열기"만 있었다). PoB 에 붙여넣는 게 용도라 원클릭 복사 --%>
 	@if(r.code() != null && !r.code().isBlank())

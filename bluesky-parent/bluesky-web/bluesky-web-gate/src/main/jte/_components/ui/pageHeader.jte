@@ -8,7 +8,7 @@
 	<div class="min-w-0">
 		<%-- 제목에 끊을 자리가 없는 긴 낱말(영어 계좌 이름 등)이 오면 min-w-0 이어도 글자가 상자 밖으로 나갔다(실측 2026-09-30: 영어 320px ·
 		     글꼴 200% 계좌 상세 12px). 더 못 줄일 때만 끊는다. --%>
-		<h1 class="${size} font-bold wrap-anywhere">${title}</h1>
+		<h1 class="${size} font-semibold wrap-anywhere">${title}</h1>
 		@if(description != null && !description.isEmpty())
 		<p class="text-sm text-base-content/60 mt-0.5 wrap-anywhere">${description}</p>
 		@endif

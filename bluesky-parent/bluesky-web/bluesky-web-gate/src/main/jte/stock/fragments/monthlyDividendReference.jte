@@ -200,24 +200,24 @@
 
 	<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.payout.count")}</p>
+			<p class="text-xs font-medium text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.payout.count")}</p>
 			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">${amountFormat.format(payoutCount)}</p>
 			<p class="mt-2 text-sm text-base-content/60">${selectedMonthlyDividendSymbol}</p>
 		</div>
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.latest.dividend")}</p>
+			<p class="text-xs font-medium text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.latest.dividend")}</p>
 			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">₩${amountFormat.format(latestDividend)}</p>
 			<p class="mt-2 text-sm text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.per.share")}</p>
 		</div>
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.dividend")}</p>
+			<p class="text-xs font-medium text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.dividend")}</p>
 			<%-- 평균은 넷째 자리까지 구해 두고 **표시할 때 한 번만** 반올림한다. 그대로 찍으면 같은 카드가
 			     종목에 따라 ₩32.25 와 ₩106.3636 으로 갈린다(실측 2026-09-16). --%>
 			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">₩${amountFormat.format(averageDividend.setScale(2, RoundingMode.HALF_UP))}</p>
 			<p class="mt-2 text-sm text-base-content/60">${MessageFormat.format(basisRowsTemplate, averageBasisRows)}</p>
 		</div>
 		<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-			<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.taxable.ratio")}</p>
+			<p class="text-xs font-medium text-base-content/60">${MessageUtil.getMessage("stock.page.dividend.monthly.reference.summary.average.taxable.ratio")}</p>
 			<p class="mt-3 text-2xl font-semibold text-base-content tabular-nums">@if(averageTaxableRatio == null)<span class="text-base-content/60" data-taxable-unknown>${MessageUtil.getMessage("stock.monthly.taxable.unknown")}</span>@else${percentFormat.format(averageTaxableRatio)}%@endif</p>
 			<p class="mt-2 text-sm text-base-content/60">${MessageFormat.format(basisRowsTemplate, taxableBasisRows)}</p>
 		</div>

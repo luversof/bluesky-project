@@ -23,10 +23,10 @@
 @if(cur != null)
 	@if(header != null)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center font-bold text-[12.5px]" style="color:${nameColor}" data-gem-secondary-title>${header}</div>
+		<div class="px-4 py-1.5 text-center font-semibold text-xs" style="color:${nameColor}" data-gem-secondary-title>${header}</div>
 	@endif
 	<div class="poe-tt-sepimg"></div>
-	<div class="px-4 py-1.5 text-[12px] text-center space-y-0.5" data-gem-secondary>
+	<div class="px-4 py-1.5 text-xs text-center space-y-0.5" data-gem-secondary>
 		@if(showLevel)
 			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.level")}: </span><span class="${value}" data-tt-gem-level>${displayLevel}</span></div>
 		@endif
@@ -62,11 +62,11 @@
 		}
 		<div class="px-4 py-1.5 text-center space-y-0.5" data-gem-secondary-stats>
 			@for(int si = 0; si < lines.size(); si++)
-				<div class="text-[12.5px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(lines.get(si))}</div>
+				<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(lines.get(si))}</div>
 				@if(remPerLine && remIds.get(si) != null)
 					@for(String rid : remIds.get(si))
 						@if(reminderText.get(rid) != null)
-							<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${PoeText.name(reminderText.get(rid).ko(), reminderText.get(rid).en())}</div>
+							<div class="text-2xs leading-snug text-[#7f7f7f]" data-tt-reminder>${PoeText.name(reminderText.get(rid).ko(), reminderText.get(rid).en())}</div>
 						@endif
 					@endfor
 				@endif

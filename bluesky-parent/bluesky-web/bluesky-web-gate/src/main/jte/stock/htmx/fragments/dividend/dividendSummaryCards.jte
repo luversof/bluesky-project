@@ -82,14 +82,14 @@
 					<div class="min-w-0">
 						<div class="text-xs text-base-content/60 mb-1">${periodDividendLabel}</div>
 						<div class="flex items-baseline gap-1">
-							<span class="text-xl font-bold text-dividend amount-value">₩${decimalFormat.format(safeAllNet)}</span>
+							<span class="text-xl font-semibold text-dividend amount-value">₩${decimalFormat.format(safeAllNet)}</span>
 							<span class="text-xs text-base-content/60">${netLabel}</span>
 						</div>
 					</div>
 					<div class="min-w-0">
 						<div class="text-xs text-base-content/60 mb-1">${taxableAmountLabel}</div>
-						<div class="text-xl font-bold text-base-content/70 amount-value">₩${decimalFormat.format(safeAllTaxable)}</div>
-						<div class="text-[11px] leading-4 text-base-content/60">${taxableNoteLabel}</div>
+						<div class="text-xl font-semibold text-base-content/70 amount-value">₩${decimalFormat.format(safeAllTaxable)}</div>
+						<div class="text-2xs leading-4 text-base-content/60">${taxableNoteLabel}</div>
 					</div>
 				</div>
 				<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-base-content/60">
@@ -102,7 +102,7 @@
 					<span class="ml-auto">${dividendCountLabel} ${totalItemsCountText}</span>
 				</div>
 				<%-- 차감 분해(항상 표시): 세전 − (세금 + 수수료·기타) = 세후. 과세 금액은 차감 항목이 아님(별도 표시). --%>
-				<div class="mt-1 text-[11px] leading-4 text-base-content/60 tooltip" data-tip="${calcNoteLabel}">
+				<div class="mt-1 text-2xs leading-4 text-base-content/60 tooltip" data-tip="${calcNoteLabel}">
 					${deductionLabel} = ${taxLabel} <span class="amount-value">₩${decimalFormat.format(safeAllTax)}</span>
 					+ ${deductionOtherLabel} <span class="amount-value">₩${decimalFormat.format(allOtherDeduction)}</span>@template._components.ui.srExact(text = calcNoteLabel, visible = decimalFormat.format(allOtherDeduction))
 				</div>
@@ -147,7 +147,7 @@
 				</div>
 				<div class="flex items-baseline gap-2 mb-1">
 					<%-- 변화가 0 이면 오르내림 화살표도 손익 색도 붙이지 않는다(전기 0·이번 0 인데 "▲ ∞%" 가 나왔다). --%>
-					<span class="text-xl font-bold ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">@if(diffZero)-@else<span aria-hidden="true">${diffPositive ? "▲" : "▼"}</span>@endif ${diffPct}%</span>
+					<span class="text-xl font-semibold ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">@if(diffZero)-@else<span aria-hidden="true">${diffPositive ? "▲" : "▼"}</span>@endif ${diffPct}%</span>
 					<span class="text-xs amount-value ${diffZero ? "text-base-content/60" : (diffPositive ? "text-profit" : "text-loss")}">${diffZero ? "" : (diffPositive ? "+" : "-")}₩${decimalFormat.format(diffAmount.abs())}</span>
 				</div>
 				<div class="text-xs text-base-content/60">${previousPeriodLabel} <span class="amount-value">₩${decimalFormat.format(safePrevNet)}</span></div>
@@ -167,7 +167,7 @@
 		<%-- Card 3: 월평균 --%>
 		@template._components.ui.card(body = @`
 				<div class="text-xs text-base-content/60 mb-1">${monthlyAverageLabel}</div>
-				<div class="text-xl font-bold"><span id="avgAmountDisplay" class="amount-value">-</span></div>
+				<div class="text-xl font-semibold"><span id="avgAmountDisplay" class="amount-value">-</span></div>
 				<div class="text-xs text-base-content/60 mt-1" id="avgAmountDesc"></div>
 		`)
 
@@ -177,7 +177,7 @@
 	@if(hasComparison && dividendChangeContributors != null && !dividendChangeContributors.isEmpty())
 	@template._components.ui.card(cssClass = "mb-4", id = "dividendChangeCard", body = @`
 			<div class="flex items-baseline justify-between gap-2 mb-2">
-				<h2 class="font-bold text-sm" data-page-section>${changeTitleLabel}</h2>
+				<h2 class="font-semibold text-sm" data-page-section>${changeTitleLabel}</h2>
 				@if(prevStartDate != null && prevEndDate != null)
 				<span class="text-xs text-base-content/60">vs <span class="whitespace-nowrap date-whole">${prevStartDate.toString()}</span> ~ <span class="whitespace-nowrap date-whole">${prevEndDate.toString()}</span></span>
 				@endif

@@ -28,7 +28,7 @@
 				<div class="fixed top-16 left-0 z-40 h-[calc(100vh-4rem)] w-56 overflow-y-auto border-r border-base-200 bg-base-100 py-4 flex flex-col stock-sidebar">
 					@template._components.navmenu(menu = menu, classAppend = "w-full")
 					<div class="mt-auto border-t border-base-200 px-2 pt-2">
-						<button type="button" class="sidebar-collapse-btn w-full font-medium rounded-box flex items-center justify-end gap-3 px-4 py-3 text-base-content/60 hover:bg-base-200 hover:text-base-content transition-all duration-300 hover:duration-75"
+						<button type="button" class="sidebar-collapse-btn w-full font-medium rounded-box flex items-center justify-end gap-3 px-4 py-3 text-base-content/60 hover:bg-base-200 hover:text-base-content transition-colors duration-300 hover:duration-75"
 								data-sidebar-collapse-toggle
 								title="${MessageUtil.getMessage("layout.sidebar.toggle")}" aria-label="${MessageUtil.getMessage("layout.sidebar.toggle")}">
 							<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0 sidebar-toggle-icon transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,7 +66,7 @@
 					@if(m.isDisplay())
 						<a href="${m.getUrl()}" class="shrink-0 min-w-16 ${m.isCurrentMenu() ? "dock-active text-primary" : "text-base-content/60"}">
 							@template._components.menuIcon(messageCode = m.getMessageCode(), name = m.getName())
-							<span class="dock-label text-[10px]">${m.getName()}</span>
+							<span class="dock-label text-2xs">${m.getName()}</span>
 						</a>
 					@endif
 				@endif

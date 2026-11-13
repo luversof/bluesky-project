@@ -23,6 +23,6 @@
 			: "text-base-content/60";
 		String tier = modTiers != null && li < modTiers.size() ? modTiers.get(li) : null;
 	}
-	<div class="text-[#8888ff]">@if(mk != null)<span class="${mkColor} text-[10px]">(${mk})</span> @endif@if(tier != null && !tier.isEmpty())<span class="text-[10px] font-mono text-base-content/60 mr-0.5" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "인게임 고급 모드 설명(Alt)의 등급 — 최상위=T1" : "Tier from the in-game advanced mod descriptions (Alt) — best = T1"}">${tier}</span> @endif${mRest}</div>
+	<div class="text-[#8888ff]">@if(mk != null)<span class="${mkColor} text-2xs">(${mk})</span> @endif@if(tier != null && !tier.isEmpty())<span class="text-2xs font-mono text-base-content/60 mr-0.5" title="${net.luversof.web.gate.poe.PoeText.isKorean() ? "인게임 고급 모드 설명(Alt)의 등급 — 최상위=T1" : "Tier from the in-game advanced mod descriptions (Alt) — best = T1"}">${tier}</span> @endif${mRest}</div>
 @endfor
 </div>

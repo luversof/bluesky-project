@@ -1177,7 +1177,7 @@ const simMilestonesPlugin = {
 			.map(
 				(card) => `
 					<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-						<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${card.label}</p>
+						<p class="text-xs font-medium text-base-content/60">${card.label}</p>
 						<p class="mt-3 text-2xl font-semibold text-base-content">${card.value}</p>
 						<p class="mt-2 text-sm text-base-content/60">${escapeHtml(card.note || activeScenario.name)}</p>
 					</div>`,
@@ -1232,11 +1232,11 @@ const simMilestonesPlugin = {
 											? i18n.reinvestOn
 											: i18n.reinvestOff
 									}</p>
-								<div class="flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
+								<div class="flex flex-wrap gap-2 text-2xs leading-5 text-base-content/70">
 									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryLatestCoverage)} ${escapeHtml(formatCoveragePercent(summary.finalSpendingCoveragePct))}</span>
 									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryFinalWealth)} <span class="amount-value">${escapeHtml(formatCompactCurrency(summary.finalWealth))}</span></span>
 								</div>
-								<div class="mt-2 flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
+								<div class="mt-2 flex flex-wrap gap-2 text-2xs leading-5 text-base-content/70">
 									${buildScenarioConfigurationBadges(scenario)}
 								</div>
 							</div>
@@ -1261,7 +1261,7 @@ const simMilestonesPlugin = {
 									)
 									.join("")}
 							</div>
-							<div class="flex items-center justify-between text-[11px] text-base-content/60">
+							<div class="flex items-center justify-between text-2xs text-base-content/60">
 								<span>${i18n.yearsShort.replace("{0}", "0")}</span>
 								<span>${i18n.yearsShort.replace("{0}", String(scenario.years))}</span>
 							</div>

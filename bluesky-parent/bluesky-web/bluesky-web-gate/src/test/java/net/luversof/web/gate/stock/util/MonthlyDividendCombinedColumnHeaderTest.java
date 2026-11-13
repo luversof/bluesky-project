@@ -53,7 +53,7 @@ class MonthlyDividendCombinedColumnHeaderTest {
     String basisLine =
         "<div class="
             + Q
-            + "text-[11px] font-medium leading-4 text-base-content/60"
+            + "text-2xs font-medium leading-4 text-base-content/60"
             + Q
             + ">${onCostBasisLabel}</div>";
     String priceReturnLine =

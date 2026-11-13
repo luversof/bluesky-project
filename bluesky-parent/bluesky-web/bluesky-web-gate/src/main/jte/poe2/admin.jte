@@ -41,7 +41,7 @@
 	contentPoe = @`
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-center gap-2">
-				<h1 class="text-2xl font-bold mr-1">${pageTitle}</h1>
+				<h1 class="text-2xl font-semibold mr-1">${pageTitle}</h1>
 				<span class="badge badge-ghost">${MessageUtil.getMessage("poe.admin.version.current")}: ${patch == null ? "-" : patch}</span>
 				@if(latestPatch == null)
 					<span class="badge badge-ghost badge-outline text-base-content/60">${MessageUtil.getMessage("poe.admin.version.unknown")}</span>
@@ -62,45 +62,45 @@
 			<div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 						<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.tab.gems")}</div>
-						<div class="text-xl font-bold font-mono">${java.text.MessageFormat.format(countUnit, gems)}</div>
+						<div class="text-xl font-semibold font-mono">${java.text.MessageFormat.format(countUnit, gems)}</div>
 				`)
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 						<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.tab.uniques")}</div>
-						<div class="text-xl font-bold font-mono">${java.text.MessageFormat.format(countUnit, uniques)}</div>
+						<div class="text-xl font-semibold font-mono">${java.text.MessageFormat.format(countUnit, uniques)}</div>
 				`)
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 						<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.tab.items")}</div>
-						<div class="text-xl font-bold font-mono">${java.text.MessageFormat.format(countUnit, baseItems)}</div>
+						<div class="text-xl font-semibold font-mono">${java.text.MessageFormat.format(countUnit, baseItems)}</div>
 				`)
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 						<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.tab.tree")}</div>
-						<div class="text-xl font-bold">${hasTree ? treeReadyLabel : treeMissingLabel}</div>
+						<div class="text-xl font-semibold">${hasTree ? treeReadyLabel : treeMissingLabel}</div>
 				`)
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 						<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("layout.menu.poe.atlas")}</div>
-						<div class="text-xl font-bold">${hasAtlas ? treeReadyLabel : treeMissingLabel}</div>
+						<div class="text-xl font-semibold">${hasAtlas ? treeReadyLabel : treeMissingLabel}</div>
 				`)
 				<%-- PoE2 에만 있는 데이터: 룬 · 영혼 핵 --%>
 				@template._components.ui.card(bodyClass = "gap-1 py-4", body = @`
 						<div class="text-xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe2.admin.data.augments")}</div>
-						<div class="text-xl font-bold font-mono">${java.text.MessageFormat.format(countUnit, augments)}</div>
+						<div class="text-xl font-semibold font-mono">${java.text.MessageFormat.format(countUnit, augments)}</div>
 				`)
 			</div>
 
 			<!-- 데이터 산출물 · 실행 환경(PoE1 과 같은 표) -->
 			@template._components.ui.card(bodyClass = "gap-2", body = @`
-					<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.admin.data.inventory")}</h2>
-					<div class="text-[11px] text-base-content/60 -mt-1">${MessageUtil.getMessage("poe.admin.data.inventory.hint")}</div>
+					<h2 class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("poe.admin.data.inventory")}</h2>
+					<div class="text-2xs text-base-content/60 -mt-1">${MessageUtil.getMessage("poe.admin.data.inventory.hint")}</div>
 					@if(dataLoadedAtEpochMs != null)
-						<div class="text-[11px] ${dataStaleInApi ? "text-warning" : "text-base-content/60"}" data-poe-dataload>
+						<div class="text-2xs ${dataStaleInApi ? "text-warning" : "text-base-content/60"}" data-poe-dataload>
 							${MessageUtil.getMessage("poe.admin.data.loadedat")}
 							<span class="font-mono">${java.time.Instant.ofEpochMilli(dataLoadedAtEpochMs).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))}</span>
 							@if(dataStaleInApi)
-								· <span class="font-bold">${MessageUtil.getMessage("poe.admin.data.stale.api")}</span>
+								· <span class="font-semibold">${MessageUtil.getMessage("poe.admin.data.stale.api")}</span>
 							@endif
 						</div>
 					@endif
-					<div class="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3 text-[12px]" data-poe-artifacts>
+					<div class="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3 text-xs" data-poe-artifacts>
 						@for(var a : artifacts)
 							<div class="flex flex-wrap items-baseline gap-x-2 border-b border-base-200/60 py-0.5" data-artifact="${a.file()}">
 								<span class="w-28 shrink-0 text-base-content/70">${MessageUtil.getMessage(a.labelKey())}</span>
@@ -108,7 +108,7 @@
 									<span class="badge badge-warning badge-sm">${MessageUtil.getMessage("poe.admin.data.missing")}</span>
 								@else
 									<span class="font-mono text-base-content/60">${String.format("%,d KB", a.sizeBytes() / 1024)}</span>
-									<span class="ml-auto font-mono text-[11px] text-base-content/60">${a.modifiedEpochMs() == null ? "" : java.time.Instant.ofEpochMilli(a.modifiedEpochMs()).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))}</span>
+									<span class="ml-auto font-mono text-2xs text-base-content/60">${a.modifiedEpochMs() == null ? "" : java.time.Instant.ofEpochMilli(a.modifiedEpochMs()).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))}</span>
 									@if(a.stale())
 										<span class="badge badge-warning badge-sm shrink-0">${MessageUtil.getMessage("poe.admin.data.stale")}</span>
 									@endif
@@ -117,7 +117,7 @@
 						@endfor
 					</div>
 
-					<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.admin.env.title")}</h2>
+					<h2 class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("poe.admin.env.title")}</h2>
 					<div class="flex flex-wrap items-center gap-2 text-sm">
 						<span class="w-40 text-base-content/60">${MessageUtil.getMessage("poe.admin.env.imagemagick")}</span>
 						@if(imageMagickInstalled)

@@ -15,7 +15,7 @@
 @elseif(eval != null && eval.error() != null)
 	<div class="text-xs text-warning px-1 py-2" data-tree-eval-error>${ko ? "엔진 계산 실패: " : "Engine failed: "}${eval.error()}</div>
 @elseif(eval != null)
-	<div class="text-[11px] text-stone-400 px-1 pb-1" data-tree-eval-meta>
+	<div class="text-2xs text-stone-400 px-1 pb-1" data-tree-eval-meta>
 		${ko ? "레벨 90 · 노드 " : "Level 90 · nodes "}${eval.nodes()}@if(eval.skill() != null) · ${eval.skill()}@endif · ${eval.elapsedMs()}ms
 	</div>
 	!{
@@ -56,6 +56,6 @@
 		</tbody>
 	</table>
 	@if(eval.skill() == null)
-		<div class="text-[10px] text-stone-500 px-1 pt-1">${ko ? "스킬을 고르면 표준 무기로 그 스킬 DPS 도 계산합니다." : "Pick a skill to also compute its DPS with a standard weapon."}</div>
+		<div class="text-2xs text-stone-500 px-1 pt-1">${ko ? "스킬을 고르면 표준 무기로 그 스킬 DPS 도 계산합니다." : "Pick a skill to also compute its DPS with a standard weapon."}</div>
 	@endif
 @endif

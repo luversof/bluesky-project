@@ -49,7 +49,7 @@
 
 <div class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm" data-dividend-calendar data-calendar-month="${calendar.month().toString()}">
 	<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-		<h2 class="text-base font-bold" data-page-section>${monthLabel}</h2>
+		<h2 class="text-base font-semibold" data-page-section>${monthLabel}</h2>
 	</div>
 	<%-- 달력이 놓는 날짜는 지급이력의 최빈일이다. 실제 지급일은 그 주변에 퍼져 있어(실측: 월중 17x39 · 19x20 ·
 	     18x10 · 20x9), 날짜 하나만 적으면 그 날 들어오는 것으로 읽힌다. 그래서 예상임을 먼저 밝힌다. --%>
@@ -87,15 +87,15 @@
 								<%-- 앞뒤 달 날짜도 날짜다 - 흐리게 해도 읽혀야 한다. /30 은 흰 배경에서 대비 2.01:1 로 소형 텍스트 기준(4.5)에
 								     한참 못 미쳤다(실측 2026-09-14). /60 이 그 기준을 넘는 가장 흐린 단계다(4.90:1).
 								     '이번 달이 아니다' 는 칸 배경(bg-base-200/40)과 이번 달 날짜(/70)와의 차이가 말한다. --%>
-								<div class="px-1 pt-0.5 text-[11px] ${day.today() ? "font-bold text-primary" : (day.inMonth() ? (redDay ? "text-error" : "text-base-content/70") : "text-base-content/60")}">${day.date().getDayOfMonth()}</div>
+								<div class="px-1 pt-0.5 text-2xs ${day.today() ? "font-semibold text-primary" : (day.inMonth() ? (redDay ? "text-error" : "text-base-content/70") : "text-base-content/60")}">${day.date().getDayOfMonth()}</div>
 								@if(holidayName != null)
-									<div class="block tooltip" data-tip="${holidayName}"><div class="truncate px-1 text-[9px] leading-tight text-error/80">${holidayName}</div></div>
+									<div class="block tooltip" data-tip="${holidayName}"><div class="truncate px-1 text-2xs leading-tight text-error/80">${holidayName}</div></div>
 								@endif
 								<%-- 42 칸 중 실제로 차는 칸은 평균 2 개다(실측 2026-09-15, 최근 24 개월: 지급일 1~3 일,
 								     늘 월초 2~6 일과 월중 17~20 일 두 덩어리). 격자의 95% 가 구조적으로 비는데 그 면적 때문에
 								     정작 금액이 11px 로 눌려 있었다 - 칸은 '며칠에 얼마' 만 말하고 종목별 금액은 아래 목록이 제 크기로 말한다. --%>
 								@if(day.hasEntries())
-									<div class="px-1 pb-1 text-center font-mono text-[12px] font-medium text-dividend" data-calendar-day-total data-calendar-entries="${day.entries().size()}">
+									<div class="px-1 pb-1 text-center font-mono text-xs font-medium text-dividend" data-calendar-day-total data-calendar-entries="${day.entries().size()}">
 										<span class="amount-value" aria-hidden="true">${StockFormatUtil.compactKrw(StockFormatUtil.displayWon(day.latestTotal()))}</span>
 										<span class="sr-only">${dayTotalLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(day.latestTotal()))}</span></span>
 									</div>

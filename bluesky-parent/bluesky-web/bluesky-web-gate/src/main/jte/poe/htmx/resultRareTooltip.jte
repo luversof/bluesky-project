@@ -70,8 +70,8 @@
 		@if(rightIco != null)
 			<img src="${rightIco}" style="position:absolute;right:8px;top:6px;width:30px;height:30px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))" alt="">
 		@endif
-		<div class="text-center font-bold text-[15px] leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${dName}</div>
-		<div class="text-center text-[13px] leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">@if(base != null)${net.luversof.web.gate.poe.PoeClassNames.poe1(base.itemClassKo(), base.itemClass())}@else${rareLabel}@endif</div>
+		<div class="text-center font-semibold text-base leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${dName}</div>
+		<div class="text-center text-sm leading-tight text-[#ffff77] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">@if(base != null)${net.luversof.web.gate.poe.PoeClassNames.poe1(base.itemClassKo(), base.itemClass())}@else${rareLabel}@endif</div>
 	</div>
 
 	<%-- 요구 사항 — 인게임은 **레벨이 먼저**다("요구 능력치 레벨 62, 180 힘"). 방어/무기 수치는 모드 반영값이
@@ -81,7 +81,7 @@
 	     ⚠ 한 줄로 붙여 쓸 것: @if 사이 줄바꿈이 공백으로 렌더돼 "레벨 62 , 180 힘"처럼 쉼표 앞이 벌어진다. --%>
 	@if(base != null && (base.requiredLevel() > 0 || base.reqStr() > 0 || base.reqDex() > 0 || base.reqInt() > 0))
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px]">
+		<div class="px-4 py-1.5 text-center text-xs">
 			<span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.requirement")} </span>@if(base.requiredLevel() > 0)<span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.level")} </span><span class="text-[#e0e0e0]">${base.requiredLevel()}</span>@endif@if(base.reqStr() > 0)<span class="text-[#e0e0e0]">${base.requiredLevel() > 0 ? ", " : ""}${base.reqStr()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.str")}</span>@endif@if(base.reqDex() > 0)<span class="text-[#e0e0e0]">${(base.requiredLevel() > 0 || base.reqStr() > 0) ? ", " : ""}${base.reqDex()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.dex")}</span>@endif@if(base.reqInt() > 0)<span class="text-[#e0e0e0]">${(base.requiredLevel() > 0 || base.reqStr() > 0 || base.reqDex() > 0) ? ", " : ""}${base.reqInt()} </span><span class="text-[#7f7f7f]">${MessageUtil.getMessage("poe.items.detail.int")}</span>@endif
 		</div>
 	@endif
@@ -89,11 +89,11 @@
 	<%-- (엘드리치) 고정 속성은 구분선 위(인게임 배치) — 게임은 다른 암시와 같은 파랑(10-23 Q110, 예전 보라 #d0a2f7) --%>
 	@if(!ttImplicits.isEmpty())
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
+		<div class="px-4 py-1.5 text-xs space-y-0.5 text-center">
 			@for(int ii = 0; ii < ttImplicits.size(); ii++)
 				<div class="text-[#8888ff]" data-tt-line>$unsafe{PoeText.highlightValues(ttImplicits.get(ii))}</div>
 				@for(String rem : ttImplicitRems.get(ii))
-					<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+					<div class="text-2xs leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
 				@endfor
 			@endfor
 		</div>
@@ -101,7 +101,7 @@
 
 	<%-- 접두/접미(폭발) 모드 — 마커는 회색 소자, 본문 파랑, 수치 강조 --%>
 	<div class="poe-tt-sepimg"></div>
-	<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
+	<div class="px-4 py-1.5 text-xs space-y-0.5 text-center">
 		@for(int ei = 0; ei < ttExplicits.size(); ei++)
 			!{
 				String ml = ttExplicits.get(ei);
@@ -110,9 +110,9 @@
 				String rest = mk != null ? ml.substring(end + 2) : ml;
 				String tier = ei < ttExplicitTiers.size() ? ttExplicitTiers.get(ei) : null;
 			}
-			<div class="text-[#8888ff]" data-tt-line>@if(mk != null)<span class="text-[10px] text-white/35">(${mk})</span> @endif@if(tier != null && !tier.isEmpty())<span class="text-[10px] font-mono text-white/40 mr-0.5">${tier}</span> @endif$unsafe{PoeText.highlightValues(rest)}</div>
+			<div class="text-[#8888ff]" data-tt-line>@if(mk != null)<span class="text-2xs text-white/35">(${mk})</span> @endif@if(tier != null && !tier.isEmpty())<span class="text-2xs font-mono text-white/40 mr-0.5">${tier}</span> @endif$unsafe{PoeText.highlightValues(rest)}</div>
 			@for(String rem : ttExplicitRems.get(ei))
-				<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+				<div class="text-2xs leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
 			@endfor
 		@endfor
 	</div>

@@ -32,7 +32,7 @@
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-baseline gap-3">
 				<a href="/poe/items" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe.items.title")}</a>
-				<h1 class="text-2xl font-bold">${displayName}</h1>
+				<h1 class="text-2xl font-semibold">${displayName}</h1>
 				@if(ko)<span class="text-base-content/60 text-sm">${item.name()}</span>@endif
 				<span class="badge badge-ghost">${patchLabel}</span>
 				<%-- 거래소에서 찾기(10-08 C174, 고유 상세 C173 의 짝) — 이 베이스의 고유 아닌 아이템 · 즉시 구입 · 가격순. 거래소 사전에 없는 베이스(tradable=false, 더는 안 떨어지는 옛 베이스 등)는 숨긴다 --%>
@@ -55,7 +55,7 @@
 			@if(baseUniques != null && !baseUniques.isEmpty())
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
-						<h2 class="font-bold text-orange-500">${MessageUtil.getMessage("poe.items.base.uniques")}</h2>
+						<h2 class="font-semibold text-orange-500">${MessageUtil.getMessage("poe.items.base.uniques")}</h2>
 						<span class="text-xs font-mono text-base-content/60">${baseUniques.size()}</span>
 					</div>
 					<div class="flex flex-wrap gap-x-4 gap-y-1">
@@ -75,7 +75,7 @@
 			@if(fullMods != null)
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
-						<h2 class="font-bold">${ko ? "전체 제작 옵션" : "All craftable modifiers"}</h2>
+						<h2 class="font-semibold">${ko ? "전체 제작 옵션" : "All craftable modifiers"}</h2>
 						!{
 							// 이 베이스의 속성 변형(힘/민첩/지능…) — 변형마다 붙는 모드가 다르므로 무엇 기준인지 밝힌다
 							String variantLabel = "";
@@ -97,7 +97,7 @@
 			@if(eldritch != null)
 				<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
 					<div class="mb-2 flex flex-wrap items-baseline gap-2">
-						<h2 class="font-bold">${ko ? "섬뜩한 고정 속성" : "Eldritch implicits"}</h2>
+						<h2 class="font-semibold">${ko ? "섬뜩한 고정 속성" : "Eldritch implicits"}</h2>
 						<span class="text-sm text-base-content/60">${ko ? "총주교·포식자 화폐로 부여 — 팩션당 1개씩 최대 2개" : "Exarch + Eater — up to one each"}</span>
 					</div>
 					@template.poe.htmx.eldritchPools(eldritch = eldritch, ko = ko)

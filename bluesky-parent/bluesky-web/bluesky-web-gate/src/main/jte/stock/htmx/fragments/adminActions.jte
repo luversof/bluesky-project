@@ -148,7 +148,7 @@
 				</dl>
 				<%-- "그중 이 날짜 행이 있는 종목은 …" 은 위 시세 최신 시점을 가리킨다 - 카드 밖에 두면 무엇의 "이 날짜" 인지 떨어진다. --%>
 				@if(dataStatus != null && dataStatus.stockItemCount() > 0 && dataStatus.priceHistoryLastDate() != null)
-					<p class="text-[11px] text-base-content/60" data-admin-price-coverage>
+					<p class="text-2xs text-base-content/60" data-admin-price-coverage>
 						${StockViewSupport.msg("stock.admin.price.history.coverage", String.format("%,d", dataStatus.stockItemCount()),
 							String.format("%,d", dataStatus.priceHistoryLastDateItemCount()),
 							String.format("%,d", dataStatus.priceHistoryNoHistoryItemCount()))}
@@ -184,7 +184,7 @@
 				<%-- 개수만 적으면 무엇을 고쳐야 할지 알 수 없다. 같은 화면의 다른 이상 항목(거래량 0 인데 종가가
 					 바뀐 행, 제한폭을 넘은 행)은 이미 종목·날짜까지 적는다 - 이것만 숫자였다. --%>
 				@if(dataStatus.priceHistoryNoHistoryItemRows() != null && !dataStatus.priceHistoryNoHistoryItemRows().isEmpty())
-					<div class="text-[11px] text-base-content/60 mb-2 font-mono" data-no-history-items="${dataStatus.priceHistoryNoHistoryItemRows().size()}">
+					<div class="text-2xs text-base-content/60 mb-2 font-mono" data-no-history-items="${dataStatus.priceHistoryNoHistoryItemRows().size()}">
 						@for(DataStatusResponse.NoHistoryItemRow row : dataStatus.priceHistoryNoHistoryItemRows())
 							<div>${row.symbol()} ${row.stockItemName()}</div>
 						@endfor
@@ -213,7 +213,7 @@
 				 (실측 2026-08-23: 57,459 행 중 1,352 행이 거래량 0, 그중 종가가 바뀐 것은
 				  쌍방울 2025-05-08 한 건이고 13,450 -> 2,690 으로 정확히 1/5 - 액면분할이다) --%>
 			@if(dataStatus.priceHistoryRowCount() > 0)
-				<div class="text-[11px] text-base-content/60 mb-2">
+				<div class="text-2xs text-base-content/60 mb-2">
 					${StockViewSupport.msg("stock.admin.price.quality", String.format("%,d", dataStatus.priceHistoryRowCount()),
 						String.format("%,d", dataStatus.priceHistoryZeroVolumeRowCount()),
 						String.format("%.2f", dataStatus.priceHistoryZeroVolumeRatioPercent()))}
@@ -232,7 +232,7 @@
 						@endfor
 						<%-- 이 목록도 상한이 있다(질의 LIMIT 5). 같은 화면의 다른 두 목록과 같은 규칙으로 밝힌다. --%>
 						@if(dataStatus.priceHistoryZeroVolumeChangedCloseCount() > dataStatus.priceHistoryZeroVolumeChangedCloseRows().size())
-							<div class="text-[11px] text-base-content/60" data-list-truncated="zero-volume">
+							<div class="text-2xs text-base-content/60" data-list-truncated="zero-volume">
 								${StockViewSupport.msg("stock.admin.list.truncated", String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseRows().size()),
 									String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseCount() - dataStatus.priceHistoryZeroVolumeChangedCloseRows().size()))}
 							</div>
@@ -263,7 +263,7 @@
 							<%-- 목록에는 상한이 있다. 개수만 크게 적고 몇 줄만 보이면 나머지가 있는 줄 모른다.
 								 (같은 화면의 다른 목록도 같은 규칙) --%>
 							@if(dataStatus.priceHistoryPriceLimitBreachCount() > dataStatus.priceHistoryPriceLimitBreachRows().size())
-								<div class="text-[11px] text-base-content/60" data-list-truncated="limit-breach">
+								<div class="text-2xs text-base-content/60" data-list-truncated="limit-breach">
 									${StockViewSupport.msg("stock.admin.list.truncated", String.valueOf(dataStatus.priceHistoryPriceLimitBreachRows().size()),
 										String.valueOf(dataStatus.priceHistoryPriceLimitBreachCount() - dataStatus.priceHistoryPriceLimitBreachRows().size()))}
 								</div>
@@ -275,7 +275,7 @@
 			<%-- 평가액은 원주가(수정 전 종가) x 실제 주식 수다(2026-10-02). 수정 종가는 받은 때마다 기준이 달라 같은 종목 안에서도
 				 이어지지 않았고 분배금을 두 번 셌다. 원주가가 빈 날은 직전 날 배율로 메운 추정값이 평가에 쓰이므로 몇 날인지 밝힌다. --%>
 			@if(dataStatus.rawClosePriceDayCount() != null && dataStatus.rawClosePriceDayCount() > 0)
-				<div class="text-[11px] text-base-content/60 mb-2" data-raw-close-missing="${dataStatus.rawClosePriceMissingDayCount()}">
+				<div class="text-2xs text-base-content/60 mb-2" data-raw-close-missing="${dataStatus.rawClosePriceMissingDayCount()}">
 					${StockViewSupport.msg("stock.admin.price.raw.coverage", String.format("%,d", dataStatus.rawClosePriceDayCount()),
 						String.format("%,d", dataStatus.rawClosePriceMissingDayCount()))}
 					@if(dataStatus.rawClosePriceMissingDayCount() != null && dataStatus.rawClosePriceMissingDayCount() > 0)
@@ -287,7 +287,7 @@
 				 한 달 치가 비면 예상 월배당의 기준(최신 1개월)·12개월 평균의 창·"다가올 배당"의 예상 지급일이
 				 함께 어긋나므로 여기서 밝힌다. 밀림 판정은 종목 자신의 과거 최대 간격으로 한다. --%>
 			@if(dataStatus.monthlyDividendPayoutLastDate() != null)
-				<div class="text-[11px] text-base-content/60 mb-2">
+				<div class="text-2xs text-base-content/60 mb-2">
 					${StockViewSupport.msg("stock.admin.payout.reference", dataStatus.monthlyDividendPayoutLastDate().toString())}
 					@if(dataStatus.monthlyDividendPayoutOverdueRows() != null && !dataStatus.monthlyDividendPayoutOverdueRows().isEmpty())
 						@for(DataStatusResponse.MonthlyDividendPayoutOverdueRow row : dataStatus.monthlyDividendPayoutOverdueRows())
@@ -386,7 +386,7 @@
 	<div id="update-loading" class="htmx-indicator fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
 		<div class="bg-base-100 p-8 rounded-box shadow-xl flex flex-col items-center gap-4">
 			@template._components.ui.spinner()
-			<div class="text-lg font-bold">${updatingLabel}</div>
+			<div class="text-lg font-semibold">${updatingLabel}</div>
 			<div class="text-sm opacity-70">${pleaseWaitLabel}</div>
 		</div>
 	</div>

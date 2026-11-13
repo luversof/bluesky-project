@@ -66,7 +66,7 @@
 	<%-- 계좌별 실현손익 --%>
 	<div class="mb-4" data-trade-realized-section>
 		<h2 class="text-base font-semibold text-base-content/70" data-page-section>${byAccountSectionLabel}</h2>
-		<p class="text-[11px] leading-4 text-base-content/60 mb-2">${realizedBasisNote}</p>
+		<p class="text-2xs leading-4 text-base-content/60 mb-2">${realizedBasisNote}</p>
 		<div class="selection-reveal"><div>
 		<div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3 mb-3"
 			 data-trade-realized-summary
@@ -129,7 +129,7 @@
 						<th scope="row" class="font-semibold whitespace-nowrap">@if(row.accountId() != null)<a href="${StockDetailLinkUtil.account(row.accountId().toString())}" class="link link-hover">${row.name()}</a>@else${row.name()}@endif</th>
 						<td class="text-right amount-value">${decimalFormat.format(rowSoldCost)}</td>
 						<td class="text-right amount-value">${decimalFormat.format(row.sellAmount() != null ? row.sellAmount() : BigDecimal.ZERO)}</td>
-						<td class="text-right font-bold amount-value ${rowPositive ? "text-profit" : "text-loss"}">
+						<td class="text-right font-semibold amount-value ${rowPositive ? "text-profit" : "text-loss"}">
 							${StockFormatUtil.signedWon(StockFormatUtil.displayWon(rowNet))}
 							<%-- 기록된 실현손익은 계좌를 합친 원가를 따른다(실측 2026-08-23: 매도 54건 중
 								 종목 단위 원가로 50건이 재현되고 계좌x종목 단위로는 38건뿐). 그래서 이 값은
@@ -138,7 +138,7 @@
 							!{BigDecimal rowOwn = row.realizedOwnBasis() != null ? row.realizedOwnBasis() : BigDecimal.ZERO;}
 							!{BigDecimal rowBasisGap = RealizedBasisGap.amount(rowNet, rowOwn);}
 							@if(RealizedBasisGap.isNotable(rowNet, rowOwn))
-								<span class="block text-[10px] font-normal text-base-content/60 tooltip" data-realized-basis-gap="${StockFormatUtil.displayWon(rowBasisGap)}"
+								<span class="block text-2xs font-normal text-base-content/60 tooltip" data-realized-basis-gap="${StockFormatUtil.displayWon(rowBasisGap)}"
 									  data-tip="${MessageUtil.getMessage("stock.trade.realized.basis.gap.title")}">
 									${StockViewSupport.msg("stock.trade.realized.basis.gap", StockFormatUtil.signedWon(StockFormatUtil.displayWon(rowOwn)))}
 									<%-- 까닭이 title 에만 있으면 마우스 전용이다(2026-09-10 실측). 같은 문구를 보조기술에도 남긴다. --%>
@@ -187,7 +187,7 @@
 			<h2 class="text-base font-semibold text-base-content/70" data-page-section>${byStockSectionLabel}</h2>
 			<span class="badge badge-sm badge-outline">${winCountBadgeLabel}</span>
 		</div>
-		<p class="text-[11px] leading-4 text-base-content/60 mb-2">${realizedBasisNote}</p>
+		<p class="text-2xs leading-4 text-base-content/60 mb-2">${realizedBasisNote}</p>
 		<div class="selection-reveal"><div>
 		<div class="rounded-2xl border border-info/15 bg-info/5 px-4 py-3 mb-3"
 			 data-trade-realized-summary
@@ -255,7 +255,7 @@
 						<th scope="row" class="font-semibold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(item.stockItemId() != null ? item.stockItemId().toString() : "")}" class="link link-hover">${item.stockItemName() != null ? item.stockItemName() : "-"}</a></th>
 						<td class="text-right amount-value">${decimalFormat.format(itemSoldCost)}</td>
 						<td class="text-right amount-value">${decimalFormat.format(item.totalSellAmount() != null ? item.totalSellAmount() : BigDecimal.ZERO)}</td>
-						<td class="text-right font-bold amount-value ${itemPositive ? "text-profit" : "text-loss"}">
+						<td class="text-right font-semibold amount-value ${itemPositive ? "text-profit" : "text-loss"}">
 							${StockFormatUtil.signedWon(StockFormatUtil.displayWon(itemNet))}
 						</td>
 						@if(itemHasRate)

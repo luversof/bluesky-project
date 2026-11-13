@@ -50,18 +50,18 @@
 				@if(tattooIcon != null)
 					<img src="/poe-data/poe1/icons/${tattooIcon}" class="w-7 h-7 object-contain shrink-0" alt="" loading="lazy" data-onerror="hide">
 				@endif
-				<span class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayName}</span>
+				<span class="text-center font-semibold text-base leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${rarity}">${displayName}</span>
 			</div>
 		</div>
 
 		<%-- 분류 줄 없음(Q77 — 인게임 화폐 툴팁엔 종류 줄이 없고, 룬 접목에도 '문신'이라 나왔다). ko 영문 병기만(사이트 관례) --%>
 		@if(ko)
-			<div class="px-4 pt-1.5 text-center text-[10px] text-white/30">${tattoo.name()}</div>
+			<div class="px-4 pt-1.5 text-center text-2xs text-white/30">${tattoo.name()}</div>
 		@endif
 
 		<%-- 요구/제약 (대체 대상 + 연결 조건) --%>
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
+		<div class="px-4 py-1.5 text-center text-xs space-y-0.5">
 			<div class="${label}">${replaceLine}</div>
 			<%-- 인접 조건(10-23 Q73) — 게임 PassiveSkillTattooAdjacentRequirementLower · Upper1 문장. 상한 100 은 데이터의 '제한 없음'(게임 MaxAdjacent 0) --%>
 			@if(tattoo.minConnected() > 0)
@@ -79,7 +79,7 @@
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-2 text-center space-y-0.5">
 				@for(String line : lines)
-					<div class="text-[12px] leading-snug ${aug} whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+					<div class="text-xs leading-snug ${aug} whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 				@endfor
 			</div>
 		@endif
@@ -87,7 +87,7 @@
 		<%-- 리마인더 (인게임 하단 회색 이탤릭 안내) --%>
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-2 text-center">
-			<p class="text-[11px] leading-5 italic text-white/35 whitespace-pre-line" data-tattoo-directions>${directions}</p>
+			<p class="text-2xs leading-5 italic text-white/35 whitespace-pre-line" data-tattoo-directions>${directions}</p>
 		</div>
 	</div>
 @endif

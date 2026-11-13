@@ -31,7 +31,7 @@
 	@else
 		<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
 			<div><span class="text-xs text-base-content/70">${ko ? "성공 한 번당 기대 비용" : "Expected cost per success"}</span>
-				<div class="text-2xl font-bold font-mono" data-craft-optimize-cost="${opt.expectedCost()}">${num.apply(opt.expectedCost())}${unit}@if(opt.stderr() != null)<span class="text-sm font-normal text-base-content/70"> ±${num.apply(opt.stderr() * 1.96)}</span>@endif</div>
+				<div class="text-2xl font-semibold font-mono" data-craft-optimize-cost="${opt.expectedCost()}">${num.apply(opt.expectedCost())}${unit}@if(opt.stderr() != null)<span class="text-sm font-normal text-base-content/70"> ±${num.apply(opt.stderr() * 1.96)}</span>@endif</div>
 				@if(opt.eldritch() != null && opt.eldritch().error() == null && opt.eldritch().cost() != null)<div class="text-xs" data-craft-optimize-eldritch="${opt.eldritch().cost()}">+ ${ko ? "섬뜩한 고정 속성 " : "Eldritch implicits "}<span class="font-mono">${num.apply(opt.eldritch().cost())}${unit}</span> ${ko ? "(따로 — 불씨 · 영액, 합계 " : "(separate — embers/ichors, total "}<span class="font-mono">${num.apply(opt.expectedCost() + opt.eldritch().cost())}${unit}</span>)</div>@endif
 				@if(opt.costQuantiles() != null && opt.costQuantiles().size() == 3)<div class="text-xs text-base-content/70" data-craft-optimize-quantiles title="${ko ? "성공 한 번까지 든 비용의 분포(앞서 목표에 못 닿은 회차 비용 포함) — 운이 좋으면 25% 지점, 보통 중간, 운이 나쁘면 90% 지점" : "Cost to get one success (including earlier runs that missed) — lucky 25%, typical median, unlucky 90%"}">${ko ? "운 좋으면 " : "Lucky "}<span class="font-mono">${num.apply(opt.costQuantiles().get(0))}${unit}</span> · ${ko ? "보통 " : "typical "}<span class="font-mono">${num.apply(opt.costQuantiles().get(1))}${unit}</span> · ${ko ? "운 나쁘면 " : "unlucky "}<span class="font-mono">${num.apply(opt.costQuantiles().get(2))}${unit}</span></div>@endif
 				<%-- 성공이 적은 결과(C539) — 못 끝낸 회차(C536)가 많으면 비용 = 전체 / 성공 수라 성공 몇 번으로 잰 거친 값.
@@ -117,8 +117,8 @@
 					<summary class="cursor-pointer select-none px-3 py-2 text-sm font-medium">${ko ? "결과 예시" : "Example results"} <span class="text-xs font-normal text-base-content/70">· ${ko ? "성공한 회차 중 싼 편 · 중간 · 비싼 편의 아이템(목표 밖 옵션도)" : "items from cheap · median · expensive successful runs (other modifiers too)"}</span></summary>
 					<div class="px-3 pb-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
 						@for(var sc : opt.showcase())
-							<div class="rounded-box border border-[#ffff77]/40 bg-black/85 px-2 py-1.5 text-center text-[12px] leading-snug min-w-0" data-craft-showcase>
-								<div class="text-[11px] text-white/60 mb-0.5">${ko ? "이 회차 비용 " : "Run cost "}<span class="font-mono text-white/80">${num.apply(sc.cost())}${unit}</span></div>
+							<div class="rounded-box border border-[#ffff77]/40 bg-black/85 px-2 py-1.5 text-center text-xs leading-snug min-w-0" data-craft-showcase>
+								<div class="text-2xs text-white/60 mb-0.5">${ko ? "이 회차 비용 " : "Run cost "}<span class="font-mono text-white/80">${num.apply(sc.cost())}${unit}</span></div>
 								@for(PoeCraft.Line sl : sc.lines())
 									!{
 										java.util.List<String> sx = ko && sl.ko() != null && !sl.ko().isEmpty() ? sl.ko() : (sl.en() == null ? java.util.List.of() : sl.en());

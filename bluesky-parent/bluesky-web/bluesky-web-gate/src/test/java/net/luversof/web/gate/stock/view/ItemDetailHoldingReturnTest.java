@@ -135,7 +135,8 @@ class ItemDetailHoldingReturnTest {
         .isCloseTo(9.75, org.assertj.core.data.Offset.offset(0.01));
 
     Matcher total =
-        Pattern.compile("text-lg font-bold [^\"]*\">\\s*([+-][0-9.]+%)\\s*</span>").matcher(html);
+        Pattern.compile("text-lg font-semibold [^\"]*\">\\s*([+-][0-9.]+%)\\s*</span>")
+            .matcher(html);
     assertThat(total.find()).as("합산 비율을 못 찾았다").isTrue();
     double sum = rates.values().stream().mapToDouble(Double::doubleValue).sum();
     assertThat(sum)

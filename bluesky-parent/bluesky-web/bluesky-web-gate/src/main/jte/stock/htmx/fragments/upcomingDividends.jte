@@ -60,22 +60,22 @@
 	 문구는 월배당 시뮬레이터와 같은 키를 쓴다. --%>
 	@if(dividendAsOfOldest != null)
 	@if(payDayRangeFrom > 0 && payDayRangeTo > payDayRangeFrom)
-	<div class="text-[11px] text-base-content/60 mb-2" data-payday-range="${payDayRangeFrom}-${payDayRangeTo}">
+	<div class="text-2xs text-base-content/60 mb-2" data-payday-range="${payDayRangeFrom}-${payDayRangeTo}">
 		${StockViewSupport.msg("stock.summary.upcoming.dividend.payday.range", String.valueOf(payDayRangeFrom), String.valueOf(payDayRangeTo))}
 	</div>
 	@endif
 	@if(payDaySpreadFrom > 0 && payDaySpreadTo > payDaySpreadFrom)
-	<div class="text-[11px] text-base-content/60 mb-2" data-payday-spread="${payDaySpreadFrom}-${payDaySpreadTo}">
+	<div class="text-2xs text-base-content/60 mb-2" data-payday-spread="${payDaySpreadFrom}-${payDaySpreadTo}">
 		${StockViewSupport.msg("stock.summary.upcoming.dividend.payday.spread", String.valueOf(payDaySpreadFrom), String.valueOf(payDaySpreadTo))}
 	</div>
 	@endif
-	<div class="text-[11px] text-base-content/60 mb-2">
+	<div class="text-2xs text-base-content/60 mb-2">
 		${MessageUtil.getMessage("stock.simulator.monthly.summary.as.of.date")}
 		<span class="font-mono"><span class="whitespace-nowrap date-whole">${dividendAsOfOldest.toString()}</span>@if(dividendAsOfNewest != null && !dividendAsOfNewest.equals(dividendAsOfOldest)) ~ <span class="whitespace-nowrap date-whole">${dividendAsOfNewest.toString()}</span>@endif</span>
 	</div>
 	@endif
 	@if(staleQuantityCount > 0)
-	<div data-stale-quantity="${staleQuantityCount}" class="text-[11px] text-warning mb-2 amount-value" data-stale-quantity-notice>
+	<div data-stale-quantity="${staleQuantityCount}" class="text-2xs text-warning mb-2 amount-value" data-stale-quantity-notice>
 		${StockViewSupport.msg("stock.summary.upcoming.dividend.stale.quantity.both", String.valueOf(staleQuantityCount),
 			StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityLatestTotal)),
 			StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityTotal)))}
@@ -85,8 +85,8 @@
 	     예정 3,973,543)으로 읽혔다(2026-10-01 자율 점검) - 어느 날 몫인지 적고 "/ 월" 은 뺀다. --%>
 	@if(hasSnapshots)
 	<div class="text-right leading-tight tabular-nums mb-2">
-		<div class="font-mono font-bold text-dividend amount-value tooltip" data-window-latest-total data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal))}"><span class="mr-1 text-[11px] font-normal text-base-content/60" data-window-latest-label>${nextPayDateLabel != null && !nextPayDateLabel.isBlank() ? StockViewSupport.msg("stock.summary.upcoming.window.latest", nextPayDateLabel) : latestLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal)))</div>
-		<div class="font-mono text-[11px] text-base-content/60 amount-value tooltip" data-window-average-total data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal))}">${avgLabel} ${String.format("%,d", StockFormatUtil.displayWon(windowTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowTotal)))</div>
+		<div class="font-mono font-semibold text-dividend amount-value tooltip" data-window-latest-total data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal))}"><span class="mr-1 text-2xs font-normal text-base-content/60" data-window-latest-label>${nextPayDateLabel != null && !nextPayDateLabel.isBlank() ? StockViewSupport.msg("stock.summary.upcoming.window.latest", nextPayDateLabel) : latestLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal)))</div>
+		<div class="font-mono text-2xs text-base-content/60 amount-value tooltip" data-window-average-total data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal))}">${avgLabel} ${String.format("%,d", StockFormatUtil.displayWon(windowTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowTotal)))</div>
 	</div>
 	<div class="space-y-1">
 		!{int upcomingRank = 1;}
@@ -98,11 +98,11 @@
 					<span class="badge badge-sm w-5 h-5 p-0 flex justify-center shrink-0 badge-outline">${upcomingRank++}</span>
 					<span class="max-w-full min-w-0 inline-block tooltip" data-tip="${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}"><span class="truncate block">${row.stockItemName() != null ? row.stockItemName() : row.stockItemSymbol()}</span></span>
 				</span>
-				<span class="font-mono font-bold text-dividend amount-value shrink-0 tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(rowLatest))}">${String.format("%,d", StockFormatUtil.displayWon(rowLatest))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(rowLatest)), visible = String.format("%,d", StockFormatUtil.displayWon(rowLatest)))</span>
+				<span class="font-mono font-semibold text-dividend amount-value shrink-0 tooltip" data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(rowLatest))}">${String.format("%,d", StockFormatUtil.displayWon(rowLatest))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(rowLatest)), visible = String.format("%,d", StockFormatUtil.displayWon(rowLatest)))</span>
 			</div>
 		@endfor
 		@if(upcomingDividendHiddenCount > 0)
-			<div class="text-[11px] text-base-content/60 pt-1" data-upcoming-more="${upcomingDividendHiddenCount}">
+			<div class="text-2xs text-base-content/60 pt-1" data-upcoming-more="${upcomingDividendHiddenCount}">
 				${StockViewSupport.msg("stock.summary.upcoming.dividend.more", String.valueOf(upcomingDividendHiddenCount))}
 			</div>
 		@endif

@@ -6,7 +6,7 @@
      넘겨 탭을 바꿔도 필터가 유지된다(PoE1 poe/itemTabs.jte 와 같은 흐름, 10-01) --%>
 <%-- 모양도 PoE1 탭과 같게(10-01): 폭 전체 큰 탭, 고른 탭은 주 색으로 채운다. 글자도 PoE1 키(poe.tab.uniques · poe.tab.items — 10-02 문구 통일) --%>
 !{
-	String activeCls = "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm";
+	String activeCls = "tab tab-lg flex-1 font-semibold tab-active !bg-primary !text-primary-content shadow-sm";
 	String inactiveCls = "tab tab-lg flex-1 text-base-content/60 hover:text-base-content";
 }
 <div role="tablist" class="tabs tabs-box w-full bg-base-200/70 p-1">

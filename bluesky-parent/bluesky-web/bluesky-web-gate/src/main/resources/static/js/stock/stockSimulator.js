@@ -27,7 +27,7 @@ const MONTHS_PER_YEAR=12;function annualRateToMonthlyRate(annualRate){const nume
 						</div>
 					</button>`}).join(""),Array.from(elements.scenarioList.querySelectorAll("[data-scenario-id]")).forEach(button=>{button.addEventListener("click",()=>{const scenarioId=button.dataset.scenarioId;state.activeScenarioId=scenarioId,saveState(),render(),focusScenario(elements.scenarioList,scenarioId)})})}}function renderSummaryCards(simulations){if(!elements.summaryCards)return;const activeScenario=getActiveScenario(),simulation=activeScenario?simulations.get(activeScenario.id):null,summary=simulation?simulation.summary:null;if(!summary){elements.summaryCards.innerHTML="";return}const cards=[{label:i18n.summarySustainablePeriod,value:formatSustainablePeriod(summary,activeScenario.years),note:summary.depletionYear?`${i18n.summaryDepletionYear}: ${formatYearOffset(summary.depletionYear)}`:summary.overflowYear?`${i18n.summaryOverflowYear}: ${formatYearOffset(summary.overflowYear)}`:i18n.summaryWithinHorizon},{label:i18n.summaryDeficitStart,value:formatOptionalYear(summary.firstDeficitYear,i18n.summaryNoDeficit)},{label:i18n.summaryWealthDeclineStart,value:formatOptionalYear(summary.firstWealthDeclineYear,i18n.summaryNoWealthDecline)},{label:i18n.summaryCapitalDrawdownStart,value:formatOptionalYear(summary.firstShareSaleYear,i18n.summaryNoPrincipalDrawdown)},{label:i18n.summaryDepletionYear,value:formatDepletionValue(summary.depletionYear),note:summary.firstShareSaleYear?`${i18n.summaryCapitalDrawdownStart}: ${formatYearOffset(summary.firstShareSaleYear)}`:i18n.summaryNoPrincipalDrawdown}];elements.summaryCards.innerHTML=cards.map(card=>`
 					<div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-4 shadow-sm">
-						<p class="text-xs font-medium uppercase tracking-wide text-base-content/60">${card.label}</p>
+						<p class="text-xs font-medium text-base-content/60">${card.label}</p>
 						<p class="mt-3 text-2xl font-semibold text-base-content">${card.value}</p>
 						<p class="mt-2 text-sm text-base-content/60">${escapeHtml(card.note||activeScenario.name)}</p>
 					</div>`).join("")}function renderTimelineComparison(simulations){if(!elements.timelineList)return;const maxYears=state.scenarios.reduce((accumulator,scenario)=>Math.max(accumulator,scenario.years),1),bestScenarioIds=buildBestScenarioSet(simulations);elements.timelineList.innerHTML=state.scenarios.map(scenario=>{const simulation=simulations.get(scenario.id),summary=simulation.summary,active=scenario.id===state.activeScenarioId,isBestChoice=state.scenarios.length>1&&bestScenarioIds.has(scenario.id),segments=buildTimelineSegments(simulation.records,scenario.years,maxYears),markers=buildTimelineMarkers(summary,scenario.years,maxYears);return`
@@ -41,11 +41,11 @@ const MONTHS_PER_YEAR=12;function annualRateToMonthlyRate(annualRate){const nume
 									${isBestChoice?`<span class="badge badge-success badge-sm badge-outline">${escapeHtml(i18n.compareBestChoice)}</span>`:""}
 								</div>
 									<p class="text-xs text-base-content/60">${i18n.yearsShort.replace("{0}",String(scenario.years))} \xB7 ${scenario.reinvestDividends?i18n.reinvestOn:i18n.reinvestOff}</p>
-								<div class="flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
+								<div class="flex flex-wrap gap-2 text-2xs leading-5 text-base-content/70">
 									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryLatestCoverage)} ${escapeHtml(formatCoveragePercent(summary.finalSpendingCoveragePct))}</span>
 									<span class="rounded-full border border-base-300 bg-base-200/70 px-2 py-1">${escapeHtml(i18n.summaryFinalWealth)} <span class="amount-value">${escapeHtml(formatCompactCurrency(summary.finalWealth))}</span></span>
 								</div>
-								<div class="mt-2 flex flex-wrap gap-2 text-[11px] leading-5 text-base-content/70">
+								<div class="mt-2 flex flex-wrap gap-2 text-2xs leading-5 text-base-content/70">
 									${buildScenarioConfigurationBadges(scenario)}
 								</div>
 							</div>
@@ -62,7 +62,7 @@ const MONTHS_PER_YEAR=12;function annualRateToMonthlyRate(annualRate){const nume
 												class="absolute inset-y-0 w-px bg-base-content/60"
 												style="left: ${marker.leftPct}%;"></span>`).join("")}
 							</div>
-							<div class="flex items-center justify-between text-[11px] text-base-content/60">
+							<div class="flex items-center justify-between text-2xs text-base-content/60">
 								<span>${i18n.yearsShort.replace("{0}","0")}</span>
 								<span>${i18n.yearsShort.replace("{0}",String(scenario.years))}</span>
 							</div>

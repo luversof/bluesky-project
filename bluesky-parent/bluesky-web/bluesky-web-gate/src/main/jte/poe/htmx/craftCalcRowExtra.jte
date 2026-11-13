@@ -25,6 +25,6 @@
 		bench = String.join(", ", parts);
 	}
 }
-@if(!tg.isEmpty())<span class="text-[10px] text-base-content/60" data-craft-calc-tags> — ${String.join(", ", tg)}</span>@endif
+@if(!tg.isEmpty())<span class="text-2xs text-base-content/60" data-craft-calc-tags> — ${String.join(", ", tg)}</span>@endif
 @if(inf) <span class="badge badge-xs badge-outline badge-warning whitespace-nowrap" data-craft-calc-inf title="${ko ? infName + " 영향력 옵션 — 베이스가 이 영향력일 때만 붙는다" : infName + " influence modifier — only on a base with this influence"}">${infName}</span>@endif
 @if(be != null) <span class="badge badge-xs badge-outline badge-info whitespace-nowrap" data-craft-calc-bench="${be.tier()}" title="${ko ? "작업대 옵션: " + bench + " — 이 계열 목표를 T1~T" + be.tier() + " 이하로 고르면 계산기 · 최적 조합이 작업대로도 채웁니다(빈 자리 · 같은 그룹이 없을 때)" : "Bench craft: " + bench + " — with this family's target at T1~T" + be.tier() + " or looser, the calculator and optimizer may finish it on the bench"}">${ko ? "작업대" : "Bench"} ≈ T${be.tier()}</span>@endif

@@ -118,7 +118,7 @@ class PrintStyleTest {
         Files.readString(
             Path.of("src/main/jte/stock/htmx/fragments/dividend/dividendPeriodBreakdown.jte"),
             StandardCharsets.UTF_8);
-    assertThat(fragment).contains("<h3 class=\"mb-2 text-sm font-bold\">${yearTabLabel}</h3>");
-    assertThat(fragment).contains("<h3 class=\"mb-2 text-sm font-bold\">${monthTabLabel}</h3>");
+    assertThat(fragment).contains("<h3 class=\"mb-2 text-sm font-semibold\">${yearTabLabel}</h3>");
+    assertThat(fragment).contains("<h3 class=\"mb-2 text-sm font-semibold\">${monthTabLabel}</h3>");
   }
 }

@@ -41,21 +41,21 @@
 <%-- PoE 게임 아이템 툴팁 (일반/흰색) --%>
 	<div class="poe-tooltip poe-rar-white w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${rarity}">
 		<div class="poe-tt-band">
-			<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:#c8c8c8">${displayName}</div>
+			<div class="text-center font-semibold text-base leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:#c8c8c8">${displayName}</div>
 		</div>
 		@if(PoeText.isKorean())
-			<div class="px-4 pt-1 text-center text-[10px] text-white/35">${item.name()}</div>
+			<div class="px-4 pt-1 text-center text-2xs text-white/35">${item.name()}</div>
 		@endif
 
 		<%-- 아이템 종류 속성 (방어/무기 수치) — 인게임처럼 가운데 '라벨: 값'(10-23 Q43 — 왼쪽 라벨 · 오른쪽 값 양끝 정렬이었다), 무기는 첫 줄 종류 --%>
 		!{ String weaponCls = net.luversof.web.gate.poe.PoeClassNames.poe1Weapon(item.itemClass()); }
 		@if("AbyssJewel".equals(item.itemClass()))
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-center text-[12px] text-[#7f7f7f]" data-tt-abyss>${PoeText.isKorean() ? "심연" : "Abyss"}</div>
+			<div class="px-4 py-1.5 text-center text-xs text-[#7f7f7f]" data-tt-abyss>${PoeText.isKorean() ? "심연" : "Abyss"}</div>
 		@endif
 		@if(hasProps)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
+			<div class="px-4 py-1.5 text-xs space-y-0.5 text-center">
 				@if(item.weapon() != null && weaponCls != null)<div class="text-[#7f7f7f]" data-tt-weapon-class>${weaponCls}</div>@endif
 				@if(item.weapon() != null)
 					<div><span class="text-[#7f7f7f]">${physicalDamageLabel}: </span><span class="text-[#e0e0e0]">${item.weapon().damageMin()}-${item.weapon().damageMax()}</span></div>
@@ -92,7 +92,7 @@
 		<%-- 플라스크 속성 (인게임: 회복/지속 + 충전) — type 1생명 2마나 3하이브리드 4특수 --%>
 		@if(flask != null)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-center text-[12px] space-y-0.5">
+			<div class="px-4 py-1.5 text-center text-xs space-y-0.5">
 				@if(flask.type() == 4)
 					<div class="text-[#7f7f7f]">$unsafe{java.text.MessageFormat.format(flaskDurationLabel, "<span class=\"text-[#e0e0e0]\">" + String.format("%.2f", flask.durationSeconds()) + "</span>")}</div>
 				@else
@@ -121,7 +121,7 @@
 		<%-- 레벨 1 · 능력치 요구 없음이면 요구 줄 없음(Q43 — 고유 화면과 같게) --%>
 		@if(item.requiredLevel() > 1 || item.reqStr() > 0 || item.reqDex() > 0 || item.reqInt() > 0)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px]">
+		<div class="px-4 py-1.5 text-center text-xs">
 			<span class="text-[#7f7f7f]">${requirementLabel} </span>
 			<span class="text-[#7f7f7f]">${levelLabel} </span><span class="text-[#e0e0e0]">${item.requiredLevel()}</span>@if(item.reqStr() > 0)<span class="text-[#e0e0e0]">, ${item.reqStr()} </span><span class="text-[#7f7f7f]">${reqStrLabel}</span>@endif@if(item.reqDex() > 0)<span class="text-[#e0e0e0]">, ${item.reqDex()} </span><span class="text-[#7f7f7f]">${reqDexLabel}</span>@endif@if(item.reqInt() > 0)<span class="text-[#e0e0e0]">, ${item.reqInt()} </span><span class="text-[#7f7f7f]">${reqIntLabel}</span>@endif
 		</div>
@@ -132,10 +132,10 @@
 			<div class="poe-tt-sepimg"></div>
 			<div class="px-4 py-2 text-center space-y-0.5">
 				@for(var implicitLine : item.implicits())
-					<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(PoeText.name(implicitLine.ko(), implicitLine.en()))}</div>
+					<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(PoeText.name(implicitLine.ko(), implicitLine.en()))}</div>
 					<%-- 줄 밑 리마인더(인게임 회색 부연, 10-04 C116) --%>
 					@for(String rem : PoeText.lines(implicitLine.remindersKo(), implicitLine.reminders()) == null ? java.util.List.<String>of() : PoeText.lines(implicitLine.remindersKo(), implicitLine.reminders()))
-						<div class="text-[11px] leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
+						<div class="text-2xs leading-snug text-[#7f7f7f]" data-tt-reminder>${rem}</div>
 					@endfor
 				@endfor
 			</div>
@@ -146,7 +146,7 @@
 		!{ String helpKey = net.luversof.web.gate.poe.PoeItemDescription.key(item.category(), item.name()); }
 		@if(helpKey != null)
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${MessageUtil.getMessage(helpKey)}</div>
+			<div class="px-4 py-2 text-center text-xs leading-snug text-[#7f7f7f]" data-tt-help>${MessageUtil.getMessage(helpKey)}</div>
 		@endif
 
 		<%-- 가능한 모드 등급 열거는 레이어에서 제외(의미 없음, 사용자 요청). 전체 모드 풀은 상세 페이지(/poe/items/{slug})에서 확인. --%>

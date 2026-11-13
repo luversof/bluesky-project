@@ -73,7 +73,7 @@ class TextSpacingReflowTest {
   @Test
   void 기간_수익_요약_금액은_아주_좁은_폭에서_한_단계_작다() throws IOException {
     Matcher m =
-        Pattern.compile("<span\\b[^>]*font-bold leading-none amount-value[^>]*>")
+        Pattern.compile("<span\\b[^>]*font-semibold leading-none amount-value[^>]*>")
             .matcher(read("stock/htmx/fragments/assetGrowthPeriodReturnSummary.jte"));
     assertThat(m.find()).as("기간 수익 요약 금액을 찾지 못했다").isTrue();
     String tag = m.group();

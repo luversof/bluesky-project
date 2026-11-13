@@ -14,7 +14,7 @@
 @param BigDecimal goalContribution = null
 
 <section id="monthlyDividendGoal" class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm" hx-target="#monthlyDividendGoal" hx-select="#monthlyDividendGoal" hx-swap="outerHTML show:none" hx-push-url="false" hx-replace-url="false" data-monthly-goal>
-	<h2 class="text-base font-bold" data-page-section>${MessageUtil.getMessage("stock.simulator.monthly.goal.title")}</h2>
+	<h2 class="text-base font-semibold" data-page-section>${MessageUtil.getMessage("stock.simulator.monthly.goal.title")}</h2>
 	@if(basis == null || basis.rowCount() == 0 || basis.marketValue().signum() <= 0)
 		<p class="mt-1 text-sm text-base-content/60" data-monthly-goal-empty>${MessageUtil.getMessage("stock.simulator.monthly.goal.empty")}</p>
 	@else
@@ -49,7 +49,7 @@
 						<dt class="text-xs text-base-content/60">${StockViewSupport.msg("stock.simulator.monthly.goal.months", StockFormatUtil.fullKrw(StockFormatUtil.displayWon(goal.monthlyContribution())))}</dt>
 						@if(goal.monthsToGoal() != null)
 							<dd class="mt-1 font-mono text-lg font-semibold" data-monthly-goal-months="${goal.monthsToGoal()}">${StockViewSupport.msg("stock.simulator.monthly.goal.duration", String.valueOf(goal.years()), String.valueOf(goal.remainderMonths()))}</dd>
-							<dd class="mt-0.5 text-[11px] text-base-content/60 wrap-anywhere" data-monthly-goal-at>${StockViewSupport.msg("stock.simulator.monthly.goal.at", StockFormatUtil.fullKrw(StockFormatUtil.displayWon(goal.capitalAtGoal())), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(goal.contributedAtGoal())))}</dd>
+							<dd class="mt-0.5 text-2xs text-base-content/60 wrap-anywhere" data-monthly-goal-at>${StockViewSupport.msg("stock.simulator.monthly.goal.at", StockFormatUtil.fullKrw(StockFormatUtil.displayWon(goal.capitalAtGoal())), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(goal.contributedAtGoal())))}</dd>
 						@else
 							<dd class="mt-1 text-sm" data-monthly-goal-months="none">${MessageUtil.getMessage("stock.simulator.monthly.goal.never")}</dd>
 						@endif

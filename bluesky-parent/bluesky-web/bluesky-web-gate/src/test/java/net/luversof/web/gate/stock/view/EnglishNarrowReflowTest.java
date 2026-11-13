@@ -73,7 +73,7 @@ class EnglishNarrowReflowTest {
   void 페이지_제목은_끊을_자리가_없어도_상자_안에_머문다() throws IOException {
     assertThat(read("_components/ui/pageHeader.jte"))
         .as("계좌 상세(영어 계좌 이름) 12px - min-w-0 만으로는 긴 낱말이 상자 밖으로 나간다")
-        .contains("<h1 class=\"${size} font-bold wrap-anywhere\">${title}</h1>")
+        .contains("<h1 class=\"${size} font-semibold wrap-anywhere\">${title}</h1>")
         .as("제목 줄이 안 접히면 제목이 0 폭으로 눌리고 오른쪽 동작이 화면을 민다")
         .contains(
             "<div class=\"flex flex-wrap items-start justify-between gap-x-4 gap-y-2 mb-3\">");

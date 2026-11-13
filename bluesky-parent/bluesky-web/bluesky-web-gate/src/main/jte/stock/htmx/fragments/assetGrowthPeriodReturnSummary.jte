@@ -140,7 +140,7 @@
 	<div class="flex flex-wrap items-center gap-x-2 gap-y-1">
 		<span class="text-sm font-semibold text-base-content/70">${profitTitle}</span>
 		@if(!fromDate.isBlank() && !toDate.isBlank())
-			<span class="inline-flex items-center rounded-full bg-base-200/80 px-2 py-0.5 text-[11px] font-medium text-base-content/60">
+			<span class="inline-flex items-center rounded-full bg-base-200/80 px-2 py-0.5 text-2xs font-medium text-base-content/60">
 				<span class="min-w-0"><span class="whitespace-nowrap date-whole">${fromDate}</span> ~ <span class="whitespace-nowrap date-whole">${toDate}</span></span>
 			</span>
 		@endif
@@ -149,12 +149,12 @@
 		@if(profitAvailable)
 			<%-- 글자 크기는 금액이 한 줄에 들어가는 폭부터 키운다(2026-09-30 실측: 36px 에서 "+13 억" 금액이 289px 인데 390px 화면 자리는 274px 라
 			     부호만 윗줄에 남았다 - 360~390px 에서 2~3 줄). 30px 는 241px, 24px 는 193px. 한 자리 늘어날 몫까지 두고 480px 부터 36px. --%>
-			<span class="text-2xl min-[360px]:text-3xl min-[480px]:text-4xl font-bold leading-none amount-value ${profitPositive ? "text-profit" : "text-loss"}">
+			<span class="text-2xl min-[360px]:text-3xl min-[480px]:text-4xl font-semibold leading-none amount-value ${profitPositive ? "text-profit" : "text-loss"}">
 				${periodProfit.signum() == 0 ? "" : (profitPositive ? "+" : "-")}₩${amountFormat.format(periodProfit.abs())}
 			</span>
 			@if(profitRateAvailable)
 				<%-- 금액만으로는 "많이 번 건지" 를 알 수 없다. 넣어 둔 돈 대비 비율을 바로 옆에 붙인다. --%>
-				<span class="text-xl font-bold ${profitRatePositive ? "text-profit" : "text-loss"}">
+				<span class="text-xl font-semibold ${profitRatePositive ? "text-profit" : "text-loss"}">
 					${StockFormatUtil.signedPct(periodProfitRatePct, 2)}
 				</span>
 			@endif
@@ -179,54 +179,54 @@
 		 "기간 손익률이 곧 투자 수익률인가" 를 화면에서 확인할 방법이 없었다. 셋은 <b>분모가 다른 별개의
 		 값</b>이다 - 실측 2026-08-27(올해): 94.93% / 92.88% / 76.66%. 나란히 두고 각자의 분모를 적는다. --%>
 	<div class="mt-3 pt-3 border-t border-base-200">
-		<div class="text-[11px] font-semibold text-base-content/60 mb-1.5">${ratesTitle}</div>
+		<div class="text-2xs font-semibold text-base-content/60 mb-1.5">${ratesTitle}</div>
 		<div class="grid gap-3 sm:grid-cols-3">
 			<div class="min-w-0">
 				<div class="text-xs text-base-content/60 mb-0.5">${profitRateTitle}</div>
 				@if(profitRateAvailable)
-					<div class="text-lg font-bold leading-none ${profitRatePositive ? "text-profit" : "text-loss"}">
+					<div class="text-lg font-semibold leading-none ${profitRatePositive ? "text-profit" : "text-loss"}">
 						${StockFormatUtil.signedPct(periodProfitRatePct, 2)}
 					</div>
 				@else
 					<div class="text-sm font-semibold text-base-content/60">${unavailableLabel}</div>
 				@endif
-				<p class="text-[11px] leading-4 text-base-content/60 mt-0.5">${profitRateDescription}</p>
+				<p class="text-2xs leading-4 text-base-content/60 mt-0.5">${profitRateDescription}</p>
 			</div>
 
 			<div class="min-w-0">
 				<div class="text-xs text-base-content/60 mb-0.5">${twrTitle}</div>
 				@if(twrAvailable)
-					<div class="text-lg font-bold leading-none ${twrPositive ? "text-profit" : "text-loss"}">
+					<div class="text-lg font-semibold leading-none ${twrPositive ? "text-profit" : "text-loss"}">
 						${StockFormatUtil.signedPct(timeWeightedReturnPct, 2)}
 					</div>
 				@else
 					<div class="text-sm font-semibold text-base-content/60">${unavailableLabel}</div>
 				@endif
-				<p class="text-[11px] leading-4 text-base-content/60 mt-0.5">${twrDescription}</p>
+				<p class="text-2xs leading-4 text-base-content/60 mt-0.5">${twrDescription}</p>
 			</div>
 
 			<div class="min-w-0">
 				<div class="text-xs text-base-content/60 mb-0.5">${growthShowsAmount ? growthAmountTitle : growthTitle}</div>
 				@if(returnCalculable && periodReturnRatePct != null)
-					<div class="text-lg font-bold leading-none ${growthPositive ? "text-profit" : "text-loss"}">
+					<div class="text-lg font-semibold leading-none ${growthPositive ? "text-profit" : "text-loss"}">
 						${StockFormatUtil.signedPct(periodReturnRatePct, 2)}
 					</div>
-					<p class="text-[11px] leading-4 text-base-content/60 mt-0.5">${growthDescription}</p>
+					<p class="text-2xs leading-4 text-base-content/60 mt-0.5">${growthDescription}</p>
 				@elseif(amountFallbackAvailable)
 					<%-- 기초 평가액이 거의 0이면 비율이 해석 불가라 금액으로 답한다. 이때도 왼쪽의 기간
 						 손익률은 나온다 - 분모에 유입 원금이 들어가기 때문이다. --%>
-					<div class="text-lg font-bold leading-none amount-value text-base-content/80">
+					<div class="text-lg font-semibold leading-none amount-value text-base-content/80">
 						${growthAmountValue.signum() < 0 ? "-" : ""}&#8361;${amountFormat.format(growthAmountValue.abs())}
 					</div>
-					<p class="text-[11px] leading-4 text-base-content/60 mt-0.5">
+					<p class="text-2xs leading-4 text-base-content/60 mt-0.5">
 						${growthAmountLabel} <span class="amount-value">&#8361;${amountFormat.format(openingValue)}</span>
 						<span class="text-base-content/60" aria-hidden="true">&#8594;</span>
 						<span class="amount-value">&#8361;${amountFormat.format(closingValue)}</span>
 					</p>
-					<p class="text-[11px] leading-4 text-base-content/60">${growthBaseTooSmallLabel}</p>
+					<p class="text-2xs leading-4 text-base-content/60">${growthBaseTooSmallLabel}</p>
 				@else
 					<div class="text-sm font-semibold text-base-content/60">${unavailableLabel}</div>
-					<p class="text-[11px] leading-4 text-base-content/60 mt-0.5">${growthDescription}</p>
+					<p class="text-2xs leading-4 text-base-content/60 mt-0.5">${growthDescription}</p>
 				@endif
 			</div>
 		</div>
@@ -237,15 +237,15 @@
 		 값 · 날짜 · 제외 규칙(평가액 0 인 날 제외)이 차트 주석과 같은 계산에서 나오므로 두 곳이 어긋나지 않는다. --%>
 	@if(movementAvailable)
 		<div class="mt-3 pt-3 border-t border-base-200">
-			<div class="text-[11px] font-semibold text-base-content/60 mb-1.5">${movementTitle}</div>
+			<div class="text-2xs font-semibold text-base-content/60 mb-1.5">${movementTitle}</div>
 			<div class="grid gap-3 sm:grid-cols-3">
 				<div class="min-w-0">
 					<div class="text-xs text-base-content/60 mb-0.5">${periodHighLabel}</div>
 					@if(peakAvailable)
-						<div class="text-lg font-bold leading-none amount-value text-base-content/80">
+						<div class="text-lg font-semibold leading-none amount-value text-base-content/80">
 							&#8361;${amountFormat.format(peakValue)}
 						</div>
-						<p class="text-[11px] leading-4 mt-0.5">
+						<p class="text-2xs leading-4 mt-0.5">
 							@if(peakValueDate != null)
 								<span class="text-base-content/60">${peakValueDate.toString()}</span>
 								<span class="text-base-content/30 mx-0.5" aria-hidden="true">&middot;</span>
@@ -261,10 +261,10 @@
 				<div class="min-w-0">
 					<div class="text-xs text-base-content/60 mb-0.5">${periodLowLabel}</div>
 					@if(troughAvailable)
-						<div class="text-lg font-bold leading-none amount-value text-base-content/80">
+						<div class="text-lg font-semibold leading-none amount-value text-base-content/80">
 							&#8361;${amountFormat.format(troughValue)}
 						</div>
-						<p class="text-[11px] leading-4 mt-0.5">
+						<p class="text-2xs leading-4 mt-0.5">
 							@if(troughValueDate != null)
 								<span class="text-base-content/60">${troughValueDate.toString()}</span>
 								<span class="text-base-content/30 mx-0.5" aria-hidden="true">&middot;</span>
@@ -275,17 +275,17 @@
 					@else
 						<div class="text-sm font-semibold text-base-content/60">${unavailableLabel}</div>
 					@endif
-					<p class="text-[11px] leading-4 text-base-content/60 mt-0.5">${extremesDescription}</p>
+					<p class="text-2xs leading-4 text-base-content/60 mt-0.5">${extremesDescription}</p>
 				</div>
 
 				<div class="min-w-0">
 					<div class="text-xs text-base-content/60 mb-0.5">${riskTitle}</div>
 					@if(drawdownAvailable)
 						<%-- 수익률의 짝이 되는 위험 지표. 입출금을 제거한 기준가로 계산해 입금에 희석되지 않는다. --%>
-						<div class="text-lg font-bold leading-none text-loss">
+						<div class="text-lg font-semibold leading-none text-loss">
 							${StockFormatUtil.pct(maxDrawdownPct, 2)}
 						</div>
-						<p class="text-[11px] leading-4 mt-0.5">
+						<p class="text-2xs leading-4 mt-0.5">
 							<span class="text-base-content/60">${maxDrawdownLabel}</span>
 							@if(drawdownRangeAvailable)
 								<%-- 두 날짜 사이 화살표는 눈으로만 읽는다. 낭독기에는 '부터 ~ 까지' 를 준다 -
@@ -298,7 +298,7 @@
 					@endif
 					@if(currentDrawdownAvailable)
 						<%-- 지금 전고점 대비 어디쯤인지. 최대 낙폭(과거)과 달리 현재 상태를 말해준다. --%>
-						<p class="text-[11px] leading-4 mt-0.5">
+						<p class="text-2xs leading-4 mt-0.5">
 							<span class="text-base-content/60">${currentDrawdownLabel}</span>
 							@if(atPeak)
 								<span class="font-semibold text-profit">${atPeakLabel}</span>
@@ -308,7 +308,7 @@
 						</p>
 					@endif
 					@if(drawdownAvailable || currentDrawdownAvailable)
-						<p class="text-[11px] leading-4 mt-0.5 text-base-content/60">${riskDescription}</p>
+						<p class="text-2xs leading-4 mt-0.5 text-base-content/60">${riskDescription}</p>
 					@endif
 
 				</div>
@@ -318,7 +318,7 @@
 
 	<%-- 평가손익은 기간이 아니라 <b>기말 시점</b> 값이라 아래에 한 줄로 둔다(시작일만 바꾸면 값이 그대로다).
 		 기간 중 원금 변동도 같은 줄에 붙여, 위의 수익률들이 무엇 위에서 계산됐는지 보이게 한다. --%>
-	<div class="mt-3 pt-3 border-t border-base-200 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[11px] leading-4">
+	<div class="mt-3 pt-3 border-t border-base-200 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-2xs leading-4">
 		<span class="text-base-content/60">${unrealizedLabel}</span>
 		@if(unrealizedAvailable)
 			<span class="amount-value font-semibold ${unrealizedEndPositive ? "text-profit" : "text-loss"}">${unrealizedEnd.signum() == 0 ? "" : (unrealizedEndPositive ? "+" : "-")}&#8361;${amountFormat.format(unrealizedEnd.abs())}</span>
@@ -339,5 +339,5 @@
 			<span class="amount-value font-medium text-base-content/60">${principalDelta.signum() == 0 ? "" : (principalIncreased ? "+" : "-")}&#8361;${amountFormat.format(principalDelta.abs())}</span>
 		@endif
 	</div>
-	<p class="text-[11px] leading-4 text-base-content/60 mt-1">${unrealizedDescription}</p>
+	<p class="text-2xs leading-4 text-base-content/60 mt-1">${unrealizedDescription}</p>
 </div>

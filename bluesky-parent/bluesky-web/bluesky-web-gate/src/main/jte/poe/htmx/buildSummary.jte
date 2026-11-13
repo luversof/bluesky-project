@@ -22,7 +22,7 @@
 		<%-- 캐릭터 요약 --%>
 		@template._components.ui.card(bodyClass = "gap-3", body = @`
 				<div class="flex flex-wrap items-center gap-3">
-					<h2 class="text-lg font-bold">${classLine}</h2>
+					<h2 class="text-lg font-semibold">${classLine}</h2>
 					<span class="badge badge-primary badge-outline">${levelLabel}</span>
 					@if(!build.treeVersion().isEmpty())
 						<%-- 무자비 트리(3.27.ruthless — PoB GameVersions)는 게임 낱말 '무자비'(ClientStrings LeagueRuthless, 10-29 R8) --%>
@@ -42,8 +42,8 @@
 					<div class="grid grid-cols-[repeat(auto-fit,minmax(min(8rem,100%),1fr))] sm:grid-cols-4 lg:grid-cols-7 gap-2">
 						@for(PoeBuild.PlayerStat stat : build.stats())
 							<div class="rounded-box bg-base-200/60 px-3 py-2">
-								<div class="text-[11px] font-semibold text-base-content/60">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
-								<div class="text-sm font-bold font-mono">${stat.value()}</div>
+								<div class="text-2xs font-semibold text-base-content/60">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
+								<div class="text-sm font-semibold font-mono">${stat.value()}</div>
 							</div>
 						@endfor
 					</div>
@@ -76,7 +76,7 @@
 		<%-- 스킬 그룹 --%>
 		@if(!build.skillGroups().isEmpty())
 			@template._components.ui.card(bodyClass = "gap-3", body = @`
-					<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.build.skills")}</h2>
+					<h2 class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("poe.build.skills")}</h2>
 					<div class="space-y-2">
 						@for(PoeBuild.SkillGroup skillGroup : build.skillGroups())
 							<div class="flex flex-wrap items-center gap-1.5 rounded-box bg-base-200/40 px-3 py-2${skillGroup.enabled() ? "" : " opacity-45"}">
@@ -119,7 +119,7 @@
 		<%-- 장비 --%>
 		@if(!build.items().isEmpty())
 			@template._components.ui.card(bodyClass = "gap-3", body = @`
-					<h2 class="text-sm font-bold text-base-content/70">${MessageUtil.getMessage("poe.build.items")}</h2>
+					<h2 class="text-sm font-semibold text-base-content/70">${MessageUtil.getMessage("poe.build.items")}</h2>
 					<div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
 						@for(PoeBuild.BuildItem item : build.items())
 														!{
@@ -176,7 +176,7 @@
 											<div class="truncate text-xs text-base-content/60">${displayBase}</div>
 										@endif
 										@if(showMods)
-											<div class="text-[11px] leading-4 text-[#8888ff]/80 line-clamp-3">${String.join(" / ", displayMods)}</div>
+											<div class="text-2xs leading-4 text-[#8888ff]/80 line-clamp-3">${String.join(" / ", displayMods)}</div>
 										@endif
 									</div>
 									<div data-poe-tip class="hidden">

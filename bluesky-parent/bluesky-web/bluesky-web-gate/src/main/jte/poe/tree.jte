@@ -33,7 +33,7 @@
 	contentPoe = @`
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-baseline gap-3">
-				<h1 class="text-2xl font-bold">${pageTitle}</h1>
+				<h1 class="text-2xl font-semibold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
 				@if(!treeVersions.isEmpty())
 					<%-- 버전별 아카이브 조회 — 빈 값=현행(최신) 데이터 --%>
@@ -105,11 +105,11 @@
 					<div id="poeTreeTooltip" class="pointer-events-none absolute hidden z-10 max-w-xs poe-node-popup overflow-hidden"></div>
 					<div id="poeTreeEvalPanel" class="hidden absolute left-2 top-2 z-10 w-72 max-h-[70%] overflow-y-auto rounded shadow-2xl border border-primary/50 bg-base-300/95">
 						<div class="sticky top-0 border-b border-primary/40 bg-base-200 text-xs px-4 py-1 flex items-center">
-							<span class="flex-1 text-center font-bold">${MessageUtil.getMessage("poe.tree.eval.title")}</span>
+							<span class="flex-1 text-center font-semibold">${MessageUtil.getMessage("poe.tree.eval.title")}</span>
 							<button id="poeTreeEvalClose" type="button" class="shrink-0 px-1 text-base-content/60 hover:text-base-content" title="${MessageUtil.getMessage("poe.tree.tool.close")}">✕</button>
 						</div>
 						<div class="border-b border-primary/20 bg-base-200/60 p-2 space-y-1">
-							<div class="text-[10px] text-base-content/60 leading-4">${MessageUtil.getMessage("poe.tree.eval.gem.help")}</div>
+							<div class="text-2xs text-base-content/60 leading-4">${MessageUtil.getMessage("poe.tree.eval.gem.help")}</div>
 							<div class="flex items-center gap-1.5">
 								<input id="poeTreeEvalGem" list="poeTreeGemList" type="text" class="input input-xs input-bordered flex-1" placeholder="${MessageUtil.getMessage("poe.tree.eval.gem")}" aria-label="${MessageUtil.getMessage("poe.tree.eval.gem")}">
 								<button id="poeTreeEvalRerun" type="button" class="btn btn-xs btn-primary">${MessageUtil.getMessage("poe.tree.eval.rerun")}</button>

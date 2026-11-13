@@ -47,7 +47,7 @@
 }
 @if(hasWeapon || hasArmour || hasFlask || hasSpirit || quality > 0)
 	@if(leadSep)<div class="poe-tt-sepimg"></div>@endif
-	<div class="px-4 py-1.5 text-[12px] space-y-0.5 text-center">
+	<div class="px-4 py-1.5 text-xs space-y-0.5 text-center">
 		@if(classLine != null && hasWeapon)<div class="${label}" data-tt-weapon-class>${classLine}</div>@endif
 		@if(quality > 0)<div data-tt-quality><span class="${label}">${MessageUtil.getMessage("poe.items.detail.quality")}: </span><span class="text-[#8888ff]">+${quality}%</span></div>@endif
 		@if(hasSpirit)<div data-tt-spirit><span class="${label}">${MessageUtil.getMessage("poe2.items.spirit")}: </span><span class="${spiritR.changed() ? "text-[#8888ff]" : value}">${spiritR.text()}</span></div>@endif

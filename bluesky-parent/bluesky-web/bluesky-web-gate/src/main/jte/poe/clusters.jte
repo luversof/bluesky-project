@@ -30,7 +30,7 @@
 	contentPoe = @`
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-baseline gap-3">
-				<h1 class="text-2xl font-bold">${pageTitle}</h1>
+				<h1 class="text-2xl font-semibold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
 				<span class="text-sm text-base-content/60">${ko ? "스킬 군 주얼 주요 스킬 사전 — " : "Cluster jewel notables — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터의 스킬 군 주얼 홈에서 구성 →" : "configure in tree editor →"}</a></span>
 				<span class="text-xs font-mono text-base-content/60">${notables.size()}</span>
@@ -68,7 +68,7 @@
 						</div>
 						!{List<String> clusterLines = ko && n.statsKo() != null && !n.statsKo().isEmpty() ? n.statsKo() : n.stats();}
 						@for(String line : clusterLines)
-							<div class="poe-entry-stat text-[12px] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+							<div class="poe-entry-stat text-xs whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 						@endfor
 					</div>
 				@endfor

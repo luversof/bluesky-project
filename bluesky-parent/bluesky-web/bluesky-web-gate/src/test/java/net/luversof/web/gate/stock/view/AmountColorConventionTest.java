@@ -87,7 +87,7 @@ class AmountColorConventionTest {
         .contains(AMOUNT_MARKER);
 
     // 반대로 글자 그대로 박힌 것은 걸려야 한다.
-    String forbidden = "class=\"text-xl font-bold text-error amount-value\"";
+    String forbidden = "class=\"text-xl font-semibold text-error amount-value\"";
     String literal = withoutExpressions(classValues(forbidden).get(0));
     assertThat(hasToken(literal, "text-error")).as("글자 그대로 박힌 색을 놓치면 가드가 헛돈다").isTrue();
 

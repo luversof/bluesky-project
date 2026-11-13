@@ -14,15 +14,15 @@
 					@if(oil.icon() != null)
 						<img src="/poe-data/poe1/icons/${oil.icon()}" class="w-6 h-6 object-contain" alt="${ko ? oil.nameKo() : oil.name()}" title="${ko ? oil.nameKo() : oil.name()}" loading="lazy">
 					@else
-						<span class="text-[10px]">${oil.slug()}</span>
+						<span class="text-2xs">${oil.slug()}</span>
 					@endif
 				@endfor
 			</span>
 			<span class="min-w-0">
 				<%-- 이름 클릭 → 트리 에디터에서 이 주요 스킬을 성유 상태로 열고 중앙 표시(an=+focus=) --%>
-				<a class="block text-[13px] font-semibold link-hover" href="/poe/tree?an=${a.nodeId()}&focus=${a.nodeId()}" title="${ko ? "트리에서 보기" : "View on tree"}">${PoeText.name(a.nameKo(), a.name())}</a>
+				<a class="block text-sm font-semibold link-hover" href="/poe/tree?an=${a.nodeId()}&focus=${a.nodeId()}" title="${ko ? "트리에서 보기" : "View on tree"}">${PoeText.name(a.nameKo(), a.name())}</a>
 				@for(String line : (ko && a.statsKo() != null && !a.statsKo().isEmpty() ? a.statsKo() : a.stats()))
-					<span class="block text-[12px] text-base-content/70">$unsafe{PoeText.highlightValues(line)}</span>
+					<span class="block text-xs text-base-content/70">$unsafe{PoeText.highlightValues(line)}</span>
 				@endfor
 			</span>
 		</div>

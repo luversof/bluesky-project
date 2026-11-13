@@ -16,7 +16,7 @@
 		<button type="button" class="poe-popup-reminder poe-kw-hint text-center" data-kw-hint aria-expanded="false">${MessageUtil.getMessage("poe2.tt.keywords.hint")} — ${String.join(" · ", kwTerms)}</button>
 		<div class="poe-kw-box border-t border-white/10 pt-1" data-kw-box>
 			@for(Poe2.Keyword k : keywords)
-				<div class="text-[12px] font-semibold text-[#8888ff] mt-1">${PoeText.name(k.termKo(), k.term())}</div>
+				<div class="text-xs font-semibold text-[#8888ff] mt-1">${PoeText.name(k.termKo(), k.term())}</div>
 				<div class="poe-popup-reminder">${PoeText.name(k.defKo(), k.def())}</div>
 			@endfor
 		</div>

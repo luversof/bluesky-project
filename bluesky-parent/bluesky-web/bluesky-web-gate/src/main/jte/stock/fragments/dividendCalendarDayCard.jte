@@ -39,15 +39,15 @@
 	<span class="sr-only">${dayTitle}@if(dayHoliday != null), ${dayHoliday}@endif</span>
 	<div class="flex items-start gap-3">
 		<div class="w-12 shrink-0 text-center leading-tight" aria-hidden="true">
-			@if(showMonth)<div class="text-[11px] text-base-content/60" data-daycard-month>${monthName}</div>@endif
+			@if(showMonth)<div class="text-2xs text-base-content/60" data-daycard-month>${monthName}</div>@endif
 			<div class="text-2xl font-medium ${dayRed ? "text-error" : ""}">${day.date().getDayOfMonth()}</div>
-			<div class="text-[11px] ${dayRed ? "text-error/80" : "text-base-content/60"}">${day.date().getDayOfWeek().getDisplayName(TextStyle.SHORT, locale)}</div>
-			@if(dayHoliday != null)<div class="block tooltip" data-tip="${dayHoliday}"><div class="truncate text-[10px] leading-tight text-error/80">${dayHoliday}</div></div>@endif
+			<div class="text-2xs ${dayRed ? "text-error/80" : "text-base-content/60"}">${day.date().getDayOfWeek().getDisplayName(TextStyle.SHORT, locale)}</div>
+			@if(dayHoliday != null)<div class="block tooltip" data-tip="${dayHoliday}"><div class="truncate text-2xs leading-tight text-error/80">${dayHoliday}</div></div>@endif
 		</div>
 		<div class="min-w-0 flex-1">
 			@if(estimatedDay)
 			<div class="mb-1 flex flex-wrap items-baseline gap-x-2 font-mono" data-daycard-totals>
-				<span class="text-base font-medium text-dividend" data-daycard-latest-total><span class="sr-only">${dayTotalLabel} </span><span class="mr-1 text-[11px] font-normal text-base-content/60">${latestLabel}</span><span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(day.latestTotal()))}</span></span>
+				<span class="text-base font-medium text-dividend" data-daycard-latest-total><span class="sr-only">${dayTotalLabel} </span><span class="mr-1 text-2xs font-normal text-base-content/60">${latestLabel}</span><span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(day.latestTotal()))}</span></span>
 				<span class="text-xs text-base-content/60" data-daycard-average-total>${avgLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(day.averageTotal()))}</span></span>
 			</div>
 			@else
@@ -67,7 +67,7 @@
 						<span class="max-w-full min-w-0 inline-block tooltip" data-tip="${entry.name()}"><span class="truncate text-xs block">${entry.name()}</span></span>
 						<%-- 넓은 화면에서 이름(왼쪽)과 금액(오른쪽) 사이가 수백 px 라 줄을 눈으로 잇기 어려웠다 - 점선 길잡이(2026-10-28 12차 자율). --%>
 						<span class="hidden sm:block min-w-4 flex-1 self-center border-b border-dotted border-base-content/20" aria-hidden="true" data-calendar-entry-leader></span>
-						<span class="flex flex-wrap items-baseline gap-x-2 font-mono text-[11px] sm:shrink-0">
+						<span class="flex flex-wrap items-baseline gap-x-2 font-mono text-2xs sm:shrink-0">
 							@if(entry.actualAmount())
 							<span class="text-xs font-medium text-dividend"><span class="sr-only">${actualGrossLabel} </span><span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.latest()))}</span></span>
 							<span class="text-base-content/60">${actualNetLabel} <span class="amount-value">${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(entry.average()))}</span></span>

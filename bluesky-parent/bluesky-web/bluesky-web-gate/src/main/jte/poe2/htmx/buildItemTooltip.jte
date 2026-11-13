@@ -42,27 +42,27 @@
 
 <div class="poe-tooltip ${rarityClass} w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${color}" data-build-item-tip>
 	<div class="poe-tt-band ${twoLine ? "poe-tt-band-2" : ""}">
-		<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${color}">${name}</div>
+		<div class="text-center font-semibold text-base leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${color}">${name}</div>
 		@if(twoLine)
-			<div class="text-center text-[13px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${color}">${base}</div>
+			<div class="text-center text-sm leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${color}">${base}</div>
 		@endif
 	</div>
 	<%-- 베이스 속성 칸 · 요구 사항(10-04 C147, PoE1 빌드 툴팁 짝 — 고유 · 베이스 툴팁과 같은 조각) --%>
 	@if(item.base() != null)
-		@if(!weaponBase && itemClass != null)<div class="px-4 pt-1.5 text-center text-[11px]"><span class="text-white/70" data-tt-item-class>${itemClass}</span></div>@endif
+		@if(!weaponBase && itemClass != null)<div class="px-4 pt-1.5 text-center text-2xs"><span class="text-white/70" data-tt-item-class>${itemClass}</span></div>@endif
 		@template.poe2.htmx.baseProps(base = item.base(), quality = item.quality() == null ? 0 : item.quality(), lines = item.mods(), defences = item.defences(), classLine = weaponBase ? itemClass : null, leadSep = !weaponBase)
 		<%-- 요구 능력치에 이 아이템 옵션 반영(10-08 C178, mods = 영문 원문 — 암시 포함) --%>
 		@template.poe2.htmx.requirements(level = item.levelReq() != null ? item.levelReq() : item.base().reqLevel(), base = item.base(), explicits = item.mods())
 	@endif
 	@if(item.itemLevel() != null)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px] text-white/60" data-tt-ilvl>${PoeText.isKorean() ? "아이템 레벨 " : "Item Level "}<span class="text-white">${item.itemLevel()}</span></div>
+		<div class="px-4 py-1.5 text-center text-xs text-white/60" data-tt-ilvl>${PoeText.isKorean() ? "아이템 레벨 " : "Item Level "}<span class="text-white">${item.itemLevel()}</span></div>
 	@endif
 	@if(!enchantIdx.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center space-y-0.5" data-tt-enchants>
 			@for(int ei : enchantIdx)
-				<div class="text-[12px] leading-snug text-[#b8daf2] whitespace-pre-line" data-tt-kind="${kinds.get(ei)}">$unsafe{PoeText.highlightValues(lines.get(ei))}</div>
+				<div class="text-xs leading-snug text-[#b8daf2] whitespace-pre-line" data-tt-kind="${kinds.get(ei)}">$unsafe{PoeText.highlightValues(lines.get(ei))}</div>
 			@endfor
 		</div>
 	@endif
@@ -70,7 +70,7 @@
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center space-y-0.5 bg-white/[0.03]">
 			@for(String line : implicits)
-				<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+				<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 			@endfor
 		</div>
 	@endif
@@ -83,7 +83,7 @@
 					<%-- 타락은 인게임처럼 붉게(다른 툴팁과 같은 색) --%>
 					<%-- 맨 아래 한 줄로 옮김(10-05 C158, 고유 툴팁 C157 과 같은 자리) --%>
 				@else
-					<div class="text-[12px] leading-snug ${"rune".equals(explicitKinds.get(xi)) ? "text-[#b8daf2]" : PoeText.modKindClass(explicitKinds, explicits.size(), xi)} whitespace-pre-line" data-tt-kind="${explicitKinds.get(xi)}">$unsafe{PoeText.highlightValues(line)}</div>
+					<div class="text-xs leading-snug ${"rune".equals(explicitKinds.get(xi)) ? "text-[#b8daf2]" : PoeText.modKindClass(explicitKinds, explicits.size(), xi)} whitespace-pre-line" data-tt-kind="${explicitKinds.get(xi)}">$unsafe{PoeText.highlightValues(line)}</div>
 				@endif
 			@endfor
 		</div>
@@ -91,17 +91,17 @@
 	<%-- 타락 줄 = 옵션 바로 아래 · 로어 위(10-09 C216 — poedb 목소리 · poe2db 신념의 프리즘 툴팁 순서: 옵션 → Corrupted → 로어 → 사용 설명. 예전(C157)엔 맨 아래) --%>
 	@if(sanctifiedItem)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#e8d08a]" data-tt-sanctified>${PoeText.isKorean() ? "축성" : "Sanctified"}</div>
+		<div class="px-4 py-1.5 text-center text-xs font-semibold text-[#e8d08a]" data-tt-sanctified>${PoeText.isKorean() ? "축성" : "Sanctified"}</div>
 	@endif
 	@if(corruptedItem)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-center text-[12px] font-bold text-[#d20000]" data-tt-corrupted>${twiceCorrupted ? (PoeText.isKorean() ? "두 번 타락" : "Twice Corrupted") : MessageUtil.getMessage("poe.common.corrupted")}</div>
+		<div class="px-4 py-1.5 text-center text-xs font-semibold text-[#d20000]" data-tt-corrupted>${twiceCorrupted ? (PoeText.isKorean() ? "두 번 타락" : "Twice Corrupted") : MessageUtil.getMessage("poe.common.corrupted")}</div>
 	@endif
 	@if(flavourLines != null && !flavourLines.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-2 text-center space-y-0.5" data-tt-flavour>
 			@for(String fl : flavourLines)
-				<div class="text-[12px] leading-snug italic text-[#af6025]">${fl}</div>
+				<div class="text-xs leading-snug italic text-[#af6025]">${fl}</div>
 			@endfor
 		</div>
 	@endif
@@ -109,7 +109,7 @@
 	!{ String helpKey = net.luversof.web.gate.poe.PoeItemDescription.poe2Key(item.base() == null ? null : item.base().itemClass()); }
 	@if(helpKey != null)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${io.github.luversof.boot.context.support.MessageUtil.getMessage(helpKey)}</div>
+		<div class="px-4 py-2 text-center text-xs leading-snug text-[#7f7f7f]" data-tt-help>${io.github.luversof.boot.context.support.MessageUtil.getMessage(helpKey)}</div>
 	@endif
 	<div class="pt-1.5"></div>
 	@template.poe2.htmx.keywordBox(keywords = item.keywords())

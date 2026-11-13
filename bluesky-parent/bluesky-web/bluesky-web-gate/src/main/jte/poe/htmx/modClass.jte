@@ -36,7 +36,7 @@
 				   hx-get="/poe/htmx/mods?itemClass=${clsEnc}&variant=${v.key()}&influence=${mods.influence()}"
 				   hx-target="#poeModBody" hx-swap="innerHTML" hx-push-url="${url}">
 					${ko ? v.nameKo() : v.name()}
-					<span class="ml-1 text-[10px] opacity-60">${v.prefixCount() + v.suffixCount()}</span>
+					<span class="ml-1 text-2xs opacity-60">${v.prefixCount() + v.suffixCount()}</span>
 				</a>
 			@endfor
 		</div>
@@ -54,7 +54,7 @@
 					<a class="poe-chip badge ${inf.key().equals(mods.influence()) ? "badge-accent" : "badge-ghost"} cursor-pointer"
 					   href="${influenceHref}influence=${inf.key()}">
 						${ko ? inf.nameKo() : inf.name()}
-						<span class="ml-1 text-[10px] opacity-60">+${inf.extraCount()}</span>
+						<span class="ml-1 text-2xs opacity-60">+${inf.extraCount()}</span>
 					</a>
 				@endfor
 			@else
@@ -70,7 +70,7 @@
 					   hx-get="/poe/htmx/mods?itemClass=${clsEnc}&variant=${mods.variant()}&influence=${inf.key()}"
 					   hx-target="#poeModBody" hx-swap="innerHTML" hx-push-url="${url}">
 						${ko ? inf.nameKo() : inf.name()}
-						<span class="ml-1 text-[10px] opacity-60">+${inf.extraCount()}</span>
+						<span class="ml-1 text-2xs opacity-60">+${inf.extraCount()}</span>
 					</a>
 				@endfor
 			@endif
@@ -115,7 +115,7 @@
 	<div id="mod-sec-affix" class="grid gap-4 md:grid-cols-2 scroll-mt-20">
 		<%-- 접두 --%>
 		<div class="min-w-0">
-			<h2 class="mb-2 flex items-baseline gap-2 font-bold text-[#8888ff]">
+			<h2 class="mb-2 flex items-baseline gap-2 font-semibold text-[#8888ff]">
 				${ko ? "접두" : "Prefixes"}
 				<span class="text-xs text-base-content/60">${mods.prefixes().size()}</span>
 			</h2>
@@ -127,7 +127,7 @@
 		</div>
 		<%-- 접미 --%>
 		<div class="min-w-0">
-			<h2 class="mb-2 flex items-baseline gap-2 font-bold text-[#8888ff]">
+			<h2 class="mb-2 flex items-baseline gap-2 font-semibold text-[#8888ff]">
 				${ko ? "접미" : "Suffixes"}
 				<span class="text-xs text-base-content/60">${mods.suffixes().size()}</span>
 			</h2>
@@ -144,7 +144,7 @@
 	<div id="poeCraftCalc" class="sticky bottom-2 z-10 mt-3 hidden flex-wrap items-center gap-2 rounded-box border border-primary/30 bg-base-100 px-3 py-2 text-sm shadow-lg">
 		<span class="font-semibold text-primary" id="poeCraftCalcLabel"></span>
 		<span class="font-mono" id="poeCraftCalcValue"></span>
-		<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("poe.mods.odds.approx")}</span>
+		<span class="text-2xs text-base-content/60">${MessageUtil.getMessage("poe.mods.odds.approx")}</span>
 		<button type="button" class="btn btn-ghost btn-xs ml-auto" id="poeCraftCalcClear">${MessageUtil.getMessage("poe.mods.odds.clear")}</button>
 	</div>
 	<script nonce="${CspNonceHolder.getNonce()}">
@@ -226,7 +226,7 @@
 		}
 		<div id="mod-sec-corrupted" class="mt-4 rounded-2xl bg-base-100 p-4 shadow-sm scroll-mt-20">
 			<div class="mb-2 flex flex-wrap items-baseline gap-2">
-				<h2 class="font-bold text-red-500">${ko ? "바알 오브 타락 고정 속성" : "Corrupted implicits"}</h2>
+				<h2 class="font-semibold text-red-500">${ko ? "바알 오브 타락 고정 속성" : "Corrupted implicits"}</h2>
 				<span class="text-sm text-base-content/60">${ko ? "타락 시 뜰 수 있는 고정 속성 — 영향력과 무관" : "Possible implicits when corrupting — influence-independent"}</span>
 				<span class="text-xs font-mono text-base-content/60">${mods.corrupted().size()}</span>
 			</div>
@@ -246,7 +246,7 @@
 		}
 		<div id="mod-sec-enchant" class="mt-4 rounded-2xl bg-base-100 p-4 shadow-sm scroll-mt-20">
 			<div class="mb-2 flex flex-wrap items-baseline gap-2">
-				<h2 class="font-bold text-violet-500">${ko ? "플라스크 인챈트" : "Flask enchants"}</h2>
+				<h2 class="font-semibold text-violet-500">${ko ? "플라스크 인챈트" : "Flask enchants"}</h2>
 				<span class="text-sm text-base-content/60">${ko ? "주입의 오브(사용 조건)·자극의 오브(강화) — 오브당 1개 부여" : "Instilling + Enkindling orbs"}</span>
 				<span class="text-xs font-mono text-base-content/60">${mods.enchants().size()}</span>
 			</div>
@@ -262,7 +262,7 @@
 	@if(eldritch != null)
 		<div id="mod-sec-eldritch" class="mt-4 rounded-2xl bg-base-100 p-4 shadow-sm scroll-mt-20">
 			<div class="mb-2 flex flex-wrap items-baseline gap-2">
-				<h2 class="font-bold text-amber-500">${ko ? "섬뜩한 고정 속성" : "Eldritch implicits"}</h2>
+				<h2 class="font-semibold text-amber-500">${ko ? "섬뜩한 고정 속성" : "Eldritch implicits"}</h2>
 				<span class="text-sm text-base-content/60">${ko ? "총주교·포식자 화폐로 부여 — 팩션당 1개씩 최대 2개" : "Exarch + Eater — up to one each"}</span>
 			</div>
 			@template.poe.htmx.eldritchPools(eldritch = eldritch, ko = ko)
@@ -279,7 +279,7 @@
 		}
 		<div id="mod-sec-essence" class="mt-4 rounded-2xl bg-base-100 p-4 shadow-sm scroll-mt-20">
 			<div class="mb-2 flex flex-wrap items-baseline gap-2">
-				<h2 class="font-bold text-teal-500">${ko ? "에센스" : "Essences"}</h2>
+				<h2 class="font-semibold text-teal-500">${ko ? "에센스" : "Essences"}</h2>
 				<span class="text-sm text-base-content/60">${ko ? "에센스로 제작 시 이 옵션이 보장 — 계열별 상위 등급 먼저" : "Guaranteed mod when crafting with an essence"}</span>
 				<span class="text-xs font-mono text-base-content/60">${essFamilies.size()}</span>
 			</div>
@@ -294,17 +294,17 @@
 								<img src="/poe-data/poe1/icons/${topEss.icon()}" class="w-6 h-6 object-contain shrink-0" alt="${ko ? topEss.nameKo() : topEss.name()}" loading="lazy">
 							@endif
 							<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), fam.getValue().size())}</span>
-							<span class="text-[10px] font-mono shrink-0 ${"prefix".equals(topEss.gen()) ? "text-[#8888ff]" : "text-amber-400"}">${"prefix".equals(topEss.gen()) ? (ko ? "접두" : "pre") : (ko ? "접미" : "suf")}</span>
+							<span class="text-2xs font-mono shrink-0 ${"prefix".equals(topEss.gen()) ? "text-[#8888ff]" : "text-amber-400"}">${"prefix".equals(topEss.gen()) ? (ko ? "접두" : "pre") : (ko ? "접미" : "suf")}</span>
 							<span class="min-w-0 flex-1">
 								@for(String line : (ko ? topEss.ko() : topEss.en()))
-									<span class="text-[13px] text-teal-400 block truncate">$unsafe{PoeText.highlightValues(line)}</span>
+									<span class="text-sm text-teal-400 block truncate">$unsafe{PoeText.highlightValues(line)}</span>
 								@endfor
 							</span>
-							@if(!ko)<span class="text-[10px] text-base-content/60 min-w-0 max-w-32 truncate max-sm:hidden" title="${fam.getKey()}">${fam.getKey()}</span>@endif
+							@if(!ko)<span class="text-2xs text-base-content/60 min-w-0 max-w-32 truncate max-sm:hidden" title="${fam.getKey()}">${fam.getKey()}</span>@endif
 						</summary>
 						<div class="border-t border-base-200 px-3 py-1.5 space-y-1">
 							@for(var e : fam.getValue())
-								<div class="flex items-center gap-2 text-[12px]">
+								<div class="flex items-center gap-2 text-xs">
 									@if(e.icon() != null)
 										<img src="/poe-data/poe1/icons/${e.icon()}" class="w-5 h-5 object-contain shrink-0" alt="" loading="lazy">
 									@endif
@@ -339,7 +339,7 @@
 		}
 		<div id="mod-sec-bench" class="mt-4 rounded-2xl bg-base-100 p-4 shadow-sm scroll-mt-20">
 			<div class="mb-2 flex flex-wrap items-baseline gap-2">
-				<h2 class="font-bold text-lime-500">${ko ? "작업대" : "Crafting bench"}</h2>
+				<h2 class="font-semibold text-lime-500">${ko ? "작업대" : "Crafting bench"}</h2>
 				<span class="text-sm text-base-content/60">${ko ? "화폐를 내고 확정 부여 — 계열별 상위 등급 먼저, 비용 표기" : "Deterministic crafts for currency"}</span>
 				<span class="text-xs font-mono text-base-content/60">${benchFamilies.size()}</span>
 			</div>
@@ -351,16 +351,16 @@
 						<summary class="cursor-pointer select-none px-3 py-2 hover:bg-base-200/50 list-none flex items-center gap-2">
 							<input type="checkbox" class="checkbox checkbox-xs poe-craft-pick shrink-0" title="${ko ? "동시 확률 계산에 작업대 제작으로 포함" : "Include as deterministic craft"}">
 							<span class="text-xs text-base-content/60 font-mono shrink-0" title="${MessageUtil.getMessage("poe.mods.tiers.title")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), fam.getValue().size())}</span>
-							<span class="text-[10px] font-mono shrink-0 ${"prefix".equals(topBench.gen()) ? "text-[#8888ff]" : "text-amber-400"}">${"prefix".equals(topBench.gen()) ? (ko ? "접두" : "pre") : (ko ? "접미" : "suf")}</span>
+							<span class="text-2xs font-mono shrink-0 ${"prefix".equals(topBench.gen()) ? "text-[#8888ff]" : "text-amber-400"}">${"prefix".equals(topBench.gen()) ? (ko ? "접두" : "pre") : (ko ? "접미" : "suf")}</span>
 							<span class="min-w-0 flex-1">
 								@for(String line : (ko ? topBench.ko() : topBench.en()))
-									<span class="text-[13px] text-lime-400 block truncate">$unsafe{PoeText.highlightValues(line)}</span>
+									<span class="text-sm text-lime-400 block truncate">$unsafe{PoeText.highlightValues(line)}</span>
 								@endfor
 							</span>
 						</summary>
 						<div class="border-t border-base-200 px-3 py-1.5 space-y-1">
 							@for(var b : fam.getValue())
-								<div class="flex items-center gap-2 text-[12px]">
+								<div class="flex items-center gap-2 text-xs">
 									<span class="shrink-0 font-mono text-base-content/60 w-6" title="${ko ? "작업대 등급" : "Bench tier"}">T${b.tier()}</span>
 									<span class="min-w-0 flex-1 whitespace-pre-line">
 										!{java.util.List<String> mx = ko ? b.ko() : b.en();}
@@ -370,7 +370,7 @@
 										@endfor
 									</span>
 									@if(b.cost() != null && !b.cost().isEmpty())
-										<span class="shrink-0 inline-flex items-center gap-1 text-[11px] text-base-content/60">
+										<span class="shrink-0 inline-flex items-center gap-1 text-2xs text-base-content/60">
 											@for(var c : b.cost())${c.count()}×@if(c.icon() != null)<img src="/poe-data/poe1/icons/${c.icon()}" class="w-4 h-4 object-contain inline-block" alt="${ko ? c.nameKo() : c.name()}" title="${ko ? c.nameKo() : c.name()}" loading="lazy" data-onerror="text" data-onerror-text="${ko ? c.nameKo() : c.name()}">@else ${ko ? c.nameKo() : c.name()}@endif @endfor
 										</span>
 									@endif
@@ -388,7 +388,7 @@
 	@if(anoints != null)
 		<div id="mod-sec-anoint" class="mt-4 rounded-2xl bg-base-100 p-4 shadow-sm scroll-mt-20">
 			<div class="mb-2 flex flex-wrap items-baseline gap-2">
-				<h2 class="font-bold text-amber-500">${ko ? "성유" : "Anointments"}</h2>
+				<h2 class="font-semibold text-amber-500">${ko ? "성유" : "Anointments"}</h2>
 				<span class="text-sm text-base-content/60">${ko ? "성유 3개로 목걸이에 주요 스킬 부여 — 비싼 성유 우선 정렬, 검색 필터 적용" : "3 oils grant a notable on an amulet"}</span>
 				<span class="text-xs font-mono text-base-content/60">${anoints.size()}</span>
 			</div>

@@ -66,13 +66,13 @@
 										</div>
 										<div class="min-w-0 flex-1 space-y-1">
 											<div class="flex items-baseline gap-2 flex-wrap">
-												<a class="font-bold text-[15px] truncate link-hover" href="/poe2/items/${b.slug()}" title="${b.name()}">${PoeText.name(b.nameKo(), b.name())}</a>
+												<a class="font-semibold text-base truncate link-hover" href="/poe2/items/${b.slug()}" title="${b.name()}">${PoeText.name(b.nameKo(), b.name())}</a>
 												@if(korean)
 													<span class="text-xs text-base-content/60 truncate">${b.name()}</span>
 												@endif
 											</div>
 											!{ String summary = net.luversof.web.gate.poe2.Poe2View.cardSummary(b); List<String> impl = net.luversof.web.gate.poe2.Poe2View.implicitLines(b); }
-											<div class="flex items-center gap-2 text-[13px] text-base-content/70">
+											<div class="flex items-center gap-2 text-sm text-base-content/70">
 												<span class="font-mono truncate" data-card-summary>${summary}</span>
 												<span class="ml-auto shrink-0 text-base-content/60">${MessageUtil.getMessage("poe.gems.detail.required.level")} ${nz(b.reqLevel())}</span>
 											</div>

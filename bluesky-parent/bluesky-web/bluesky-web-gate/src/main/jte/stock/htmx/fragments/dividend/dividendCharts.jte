@@ -13,7 +13,7 @@
 
 		<%-- Left: 비중 분석 --%>
 		@template._components.ui.card(cssClass = "flex-[2] min-w-[200px]", body = @`
-				<h2 class="text-sm font-bold mb-3" data-page-section>${weightAnalysisLabel}</h2>
+				<h2 class="text-sm font-semibold mb-3" data-page-section>${weightAnalysisLabel}</h2>
 				<%-- 범례는 자리가 모자라면 아래 줄로 내려간다. 캔버스가 flex-shrink-0 w-[200px] 라
 				     좁은 카드에서는 남는 폭이 음수가 되고 w-0 flex-1 인 범례가 0px 로 찌부러져 통째로 사라졌다
 				     (실측 2026-09-15, 640px 2열 배치: 카드 203px 안에 캔버스 200px + gap 12px - 범례 폭 0).
@@ -35,7 +35,7 @@
 
 		<%-- Right: Monthly Bar Chart --%>
 		@template._components.ui.card(cssClass = "flex-[3] min-w-[280px] overflow-visible", body = @`
-				<h2 class="font-bold text-sm mb-3" data-page-section>${monthlyDividendsLabel}</h2>
+				<h2 class="font-semibold text-sm mb-3" data-page-section>${monthlyDividendsLabel}</h2>
 				<div class="relative h-[280px]">
 					<canvas id="monthlyBarChart" role="img" aria-label="${monthlyDividendsLabel}" class="amount-chart"></canvas>
 				</div>

@@ -54,7 +54,7 @@
 									Poe2.ModPoolSummary first = e.getValue().stream().max(java.util.Comparator.comparingInt(Poe2.ModPoolSummary::baseCount)).orElse(e.getValue().get(0));
 									boolean on = active != null && active.itemClass().equals(e.getKey());
 								}
-								<a class="poe-chip ${on ? "poe-chip-active" : ""}" href="/poe2/mods?key=${java.net.URLEncoder.encode(first.key(), java.nio.charset.StandardCharsets.UTF_8)}" aria-current="${on ? "page" : null}" data-mods-chip>${net.luversof.web.gate.poe.PoeClassNames.poe2(first.itemClassKo(), first.itemClass())}<span class="ml-1 text-[10px] opacity-60">${first.groupCount()}</span></a>
+								<a class="poe-chip ${on ? "poe-chip-active" : ""}" href="/poe2/mods?key=${java.net.URLEncoder.encode(first.key(), java.nio.charset.StandardCharsets.UTF_8)}" aria-current="${on ? "page" : null}" data-mods-chip>${net.luversof.web.gate.poe.PoeClassNames.poe2(first.itemClassKo(), first.itemClass())}<span class="ml-1 text-2xs opacity-60">${first.groupCount()}</span></a>
 							@endfor
 						</div>
 					@endif

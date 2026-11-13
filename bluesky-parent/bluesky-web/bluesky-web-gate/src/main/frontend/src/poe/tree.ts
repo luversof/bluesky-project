@@ -1041,7 +1041,7 @@
 			// 효과 리마인더 — 공홈처럼 회색 부연으로 효과 밑에
 			for (const rem of (isKorean && eff.reminderKo) || eff.reminder || []) {
 				const remLine = document.createElement("div");
-				remLine.className = "text-[10px] text-base-content/60 leading-4";
+				remLine.className = "text-2xs text-base-content/60 leading-4";
 				remLine.textContent = rem;
 				row.appendChild(remLine);
 			}
@@ -1323,7 +1323,7 @@
 		el.replaceChildren();
 		const add = (label: string, used: number, max: number) => {
 			const span = document.createElement("span");
-			span.className = "font-mono" + (max > 0 && used > max ? " text-error font-bold" : "");
+			span.className = "font-mono" + (max > 0 && used > max ? " text-error font-semibold" : "");
 			span.textContent = label + " " + used + (max > 0 ? " / " + max : "");
 			el.appendChild(span);
 		};
@@ -1436,7 +1436,7 @@
 		if (!picked.length && !socketedJewels.length && !pickedMasteries.length && !socketedClusters.length) return;
 		picked.sort((a, b) => (a.type === b.type ? 0 : a.type === "keystone" ? -1 : 1));
 		const head = document.createElement("div");
-		head.className = "px-3 pt-2 pb-1 text-[10px] uppercase tracking-wide text-stone-400";
+		head.className = "px-3 pt-2 pb-1 text-2xs text-stone-400";
 		const total = picked.length + pickedMasteries.length + socketedJewels.length + socketedClusters.length;
 		head.textContent = isKorean ? `핵심 노드 ${total}개` : `Key nodes (${total})`;
 		panel.appendChild(head);
@@ -1452,7 +1452,7 @@
 			const stats = statLinesOf(n).filter((line) => line.trim());
 			for (const line of stats) {
 				const sub = document.createElement("div");
-				sub.className = "text-[10px] leading-4 text-stone-300 font-normal pl-4";
+				sub.className = "text-2xs leading-4 text-stone-300 font-normal pl-4";
 				sub.textContent = line;
 				row.appendChild(sub);
 			}
@@ -1553,7 +1553,7 @@
 			line.appendChild(text);
 			if (row.count > 1) {
 				const badge = document.createElement("span");
-				badge.className = "text-[10px] font-mono text-stone-400 shrink-0";
+				badge.className = "text-2xs font-mono text-stone-400 shrink-0";
 				badge.textContent = "×" + row.count;
 				line.appendChild(badge);
 			}
@@ -2933,7 +2933,7 @@
 		if (existing) return;
 		const badge = document.createElement("div");
 		badge.id = "poeTreeEvalStale";
-		badge.className = "px-2 py-1 text-[11px] font-mono text-warning border-b border-warning/40 bg-warning/10";
+		badge.className = "px-2 py-1 text-2xs font-mono text-warning border-b border-warning/40 bg-warning/10";
 		badge.textContent = isKorean ? "트리가 바뀌었습니다 — 다시 계산하세요" : "Tree changed — recalculate";
 		body.parentElement?.insertBefore(badge, body);
 	}
@@ -2952,7 +2952,7 @@
 			if (prev === undefined || prev === value) continue;
 			const diff = value - prev;
 			const delta = document.createElement("span");
-			delta.className = "ml-1 text-[10px] font-mono " + (diff > 0 ? "text-success" : "text-error");
+			delta.className = "ml-1 text-2xs font-mono " + (diff > 0 ? "text-success" : "text-error");
 			delta.textContent = (diff > 0 ? "▲+" : "▼") + Math.abs(diff).toLocaleString();
 			valueEl.appendChild(delta);
 		}
@@ -3382,7 +3382,7 @@
 		const tattooDictLink = document.createElement("a");
 		tattooDictLink.href = "/poe/tattoos";
 		tattooDictLink.target = "_blank";
-		tattooDictLink.className = "text-[11px] text-amber-300 underline decoration-dotted shrink-0";
+		tattooDictLink.className = "text-2xs text-amber-300 underline decoration-dotted shrink-0";
 		tattooDictLink.textContent = isKorean ? "사전 ↗" : "Dictionary ↗";
 		head.appendChild(tattooDictLink);
 		panel.appendChild(head);
@@ -3444,7 +3444,7 @@
 				row.appendChild(title);
 				if (mods) {
 					const sub = document.createElement("div");
-					sub.className = "text-[11px] text-sky-300 leading-4";
+					sub.className = "text-2xs text-sky-300 leading-4";
 					sub.textContent = mods;
 					row.appendChild(sub);
 				}
@@ -3493,7 +3493,7 @@
 		const anointDictLink = document.createElement("a");
 		anointDictLink.href = "/poe/mods?itemClass=Amulet#mod-sec-anoint";
 		anointDictLink.target = "_blank";
-		anointDictLink.className = "text-[11px] text-amber-300 underline decoration-dotted shrink-0";
+		anointDictLink.className = "text-2xs text-amber-300 underline decoration-dotted shrink-0";
 		anointDictLink.textContent = isKorean ? "사전 ↗" : "Dictionary ↗";
 		head.appendChild(anointDictLink);
 		panel.appendChild(head);
@@ -3543,7 +3543,7 @@
 					"block w-full text-left px-3 py-1.5 border-b border-stone-800 hover:bg-amber-900/40 " +
 					(n.id === anointPick ? "bg-amber-900/50" : "");
 				const title = document.createElement("div");
-				title.className = "flex items-center gap-1 text-[12px] font-semibold text-amber-200";
+				title.className = "flex items-center gap-1 text-xs font-semibold text-amber-200";
 				title.textContent = isKorean && n.nameKo ? n.nameKo : n.name;
 				for (const slug of n.anoint || []) {
 					const oil = oils[slug];
@@ -3557,7 +3557,7 @@
 				}
 				row.appendChild(title);
 				const sub = document.createElement("div");
-				sub.className = "text-[10px] leading-4 text-stone-300 truncate";
+				sub.className = "text-2xs leading-4 text-stone-300 truncate";
 				sub.textContent = ((isKorean && n.statsKo?.length ? n.statsKo : n.stats) || []).join(" / ");
 				row.appendChild(sub);
 				row.addEventListener("click", () => applyAnoint(n.id));
@@ -3636,7 +3636,7 @@
 				row.appendChild(name);
 				if (v.mods) {
 					const sub = document.createElement("div");
-					sub.className = "text-[11px] text-sky-300 leading-4";
+					sub.className = "text-2xs text-sky-300 leading-4";
 					sub.textContent = v.mods;
 					row.appendChild(sub);
 				}
@@ -3674,7 +3674,7 @@
 			title.textContent = jewelName(slug);
 			box.appendChild(title);
 			const hint = document.createElement("div");
-			hint.className = "text-[11px] text-base-content/60 leading-4";
+			hint.className = "text-2xs text-base-content/60 leading-4";
 			hint.textContent = isKorean
 				? "정복자와 시드에 따라 반경 안 패시브가 다른 스탯으로 바뀝니다."
 				: "Conqueror and seed decide how passives in radius are transformed.";
@@ -3699,7 +3699,7 @@
 			seedInput.setAttribute("aria-label", (isKorean ? "시드 " : "Seed ") + `${def.min} ~ ${def.max}`);
 			box.appendChild(seedInput);
 			const range = document.createElement("div");
-			range.className = "text-[10px] font-mono text-base-content/60";
+			range.className = "text-2xs font-mono text-base-content/60";
 			range.textContent = (isKorean ? "시드 범위 " : "seed ") + def.min + " ~ " + def.max;
 			box.appendChild(range);
 			const ok = document.createElement("button");
@@ -3747,13 +3747,13 @@
 				row.appendChild(title);
 				if (mods) {
 					const sub = document.createElement("div");
-					sub.className = "text-[11px] text-sky-300 leading-4";
+					sub.className = "text-2xs text-sky-300 leading-4";
 					sub.textContent = mods;
 					row.appendChild(sub);
 				}
 				if (hitVariant) {
 					const hint = document.createElement("div");
-					hint.className = "text-[10px] text-emerald-300";
+					hint.className = "text-2xs text-emerald-300";
 					hint.textContent = isKorean ? "변형에 일치" : "matches a variant";
 					row.appendChild(hint);
 				}
@@ -3836,7 +3836,7 @@
 		const dictLink = document.createElement("a");
 		dictLink.href = "/poe/clusters";
 		dictLink.target = "_blank";
-		dictLink.className = "text-[11px] text-cyan-300 underline decoration-dotted shrink-0";
+		dictLink.className = "text-2xs text-cyan-300 underline decoration-dotted shrink-0";
 		dictLink.textContent = isKorean ? "사전 ↗" : "Dictionary ↗";
 		head.appendChild(dictLink);
 		panel.appendChild(head);
@@ -3850,7 +3850,7 @@
 			const row = document.createElement("div");
 			row.className = "flex items-center gap-1 px-3 py-2 border-b border-stone-800";
 			const tag = document.createElement("span");
-			tag.className = "text-[11px] text-stone-400 mr-1";
+			tag.className = "text-2xs text-stone-400 mr-1";
 			tag.textContent = label;
 			row.appendChild(tag);
 			const buttons: HTMLButtonElement[] = [];
@@ -3878,7 +3878,7 @@
 		const skillBox = document.createElement("div");
 		skillBox.className = "border-b border-stone-800";
 		const skillHead = document.createElement("div");
-		skillHead.className = "px-3 pt-2 text-[11px] text-stone-400";
+		skillHead.className = "px-3 pt-2 text-2xs text-stone-400";
 		skillHead.textContent = isKorean ? "추가된 소형 패시브 스킬 효과" : "Added Small Passive Skills grant"; // 게임 StatDescripotionTreeExpansionJewelGrantedSmallStat(10-24 Q167)
 		skillBox.appendChild(skillHead);
 		const skillList = document.createElement("div");
@@ -3900,7 +3900,7 @@
 			title.textContent = skill.name;
 			row.appendChild(title);
 			const sub = document.createElement("div");
-			sub.className = "text-[11px] text-sky-300 leading-4";
+			sub.className = "text-2xs text-sky-300 leading-4";
 			sub.textContent = ((isKorean && skill.statsKo?.length ? skill.statsKo : skill.stats) || []).join(" / ");
 			row.appendChild(sub);
 			row.addEventListener("click", () => {
@@ -3921,7 +3921,7 @@
 		const notableBox = document.createElement("div");
 		notableBox.className = "px-3 py-2";
 		const notableHead = document.createElement("div");
-		notableHead.className = "text-[11px] text-stone-400 mb-1";
+		notableHead.className = "text-2xs text-stone-400 mb-1";
 		const renderHead = () => {
 			notableHead.textContent =
 				(isKorean ? "주요 스킬" : "Notables") +
@@ -3937,7 +3937,7 @@
 		filter.setAttribute("aria-label", filter.placeholder); // 고르기 창 검색칸 접근 이름(10-04, PoE2 짝 — placeholder 만으론 낭독기가 못 읽는다)
 		notableBox.appendChild(filter);
 		const allToggle = document.createElement("label");
-		allToggle.className = "mt-1 flex items-center gap-1 text-[11px] text-stone-500";
+		allToggle.className = "mt-1 flex items-center gap-1 text-2xs text-stone-500";
 		const allBox = document.createElement("input");
 		allBox.type = "checkbox";
 		allBox.className = "checkbox checkbox-xs";
@@ -3958,7 +3958,7 @@
 				const on = chosenNotables.indexOf(cn.name) >= 0;
 				row.textContent = (on ? "✓ " : "") + label;
 				row.className =
-					"block w-full text-left px-2 py-0.5 text-[11px] rounded hover:bg-purple-900/40 " +
+					"block w-full text-left px-2 py-0.5 text-2xs rounded hover:bg-purple-900/40 " +
 					(on ? "text-amber-300 font-semibold" : cn.keystone ? "text-rose-300" : "text-stone-300");
 			};
 			mark();
@@ -4176,7 +4176,7 @@
 			const box = document.createElement("div");
 			box.className = "poe-popup-body border-t border-white/10";
 			const line = document.createElement("div");
-			line.className = "text-[11px] font-mono text-purple-300 leading-5";
+			line.className = "text-2xs font-mono text-purple-300 leading-5";
 			const sizeName = CLUSTER_SIZE_KO[node.expansionJewel.size] || "";
 			line.textContent = isKorean
 				? `${sizeName} 스킬 군 주얼 전용` // 게임 아이템 이름(BaseItemTypes '대형 스킬 군 주얼', 10-23 Q57)
@@ -4186,7 +4186,7 @@
 			const def = clusterDefs?.[CLUSTER_DEF_KEY[node.expansionJewel.size]];
 			if (def) {
 				const info = document.createElement("div");
-				info.className = "text-[11px] font-mono text-base-content/60 leading-5";
+				info.className = "text-2xs font-mono text-base-content/60 leading-5";
 				const skillCount = Object.keys(def.skills || {}).length;
 				info.textContent = isKorean
 					? `추가 패시브 ${def.minNodes}~${def.maxNodes}개 · 선택 가능 효과 ${skillCount}종`
@@ -4194,7 +4194,7 @@
 				box.appendChild(info);
 			}
 			const todo = document.createElement("div");
-			todo.className = "text-[10px] text-base-content/60 leading-4";
+			todo.className = "text-2xs text-base-content/60 leading-4";
 			// 클러스터 편집은 완성됐다(우클릭 픽커) — 옛 "미지원" 문구가 남아 오정보였다.
 			// 모바일엔 우클릭이 없어 롱프레스를 병기한다(터치 감지 분기보다 하이브리드 기기에 안전).
 			todo.textContent = isKorean ? "우클릭(길게 누르기)으로 스킬 군 주얼 구성" : "Right-click (long-press) to configure cluster jewel";
@@ -4212,7 +4212,7 @@
 				const pair = forbiddenPairStatus(node.id, socketed);
 				if (pair) {
 					const p = document.createElement("div");
-					p.className = "text-[11px] leading-4 mb-1 " + (pair.ok ? "text-emerald-300" : "text-rose-300");
+					p.className = "text-2xs leading-4 mb-1 " + (pair.ok ? "text-emerald-300" : "text-rose-300");
 					p.dataset.forbiddenPair = pair.ok ? "ok" : "missing";
 					p.textContent = pair.text;
 					box.appendChild(p);
@@ -4232,7 +4232,7 @@
 				mods.forEach((mod, i) => {
 					const ml = document.createElement("div");
 					// 타락은 인게임처럼 붉게(고유 툴팁 itemTooltip.jte 와 같은 --poe-corrupt 색)
-					ml.className = mod === "타락" || mod === "Corrupted" ? "text-[12px] font-bold text-[#d20000]" : "poe-popup-stat";
+					ml.className = mod === "타락" || mod === "Corrupted" ? "text-xs font-semibold text-[#d20000]" : "poe-popup-stat";
 					ml.dataset.jewelMod = "";
 					ml.textContent = mod;
 					box.appendChild(ml);
@@ -4255,7 +4255,7 @@
 					}
 				}
 				const line = document.createElement("div");
-				line.className = "text-[11px] font-mono font-semibold text-emerald-200 leading-5 mt-1";
+				line.className = "text-2xs font-mono font-semibold text-emerald-200 leading-5 mt-1";
 				line.dataset.jewelRadius = "";
 				const where = center !== node ? (isKorean ? `${center.nameKo || center.name} 둘레 ` : `around ${center.name} `) : "";
 				line.textContent = `${where}${RADIUS_LABEL()}${own.label ? own.label + " " : ""}(${own.inner ? own.inner + "~" : ""}${own.r}) — ${alloc}/${total}` + (isKorean ? " 패시브" : " passives");
@@ -4263,7 +4263,7 @@
 			} else if (!socketed) {
 				for (const band of jewelRadiusInfo(node)) {
 					const line = document.createElement("div");
-					line.className = "text-[11px] font-mono font-semibold text-emerald-200 leading-5";
+					line.className = "text-2xs font-mono font-semibold text-emerald-200 leading-5";
 					line.textContent = `${RADIUS_LABEL()}${band.label} (${band.r}) — ${band.alloc}/${band.total}` + (isKorean ? " 패시브" : " passives");
 					box.appendChild(line);
 				}
@@ -4300,7 +4300,7 @@
 			}
 			if (costText) {
 				const foot = document.createElement("div");
-				foot.className = "poe-popup-body border-t border-white/10 text-[11px] font-mono " + costClass;
+				foot.className = "poe-popup-body border-t border-white/10 text-2xs font-mono " + costClass;
 				foot.textContent = costText;
 				tooltip.appendChild(foot);
 			}

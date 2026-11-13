@@ -52,7 +52,7 @@
 						<tr data-craft-calc-corrupt="${c.id()}">
 							<td class="min-w-0 wrap-anywhere">
 								@for(int i = 0; i < mx.size(); i++)<div>$unsafe{PoeText.highlightValues(PoeModRange.range(i < mn.size() ? mn.get(i) : null, mx.get(i)))}</div>@endfor
-								@if(!tg.isEmpty())<div class="text-[10px] text-base-content/60" data-craft-calc-tags>— ${String.join(", ", tg)}</div>@endif
+								@if(!tg.isEmpty())<div class="text-2xs text-base-content/60" data-craft-calc-tags>— ${String.join(", ", tg)}</div>@endif
 							</td>
 							<td class="text-right font-mono">${c.level()}</td>
 							<td class="text-right font-mono">${String.format("%.2f%%", c.chance() * 100)}</td>

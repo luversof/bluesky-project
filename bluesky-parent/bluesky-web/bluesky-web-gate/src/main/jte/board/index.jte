@@ -13,11 +13,11 @@
 	content = @`
 		<div class="container mx-auto px-4 py-8">
 			<div class="prose max-w-none">
-				<h1 class="text-3xl font-bold mb-6">게시판</h1>
+				<h1 class="text-3xl font-semibold mb-6">게시판</h1>
 				
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
 					<!-- 공지사항 카드 -->
-					<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+					<div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
 						<div class="card-body">
 							<h2 class="card-title">
 								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -33,7 +33,7 @@
 					</div>
 					
 					<!-- 자유게시판 카드 -->
-					<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+					<div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
 						<div class="card-body">
 							<h2 class="card-title">
 								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -49,7 +49,7 @@
 					</div>
 					
 					<!-- Q&A 카드 -->
-					<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+					<div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
 						<div class="card-body">
 							<h2 class="card-title">
 								<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -65,12 +65,12 @@
 					</div>
 				</div>
 				
-				<div class="alert alert-info shadow-lg">
+				<div class="alert alert-info">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
 					</svg>
 					<div>
-						<h3 class="font-bold">이용 안내</h3>
+						<h3 class="font-semibold">이용 안내</h3>
 						<div class="text-xs">건전한 게시판 문화를 만들어 주세요. 타인을 비방하거나 욕설, 광고성 게시물은 삭제될 수 있습니다.</div>
 					</div>
 				</div>

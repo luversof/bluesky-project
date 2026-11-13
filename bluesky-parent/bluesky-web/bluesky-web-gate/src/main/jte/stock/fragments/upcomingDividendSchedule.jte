@@ -27,7 +27,7 @@
 	String latestLabel = MessageUtil.getMessage("stock.dividend.calendar.basis.latest");
 }
 <section class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm" data-upcoming-dividends>
-	<h2 class="text-base font-bold" data-page-section>${MessageUtil.getMessage("stock.dashboard.upcoming.dividend")}</h2>
+	<h2 class="text-base font-semibold" data-page-section>${MessageUtil.getMessage("stock.dashboard.upcoming.dividend")}</h2>
 	@if(!hasRows)
 		<%-- 빈 상태엔 다음 행동을 준다(공용 emptyState 의 규칙) - 문구가 '월배당 기준 데이터에서 등록하라' 고 말하므로 그리로 가는 링크를 그 자리에 둔다. --%>
 		<div class="mt-2">
@@ -48,10 +48,10 @@
 		@endif
 		<%-- 조회가 실패하면 어긋난 줄이 0 이라 아래 안내가 사라진다 - 안내 없는 화면은 "원장과 같다" 로 읽힌다. --%>
 		@if(currentQuantityUnavailable)
-			<div class="mt-1 text-[11px] text-warning" data-ledger-unavailable="true">${MessageUtil.getMessage("stock.holdings.ledger.unavailable")}</div>
+			<div class="mt-1 text-2xs text-warning" data-ledger-unavailable="true">${MessageUtil.getMessage("stock.holdings.ledger.unavailable")}</div>
 		@endif
 		@if(staleQuantityCount > 0)
-			<div class="mt-1 text-[11px] text-warning amount-value" data-upcoming-stale-quantity="${staleQuantityCount}" data-stale-quantity-notice>
+			<div class="mt-1 text-2xs text-warning amount-value" data-upcoming-stale-quantity="${staleQuantityCount}" data-stale-quantity-notice>
 				${StockViewSupport.msg("stock.summary.upcoming.dividend.stale.quantity.both", String.valueOf(staleQuantityCount),
 					StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityLatestTotal)),
 					StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityTotal)))}

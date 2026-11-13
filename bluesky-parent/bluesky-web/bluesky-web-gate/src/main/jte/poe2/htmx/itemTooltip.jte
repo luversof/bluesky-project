@@ -14,12 +14,12 @@
 
 <div class="poe-tooltip poe-rar-white w-80 max-w-[calc(100vw-2rem)] max-h-[80vh] overflow-y-auto shadow-2xl">
 	<div class="poe-tt-band">
-		<div class="text-center font-bold text-[15px] leading-tight text-[#c8c8c8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${PoeText.name(base.nameKo(), base.name())}</div>
+		<div class="text-center font-semibold text-base leading-tight text-[#c8c8c8] drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">${PoeText.name(base.nameKo(), base.name())}</div>
 	</div>
 	@if(!weaponBase || PoeText.isKorean())
-	<div class="px-4 pt-1.5 text-center text-[11px]">
+	<div class="px-4 pt-1.5 text-center text-2xs">
 		@if(!weaponBase)<span class="text-white/70">${itemClass}</span>@endif
-		@if(PoeText.isKorean())<div class="text-[10px] text-white/30">${base.name()}</div>@endif
+		@if(PoeText.isKorean())<div class="text-2xs text-white/30">${base.name()}</div>@endif
 	</div>
 	@endif
 	@template.poe2.htmx.baseProps(base = base, classLine = weaponBase ? itemClass : null, leadSep = !weaponBase)
@@ -28,7 +28,7 @@
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center space-y-0.5 bg-white/[0.03]">
 			@for(String line : implicits)
-				<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+				<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 			@endfor
 		</div>
 	@endif
@@ -36,7 +36,7 @@
 	!{ String helpKey = net.luversof.web.gate.poe.PoeItemDescription.poe2Key(base.itemClass()); }
 	@if(helpKey != null)
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-2 text-center text-[12px] leading-snug text-[#7f7f7f]" data-tt-help>${io.github.luversof.boot.context.support.MessageUtil.getMessage(helpKey)}</div>
+		<div class="px-4 py-2 text-center text-xs leading-snug text-[#7f7f7f]" data-tt-help>${io.github.luversof.boot.context.support.MessageUtil.getMessage(helpKey)}</div>
 	@endif
 	<%-- 키워드 설명(10-04 C113, 고유 · 젬과 같은 조각) --%>
 	@if(base.keywords() != null && !base.keywords().isEmpty())

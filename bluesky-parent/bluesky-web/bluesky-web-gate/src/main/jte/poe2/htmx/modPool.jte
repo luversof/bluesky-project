@@ -64,7 +64,7 @@
 							@endif
 							<span class="text-[#8888ff]" data-family-stats data-join=" / ">${String.join(" / ", topLines)}</span>
 							<%-- 최상위 등급 요구 아이템 레벨 — PoE1 과 같은 i 배지(레벨 막대가 가용 최상위로 바꿔 준다) --%>
-							<span class="ml-1 text-[10px] font-mono text-base-content/60" data-top-ilvl title="${MessageUtil.getMessage("poe.mods.toptier.ilvl")}">i${top.level()}</span>
+							<span class="ml-1 text-2xs font-mono text-base-content/60" data-top-ilvl title="${MessageUtil.getMessage("poe.mods.toptier.ilvl")}">i${top.level()}</span>
 							<span class="ml-1 text-xs text-base-content/60" title="${MessageUtil.getMessage("poe.mods.tiers.title")}" data-family-tiers data-tiers-format="${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), "{0}")}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe.mods.tiers"), g.tiers().size())}</span>
 						</summary>
 						<div class="overflow-x-auto px-2 pb-2">
@@ -93,12 +93,12 @@
 													@endfor
 												</div>
 												<%-- 이름은 게임 Mods.Name 한 가지(10-23 Q88 — 한국어 화면에 ' · Impregnable' 처럼 영어가 덧붙었다) --%>
-												<div class="text-[10px] text-base-content/60">${PoeText.name(t.nameKo(), t.name())}</div>
+												<div class="text-2xs text-base-content/60">${PoeText.name(t.nameKo(), t.name())}</div>
 											</td>
 											<td class="text-right">${t.weight()}</td>
 											@if(poolWeight > 0)
 												!{ double pct = (t.weight() == null ? 0 : t.weight()) * 100.0 / poolWeight; }
-												<td class="text-right font-mono text-[11px] text-base-content/60" data-tier-odds title="${MessageUtil.getMessage("poe.mods.odds.avg")}${pct > 0 ? String.valueOf(Math.round(100.0 / pct)) : "∞"}">${pct >= 1 ? String.format("%.1f%%", pct) : String.format("%.2f%%", pct)}</td>
+												<td class="text-right font-mono text-2xs text-base-content/60" data-tier-odds title="${MessageUtil.getMessage("poe.mods.odds.avg")}${pct > 0 ? String.valueOf(Math.round(100.0 / pct)) : "∞"}">${pct >= 1 ? String.format("%.1f%%", pct) : String.format("%.2f%%", pct)}</td>
 											@endif
 										</tr>
 									@endfor
@@ -117,7 +117,7 @@
 <div id="poe2CraftCalc" class="sticky bottom-2 z-10 mt-3 hidden flex-wrap items-center gap-2 rounded-box border border-primary/30 bg-base-100 px-3 py-2 text-sm shadow-lg">
 	<span class="font-semibold text-primary" id="poe2CraftCalcLabel"></span>
 	<span class="font-mono" id="poe2CraftCalcValue"></span>
-	<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("poe.mods.odds.approx")}</span>
+	<span class="text-2xs text-base-content/60">${MessageUtil.getMessage("poe.mods.odds.approx")}</span>
 	<button type="button" class="btn btn-ghost btn-xs ml-auto" id="poe2CraftCalcClear">${MessageUtil.getMessage("poe.mods.odds.clear")}</button>
 </div>
 <script nonce="${CspNonceHolder.getNonce()}">

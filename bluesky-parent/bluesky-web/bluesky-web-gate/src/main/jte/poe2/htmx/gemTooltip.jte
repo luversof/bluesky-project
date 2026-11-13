@@ -51,17 +51,17 @@
 
 <div class="poe-tooltip poe-rar-gem poe-tt-w-gem max-h-[80vh] overflow-y-auto shadow-2xl" style="border-color:${nameColor}">
 	<div class="poe-tt-band">
-		<div class="text-center font-bold text-[15px] leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${PoeText.name(gem.nameKo(), gem.name())}</div>
+		<div class="text-center font-semibold text-base leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" style="color:${nameColor}">${PoeText.name(gem.nameKo(), gem.name())}</div>
 	</div>
 	@if(tags != null && !tags.isEmpty())
-		<div class="px-4 pt-1 text-center text-[11.5px] text-[#7f7f7f]">${String.join(", ", tags)}</div>
+		<div class="px-4 pt-1 text-center text-2xs text-[#7f7f7f]">${String.join(", ", tags)}</div>
 	@endif
 	<%-- 유형(10-09 C231 — 게임 ClientStrings SupportFamilyDisplayString "유형", poe2db 처럼 태그 바로 아래) --%>
 	@if(family != null && !family.isEmpty())
-		<div class="px-4 pt-0.5 text-center text-[11.5px]" data-gem-family><span class="${label}">${MessageUtil.getMessage("poe2.gems.family")}: </span><span class="${value}">${String.join(", ", family)}</span>@if(Boolean.TRUE.equals(gem.lineage()))<span class="ml-1 text-[#af6025]">(${MessageUtil.getMessage("poe2.gems.lineage")})</span>@endif</div>
+		<div class="px-4 pt-0.5 text-center text-2xs" data-gem-family><span class="${label}">${MessageUtil.getMessage("poe2.gems.family")}: </span><span class="${value}">${String.join(", ", family)}</span>@if(Boolean.TRUE.equals(gem.lineage()))<span class="ml-1 text-[#af6025]">(${MessageUtil.getMessage("poe2.gems.lineage")})</span>@endif</div>
 	@endif
 	<div class="poe-tt-sepimg"></div>
-	<div class="px-4 py-1.5 text-[12px] text-center space-y-0.5">
+	<div class="px-4 py-1.5 text-xs text-center space-y-0.5">
 		@if(lv != null && gem.maxLevel() != null && gem.maxLevel() > 1)
 			<%-- 최대 레벨이면 '20 (Max)' · '20 (최대)'(10-23 Q52 — ItemDisplaySkillGemMaxLevel, 예전엔 '20 / 20') --%>
 			<div><span class="${label}">${MessageUtil.getMessage("poe.gems.detail.level")}: </span><span class="${value}" data-tt-gem-level>${lv.level().equals(gem.maxLevel()) ? java.text.MessageFormat.format(MessageUtil.getMessage("poe.gems.detail.level.max"), lv.level()) : String.valueOf(lv.level())}</span></div>
@@ -124,21 +124,21 @@
 	</div>
 	@if(description != null && !description.isBlank())
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-[12px] leading-snug text-center text-[#b4966a] whitespace-pre-line">${description}</div>
+		<div class="px-4 py-1.5 text-xs leading-snug text-center text-[#b4966a] whitespace-pre-line">${description}</div>
 	@endif
 	<%-- 보조 젬 설명은 스탯 앞(10-09 C231 — poe2db 순서: 설명 → 스탯) --%>
 	@if(supportText != null && !supportText.isBlank())
 		<div class="poe-tt-sepimg"></div>
-		<div class="px-4 py-1.5 text-[12px] leading-snug text-center text-[#b4966a] whitespace-pre-line">${supportText}</div>
+		<div class="px-4 py-1.5 text-xs leading-snug text-center text-[#b4966a] whitespace-pre-line">${supportText}</div>
 	@endif
 	@if(!statLines.isEmpty() || setLabel != null)
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center space-y-0.5" data-gem-statset>
 			@if(setLabel != null)
-				<div class="text-[12.5px] text-white" data-gem-statset-label>${setLabel}</div>
+				<div class="text-xs text-white" data-gem-statset-label>${setLabel}</div>
 			@endif
 			@for(String line : statLines)
-				<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+				<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 			@endfor
 		</div>
 	@endif
@@ -148,13 +148,13 @@
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center space-y-0.5" data-gem-statset-extra>
 			@if(setName != null && !setName.isBlank())
-				<div class="text-[12.5px] text-white" data-gem-statset-label>${setName}</div>
+				<div class="text-xs text-white" data-gem-statset-label>${setName}</div>
 			@endif
 			@if(set.critChance() != null && set.critChance() > 0)
-				<div class="text-[12px]"><span class="${label}">${MessageUtil.getMessage("poe2.tt.crit")}: </span><span class="${value}">${String.format("%.2f", set.critChance())}%</span></div>
+				<div class="text-xs"><span class="${label}">${MessageUtil.getMessage("poe2.tt.crit")}: </span><span class="${value}">${String.format("%.2f", set.critChance())}%</span></div>
 			@endif
 			@if(set.attackDamagePct() != null)
-				<div class="text-[12px]"><span class="${label}">${MessageUtil.getMessage("poe2.gems.attack.damage")}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.of.base"), set.attackDamagePct())}</span></div>
+				<div class="text-xs"><span class="${label}">${MessageUtil.getMessage("poe2.gems.attack.damage")}: </span><span class="${value}">${java.text.MessageFormat.format(MessageUtil.getMessage("poe2.gems.of.base"), set.attackDamagePct())}</span></div>
 			@endif
 			<%-- 속성 줄과 스탯 줄 사이 구분선(poe2db 구형 번개 "화염 주입": 치명타 명중 확률 → 구분선 → 스탯) --%>
 			@if(((set.critChance() != null && set.critChance() > 0) || set.attackDamagePct() != null) && setLines != null && !setLines.isEmpty())
@@ -162,7 +162,7 @@
 			@endif
 			@if(setLines != null)
 				@for(String line : setLines)
-					<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+					<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 				@endfor
 			@endif
 		</div>
@@ -176,8 +176,8 @@
 				// 속성 줄 · 설명이 없는 칸(메타 젬 "보조" · 석궁 사격 "탄약")은 머리글 바로 아래 스탯 줄(poe2db, 사이 구분선 없음)
 				boolean gHead = Boolean.TRUE.equals(gs.copiesLevel()) || (gl.cost() != null && gl.cost() > 0) || (gl.cooldownMs() != null && gl.cooldownMs() > 0) || (gs.castTimeMs() != null && gl.attackDamagePct() == null) || (gl.critChance() != null && gl.critChance() > 0) || gl.attackDamagePct() != null || (gDesc != null && !gDesc.isBlank()); }
 			<div class="poe-tt-sepimg"></div>
-			<div class="px-4 py-1.5 text-center space-y-0.5 text-[12px]" data-gem-granted>
-				<div class="text-[12.5px] text-white" data-gem-statset-label>${gTitle}</div>
+			<div class="px-4 py-1.5 text-center space-y-0.5 text-xs" data-gem-granted>
+				<div class="text-xs text-white" data-gem-statset-label>${gTitle}</div>
 				@if(Boolean.TRUE.equals(gs.copiesLevel()))
 					<div class="${label}" data-gem-granted-copy>${MessageUtil.getMessage("poe2.gems.granted.copy.level")}</div>
 				@endif
@@ -199,7 +199,7 @@
 			</div>
 			@if(gDesc != null && !gDesc.isBlank())
 				<div class="poe-tt-sepimg"></div>
-				<div class="px-4 py-1.5 text-[12px] leading-snug text-center text-[#b4966a] whitespace-pre-line" data-gem-granted-desc>${gDesc}</div>
+				<div class="px-4 py-1.5 text-xs leading-snug text-center text-[#b4966a] whitespace-pre-line" data-gem-granted-desc>${gDesc}</div>
 			@endif
 			@if(gLines != null && !gLines.isEmpty())
 				@if(gHead)
@@ -207,7 +207,7 @@
 				@endif
 				<div class="px-4 py-1.5 text-center space-y-0.5" data-gem-granted-lines>
 					@for(String line : gLines)
-						<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+						<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 					@endfor
 				</div>
 			@endif
@@ -218,14 +218,14 @@
 					<div class="poe-tt-sepimg"></div>
 					<div class="px-4 py-1.5 text-center space-y-0.5" data-gem-granted-set>
 						@if(gsName != null && !gsName.isBlank())
-							<div class="text-[12.5px] text-white" data-gem-statset-label>${gsName}</div>
+							<div class="text-xs text-white" data-gem-statset-label>${gsName}</div>
 						@endif
 						@if(gset.critChance() != null && gset.critChance() > 0)
-							<div class="text-[12px]"><span class="${label}">${MessageUtil.getMessage("poe2.tt.crit")}: </span><span class="${value}">${String.format("%.2f", gset.critChance())}%</span></div>
+							<div class="text-xs"><span class="${label}">${MessageUtil.getMessage("poe2.tt.crit")}: </span><span class="${value}">${String.format("%.2f", gset.critChance())}%</span></div>
 						@endif
 						@if(gsLines != null)
 							@for(String line : gsLines)
-								<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+								<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 							@endfor
 						@endif
 					</div>
@@ -238,18 +238,18 @@
 	@if(qualityLines != null && !qualityLines.isEmpty())
 		<div class="poe-tt-sepimg"></div>
 		<div class="px-4 py-1.5 text-center space-y-0.5" data-tt-quality-effects>
-			<div class="text-[12px] text-white/60">${MessageUtil.getMessage("poe.gems.detail.quality")}:</div>
+			<div class="text-xs text-white/60">${MessageUtil.getMessage("poe.gems.detail.quality")}:</div>
 			@for(String line : qualityLines)
-				<div class="text-[12px] leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+				<div class="text-xs leading-snug text-[#8888ff] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 			@endfor
 		</div>
 	@endif
 	<%-- 안내(10-09 C231 — PoE2 ClientStrings ItemDescriptionActiveSkillGem "스킬은 스킬 창에서 관리할 수 있습니다." / ItemDescriptionSupportSkillGem,
 	     poe2db 와 같은 맨 아래 문단. 예전 "같은 계열 보조젬은 …" 자체 문구는 게임 안내가 같은 내용을 담아 뺐다) --%>
 	<div class="poe-tt-sepimg"></div>
-	<div class="px-4 py-1.5 text-[11.5px] leading-snug text-center text-[#7f7f7f]" data-gem-help>${MessageUtil.getMessage("support".equals(gem.kind()) ? "poe2.gems.help.support" : "poe2.gems.help.active")}</div>
+	<div class="px-4 py-1.5 text-2xs leading-snug text-center text-[#7f7f7f]" data-gem-help>${MessageUtil.getMessage("support".equals(gem.kind()) ? "poe2.gems.help.support" : "poe2.gems.help.active")}</div>
 	@if(PoeText.isKorean())
-		<div class="px-4 pb-2 text-center text-[10px] text-white/30">${gem.name()}</div>
+		<div class="px-4 pb-2 text-center text-2xs text-white/30">${gem.name()}</div>
 	@endif
 	<%-- 키워드 설명(10-04 C111) — 고유 툴팁과 같은 조각 --%>
 	@template.poe2.htmx.keywordBox(keywords = gem.keywords())
@@ -262,15 +262,15 @@
 		}
 		<div class="px-4 py-2 border-t border-white/10" data-gem-levels>
 			<div class="flex flex-wrap gap-1 items-center">
-				<span class="text-[11px] text-white/40 mr-1">${MessageUtil.getMessage("poe.gems.detail.level")}</span>
+				<span class="text-2xs text-white/40 mr-1">${MessageUtil.getMessage("poe.gems.detail.level")}</span>
 				@for(Integer step : steps)
 					<button type="button"
-					        class="px-1.5 py-0.5 rounded text-[11px] ${step.equals(lv.level()) ? "bg-[#1ba29b] text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}"
+					        class="px-1.5 py-0.5 rounded text-2xs ${step.equals(lv.level()) ? "bg-[#1ba29b] text-white" : "bg-white/5 text-white/60 hover:bg-white/10"}"
 					        hx-get="/poe2/htmx/gems/detail?slug=${gem.slug()}&level=${step}"
 					        hx-target="#poePreview"
 					        hx-swap="innerHTML">${step}</button>
 				@endfor
-				<span class="ml-auto text-[10px] px-1.5 py-0.5 rounded border ${"support".equals(gem.kind()) ? "border-fuchsia-500/40 text-fuchsia-400" : "border-cyan-500/40 text-cyan-400"}">${"support".equals(gem.kind()) ? MessageUtil.getMessage("poe2.gems.type.support") : MessageUtil.getMessage("poe.gems.type.active")}</span>
+				<span class="ml-auto text-2xs px-1.5 py-0.5 rounded border ${"support".equals(gem.kind()) ? "border-fuchsia-500/40 text-fuchsia-400" : "border-cyan-500/40 text-cyan-400"}">${"support".equals(gem.kind()) ? MessageUtil.getMessage("poe2.gems.type.support") : MessageUtil.getMessage("poe.gems.type.active")}</span>
 			</div>
 		</div>
 	@endif

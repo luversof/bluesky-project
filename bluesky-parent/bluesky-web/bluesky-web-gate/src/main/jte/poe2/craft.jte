@@ -211,14 +211,14 @@
 										boolean pre = fe.getKey().startsWith("prefix:");
 									}
 									<label class="flex items-center gap-2 text-xs min-w-0 rounded px-1 py-0.5" data-craft2-calc-family="${fe.getKey()}" data-craft-calc-ids="${String.join(" ", tiers.stream().map(t -> t.id() + "=" + t.tierRank()).toList())}" data-picked-row>
-										<span class="text-[10px] font-mono text-base-content/60 w-6 shrink-0">${pre ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}</span>
+										<span class="text-2xs font-mono text-base-content/60 w-6 shrink-0">${pre ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}</span>
 										<select name="t_${fe.getKey()}" class="select select-xs select-bordered w-24 shrink-0 h-7 min-h-0" aria-label="${(ko ? "최소 등급 — " : "Minimum tier — ") + (tx == null || tx.isEmpty() ? fe.getKey() : tx.get(0))}">
 											<option value="">-</option>
 											@for(Poe2Craft.PoolLine t : tiers)
 												<option value="${t.tierRank()}">T1@if(t.tierRank() > 1)~T${t.tierRank()}@endif</option>
 											@endfor
 										</select>
-										<span class="min-w-0 wrap-anywhere">@for(int i = 0; i < tx.size(); i++)$unsafe{PoeText.highlightValues(tx.get(i))}@if(i < tx.size() - 1), @endif@endfor@if((ko ? top.tagsKo() : top.tags()) != null && !(ko ? top.tagsKo() : top.tags()).isEmpty())<span class="text-[10px] text-base-content/60" data-craft-calc-tags> — ${String.join(", ", ko ? top.tagsKo() : top.tags())}</span>@endif</span>
+										<span class="min-w-0 wrap-anywhere">@for(int i = 0; i < tx.size(); i++)$unsafe{PoeText.highlightValues(tx.get(i))}@if(i < tx.size() - 1), @endif@endfor@if((ko ? top.tagsKo() : top.tags()) != null && !(ko ? top.tagsKo() : top.tags()).isEmpty())<span class="text-2xs text-base-content/60" data-craft-calc-tags> — ${String.join(", ", ko ? top.tagsKo() : top.tags())}</span>@endif</span>
 										<input type="checkbox" name="t_grp:${fe.getKey()}" value="1" class="checkbox checkbox-xs ml-auto shrink-0" title="${ko ? "묶음에 넣기 — 위 '묶음'에서 고른 개수 이상 채우면 충족(등급을 고르면 그 등급 이상)" : "Add to the group — met when at least the chosen number of the group is hit (picked tier or better)"}" aria-label="${(ko ? "묶음에 넣기 — " : "Add to group — ") + (tx == null || tx.isEmpty() ? fe.getKey() : tx.get(0))}" data-craft-calc-grp>
 									</label>
 								@endfor

@@ -59,7 +59,7 @@
 	contentPoe = @`
 		<div class="space-y-4" data-craft-page>
 			<div class="flex flex-wrap items-baseline gap-3">
-				<h1 class="text-2xl font-bold">${pageTitle}</h1>
+				<h1 class="text-2xl font-semibold">${pageTitle}</h1>
 				@if(!patch.isEmpty())<span class="badge badge-ghost">${patch}</span>@endif
 				<span class="text-sm text-base-content/60">${ko ? "화폐를 하나씩 써 보며 결과와 다음 옵션 확률을 봅니다. 확률은 게임 데이터의 옵션 가중치로 계산합니다." : "Apply currency one step at a time and see the result and the odds of the next modifier, computed from the game's modifier weights."} <a href="#craft-calc" class="link link-primary" data-craft-calc-jump>${ko ? "→ 제작 계산기(가장 적은 비용) · 다단계 전략" : "→ Crafting calculator (cheapest) · multi-step strategy"}</a></span>
 			</div>
@@ -239,7 +239,7 @@
 											java.util.List<String> mn = ko && top.koMin() != null && !top.koMin().isEmpty() ? top.koMin() : top.enMin();
 										}
 										<label class="flex items-center gap-2 text-xs min-w-0 rounded px-1 py-0.5" data-craft-calc-family="${gen}:${fe.getKey()}" data-craft-calc-ids="${String.join(" ", tiers.stream().filter(t -> t.tierRank() != null).map(t -> t.id() + "=" + t.tierRank()).toList())}" data-picked-row>
-											<span class="text-[10px] font-mono text-base-content/60 w-6 shrink-0">${"prefix".equals(gen) ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}</span>
+											<span class="text-2xs font-mono text-base-content/60 w-6 shrink-0">${"prefix".equals(gen) ? (ko ? "접두" : "P") : (ko ? "접미" : "S")}</span>
 											<select name="t_${gen}:${fe.getKey()}" class="select select-xs select-bordered w-24 shrink-0 h-7 min-h-0" aria-label="${(ko ? "최소 등급 — " : "Minimum tier — ") + (mx == null || mx.isEmpty() ? fe.getKey() : mx.get(0))}">
 												<option value="">-</option>
 												@for(PoeCraft.PoolLine t : tiers)

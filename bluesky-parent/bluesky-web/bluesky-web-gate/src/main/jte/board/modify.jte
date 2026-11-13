@@ -26,7 +26,7 @@
 				@template._components.ui.pageHeader(title = "글 수정", description = "게시글을 수정해주세요", size = "text-3xl")
 				
 				<!-- 수정 폼 -->
-				<div class="bg-base-100 rounded-box shadow-xl p-6">
+				<div class="bg-base-100 rounded-box shadow-sm p-6">
 					<input type="hidden" id="boardArticleId" value="${boardArticle.id() != null ? boardArticle.id().toString() : ""}" />
 					
 					<div class="form-control mb-6">

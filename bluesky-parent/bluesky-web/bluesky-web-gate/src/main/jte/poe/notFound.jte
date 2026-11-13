@@ -18,7 +18,7 @@
 	profile = profile,
 	contentPoe = @`
 		<div class="space-y-4">
-			<h1 class="text-2xl font-bold">${MessageUtil.getMessage(notFoundMessageKey)}</h1>
+			<h1 class="text-2xl font-semibold">${MessageUtil.getMessage(notFoundMessageKey)}</h1>
 			@template._components.ui.emptyState(
 				boxed = true,
 				message = MessageUtil.getMessage(notFoundMessageKey),

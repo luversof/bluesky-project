@@ -23,7 +23,7 @@
 		</div>
 		<!-- 계산 가정 — "장비 없음"이라고만 하면 공격 스킬에 들어간 표준 무기가 숨는다 -->
 		@if(treeEval.assumedWeapon() != null)
-			<div class="text-[10px] text-warning/80 font-mono">${MessageUtil.getMessage("poe.tree.eval.assumedweapon")}: ${net.luversof.web.gate.poe.PoeText.name(treeEval.assumedWeaponKo(), treeEval.assumedWeapon())}</div>
+			<div class="text-2xs text-warning/80 font-mono">${MessageUtil.getMessage("poe.tree.eval.assumedweapon")}: ${net.luversof.web.gate.poe.PoeText.name(treeEval.assumedWeaponKo(), treeEval.assumedWeapon())}</div>
 		@endif
 		@if(treeEval.jewels() != null && !treeEval.jewels().isEmpty())
 			<div class="flex flex-wrap items-center gap-1">
@@ -35,11 +35,11 @@
 		<div class="grid grid-cols-2 gap-1.5">
 			@for(PoeBuild.PlayerStat stat : treeEval.stats())
 				<div class="rounded bg-base-100/60 px-2 py-1">
-					<div class="text-[10px] text-base-content/60">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
-					<div class="text-xs font-bold font-mono">${stat.value()}</div>
+					<div class="text-2xs text-base-content/60">${MessageUtil.getMessage("poe.build.stat." + stat.key())}</div>
+					<div class="text-xs font-semibold font-mono">${stat.value()}</div>
 				</div>
 			@endfor
 		</div>
-		<div class="text-[10px] text-base-content/60 leading-4">${MessageUtil.getMessage("poe.tree.eval.hint")}</div>
+		<div class="text-2xs text-base-content/60 leading-4">${MessageUtil.getMessage("poe.tree.eval.hint")}</div>
 	</div>
 @endif

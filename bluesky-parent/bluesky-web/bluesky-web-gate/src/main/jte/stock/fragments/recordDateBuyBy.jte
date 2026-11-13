@@ -19,7 +19,7 @@
 		boolean anyUncovered = rows.stream().anyMatch(row -> !row.holidaysCovered());
 	}
 	@if(compact)
-	<p class="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[11px] text-base-content/60" data-record-buyby data-record-buyby-compact>
+	<p class="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-2xs text-base-content/60" data-record-buyby data-record-buyby-compact>
 		<span class="font-medium text-base-content/70">${MessageUtil.getMessage("stock.monthly.etf.buyby.compact.title")}</span>
 		@for(RecordDateBuyByView row : rows)
 			<span class="min-w-0 wrap-anywhere" data-record-buyby-window="${row.payoutWindow()}">${"MID_MONTH".equals(row.payoutWindow()) ? MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.mid.month") : MessageUtil.getMessage("stock.page.dividend.monthly.reference.profile.payout.window.month.end")} <span class="font-mono text-base-content/80" data-buyby-date>${row.buyByDate().format(dateFormat)}</span> @if(row.daysLeft() == 0)<span class="inline-block rounded border border-warning/30 bg-warning/10 px-1 text-base-content" data-buyby-days-left="0">${MessageUtil.getMessage("stock.monthly.etf.buyby.today")}</span>@else<span data-buyby-days-left="${row.daysLeft()}">(${StockViewSupport.msg("stock.monthly.etf.buyby.days.left", String.valueOf(row.daysLeft()))})</span>@endif</span>

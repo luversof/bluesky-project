@@ -110,7 +110,7 @@ ${historyTitle}
 @template._components.ui.card(body = @`
 <div class="text-xs text-base-content/60 mb-1">${periodStatusLabel}</div>
 <div class="flex items-baseline gap-1 mb-2">
-<span class="text-xl font-bold amount-value">&#x20A9;${df.format(safeBuy)}</span>
+<span class="text-xl font-semibold amount-value">&#x20A9;${df.format(safeBuy)}</span>
 <span class="text-xs text-base-content/60">${buyLabel}</span>
 </div>
 <div class="flex gap-4 text-xs text-base-content/60">
@@ -121,14 +121,14 @@ ${historyTitle}
 `)
 @template._components.ui.card(body = @`
 <div class="text-xs text-base-content/60 mb-1">${realizedProfitLabel}</div>
-<div class="text-xl font-bold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
+<div class="text-xl font-semibold ${rpPositive ? "text-profit" : "text-loss"} amount-value">
 ${StockFormatUtil.displayWon(safeRp) > 0 ? "+" : ""}&#x20A9;${df.format(safeRp)}
 </div>
 <div class="text-xs text-base-content/60 mt-1">${sellCountPageLabel}</div>
 `)
 @template._components.ui.card(body = @`
 <div class="text-xs text-base-content/60 mb-1">${tradingCostLabel}</div>
-<div class="text-xl font-bold amount-value">&#x20A9;${df.format(safeFee.add(safeTax))}</div>
+<div class="text-xl font-semibold amount-value">&#x20A9;${df.format(safeFee.add(safeTax))}</div>
 <div class="flex gap-4 text-xs text-base-content/60 mt-1">
 <span>${feeLabel} <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeFee)}</span></span>
 <span>${tradingTaxLabel} <span class="font-medium text-base-content/70 amount-value">&#x20A9;${df.format(safeTax)}</span></span>
@@ -167,14 +167,14 @@ String tradeDateStr = trade.tradeDate() != null ? fmt.format(StockZoneUtil.recor
 ${isBuy ? buyLabel : sellLabel}
 </span>
 </td>
-<td class="font-bold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${trade.stockItemName() != null ? trade.stockItemName() : "-"}</a></td>
+<td class="font-semibold whitespace-nowrap"><a href="${StockDetailLinkUtil.item(trade.stockItemId() != null ? trade.stockItemId().toString() : "")}" class="link link-hover">${trade.stockItemName() != null ? trade.stockItemName() : "-"}</a></td>
 <td class="whitespace-nowrap hidden sm:table-cell"><a href="${StockDetailLinkUtil.account(trade.accountId() != null ? trade.accountId().toString() : "")}" class="link link-hover">${accountNames != null ? accountNames.getOrDefault(trade.accountId(), "") : ""}</a></td>
 <td class="text-right amount-value">${trade.price() != null ? df.format(trade.price()) : "0"}</td>
 <td class="text-right amount-value">${df.format(trade.quantity())}</td>
 <td class="text-right amount-value">${trade.amount() != null ? df.format(trade.amount()) : "0"}</td>
 <td class="text-right text-xs text-base-content/60 amount-value hidden lg:table-cell print:table-cell">@if(trade.fee() == null || trade.fee().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${df.format(trade.fee())}@endif</td>
 <td class="text-right text-xs text-base-content/60 amount-value hidden lg:table-cell print:table-cell">@if(trade.tax() == null || trade.tax().signum() == 0)<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${zeroAmountTitle}">-</span><span class="sr-only">${zeroAmountTitle}</span>@else${df.format(trade.tax())}@endif</td>
-<td class="text-right font-bold amount-value ${hasProfit ? profitClass : ""}">
+<td class="text-right font-semibold amount-value ${hasProfit ? profitClass : ""}">
 @if(hasProfit && !isBuy)${StockFormatUtil.signedWon(StockFormatUtil.displayWon(trade.realizedProfit()))}@else<span class="text-base-content/60 tooltip" aria-hidden="true" data-tip="${isBuy ? buyNoRealizedTitle : noDataTitle}">-</span><span class="sr-only">${isBuy ? buyNoRealizedTitle : noDataTitle}</span>@endif
 </td>
 </tr>

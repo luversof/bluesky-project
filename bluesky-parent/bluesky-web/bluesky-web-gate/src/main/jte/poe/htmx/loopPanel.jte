@@ -53,7 +53,7 @@
 					· ${ko ? "마지막" : "last"} <span class="font-mono">${jobStatus}</span>
 				</div>
 				@if(!jobLog.isEmpty())
-					<pre class="max-h-40 overflow-auto rounded bg-base-200 p-2 text-[11px] leading-snug">@for(String l : jobLog)${l}
+					<pre class="max-h-40 overflow-auto rounded bg-base-200 p-2 text-2xs leading-snug">@for(String l : jobLog)${l}
 @endfor</pre>
 				@endif
 			@endif
@@ -74,7 +74,7 @@
 				<div class="text-sm text-base-content/60">${ko ? "(진행 중인 재실행 없음)" : "(no run)"}</div>
 			@endif
 			@if(!batteryTail.isEmpty())
-				<pre class="max-h-40 overflow-auto rounded bg-base-200 p-2 text-[11px] leading-snug">@for(String l : batteryTail)${l}
+				<pre class="max-h-40 overflow-auto rounded bg-base-200 p-2 text-2xs leading-snug">@for(String l : batteryTail)${l}
 @endfor</pre>
 			@endif
 		</div>

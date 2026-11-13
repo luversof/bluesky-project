@@ -35,7 +35,7 @@
 	contentPoe = @`
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-baseline gap-3">
-				<h1 class="text-2xl font-bold">${pageTitle}</h1>
+				<h1 class="text-2xl font-semibold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
 				<span class="text-sm text-base-content/60">${ko ? "패시브 스킬을 교체하는 카루이 문신 — " : "Karui tattoos replace passive nodes — "}<a class="link link-hover text-primary" href="/poe/tree">${ko ? "트리 에디터에서 우클릭으로 적용 →" : "apply in tree editor →"}</a></span>
 				<span class="text-xs font-mono text-base-content/60">${tattoos.size()}</span>
@@ -69,14 +69,14 @@
 							<span class="badge badge-ghost badge-xs">${typeLabels.getOrDefault(t.targetType(), t.targetType())}</span>
 							<%-- 인접 조건(10-23 Q73) — 상한 100 은 데이터의 '제한 없음'이라 숫자로 안 보인다, 상한 1 도 보인다 --%>
 							@if(t.minConnected() > 0)
-								<span class="text-[10px] text-base-content/60" title="${ko ? "할당되어 있는 인접 패시브 스킬이 " + t.minConnected() + "개 이상이어야 합니다" : "Requires at least " + t.minConnected() + " adjacent Passive Skills to be allocated"}">${ko ? "인접 " + t.minConnected() + "개 이상" : "adj ≥" + t.minConnected()}</span>
+								<span class="text-2xs text-base-content/60" title="${ko ? "할당되어 있는 인접 패시브 스킬이 " + t.minConnected() + "개 이상이어야 합니다" : "Requires at least " + t.minConnected() + " adjacent Passive Skills to be allocated"}">${ko ? "인접 " + t.minConnected() + "개 이상" : "adj ≥" + t.minConnected()}</span>
 							@elseif(t.maxConnected() == 1)
-								<span class="text-[10px] text-base-content/60" title="${ko ? "할당되어 있는 인접 패시브 스킬이 1개 이하여야 합니다" : "Requires that no more than 1 adjacent Passive Skill is allocated"}">${ko ? "인접 1개 이하" : "adj ≤1"}</span>
+								<span class="text-2xs text-base-content/60" title="${ko ? "할당되어 있는 인접 패시브 스킬이 1개 이하여야 합니다" : "Requires that no more than 1 adjacent Passive Skill is allocated"}">${ko ? "인접 1개 이하" : "adj ≤1"}</span>
 							@endif
 						</div>
 						!{List<String> tattooLines = ko && t.statsKo() != null && !t.statsKo().isEmpty() ? t.statsKo() : t.stats();}
 						@for(String line : tattooLines)
-							<div class="poe-entry-stat text-[12px] whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
+							<div class="poe-entry-stat text-xs whitespace-pre-line">$unsafe{PoeText.highlightValues(line)}</div>
 						@endfor
 					</div>
 				@endfor

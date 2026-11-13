@@ -17,7 +17,7 @@
 		String thresholdText = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.threshold()));
 	}
 	<section class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm" data-financial-income>
-		<h2 class="text-base font-bold" data-page-section>${MessageUtil.getMessage("stock.dividend.financial.income.title")}</h2>
+		<h2 class="text-base font-semibold" data-page-section>${MessageUtil.getMessage("stock.dividend.financial.income.title")}</h2>
 		<p class="mt-1 text-xs text-base-content/60">${StockViewSupport.msg("stock.dividend.financial.income.desc", String.valueOf(view.year()))}</p>
 
 		<dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -29,15 +29,15 @@
 				<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.financial.income.rest")}</dt>
 				<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-financial-income-rest>${restText}</dd>
 				<%-- 종목마다 나눠 센다(2026-10-20 검토): 달마다 나오는 종목은 최근 흐름, 분기 · 연 배당은 작년 이맘때 횟수 x 최근 금액. --%>
-				<dd class="mt-0.5 text-[11px] text-base-content/60 wrap-anywhere" data-financial-income-rest-basis>${StockViewSupport.msg("stock.dividend.financial.income.rest.basis", String.valueOf(view.recentWindowDays()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.recentDailyAverage())), String.valueOf(view.remainingDays()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.monthlyRest())))}</dd>
+				<dd class="mt-0.5 text-2xs text-base-content/60 wrap-anywhere" data-financial-income-rest-basis>${StockViewSupport.msg("stock.dividend.financial.income.rest.basis", String.valueOf(view.recentWindowDays()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.recentDailyAverage())), String.valueOf(view.remainingDays()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.monthlyRest())))}</dd>
 				@if(view.periodicCount() > 0)
-					<dd class="text-[11px] text-base-content/60 wrap-anywhere" data-financial-income-rest-periodic>${StockViewSupport.msg("stock.dividend.financial.income.rest.periodic", String.valueOf(view.periodicCount()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.periodicRest())))}</dd>
+					<dd class="text-2xs text-base-content/60 wrap-anywhere" data-financial-income-rest-periodic>${StockViewSupport.msg("stock.dividend.financial.income.rest.periodic", String.valueOf(view.periodicCount()), StockFormatUtil.fullKrw(StockFormatUtil.displayWon(view.periodicRest())))}</dd>
 				@endif
 			</div>
 			<div class="min-w-0 rounded-xl bg-base-200/60 p-3">
 				<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.financial.income.projected")}</dt>
 				<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-financial-income-projected>${projectedText}</dd>
-				<dd class="mt-0.5 text-[11px] text-base-content/60" data-financial-income-projected-pct>${StockViewSupport.msg("stock.dividend.financial.income.pct.of.threshold", view.projectedPct().toPlainString())}</dd>
+				<dd class="mt-0.5 text-2xs text-base-content/60" data-financial-income-projected-pct>${StockViewSupport.msg("stock.dividend.financial.income.pct.of.threshold", view.projectedPct().toPlainString())}</dd>
 			</div>
 		</dl>
 

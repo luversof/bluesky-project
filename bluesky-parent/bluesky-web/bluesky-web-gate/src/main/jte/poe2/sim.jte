@@ -28,7 +28,7 @@
 	java.util.List<Poe2.SimChoice> skills = options == null || options.skills() == null ? java.util.List.of() : options.skills();
 	java.util.List<Poe2.SimChoice> ascs = options == null || options.ascendancies() == null ? java.util.List.of() : options.ascendancies();
 	// 탭 스타일은 PoE1 시뮬·아이템 탭과 동일 — 같은 사이트에서 탭이 두 가지로 보이면 안 된다
-	String tabActive = "tab tab-lg flex-1 font-bold tab-active !bg-primary !text-primary-content shadow-sm";
+	String tabActive = "tab tab-lg flex-1 font-semibold tab-active !bg-primary !text-primary-content shadow-sm";
 	String tabInactive = "tab tab-lg flex-1 text-base-content/60 hover:text-base-content";
 }
 

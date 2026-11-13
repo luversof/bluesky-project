@@ -772,7 +772,7 @@
 			// allow = 빌드 코드에 없는 엔드게임 포인트(C49) — 그만큼 넘은 건 빨강 대신 흐린 "(엔드게임 +N)"
 			const add = (label: string, used: number, max: number, allow = 0, why = "") => {
 				const span = document.createElement("span");
-				span.className = used > max + allow ? "text-error font-bold" : "";
+				span.className = used > max + allow ? "text-error font-semibold" : "";
 				span.textContent = `${label} ${used} / ${max}`;
 				el.appendChild(span);
 				if (used > max && used <= max + allow) {
@@ -1099,7 +1099,7 @@
 			for (const line of lines) {
 				const ml = document.createElement("div");
 				// 타락은 인게임처럼 붉게(PoE1 · 고유 툴팁과 같은 --poe-corrupt 색)
-				ml.className = line === "타락" || line === "Corrupted" ? "text-[12px] font-bold text-[#d20000]" : "poe-popup-stat";
+				ml.className = line === "타락" || line === "Corrupted" ? "text-xs font-semibold text-[#d20000]" : "poe-popup-stat";
 				ml.setAttribute("data-jewel-mod", "");
 				ml.textContent = line;
 				body.appendChild(ml);
@@ -1267,14 +1267,14 @@
 				const nameLine = document.createElement("div");
 				nameLine.textContent = t(d.nameKo, d.name);
 				const modLine = document.createElement("div");
-				modLine.className = "text-[10px] text-base-content/60 truncate";
+				modLine.className = "text-2xs text-base-content/60 truncate";
 				modLine.textContent = t(d.explicitsKo[0] || d.explicits[0] || "", d.explicits[0] || "");
 				b.append(nameLine, modLine);
 				b.title = d.explicits.join("\n");
 				b.dataset.slug = slug;
 				if (hitVariant) {
 					const hint = document.createElement("div");
-					hint.className = "text-[10px] text-emerald-300";
+					hint.className = "text-2xs text-emerald-300";
 					hint.textContent = t("변형에 일치", "matches a variant");
 					b.appendChild(hint);
 				}
@@ -1589,7 +1589,7 @@
 			line.appendChild(text);
 			if (row.count > 1) {
 				const badge = document.createElement("span");
-				badge.className = "text-[10px] font-mono text-stone-400 shrink-0";
+				badge.className = "text-2xs font-mono text-stone-400 shrink-0";
 				badge.textContent = "×" + row.count;
 				line.appendChild(badge);
 			}

@@ -22,7 +22,7 @@
 	contentPoe = @`
 		<div id="poeRegex" class="space-y-4" data-authenticated="${isAuthenticated}" data-locale="${ko ? "ko" : "en"}">
 			<div class="flex flex-wrap items-baseline gap-3">
-				<h1 class="text-2xl font-bold">${pageTitle}</h1>
+				<h1 class="text-2xl font-semibold">${pageTitle}</h1>
 				<span class="badge badge-ghost">${patchLabel}</span>
 				<span class="text-sm text-base-content/60">${MessageUtil.getMessage("poe.regex.desc")}</span>
 			</div>
@@ -87,9 +87,9 @@
 						<button class="btn btn-xs join-item" data-regex-combine="or">OR</button>
 						<button class="btn btn-xs join-item" data-regex-combine="and">AND</button>
 					</div>
-					<span class="text-[11px] text-base-content/60">${MessageUtil.getMessage("poe.regex.combine.hint")}</span>
+					<span class="text-2xs text-base-content/60">${MessageUtil.getMessage("poe.regex.combine.hint")}</span>
 				</div>
-				<div class="text-[11px] text-base-content/60">${ko ? "옵션 클릭: 선택/해제(선택하면 제외 — 빨강, !로 거름) · \"제외\" 배지 클릭: 포함(초록, 강조)으로 전환 · 문구가 포함관계인 옵션(일반↔17등급 쌍둥이)은 함께 선택됩니다" : "Click a mod: select/clear (selected = exclude, red) · click the \"excl\" badge to switch it to include (green) · text-subset twins (normal↔T17) are linked"}</div>
+				<div class="text-2xs text-base-content/60">${ko ? "옵션 클릭: 선택/해제(선택하면 제외 — 빨강, !로 거름) · \"제외\" 배지 클릭: 포함(초록, 강조)으로 전환 · 문구가 포함관계인 옵션(일반↔17등급 쌍둥이)은 함께 선택됩니다" : "Click a mod: select/clear (selected = exclude, red) · click the \"excl\" badge to switch it to include (green) · text-subset twins (normal↔T17) are linked"}</div>
 			</div>
 
 			<%-- 모드 목록 (TS 렌더) --%>

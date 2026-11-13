@@ -68,7 +68,7 @@
 								<th scope="row" class="font-medium">
 									${row.label()}
 									<%-- 매수만 있었는지 팔기만 했는지가 그 구간을 읽는 첫 단서다. --%>
-									<div class="text-[11px] font-normal leading-4 text-base-content/60">
+									<div class="text-2xs font-normal leading-4 text-base-content/60">
 										${buyLabel} ${String.valueOf(row.buyCount())} · ${sellLabel} ${String.valueOf(row.sellCount())}
 									</div>
 								</th>
@@ -122,7 +122,7 @@
 						<tr class="border-t-2 border-base-content/20 font-semibold" data-trade-breakdown-total>
 							<th scope="row">
 								${sumLabel}
-								<div class="text-[11px] font-normal leading-4 text-base-content/60">
+								<div class="text-2xs font-normal leading-4 text-base-content/60">
 									${buyLabel} ${String.valueOf(totals.buyCount())} · ${sellLabel} ${String.valueOf(totals.sellCount())}
 								</div>
 							</th>

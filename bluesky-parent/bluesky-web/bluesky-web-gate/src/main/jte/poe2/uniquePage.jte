@@ -78,7 +78,7 @@
 				}
 				<div class="flex-1 min-w-0 sm:min-w-[20rem] space-y-4">
 					<div class="rounded-2xl bg-base-100 p-4 shadow-sm" data-unique-info>
-						<h2 class="font-bold mb-2">${MessageUtil.getMessage("poe.uniques.info")}</h2>
+						<h2 class="font-semibold mb-2">${MessageUtil.getMessage("poe.uniques.info")}</h2>
 						<table class="table table-xs [overflow-wrap:anywhere]">
 							<tbody>
 								<tr><td class="text-base-content/60">${MessageUtil.getMessage("poe.uniques.info.name")}</td><td>${item.name()}</td></tr>
@@ -107,7 +107,7 @@
 					</div>
 					@if(ko && engMods != null && !engMods.isEmpty())
 						<div class="rounded-2xl bg-base-100 p-4 shadow-sm" data-unique-english>
-							<h2 class="font-bold mb-2">옵션 원문 (영문)</h2>
+							<h2 class="font-semibold mb-2">옵션 원문 (영문)</h2>
 							@for(String line : engMods)
 								<div class="text-xs text-base-content/60 whitespace-pre-line">${line}</div>
 							@endfor

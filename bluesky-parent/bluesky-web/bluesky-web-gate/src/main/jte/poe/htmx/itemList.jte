@@ -75,13 +75,13 @@
 						<div class="min-w-0 flex-1 space-y-1">
 					<div class="flex items-baseline gap-2 flex-wrap">
 						<%-- 이름 클릭 → 상세 페이지 --%>
-						<a class="font-bold text-[15px] truncate link-hover" href="/poe/items/${item.slug()}" title="${item.name()}">${displayName}</a>
+						<a class="font-semibold text-base truncate link-hover" href="/poe/items/${item.slug()}" title="${item.name()}">${displayName}</a>
 						@if(net.luversof.web.gate.poe.PoeText.isKorean())
 							<span class="text-xs text-base-content/60 truncate">${item.name()}</span>
 						@endif
 						<span class="badge badge-xs badge-ghost ml-auto shrink-0">${displayClass}</span>
 					</div>
-					<div class="flex items-center gap-2 text-[13px] text-base-content/70">
+					<div class="flex items-center gap-2 text-sm text-base-content/70">
 						<span class="font-mono truncate">${summary.toString()}</span>
 						<span class="ml-auto shrink-0 text-base-content/60">${MessageUtil.getMessage("poe.gems.detail.required.level")} ${item.requiredLevel()}</span>
 					</div>

@@ -69,7 +69,7 @@
 								<span class="text-xs text-base-content/60 ml-1">${rankEntry.name()}</span>
 							</td>
 							<td class="hidden sm:table-cell text-xs text-base-content/60">${rankEntry.weapon() != null ? rankEntry.weapon() : "-"}</td>
-							<td class="text-right font-mono font-bold">${String.format("%,.0f", rankEntry.dps())}</td>
+							<td class="text-right font-mono font-semibold">${String.format("%,.0f", rankEntry.dps())}</td>
 							<td class="text-right font-mono hidden md:table-cell">${String.format("%,.0f", rankEntry.averageDamage())}</td>
 							<td class="text-right font-mono hidden md:table-cell">${String.format("%.2f", rankEntry.speed())}</td>
 						</tr>

@@ -42,8 +42,8 @@
 						@endfor
 					</select>
 					@if(f.icon() != null)<img src="/poe-data/poe1/icons/${f.icon()}" alt="" class="w-5 h-5 object-contain shrink-0" loading="lazy">@endif
-					<span class="min-w-0 wrap-anywhere">${"prefix".equals(f.gen()) ? (ko ? "접두 " : "P ") : (ko ? "접미 " : "S ")}@for(int i = 0; i < mx.size(); i++)$unsafe{PoeText.highlightValues(mx.get(i))}@if(i < mx.size() - 1), @endif@endfor@if(!tg.isEmpty())<span class="text-[10px] text-base-content/60"> — ${String.join(", ", tg)}</span>@endif
-						<span class="block text-[10px] text-base-content/70">${fname}</span></span>
+					<span class="min-w-0 wrap-anywhere">${"prefix".equals(f.gen()) ? (ko ? "접두 " : "P ") : (ko ? "접미 " : "S ")}@for(int i = 0; i < mx.size(); i++)$unsafe{PoeText.highlightValues(mx.get(i))}@if(i < mx.size() - 1), @endif@endfor@if(!tg.isEmpty())<span class="text-2xs text-base-content/60"> — ${String.join(", ", tg)}</span>@endif
+						<span class="block text-2xs text-base-content/70">${fname}</span></span>
 				</label>
 			@endfor
 		</div>
@@ -62,8 +62,8 @@
 				}
 				<label class="flex items-start gap-2 text-xs min-w-0" data-craft-calc-delve-mod="${d.id()}">
 					<input type="checkbox" name="t_delve:${d.id()}" value="1" class="checkbox checkbox-xs mt-0.5">
-					<span class="min-w-0 wrap-anywhere">${"prefix".equals(d.gen()) ? (ko ? "접두 " : "P ") : (ko ? "접미 " : "S ")}@for(int i = 0; i < mx.size(); i++)$unsafe{PoeText.highlightValues(PoeModRange.range(i < mn.size() ? mn.get(i) : null, mx.get(i)))}@if(i < mx.size() - 1), @endif@endfor@if(!tg.isEmpty())<span class="text-[10px] text-base-content/60"> — ${String.join(", ", tg)}</span>@endif
-						<span class="block text-[10px] text-base-content/70">${ko ? "여는 화석: " : "Fossils: "}${String.join(", ", fs)}</span></span>
+					<span class="min-w-0 wrap-anywhere">${"prefix".equals(d.gen()) ? (ko ? "접두 " : "P ") : (ko ? "접미 " : "S ")}@for(int i = 0; i < mx.size(); i++)$unsafe{PoeText.highlightValues(PoeModRange.range(i < mn.size() ? mn.get(i) : null, mx.get(i)))}@if(i < mx.size() - 1), @endif@endfor@if(!tg.isEmpty())<span class="text-2xs text-base-content/60"> — ${String.join(", ", tg)}</span>@endif
+						<span class="block text-2xs text-base-content/70">${ko ? "여는 화석: " : "Fossils: "}${String.join(", ", fs)}</span></span>
 				</label>
 			@endfor
 		</div>
@@ -93,7 +93,7 @@
 											<option value="${t.tier()}">${ko ? tierKo[Math.max(0, Math.min(5, t.tier() - 1))] + " 이상" : tierEn[Math.max(0, Math.min(5, t.tier() - 1))] + "+"}</option>
 										@endfor
 									</select>
-									<span class="min-w-0 wrap-anywhere">@for(int i = 0; i < mx.size(); i++)$unsafe{PoeText.highlightValues(mx.get(i))}@if(i < mx.size() - 1), @endif@endfor@if(!tg.isEmpty())<span class="text-[10px] text-base-content/60"> — ${String.join(", ", tg)}</span>@endif<span class="text-[10px] text-base-content/70"> · ${ko ? "한 개에 " : "per orb "}${String.format("%.1f%%", c1 * 100)}</span></span>
+									<span class="min-w-0 wrap-anywhere">@for(int i = 0; i < mx.size(); i++)$unsafe{PoeText.highlightValues(mx.get(i))}@if(i < mx.size() - 1), @endif@endfor@if(!tg.isEmpty())<span class="text-2xs text-base-content/60"> — ${String.join(", ", tg)}</span>@endif<span class="text-2xs text-base-content/70"> · ${ko ? "한 개에 " : "per orb "}${String.format("%.1f%%", c1 * 100)}</span></span>
 								</label>
 							@endfor
 						</div>

@@ -27,12 +27,12 @@
 		<div class="space-y-4">
 			<div class="flex flex-wrap items-baseline gap-3">
 				<a href="/poe" class="link link-hover text-sm text-base-content/60">← ${MessageUtil.getMessage("poe.gems.title")}</a>
-				<h1 class="text-2xl font-bold">${displayName}</h1>
+				<h1 class="text-2xl font-semibold">${displayName}</h1>
 				@if(ko)<span class="text-base-content/60 text-sm">${gem.name()}</span>@endif
 				<span class="badge badge-ghost">${patchLabel}</span>
 				@if(gem.isVaal())
 					<%-- 바알 스킬은 브라우저 표시 전용 — 소울/지속 업타임 미모델링으로 최적화기에서 제외한다 --%>
-					<span class="ml-auto text-[11px] px-2 py-1 rounded bg-[#d20000]/12 text-[#d20000] border border-[#d20000]/40" title="${ko ? "바알 스킬은 소울/지속 업타임을 모델링하지 않아 최적화기에서 제외됩니다" : "Vaal skills are excluded from the optimizer (souls/uptime not modeled)"}">${ko ? "바알 스킬 · 타락 (브라우저 전용)" : "Vaal skill · corrupted (browse only)"}</span>
+					<span class="ml-auto text-2xs px-2 py-1 rounded bg-[#d20000]/12 text-[#d20000] border border-[#d20000]/40" title="${ko ? "바알 스킬은 소울/지속 업타임을 모델링하지 않아 최적화기에서 제외됩니다" : "Vaal skills are excluded from the optimizer (souls/uptime not modeled)"}">${ko ? "바알 스킬 · 타락 (브라우저 전용)" : "Vaal skill · corrupted (browse only)"}</span>
 				@elseif(!gem.isSupport())
 					<a class="btn btn-sm btn-primary btn-outline ml-auto" href="/poe/sim?skills=${gem.slug()}">${MessageUtil.getMessage("poe.gems.optimize")}</a>
 				@endif
@@ -54,7 +54,7 @@
 				<div class="flex-1 min-w-0 sm:min-w-[20rem] space-y-4">
 					<%-- 레벨별 진행표 — 레이어에 없는 상세 정보 --%>
 					<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
-						<h2 class="font-bold mb-2">${MessageUtil.getMessage("poe.gems.progression")}</h2>
+						<h2 class="font-semibold mb-2">${MessageUtil.getMessage("poe.gems.progression")}</h2>
 						<%-- 값이 하나도 없는 열은 그리지 않는다 — PoE2 젬 상세와 같다(10-12 C283: 바알 젬 등에서 빈 열 셋이 표를 좁혀 "레벨" 머리가 두 줄로 접혔다) --%>
 						!{
 							boolean hasAttrs = gem.levels().stream().anyMatch(l -> net.luversof.web.gate.poe.PoeGemRequirements.stat(l.requiredLevel(), gem.isSupport(), gem.reqStrPct()) + net.luversof.web.gate.poe.PoeGemRequirements.stat(l.requiredLevel(), gem.isSupport(), gem.reqDexPct()) + net.luversof.web.gate.poe.PoeGemRequirements.stat(l.requiredLevel(), gem.isSupport(), gem.reqIntPct()) > 0);
@@ -98,7 +98,7 @@
 					!{java.util.List<String> displayQuality = PoeText.lines(gem.qualityStatLinesKo(), gem.qualityStatLines());}
 					@if(displayQuality != null && !displayQuality.isEmpty())
 						<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
-							<h2 class="font-bold mb-2">${MessageUtil.getMessage("poe.gems.quality.title")}</h2>
+							<h2 class="font-semibold mb-2">${MessageUtil.getMessage("poe.gems.quality.title")}</h2>
 							@for(String line : displayQuality)
 								<div class="text-sm text-[#8888ff]">$unsafe{PoeText.highlightValues(line)}</div>
 							@endfor
@@ -108,7 +108,7 @@
 					!{java.util.List<String> displayTags = PoeText.lines(gem.tagsKo(), gem.tags());}
 					@if(displayTags != null && !displayTags.isEmpty())
 						<div class="rounded-2xl bg-base-100 p-4 shadow-sm">
-							<h2 class="font-bold mb-2">${MessageUtil.getMessage("poe.gems.tags")}</h2>
+							<h2 class="font-semibold mb-2">${MessageUtil.getMessage("poe.gems.tags")}</h2>
 							<div class="flex flex-wrap gap-1.5">
 								@for(String tag : displayTags)
 									<span class="badge badge-outline badge-sm">${tag}</span>

@@ -52,7 +52,7 @@
 					!{ java.util.List<String> ox = ko && !nz.apply(l.ko()).isEmpty() ? l.ko() : nz.apply(l.en()); }
 					<div class="rounded border-l-4 border-primary bg-primary/10 px-2 py-1.5 text-xs min-w-0 wrap-anywhere" data-craft-fam-outside="${l.id()}">
 						@for(String t : ox)<div>$unsafe{PoeText.highlightValues(t)}</div>@endfor
-						<div class="text-[10px] text-base-content/70"><span class="badge badge-primary badge-xs">${ko ? "적용" : "on"}@if(l.tierRank() != null) T${l.tierRank()}@endif</span> ${ko ? "이 표 밖 옵션" : "outside this table"}@if(lineTags.get(l.id()) != null) — ${String.join(", ", lineTags.get(l.id()))}@endif@if(l.fractured()) · ${ko ? "분열" : "fractured"}@endif@if(added != null && added.contains(l.id())) <span class="badge badge-success badge-xs">${ko ? "방금" : "new"}</span>@endif</div>
+						<div class="text-2xs text-base-content/70"><span class="badge badge-primary badge-xs">${ko ? "적용" : "on"}@if(l.tierRank() != null) T${l.tierRank()}@endif</span> ${ko ? "이 표 밖 옵션" : "outside this table"}@if(lineTags.get(l.id()) != null) — ${String.join(", ", lineTags.get(l.id()))}@endif@if(l.fractured()) · ${ko ? "분열" : "fractured"}@endif@if(added != null && added.contains(l.id())) <span class="badge badge-success badge-xs">${ko ? "방금" : "new"}</span>@endif</div>
 					</div>
 				@endfor
 				@for(var f : gf)
@@ -71,7 +71,7 @@
 						<summary class="cursor-pointer select-none grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 px-2 py-1.5" title="${ko ? "누르면 등급별 상세" : "Click for every tier"}">
 							<div class="min-w-0 text-xs wrap-anywhere ${!live && on == null ? "text-base-content/60" : null}">
 								@for(String t : fx)<div>$unsafe{PoeText.highlightValues(t)}</div>@endfor
-								<div class="text-[10px] leading-tight text-base-content/60">@if(topRank != null)T${topRank}@if(lastRank != null && !lastRank.equals(topRank))~T${lastRank}@endif · @endif${f.tiers().size()}${ko ? "단계" : (f.tiers().size() == 1 ? " tier" : " tiers")}@if(!ftags.isEmpty())<span data-craft-fam-tags> — ${String.join(", ", ftags)}</span>@endif
+								<div class="text-2xs leading-tight text-base-content/60">@if(topRank != null)T${topRank}@if(lastRank != null && !lastRank.equals(topRank))~T${lastRank}@endif · @endif${f.tiers().size()}${ko ? "단계" : (f.tiers().size() == 1 ? " tier" : " tiers")}@if(!ftags.isEmpty())<span data-craft-fam-tags> — ${String.join(", ", ftags)}</span>@endif
 									@if(on != null) <span class="badge badge-primary badge-xs" data-craft-fam-applied="${on.line().tierRank()}">${ko ? "적용" : "on"}@if(on.line().tierRank() != null) T${on.line().tierRank()}@endif</span>@endif
 									@if(on != null && on.fresh()) <span class="badge badge-success badge-xs" data-craft-fam-fresh>${ko ? "방금" : "new"}</span>@endif
 								</div>
@@ -82,7 +82,7 @@
 								@if(fm != null)<span class="badge badge-info badge-xs" data-craft-fam-mult="${fm}">${net.luversof.web.gate.poe.CraftPoolGroups.multText(fm)}</span>@endif
 								@if(live)
 									${String.format("%.2f%%", f.sum() * 100)}
-									@if(topRank != null)<div class="text-[10px] text-base-content/60" data-craft-fam-top>T${topRank} ${String.format("%.2f%%", f.topChance() * 100)}</div>@endif
+									@if(topRank != null)<div class="text-2xs text-base-content/60" data-craft-fam-top>T${topRank} ${String.format("%.2f%%", f.topChance() * 100)}</div>@endif
 								@else
 									<span class="text-base-content/60" title="${on != null ? (ko ? "이미 붙은 계열은 다시 붙지 않습니다" : "Already on the item — can't roll again") : f.rollable() ? (ko ? "고른 화폐 등급 · 징조에 걸려 지금은 안 붙습니다(펼쳐서 직접 편집 넣기는 됨)" : "Blocked by the picked currency tier or omens (manual add still works)") : actionPicked ? (ko ? "고른 화폐로는 붙지 않습니다(등급 · 징조 · 자리 · 같은 그룹)" : "Can't roll with the armed currency (tier, omens, slots or same group)") : (ko ? "지금 아이템에는 붙지 않습니다(자리 · 같은 그룹 · 희귀도)" : "Can't roll on this item now (slots, same group or rarity)")}">—</span>
 								@endif
@@ -104,7 +104,7 @@
 										}
 										<%-- 고른 등급에 걸린 줄(C445) = 확률 0 · 흐리게, 직접 편집 넣기는 그대로 --%>
 										<tr data-craft-pool-line="${t.rollable() ? p.id() : null}" data-craft-pool-tier="${p.id()}" data-craft-pool-zero="${t.rollable() && t.chance() <= 0 ? "1" : null}" data-craft-pool-on="${t.applied() ? "1" : null}" class="${t.applied() ? "bg-primary/10" : zero ? "text-base-content/70" : null}">
-											<td class="font-mono text-xs">@if(p.tierRank() != null)T${p.tierRank()}@endif@if(affix != null)<div class="font-sans text-[11px] leading-tight text-base-content/80" data-craft-affix-name>${affix}</div>@endif</td>
+											<td class="font-mono text-xs">@if(p.tierRank() != null)T${p.tierRank()}@endif@if(affix != null)<div class="font-sans text-2xs leading-tight text-base-content/80" data-craft-affix-name>${affix}</div>@endif</td>
 											<td class="min-w-0 wrap-anywhere">
 												@for(String x : mx)
 													<div>$unsafe{PoeText.highlightValues(x)}</div>
