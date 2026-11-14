@@ -47,6 +47,18 @@ class StockAnalysisRunCompareTest {
   }
 
   @Test
+  void 리플레이_회차는_버전과_회차_이름에_실험_이름을_붙여_운영과_따로_센다() {
+    StockPrediction p = prediction(RUN1, "2026-11-10T23:00:00Z", 1, "UP");
+    p.setReplay("gnews");
+    StockPredictionGrade g = new StockPredictionGrade();
+    g.setPredictionId(p.getId());
+    assertThat(StockAnalysisService.versionLabel(p)).isEqualTo("v2@am 리플레이 gnews");
+    // 기준일마다 회차가 생겨도 실험 하나는 한 줄로 묶인다(날짜 · 순번이 붙지 않는다)
+    assertThat(StockAnalysisService.runLabel(new StockAnalysisService.Graded(p, g), 3))
+        .isEqualTo("v2@am 리플레이 gnews");
+  }
+
+  @Test
   void 회차를_열로_놓고_방향이_갈린_행을_표시한다() {
     StockPrediction a1 = prediction(RUN1, "2026-11-10T11:07:00Z", 1, "FLAT");
     StockPrediction a5 = prediction(RUN1, "2026-11-10T11:07:00Z", 5, "UP");

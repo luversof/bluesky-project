@@ -177,3 +177,14 @@ CREATE TABLE IF NOT EXISTS "StockMarketDaily" (
 CREATE UNIQUE INDEX IF NOT EXISTS uk_stockMarketDaily_code_tradeDate ON "StockMarketDaily" ("code", "tradeDate");
 -- 되돌리기
 -- DROP TABLE IF EXISTS "StockMarketDaily";
+
+-- =====================================================================
+-- 2026-11-15
+-- =====================================================================
+
+-- (1) 리플레이 회차도 저장해 화면(회차 비교 · 적중률)에서 운영 회차와 구분해 본다. NULL = 운영.
+ALTER TABLE "StockPrediction" ADD COLUMN IF NOT EXISTS "replay" VARCHAR(50);
+-- 되돌리기
+-- DELETE FROM "StockPredictionGrade" WHERE "prediction_id" IN (SELECT "id" FROM "StockPrediction" WHERE "replay" IS NOT NULL);
+-- DELETE FROM "StockPrediction" WHERE "replay" IS NOT NULL;
+-- ALTER TABLE "StockPrediction" DROP COLUMN "replay";

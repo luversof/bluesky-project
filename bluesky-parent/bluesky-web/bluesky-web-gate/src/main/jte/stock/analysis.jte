@@ -143,7 +143,11 @@
 									<th scope="col">${MessageUtil.getMessage("stock.analysis.col.horizon")}</th>
 									@for(var run : runs.runs())
 										<th scope="col">
-											<div class="whitespace-nowrap">#${run.seq()} ${run.createdDate() == null ? "" : runTime.format(run.createdDate()).substring(6)} ${run.promptVersion()}</div>
+											<div class="whitespace-nowrap">#${run.seq()} ${run.createdDate() == null ? "" : runTime.format(run.createdDate()).substring(6)} ${run.promptVersion()}
+												@if(run.replay() != null)
+													<span class="badge badge-sm badge-outline badge-info">${MessageUtil.getMessage("stock.analysis.runs.replay")} ${run.replay()}</span>
+												@endif
+											</div>
 											<div class="text-xs font-normal opacity-70 whitespace-nowrap">${StockViewSupport.msg("stock.analysis.runs.summary", rate.apply(run.hitRatePct()), rate.apply(run.flatPct()))}</div>
 										</th>
 									@endfor

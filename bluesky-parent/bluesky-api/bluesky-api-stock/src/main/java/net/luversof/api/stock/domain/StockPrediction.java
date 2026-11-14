@@ -52,6 +52,10 @@ public class StockPrediction {
   @Column("promptVersion")
   private String promptVersion;
 
+  /** 리플레이 실험 이름(지난 기준일을 다시 분석한 회차). 운영 예측은 null. */
+  @Column("replay")
+  private String replay;
+
   @Column("inputSnapshot")
   private Map<String, Object> inputSnapshot;
 
@@ -153,6 +157,14 @@ public class StockPrediction {
 
   public void setInputSnapshot(Map<String, Object> inputSnapshot) {
     this.inputSnapshot = inputSnapshot;
+  }
+
+  public String getReplay() {
+    return replay;
+  }
+
+  public void setReplay(String replay) {
+    this.replay = replay;
   }
 
   public Instant getCreatedDate() {

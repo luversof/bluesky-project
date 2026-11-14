@@ -19,28 +19,33 @@ try {
     $promptVersion = $Matches[1]
     $schema = Get-Content "$PSScriptRoot\schema.json" -Raw -Encoding UTF8
 
+    # Only BLUESKY_ANALYSIS_SYMBOLS are analyzed (comma list, 'all' = every target). Default Samsung
+    # Electronics only: analyzing every target used up the Claude usage limit (user decision 2026-11-12).
+    $symbols = if ($env:BLUESKY_ANALYSIS_SYMBOLS) { $env:BLUESKY_ANALYSIS_SYMBOLS } else { '005930' }
+    $analysisInput = Invoke-ApiRaw GET "/api/stock/analysis/input?userId=$UserId" | ConvertFrom-Json
+    $items = @($analysisInput.items)
+    if ($symbols -ne 'all') {
+        $wanted = $symbols.Split(',') | ForEach-Object { $_.Trim() }
+        $items = @($items | Where-Object { $wanted -contains $_.symbol })
+    }
+    Write-Log ("targets: {0} [{1}]" -f $items.Count, $symbols)
+
     # Targets are analyzed 10 at a time: with ~40 targets one prompt would carry 100k+ characters.
     $predictions = @()
     $result = $null
-    for ($chunk = 0; ; $chunk++) {
-        $inputJson = Invoke-ApiRaw GET "/api/stock/analysis/input?userId=$UserId&chunk=$chunk&chunkSize=10"
-        $itemCount = @(($inputJson | ConvertFrom-Json).items).Count
-        if ($itemCount -eq 0) { break }
-        $prompt = $promptTemplate.Replace('{{INPUT_JSON}}', $inputJson)
+    for ($i = 0; $i -lt $items.Count; $i += 10) {
+        $analysisInput.items = @($items[$i..([Math]::Min($i + 10, $items.Count) - 1)])
+        $prompt = $promptTemplate.Replace('{{INPUT_JSON}}', ($analysisInput | ConvertTo-Json -Depth 20 -Compress))
         foreach ($attempt in 1, 2) {
             try {
                 $result = Invoke-Claude $prompt $schema
                 break
             } catch {
-                Write-Log "claude chunk $chunk attempt $attempt failed: $_"
+                Write-Log "claude targets $i attempt $attempt failed: $_"
                 if ($attempt -eq 2) { throw }
             }
         }
         $predictions += @($result.structured_output.predictions)
-        # A short chunk is the last one. This also stops an api-stock deployed before chunking, which
-        # ignores chunk= and returns every target each time, after one call instead of looping.
-        if ($itemCount -ne 10) { break }
-        if ($chunk -ge 20) { throw 'more than 20 chunks - stopping (chunk= ignored?)' }
     }
     if ($predictions.Count -eq 0) {
         Write-Log 'no analysis targets - done'

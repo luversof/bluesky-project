@@ -201,6 +201,8 @@ CREATE TABLE IF NOT EXISTS "StockPrediction" (
 	"rationale" VARCHAR(1000),
 	"modelId" VARCHAR(100) NOT NULL,
 	"promptVersion" VARCHAR(50) NOT NULL,
+	-- 리플레이 실험 이름(지난 기준일을 다시 분석한 회차). 운영 아침 작업이 넣은 예측은 NULL
+	"replay" VARCHAR(50),
 	-- 예측에 쓴 입력(지표 · 뉴스) 그대로
 	"inputSnapshot" JSONB,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL

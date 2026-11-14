@@ -40,4 +40,10 @@ public interface StockPredictionRepository extends CrudRepository<StockPredictio
         AND EXISTS (SELECT 1 FROM "StockPredictionGrade" g WHERE g."prediction_id" = p."id")
       """)
   int countGradedByBaseDate(@Param("baseDate") LocalDate baseDate);
+
+  /** 리플레이 회차의 분석 시각을 그 기준일의 분석 시각으로 맞춘다 - 저장 때 감사(@CreatedDate)가 지금 시각을 넣는다. */
+  @Modifying
+  @Query("UPDATE \"StockPrediction\" SET \"createdDate\" = :createdDate WHERE \"runId\" = :runId")
+  int updateCreatedDateByRunId(
+      @Param("runId") UUID runId, @Param("createdDate") java.time.Instant createdDate);
 }

@@ -28,6 +28,7 @@ import shutil
 import ssl
 import subprocess
 import sys
+import urllib.parse
 import urllib.request
 from collections import defaultdict
 
@@ -176,10 +177,34 @@ def cmd_run(a):
                     'predictions': predictions}
             with open(RESULTS, 'a', encoding='utf-8') as f:
                 f.write(json.dumps(line, ensure_ascii=False) + '\n')
+            if a.save:
+                save_run(line, a.save)
             rows = {r['horizonDays']: r for r in ev['byHorizon']}
             print(day, version, 'rep', rep,
                   ' '.join('D+%d hit %s edge %s' % (h, r['hitRatePct'], r['edgePct']) for h, r in sorted(rows.items())),
                   flush=True)
+
+
+def save_run(line, label):
+    """Store one replay run in the DB as a replay run (shown on the analysis screen apart from real runs)."""
+    query = urllib.parse.urlencode({'asOf': line['asOf'], 'morning': str(line['mode'] == 'morning').lower(),
+                                    'replay': label})
+    res = http('POST', '/api/stock/analysis/predictions?' + query,
+               {'modelId': line['model'], 'promptVersion': line['version'].split('@')[0],
+                'predictions': line['predictions']})
+    if res.get('rejected'):
+        print(line['asOf'], 'save rejected', res['rejected'], flush=True)
+
+
+def cmd_save(a):
+    """Store runs already in the results file (BLUESKY_REPLAY_RESULTS) as replay runs named --label."""
+    n = 0
+    for line in load_results():
+        if a.version and line['version'] not in a.version:
+            continue
+        save_run(line, a.label)
+        n += 1
+    print('saved', n, 'runs as replay', a.label)
 
 
 def load_results():
@@ -254,12 +279,18 @@ def main():
     r.add_argument('--resume', action='store_true', help='skip dates already in the results (after failures)')
     r.add_argument('--morning', action='store_true',
                    help='analyze at 08:00 KST the next day (the scheduled morning job) instead of 20:00 KST')
+    r.add_argument('--save', metavar='LABEL',
+                   help='also store each run in the DB as replay LABEL (shown on the analysis screen)')
     r.set_defaults(fn=cmd_run)
+    v = sub.add_parser('save', help='store runs already in the results file as replay runs')
+    v.add_argument('--label', required=True)
+    v.add_argument('--version', nargs='*', help='only these versions (e.g. v9@am)')
+    v.set_defaults(fn=cmd_save)
     s = sub.add_parser('summary')
     s.add_argument('--split', help='dates before this are "tune", from it on "valid"')
     s.add_argument('--version', nargs='*')
     s.set_defaults(fn=cmd_summary)
-    for p in (r, s):
+    for p in (r, s, v):
         # default Samsung only (2026-11-12 user decision); ORIGINAL_SYMBOLS for the earlier 9
         p.add_argument('--symbols', default='005930',
                        help='comma list of targets (default: 005930), ORIGINAL_SYMBOLS value for the 9, or "all"')

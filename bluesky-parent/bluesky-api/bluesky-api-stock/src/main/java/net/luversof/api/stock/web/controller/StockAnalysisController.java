@@ -111,10 +111,14 @@ public class StockAnalysisController {
     return stockAnalysisService.evaluate(asOf, request);
   }
 
+  /** replay · asOf 를 주면 리플레이 회차로 저장하고 바로 채점한다(replay.py --save). */
   @PostMapping("/predictions")
   public StockAnalysisService.SubmitResult submit(
-      @RequestBody StockAnalysisService.SubmitRequest request) {
-    return stockAnalysisService.submit(request);
+      @RequestBody StockAnalysisService.SubmitRequest request,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOf,
+      @RequestParam(defaultValue = "false") boolean morning,
+      @RequestParam(required = false) String replay) {
+    return stockAnalysisService.submit(request, asOf, morning, replay);
   }
 
   @GetMapping("/predictions")

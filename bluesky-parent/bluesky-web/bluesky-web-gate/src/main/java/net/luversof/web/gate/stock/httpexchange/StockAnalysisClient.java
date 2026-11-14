@@ -35,6 +35,7 @@ public interface StockAnalysisClient {
       Instant createdDate,
       String promptVersion,
       String modelId,
+      String replay,
       int predictions,
       int graded,
       BigDecimal hitRatePct,

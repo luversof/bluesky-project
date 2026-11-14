@@ -463,6 +463,21 @@ public class StockAnalysisService {
 
   @Transactional
   public SubmitResult submit(SubmitRequest request) {
+    return submit(request, null, false, null);
+  }
+
+  /**
+   * replay: 리플레이 실험 이름(사용자 요청 2026-11-15: 리플레이 회차도 화면에서 본다). 주면 asOf 기준일의 입력으로 저장하고, 분석 시각을 그 기준일의
+   * 분석 시각 (analyzedAt)으로 맞춘 뒤 바로 채점한다 - 만기 종가가 이미 있다. 운영 회차와는 replay 열로 구분한다.
+   */
+  @Transactional
+  public SubmitResult submit(
+      SubmitRequest request, LocalDate asOf, boolean morning, String replay) {
+    if ((replay == null) != (asOf == null)
+        || (replay != null && (replay.isBlank() || replay.length() > 50))) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "replay(<=50) and asOf go together");
+    }
     if (request == null
         || isBlank(request.modelId())
         || request.modelId().length() > 100
@@ -475,7 +490,7 @@ public class StockAnalysisService {
     Map<String, StockItem> targets =
         findTargets().stream()
             .collect(Collectors.toMap(StockItem::getSymbol, Function.identity(), (a, b) -> a));
-    Map<UUID, List<StockNews>> newsByItem = recentNewsByItem();
+    Map<UUID, List<StockNews>> newsByItem = recentNewsByItem(asOf, morning);
     Map<UUID, List<String>> tagsByItem = tagsByItem(List.copyOf(targets.values()));
     Map<String, AnalysisItem> builtItems = new HashMap<>();
 
@@ -497,7 +512,8 @@ public class StockAnalysisService {
                   buildItem(
                       item,
                       newsByItem.getOrDefault(item.getId(), List.of()),
-                      tagsByItem.getOrDefault(item.getId(), List.of())));
+                      tagsByItem.getOrDefault(item.getId(), List.of()),
+                      asOf));
       if (built.baseDate() == null) {
         rejected.add(p.symbol() + ": 시세 없음");
         continue;
@@ -516,14 +532,21 @@ public class StockAnalysisService {
               : p.rationale().substring(0, 1000));
       prediction.setModelId(request.modelId());
       prediction.setPromptVersion(request.promptVersion());
+      prediction.setReplay(replay);
       @SuppressWarnings("unchecked")
       Map<String, Object> snapshot = new HashMap<>(jsonMapper.convertValue(built, Map.class));
-      // 예측이 본 시장 상황도 함께 남긴다(아침 작업이 입력을 만들 때 가져온 것 - 30 분 캐시).
-      snapshot.put(
-          "market", jsonMapper.convertValue(marketContextService.lastFetched(), Map.class));
+      // 예측이 본 시장 상황도 함께 남긴다(아침 작업이 입력을 만들 때 가져온 것 - 30 분 캐시). 리플레이는 그 시점 시장이 아니라 뺀다.
+      if (replay == null) {
+        snapshot.put(
+            "market", jsonMapper.convertValue(marketContextService.lastFetched(), Map.class));
+      }
       prediction.setInputSnapshot(snapshot);
       stockPredictionRepository.save(prediction);
       saved++;
+    }
+    if (replay != null && saved > 0) {
+      stockPredictionRepository.updateCreatedDateByRunId(runId, analyzedAt(asOf, morning));
+      grade();
     }
     return new SubmitResult(saved == 0 ? null : runId, saved, rejected);
   }
@@ -711,7 +734,12 @@ public class StockAnalysisService {
             && p.getBaseDate() != null
             && LocalDate.ofInstant(p.getCreatedDate(), PredictionMath.MARKET_ZONE_ID)
                 .isAfter(p.getBaseDate());
-    return p.getPromptVersion() + (morning ? "@am" : "");
+    return p.getPromptVersion() + (morning ? "@am" : "") + replaySuffix(p);
+  }
+
+  /** 리플레이 회차 표시(운영 회차와 섞이지 않게 버전 · 회차 이름 뒤에 붙인다). */
+  static String replaySuffix(StockPrediction p) {
+    return p.getReplay() == null ? "" : " 리플레이 " + p.getReplay();
   }
 
   /**
@@ -722,6 +750,10 @@ public class StockAnalysisService {
     StockPrediction p = g.prediction();
     if (p.getCreatedDate() == null) {
       return "? " + p.getPromptVersion();
+    }
+    if (p.getReplay() != null) {
+      // 리플레이는 기준일마다 회차가 하나씩이라 날짜별로 나누면 수백 줄이 된다 - 실험 하나를 한 줄로 묶는다.
+      return versionLabel(p) + (g.grade().isLate() ? " (late)" : "");
     }
     return RUN_DATE.format(p.getCreatedDate())
         + " #"
@@ -920,13 +952,14 @@ public class StockAnalysisService {
 
   // ---- 회차 비교 ----
 
-  /** 회차 하나의 요약. flatPct: 예측 중 FLAT 비율 - 방향을 정하지 않고 피하는 정도. */
+  /** 회차 하나의 요약. flatPct: 예측 중 FLAT 비율 - 방향을 정하지 않고 피하는 정도. replay: 리플레이 실험 이름(운영 회차는 null). */
   public record RunInfo(
       UUID runId,
       int seq,
       Instant createdDate,
       String promptVersion,
       String modelId,
+      String replay,
       int predictions,
       int graded,
       BigDecimal hitRatePct,
@@ -1005,6 +1038,7 @@ public class StockAnalysisService {
                   first.getCreatedDate(),
                   first.getPromptVersion(),
                   first.getModelId(),
+                  first.getReplay(),
                   list.size(),
                   graded.size(),
                   ratePct(graded, StockPredictionGrade::isHit),
