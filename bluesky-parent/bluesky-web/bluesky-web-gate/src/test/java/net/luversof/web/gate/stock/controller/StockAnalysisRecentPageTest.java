@@ -28,4 +28,20 @@ class StockAnalysisRecentPageTest {
     assertThat(StockAnalysisViewController.pageOf(ROWS, 99).getNumber()).isEqualTo(2);
     assertThat(StockAnalysisViewController.pageOf(List.of(), 1).getContent()).isEmpty();
   }
+
+  private static net.luversof.web.gate.stock.httpexchange.StockAnalysisClient.AnalysisItem item(
+      String symbol) {
+    return new net.luversof.web.gate.stock.httpexchange.StockAnalysisClient.AnalysisItem(
+        symbol, symbol, null, null, null, null, null, null);
+  }
+
+  @Test
+  void 종목별_예측은_고른_종목_없으면_삼성전자_그것도_없으면_첫_대상() {
+    var items = List.of(item("000660"), item("005930"));
+    assertThat(StockAnalysisViewController.historySymbolOf("000660", items)).isEqualTo("000660");
+    assertThat(StockAnalysisViewController.historySymbolOf("999999", items)).isEqualTo("005930");
+    assertThat(StockAnalysisViewController.historySymbolOf(null, List.of(item("000660"))))
+        .isEqualTo("000660");
+    assertThat(StockAnalysisViewController.historySymbolOf(null, List.of())).isNull();
+  }
 }

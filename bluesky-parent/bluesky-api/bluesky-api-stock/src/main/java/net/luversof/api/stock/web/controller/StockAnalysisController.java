@@ -147,6 +147,12 @@ public class StockAnalysisController {
     return stockAnalysisService.runs(date);
   }
 
+  /** 한 종목의 일자별 예측과 버전별 적중률. */
+  @GetMapping("/history")
+  public StockAnalysisService.SymbolHistory history(@RequestParam String symbol) {
+    return stockAnalysisService.history(symbol);
+  }
+
   @GetMapping("/summary")
   public StockAnalysisService.Summary summary() {
     return stockAnalysisService.summary();

@@ -15,6 +15,8 @@ public interface StockPredictionRepository extends CrudRepository<StockPredictio
 
   List<StockPrediction> findByBaseDateGreaterThanEqual(LocalDate baseDate);
 
+  List<StockPrediction> findByStockItemId(UUID stockItemId);
+
   /** 아직 채점하지 않은 예측. */
   @Query(
       """

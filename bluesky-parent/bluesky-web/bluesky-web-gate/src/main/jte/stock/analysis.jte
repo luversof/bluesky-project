@@ -19,6 +19,11 @@
 @param net.luversof.web.common.menu.domain.Pagination runsPagination = null
 @param net.luversof.web.common.menu.domain.Pagination itemsPagination = null
 @param String recentPageUrl = "/stock/analysis"
+@param List<StockAnalysisClient.AnalysisItem> historyOptions = null
+@param String historySymbol = null
+@param List<StockAnalysisClient.RateRow> historyRates = null
+@param List<StockAnalysisClient.RecentPrediction> history = null
+@param net.luversof.web.common.menu.domain.Pagination historyPagination = null
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
@@ -83,40 +88,7 @@
 							List.of("stock.analysis.rate.version", summary.byPromptVersion())))
 						!{@SuppressWarnings("unchecked") var rows = (List<StockAnalysisClient.RateRow>) section.get(1);}
 						@template._components.ui.card(title = MessageUtil.getMessage((String) section.get(0)), body = @`
-								@if(rows.isEmpty())
-									<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
-								@else
-									<div class="overflow-x-auto">
-										<table class="table data-table w-full" aria-label="${MessageUtil.getMessage((String) section.get(0))}">
-											<thead><tr>
-												<th scope="col">${MessageUtil.getMessage("stock.analysis.col.group")}</th>
-												<th scope="col">${MessageUtil.getMessage("stock.analysis.col.horizon")}</th>
-												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.graded")}</th>
-												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.hitRate")}</th>
-												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.alwaysUp")}</th>
-												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.trend")}</th>
-												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.majority")}</th>
-												<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.edge")}</th>
-											</tr></thead>
-											<tbody>
-												@for(var r : rows)
-													<%-- 표본이 적으면 흐리게: 적중률이 우연에 크게 흔들린다. --%>
-													<tr class="${r.graded() < 20 ? "opacity-60" : null}">
-														<td>${r.group()}</td>
-														<td>D+${r.horizonDays()}</td>
-														<td class="text-right">${r.graded()}</td>
-														<td class="text-right font-semibold">${rate.apply(r.hitRatePct())}</td>
-														<td class="text-right">${rate.apply(r.alwaysUpRatePct())}</td>
-														<td class="text-right">${rate.apply(r.trendRatePct())}</td>
-														<td class="text-right">${rate.apply(r.majorityRatePct())}</td>
-														<td class="text-right font-semibold ${r.edgePct() == null ? "" : (r.edgePct().signum() > 0 ? "text-profit" : "text-loss")}">${r.edgePct() == null ? "-" : (r.edgePct().signum() > 0 ? "+" : "") + r.edgePct().toPlainString() + "%p"}</td>
-													</tr>
-												@endfor
-											</tbody>
-										</table>
-									</div>
-									<p class="mt-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.analysis.rate.note")}</p>
-								@endif
+								@template.stock.htmx.fragments.components.rateTable(rows = rows, label = MessageUtil.getMessage((String) section.get(0)), rate = rate)
 				`)
 					@endfor
 				</div>
@@ -206,6 +178,72 @@
 					@endif
 				</form>
 
+				<%-- 종목별 예측(사용자 요청 2026-11-15): 고른 종목의 일자별 예측 · 결과와 버전별 적중률. 리플레이 회차도 버전 이름으로 구분해 함께 본다. --%>
+				@if(historyOptions != null && !historyOptions.isEmpty())
+				<div id="analysis-history">
+				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.history.title"), body = @`
+						<form method="get" action="/stock/analysis" class="flex flex-wrap items-center gap-2 mb-3">
+							<input type="hidden" name="keyword" value="${keyword}" />
+							@if(runs != null && runs.date() != null)
+								<input type="hidden" name="runDate" value="${runs.date().toString()}" />
+							@endif
+							<input type="hidden" name="onlyDisagree" value="${onlyDisagree}" />
+							<label class="text-sm" for="analysis-history-symbol">${MessageUtil.getMessage("stock.analysis.history.symbol")}</label>
+							<select id="analysis-history-symbol" name="historySymbol" class="select select-bordered select-sm">
+								@for(var o : historyOptions)
+									<option value="${o.symbol()}" selected="${o.symbol().equals(historySymbol)}">${o.name()} (${o.symbol()})</option>
+								@endfor
+							</select>
+							<button type="submit" class="btn btn-sm btn-outline">${MessageUtil.getMessage("stock.analysis.runs.show")}</button>
+						</form>
+						<h3 class="text-sm font-semibold mb-2">${MessageUtil.getMessage("stock.analysis.history.rates")}</h3>
+						@template.stock.htmx.fragments.components.rateTable(rows = historyRates, label = MessageUtil.getMessage("stock.analysis.history.rates"), rate = rate)
+						@if(history == null || history.isEmpty())
+							<p class="text-sm opacity-70 mt-4">${MessageUtil.getMessage("stock.analysis.empty")}</p>
+						@else
+							<div class="overflow-x-auto mt-4">
+								<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.history.title")}">
+									<thead><tr>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.horizon")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.runTime")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.direction")}</th>
+										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.confidence")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.result")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.rationale")}</th>
+									</tr></thead>
+									<tbody>
+										@for(var p : history)
+											<tr>
+												<td class="whitespace-nowrap">${String.valueOf(p.baseDate())}</td>
+												<td>D+${p.horizonDays()}</td>
+												<td class="whitespace-nowrap">${p.createdDate() == null ? "-" : runTime.format(p.createdDate())} <span class="opacity-60 text-xs">${p.promptVersion()}</span>
+													@if(p.replay() != null)
+														<span class="badge badge-sm badge-outline badge-info">${MessageUtil.getMessage("stock.analysis.runs.replay")} ${p.replay()}</span>
+													@endif
+												</td>
+												<td>${p.direction()}</td>
+												<td class="text-right">${p.confidence()}</td>
+												<td class="whitespace-nowrap">@template.stock.htmx.fragments.components.predictionResult(p = p, pct = pct)</td>
+												<td class="text-xs min-w-64">${p.rationale()}</td>
+											</tr>
+										@endfor
+									</tbody>
+								</table>
+							</div>
+							@if(historyPagination != null && historyPagination.getTotalPage() > 1)
+								@template._components.htmxPagination(
+									pagination = historyPagination,
+									url = recentPageUrl,
+									includeSelector = "this",
+									targetSelector = "#analysis-history",
+									pageParam = "historyPage")
+							@endif
+						@endif
+				`)
+				</div>
+				@endif
+
 				<%-- 최근 예측은 쪽으로 나눈다(사용자 요청 2026-11-15). 쪽 버튼은 이 화면을 다시 받아 이 영역만 바꾼다. --%>
 				<div id="analysis-recent">
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.recent.title"), body = @`
@@ -233,17 +271,7 @@
 												<td>D+${p.horizonDays()}</td>
 												<td>${p.direction()}</td>
 												<td class="text-right">${p.confidence()}</td>
-												<td class="whitespace-nowrap">
-													@if(p.hit() == null)
-														<span class="badge badge-sm badge-outline">${MessageUtil.getMessage("stock.analysis.result.pending")}</span>
-													@else
-														<span class="badge badge-sm badge-outline ${p.hit() ? "badge-success" : "badge-error"}">${MessageUtil.getMessage(p.hit() ? "stock.analysis.result.hit" : "stock.analysis.result.miss")}</span>
-														<span class="text-xs">${p.actualDirection()} ${pct.apply(p.actualChangePct())}</span>
-														@if(Boolean.TRUE.equals(p.late()))
-															<span class="badge badge-warning badge-sm badge-outline">${MessageUtil.getMessage("stock.analysis.result.late")}</span>
-														@endif
-													@endif
-												</td>
+												<td class="whitespace-nowrap">@template.stock.htmx.fragments.components.predictionResult(p = p, pct = pct)</td>
 												<td class="text-xs min-w-64">${p.rationale()}</td>
 											</tr>
 										@endfor

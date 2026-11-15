@@ -681,6 +681,7 @@ public class StockAnalysisService {
       String rationale,
       BigDecimal basePrice,
       String promptVersion,
+      String replay,
       Instant createdDate,
       int runSeq,
       LocalDate targetDate,
@@ -909,7 +910,46 @@ public class StockAnalysisService {
     LocalDate since = LocalDate.now(PredictionMath.MARKET_ZONE_ID).minusDays(days);
     List<StockPrediction> predictions =
         stockPredictionRepository.findByBaseDateGreaterThanEqual(since);
+    return toRows(predictions, gradesOf(predictions)).stream()
+        .sorted(
+            Comparator.comparing(
+                    RecentPrediction::createdDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(r -> r.name() == null ? "" : r.name())
+                .thenComparingInt(RecentPrediction::horizonDays))
+        .toList();
+  }
+
+  /** 한 종목의 일자별 예측과 버전별 적중률(사용자 요청 2026-11-15). 리플레이 회차도 버전 이름으로 구분해 함께 센다. */
+  public record SymbolHistory(
+      String symbol, String name, List<RateRow> byVersion, List<RecentPrediction> predictions) {}
+
+  public SymbolHistory history(String symbol) {
+    StockItem item = symbol == null ? null : stockItemRepository.findBySymbol(symbol);
+    if (item == null) {
+      return new SymbolHistory(symbol, null, List.of(), List.of());
+    }
+    List<StockPrediction> predictions = stockPredictionRepository.findByStockItemId(item.getId());
     Map<UUID, StockPredictionGrade> grades = gradesOf(predictions);
+    List<Graded> onTime =
+        predictions.stream()
+            .filter(p -> grades.containsKey(p.getId()) && !grades.get(p.getId()).isLate())
+            .map(p -> new Graded(p, grades.get(p.getId())))
+            .toList();
+    List<RecentPrediction> rows =
+        toRows(predictions, grades).stream()
+            .sorted(
+                Comparator.comparing(RecentPrediction::baseDate, Comparator.reverseOrder())
+                    .thenComparing(
+                        RecentPrediction::createdDate,
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparingInt(RecentPrediction::horizonDays))
+            .toList();
+    return new SymbolHistory(
+        item.getSymbol(), item.getName(), rates(onTime, g -> versionLabel(g.prediction())), rows);
+  }
+
+  private List<RecentPrediction> toRows(
+      List<StockPrediction> predictions, Map<UUID, StockPredictionGrade> grades) {
     // shortcut: 그날 몇 번째인지 세려고 전체 예측을 읽는다(하루 수십 건 규모), 수만 건을 넘으면 회차 표를 따로 둔다.
     Map<UUID, Integer> runSeqs =
         runSeqs(
@@ -934,6 +974,7 @@ public class StockAnalysisService {
               p.getRationale(),
               p.getBasePrice(),
               p.getPromptVersion(),
+              p.getReplay(),
               p.getCreatedDate(),
               runSeqs.getOrDefault(runKey(p), 0),
               g == null ? null : g.getTargetDate(),
@@ -942,11 +983,6 @@ public class StockAnalysisService {
               g == null ? null : g.isHit(),
               g == null ? null : g.isLate());
         })
-        .sorted(
-            Comparator.comparing(
-                    RecentPrediction::createdDate, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(r -> r.name() == null ? "" : r.name())
-                .thenComparingInt(RecentPrediction::horizonDays))
         .toList();
   }
 

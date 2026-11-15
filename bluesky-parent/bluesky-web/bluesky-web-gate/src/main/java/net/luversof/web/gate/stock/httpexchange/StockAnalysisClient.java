@@ -27,6 +27,13 @@ public interface StockAnalysisClient {
   @GetExchange("/summary")
   Summary summary();
 
+  /** 한 종목의 일자별 예측과 버전별 적중률. */
+  @GetExchange("/history")
+  SymbolHistory history(@RequestParam String symbol);
+
+  record SymbolHistory(
+      String symbol, String name, List<RateRow> byVersion, List<RecentPrediction> predictions) {}
+
   @GetExchange("/runs")
   RunComparison runs(
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -135,6 +142,7 @@ public interface StockAnalysisClient {
       String rationale,
       BigDecimal basePrice,
       String promptVersion,
+      String replay,
       Instant createdDate,
       int runSeq,
       LocalDate targetDate,
