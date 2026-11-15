@@ -3,6 +3,7 @@ package net.luversof.web.gate.stock.httpexchange;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,6 +33,6 @@ public interface MonthlyDividendPayoutClient {
   @DeleteExchange
   void deletePayout(
       @RequestParam String symbol,
-      @RequestParam LocalDate recordDate,
-      @RequestParam LocalDate payDate);
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate recordDate,
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate payDate);
 }

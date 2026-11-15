@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.DeleteExchange;
@@ -27,7 +28,9 @@ public interface StockAnalysisClient {
   Summary summary();
 
   @GetExchange("/runs")
-  RunComparison runs(@RequestParam(required = false) LocalDate date);
+  RunComparison runs(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate date);
 
   record RunInfo(
       UUID runId,
@@ -65,7 +68,8 @@ public interface StockAnalysisClient {
 
   /** 기준일의 채점 전 예측 삭제(채점된 것은 남긴다). */
   @DeleteExchange("/predictions")
-  DeleteResult deletePredictions(@RequestParam LocalDate baseDate);
+  DeleteResult deletePredictions(
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baseDate);
 
   record DeleteResult(int deleted, int keptGraded) {}
 
