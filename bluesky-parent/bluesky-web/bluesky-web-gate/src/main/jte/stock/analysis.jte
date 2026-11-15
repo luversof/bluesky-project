@@ -15,6 +15,8 @@
 @param String keyword = ""
 @param StockAnalysisClient.RunComparison runs = null
 @param boolean onlyDisagree = false
+@param net.luversof.web.common.menu.domain.Pagination recentPagination = null
+@param String recentPageUrl = "/stock/analysis"
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
@@ -192,6 +194,8 @@
 					@endif
 				</form>
 
+				<%-- 최근 예측은 쪽으로 나눈다(사용자 요청 2026-11-15). 쪽 버튼은 이 화면을 다시 받아 이 영역만 바꾼다. --%>
+				<div id="analysis-recent">
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.recent.title"), body = @`
 						@if(recent == null || recent.isEmpty())
 							<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
@@ -234,8 +238,16 @@
 									</tbody>
 								</table>
 							</div>
+							@if(recentPagination != null && recentPagination.getTotalPage() > 1)
+								@template._components.htmxPagination(
+									pagination = recentPagination,
+									url = recentPageUrl,
+									includeSelector = "this",
+									targetSelector = "#analysis-recent")
+							@endif
 						@endif
 				`)
+				</div>
 
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.items.title"), body = @`
 						@if(input == null || input.items().isEmpty())
