@@ -16,6 +16,8 @@
 @param StockAnalysisClient.RunComparison runs = null
 @param boolean onlyDisagree = false
 @param net.luversof.web.common.menu.domain.Pagination recentPagination = null
+@param net.luversof.web.common.menu.domain.Pagination runsPagination = null
+@param net.luversof.web.common.menu.domain.Pagination itemsPagination = null
 @param String recentPageUrl = "/stock/analysis"
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
@@ -119,7 +121,8 @@
 					@endfor
 				</div>
 
-				<%-- 회차 비교(사용자 요청 2026-11-10): 그날 돌린 회차들을 열로 놓고 종목 · 기간별 방향 · 신뢰도를 나란히 본다. 방향이 갈린 행은 표시하고 그것만 볼 수 있다. --%>
+				<%-- 회차 비교(사용자 요청 2026-11-10): 그날 돌린 회차들을 열로 놓고 종목 · 기간별 방향 · 신뢰도를 나란히 본다. 방향이 갈린 행은 표시하고 그것만 볼 수 있다. 행은 쪽으로 나눈다(2026-11-15). --%>
+				<div id="analysis-runs">
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.runs.title"), body = @`
 					@if(runs == null || runs.date() == null)
 						<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
@@ -181,9 +184,18 @@
 								</tbody>
 							</table>
 						</div>
+						@if(runsPagination != null && runsPagination.getTotalPage() > 1)
+							@template._components.htmxPagination(
+								pagination = runsPagination,
+								url = recentPageUrl,
+								includeSelector = "this",
+								targetSelector = "#analysis-runs",
+								pageParam = "runsPage")
+						@endif
 						<p class="mt-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.analysis.runs.note")}</p>
 					@endif
 				`)
+				</div>
 
 				<%-- 종목 검색: 아래 최근 예측 · 종목별 지표와 뉴스를 종목명 · 코드로 거른다. --%>
 				<form method="get" action="/stock/analysis" role="search" class="flex flex-wrap items-center gap-2">
@@ -243,12 +255,15 @@
 									pagination = recentPagination,
 									url = recentPageUrl,
 									includeSelector = "this",
-									targetSelector = "#analysis-recent")
+									targetSelector = "#analysis-recent",
+									pageParam = "recentPage")
 							@endif
 						@endif
 				`)
 				</div>
 
+				<%-- 종목 현황도 쪽으로 나눈다(2026-11-15) - 종목마다 뉴스가 붙어 한 줄이 길다. --%>
+				<div id="analysis-items">
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.items.title"), body = @`
 						@if(input == null || input.items().isEmpty())
 							<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
@@ -296,8 +311,17 @@
 									</tbody>
 								</table>
 							</div>
+							@if(itemsPagination != null && itemsPagination.getTotalPage() > 1)
+								@template._components.htmxPagination(
+									pagination = itemsPagination,
+									url = recentPageUrl,
+									includeSelector = "this",
+									targetSelector = "#analysis-items",
+									pageParam = "itemsPage")
+							@endif
 						@endif
 				`)
+				</div>
 			@endif
 		</div>
 	`

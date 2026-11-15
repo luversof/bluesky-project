@@ -5,6 +5,8 @@
 @param String url
 @param String includeSelector
 @param String targetSelector
+<%-- 쪽 번호를 실어 보낼 요청 매개변수 이름. 한 화면에 쪽 나눈 목록이 여럿이면 목록마다 다르게 준다. --%>
+@param String pageParam = "page"
 
 <%-- 페이지 수가 많으면 버튼 줄이 화면보다 넓어진다. 가운데 정렬만 걸어두면 그 줄이
      문서를 좌우로 밀어 페이지 전체에 가로 스크롤이 생긴다(실측: 375px 에서 41px).
@@ -21,29 +23,29 @@
 		<button class="join-item btn btn-sm ${!pagination.getFirstNav().isActive() ? "btn-disabled" : ""}"
 				disabled="${!pagination.getFirstNav().isActive()}"
 				hx-get="${url}" hx-include="${includeSelector}"
-				hx-vals='{"page": ${pagination.getFirstNav().isActive() ? pagination.getFirstNav().page() : pagination.getCurrentPage() + 1}}'
+				hx-vals='{"${pageParam}": ${pagination.getFirstNav().isActive() ? pagination.getFirstNav().page() : pagination.getCurrentPage() + 1}}'
 				hx-target="${targetSelector}" hx-select="${targetSelector}" hx-swap="outerHTML" aria-label="${MessageUtil.getMessage("common.pagination.first")}"><span aria-hidden="true">&laquo;</span></button>
 		<button class="join-item btn btn-sm ${!pagination.getPrevNav().isActive() ? "btn-disabled" : ""}"
 				disabled="${!pagination.getPrevNav().isActive()}"
 				hx-get="${url}" hx-include="${includeSelector}"
-				hx-vals='{"page": ${pagination.getPrevNav().isActive() ? pagination.getPrevNav().page() : pagination.getCurrentPage() + 1}}'
+				hx-vals='{"${pageParam}": ${pagination.getPrevNav().isActive() ? pagination.getPrevNav().page() : pagination.getCurrentPage() + 1}}'
 				hx-target="${targetSelector}" hx-select="${targetSelector}" hx-swap="outerHTML" aria-label="${MessageUtil.getMessage("common.pagination.prev.block")}"><span aria-hidden="true">&lsaquo;</span></button>
 		@for(Pagination.Nav nav : pagination.getNavList())
 		<button class="join-item btn btn-sm ${nav.isActive() ? "btn-active" : ""}"
 				aria-current="${nav.isActive() ? "page" : "false"}"
 				hx-get="${url}" hx-include="${includeSelector}"
-				hx-vals='{"page": ${nav.page()}}'
+				hx-vals='{"${pageParam}": ${nav.page()}}'
 				hx-target="${targetSelector}" hx-select="${targetSelector}" hx-swap="outerHTML">${nav.page()}</button>
 		@endfor
 		<button class="join-item btn btn-sm ${!pagination.getNextNav().isActive() ? "btn-disabled" : ""}"
 				disabled="${!pagination.getNextNav().isActive()}"
 				hx-get="${url}" hx-include="${includeSelector}"
-				hx-vals='{"page": ${pagination.getNextNav().isActive() ? pagination.getNextNav().page() : pagination.getCurrentPage() + 1}}'
+				hx-vals='{"${pageParam}": ${pagination.getNextNav().isActive() ? pagination.getNextNav().page() : pagination.getCurrentPage() + 1}}'
 				hx-target="${targetSelector}" hx-select="${targetSelector}" hx-swap="outerHTML" aria-label="${MessageUtil.getMessage("common.pagination.next.block")}"><span aria-hidden="true">&rsaquo;</span></button>
 		<button class="join-item btn btn-sm ${!pagination.getLastNav().isActive() ? "btn-disabled" : ""}"
 				disabled="${!pagination.getLastNav().isActive()}"
 				hx-get="${url}" hx-include="${includeSelector}"
-				hx-vals='{"page": ${pagination.getLastNav().isActive() ? pagination.getLastNav().page() : pagination.getCurrentPage() + 1}}'
+				hx-vals='{"${pageParam}": ${pagination.getLastNav().isActive() ? pagination.getLastNav().page() : pagination.getCurrentPage() + 1}}'
 				hx-target="${targetSelector}" hx-select="${targetSelector}" hx-swap="outerHTML" aria-label="${MessageUtil.getMessage("common.pagination.last")}"><span aria-hidden="true">&raquo;</span></button>
 	</nav>
 	</div>

@@ -37,8 +37,8 @@ public class StockAnalysisViewController {
 
   static final int RECENT_DAYS = 14;
 
-  /** 최근 예측 한 쪽의 줄 수(사용자 요청 2026-11-15: 리플레이까지 쌓이면 표가 너무 길다). */
-  static final int RECENT_PAGE_SIZE = 20;
+  /** 최근 예측 · 회차 비교 · 종목 현황 한 쪽의 줄 수(사용자 요청 2026-11-15: 표가 너무 길다). */
+  static final int PAGE_SIZE = 20;
 
   @Autowired private StockAnalysisClient stockAnalysisClient;
 
@@ -50,7 +50,9 @@ public class StockAnalysisViewController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate runDate,
       @RequestParam(defaultValue = "false") boolean onlyDisagree,
-      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "1") int recentPage,
+      @RequestParam(defaultValue = "1") int runsPage,
+      @RequestParam(defaultValue = "1") int itemsPage,
       Model model) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
@@ -63,10 +65,10 @@ public class StockAnalysisViewController {
           stockAnalysisClient.recent(RECENT_DAYS).stream()
               .filter(p -> matches(q, p.name(), p.symbol()))
               .toList();
-      Page<StockAnalysisClient.RecentPrediction> recentPage = pageOf(recent, page);
-      model.addAttribute("recent", recentPage.getContent());
-      model.addAttribute("recentPagination", new Pagination(recentPage));
-      // 쪽 버튼은 이 화면을 다시 불러 최근 예측 카드만 바꾼다(htmxPagination 이 page 를 붙인다).
+      Page<StockAnalysisClient.RecentPrediction> recentRows = pageOf(recent, recentPage);
+      model.addAttribute("recent", recentRows.getContent());
+      model.addAttribute("recentPagination", new Pagination(recentRows));
+      // 쪽 버튼은 이 화면을 다시 불러 그 카드만 바꾼다(htmxPagination 이 recentPage · runsPage · itemsPage 를 붙인다).
       model.addAttribute(
           "recentPageUrl",
           UriComponentsBuilder.fromPath("/stock/analysis")
@@ -78,27 +80,32 @@ public class StockAnalysisViewController {
       // 회차 비교: 그날의 회차들을 종목 · 기간별로 나란히(사용자 요청 2026-11-10). 종목 검색 · 불일치만 보기를 함께 건다.
       StockAnalysisClient.RunComparison runs = stockAnalysisClient.runs(runDate);
       model.addAttribute("onlyDisagree", onlyDisagree);
-      model.addAttribute(
-          "runs",
-          runs == null
-              ? null
-              : new StockAnalysisClient.RunComparison(
-                  runs.date(),
-                  runs.dates(),
-                  runs.runs(),
-                  runs.rows().stream()
-                      .filter(r -> matches(q, r.name(), r.symbol()))
-                      .filter(r -> !onlyDisagree || r.disagree())
-                      .toList()));
+      if (runs != null) {
+        Page<StockAnalysisClient.RunRow> runRows =
+            pageOf(
+                runs.rows().stream()
+                    .filter(r -> matches(q, r.name(), r.symbol()))
+                    .filter(r -> !onlyDisagree || r.disagree())
+                    .toList(),
+                runsPage);
+        runs =
+            new StockAnalysisClient.RunComparison(
+                runs.date(), runs.dates(), runs.runs(), runRows.getContent());
+        model.addAttribute("runsPagination", new Pagination(runRows));
+      }
+      model.addAttribute("runs", runs);
       StockAnalysisClient.AnalysisInput input = stockAnalysisClient.input(UserUtil.getUserId());
-      model.addAttribute(
-          "input",
-          input == null
-              ? null
-              : new StockAnalysisClient.AnalysisInput(
-                  input.generatedAt(),
-                  input.market(),
-                  input.items().stream().filter(i -> matches(q, i.name(), i.symbol())).toList()));
+      if (input != null) {
+        Page<StockAnalysisClient.AnalysisItem> itemRows =
+            pageOf(
+                input.items().stream().filter(i -> matches(q, i.name(), i.symbol())).toList(),
+                itemsPage);
+        input =
+            new StockAnalysisClient.AnalysisInput(
+                input.generatedAt(), input.market(), itemRows.getContent());
+        model.addAttribute("itemsPagination", new Pagination(itemRows));
+      }
+      model.addAttribute("input", input);
     } catch (RuntimeException e) {
       // 화면 껍데기는 그대로 그리고 안내만 한다 - 다른 stock 화면과 같은 규칙.
       log.warn("market analysis load failed", e);
@@ -109,12 +116,12 @@ public class StockAnalysisViewController {
 
   /** 1 부터 세는 쪽 번호. 범위를 벗어나면 가장 가까운 쪽. */
   static <T> Page<T> pageOf(List<T> all, int page) {
-    int pages = Math.max(1, (all.size() + RECENT_PAGE_SIZE - 1) / RECENT_PAGE_SIZE);
+    int pages = Math.max(1, (all.size() + PAGE_SIZE - 1) / PAGE_SIZE);
     int index = Math.clamp(page, 1, pages) - 1;
-    int from = index * RECENT_PAGE_SIZE;
+    int from = index * PAGE_SIZE;
     return new PageImpl<>(
-        all.subList(from, Math.min(from + RECENT_PAGE_SIZE, all.size())),
-        PageRequest.of(index, RECENT_PAGE_SIZE),
+        all.subList(from, Math.min(from + PAGE_SIZE, all.size())),
+        PageRequest.of(index, PAGE_SIZE),
         all.size());
   }
 
