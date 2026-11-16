@@ -1,4 +1,4 @@
-package net.luversof.web.swagger.ui;
+package net.luversof.web.apidocs;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

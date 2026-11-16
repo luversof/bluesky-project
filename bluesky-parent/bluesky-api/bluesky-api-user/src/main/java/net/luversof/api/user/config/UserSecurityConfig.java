@@ -14,7 +14,8 @@ public class UserSecurityConfig {
   SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
     http.authorizeHttpRequests(authorize ->
             authorize
-                .requestMatchers("/assets/**", "/error", "/actuator/**", "/api/**")
+                .requestMatchers(
+                    "/assets/**", "/error", "/actuator/**", "/api/**", "/v3/api-docs/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated())

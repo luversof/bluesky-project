@@ -7,7 +7,7 @@
 		<artifactId>bluesky-web</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>bluesky-web-swagger-ui</artifactId>
+	<artifactId>bluesky-web-apidocs</artifactId>
 	<dependencies>
 		<!-- (s) spring-boot -->
 		<dependency>
@@ -23,23 +23,19 @@
 		</dependency>
 		<!-- (e) spring-boot-admin -->
 
-		<!-- (s) webjars -->
+		<!-- (s) springdoc-openapi -->
 		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>webjars-locator-core</artifactId>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>swagger-ui</artifactId>
-			<version>5.9.0</version>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-scalar</artifactId>
+			<version>${springdoc-openapi.version}</version>
 		</dependency>
-		<!-- (e) webjars -->
+		<!-- (e) springdoc-openapi -->
 
 		<!-- (s) bluesky -->
-		<dependency>
-			<groupId>net.luversof</groupId>
-			<artifactId>bluesky-client-user</artifactId>
-		</dependency>
 		<dependency>
 			<groupId>net.luversof</groupId>
 			<artifactId>bluesky-web-common</artifactId>
