@@ -8,8 +8,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import net.luversof.web.dynamiccrud2.setting.domain.Menu;
-import net.luversof.web.dynamiccrud2.setting.domain.MenuQuery;
+import net.luversof.web.dynamiccrud2.domain.Menu;
+import net.luversof.web.dynamiccrud2.domain.MenuQuery;
 
 /**
  * 메뉴 · 작업 권한 판정. 공통 보안 설정이 모든 요청을 permitAll 로 두므로 dynamiccrud2 가 직접 막는다.

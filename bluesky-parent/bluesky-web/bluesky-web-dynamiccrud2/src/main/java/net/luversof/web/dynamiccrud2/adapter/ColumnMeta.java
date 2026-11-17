@@ -2,7 +2,7 @@ package net.luversof.web.dynamiccrud2.adapter;
 
 import java.sql.Types;
 
-import net.luversof.web.dynamiccrud2.setting.domain.InputType;
+import net.luversof.web.dynamiccrud2.domain.InputType;
 
 /**
  * DB 에서 읽은 컬럼 정보.

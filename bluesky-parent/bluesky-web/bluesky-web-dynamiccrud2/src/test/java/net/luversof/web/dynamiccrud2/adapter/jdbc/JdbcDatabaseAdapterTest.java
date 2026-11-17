@@ -16,8 +16,8 @@ import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter.Sort;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
-import net.luversof.web.dynamiccrud2.setting.domain.InputType;
-import net.luversof.web.dynamiccrud2.setting.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.InputType;
+import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
 /**
  * 설정 catalog(dynamiccrud2, PostgreSQL) 자체를 대상 DB 로 써서 어댑터를 실제로 돌린다. 자기가 넣은 행만 지운다. localdev 프로파일
@@ -94,6 +94,8 @@ class JdbcDatabaseAdapterTest implements GeneralWebTest {
                 Map.of(
                     "id",
                     id,
+                    "code",
+                    "t" + id.toString().substring(0, 8),
                     "name",
                     name,
                     "displayOrder",

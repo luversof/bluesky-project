@@ -13,8 +13,8 @@ import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud2.adapter.ColumnMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
-import net.luversof.web.dynamiccrud2.setting.domain.InputType;
-import net.luversof.web.dynamiccrud2.setting.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.InputType;
+import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
 class DefaultQueryGeneratorTest {
 

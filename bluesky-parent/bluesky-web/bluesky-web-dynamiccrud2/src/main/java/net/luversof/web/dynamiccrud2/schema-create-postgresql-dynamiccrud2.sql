@@ -3,20 +3,27 @@
 
 CREATE TABLE "Project" (
 	"id" UUID NOT NULL PRIMARY KEY,
+	-- 주소 첫 단계(/{code}/...). 영문 소문자 · 숫자 · -, admin 등 앱 경로는 못 쓴다(앱이 검사)
+	"code" VARCHAR(50) NOT NULL,
 	"name" VARCHAR(100) NOT NULL,
 	"displayOrder" INTEGER NOT NULL DEFAULT 0,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
+CREATE UNIQUE INDEX uk_project_code ON "Project" ("code");
+
 CREATE TABLE "MainMenu" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"project_id" UUID NOT NULL,
+	-- 주소 둘째 단계, 프로젝트 안에서 유일
+	"code" VARCHAR(50) NOT NULL,
 	"name" VARCHAR(100) NOT NULL,
 	"displayOrder" INTEGER NOT NULL DEFAULT 0,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 CREATE INDEX idx_mainMenu_projectId ON "MainMenu" ("project_id");
+CREATE UNIQUE INDEX uk_mainMenu_projectId_code ON "MainMenu" ("project_id", "code");
 
 -- 대상 DB 테이블. 같은 테이블을 쓰는 메뉴들이 필드(DbField)를 공유한다.
 CREATE TABLE "DbTable" (
@@ -62,6 +69,8 @@ CREATE TABLE "DbField" (
 CREATE TABLE "Menu" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"mainMenu_id" UUID NOT NULL,
+	-- 주소 셋째 단계, 메인 메뉴 안에서 유일
+	"code" VARCHAR(50) NOT NULL,
 	-- 메뉴 등록 때 고른 기준 테이블
 	"dbTable_id" UUID NOT NULL,
 	"name" VARCHAR(100) NOT NULL,
@@ -76,6 +85,7 @@ CREATE TABLE "Menu" (
 
 CREATE INDEX idx_menu_mainMenuId ON "Menu" ("mainMenu_id");
 CREATE INDEX idx_menu_dbTableId ON "Menu" ("dbTable_id");
+CREATE UNIQUE INDEX uk_menu_mainMenuId_code ON "Menu" ("mainMenu_id", "code");
 
 -- 메뉴의 작업. READ 는 메뉴당 1개, INSERT · UPDATE · DELETE 는 N 개.
 CREATE TABLE "MenuQuery" (

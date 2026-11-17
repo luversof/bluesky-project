@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.luversof.web.dynamiccrud2.setting.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
 /**
  * 대상 DB 한 연결에 대한 작업. DB 종류(JDBC 3종, 2차에 Mongo)마다 구현이 하나다.

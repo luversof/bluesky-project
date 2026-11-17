@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
 
 import io.github.luversof.boot.exception.BlueskyException;
-import net.luversof.web.dynamiccrud2.setting.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
 class QueryTextTest {
 
@@ -57,10 +57,24 @@ class QueryTextTest {
         .isInstanceOf(BlueskyException.class)
         .extracting("errorCode")
         .isEqualTo("QueryErrorCode.STATEMENT_KIND_MISMATCH");
-    assertThatThrownBy(() -> QueryText.validate("UPDATE t SET a = 1", QueryKind.UPDATE))
-        .isInstanceOf(BlueskyException.class)
-        .extracting("errorCode")
-        .isEqualTo("QueryErrorCode.NO_PARAMETER_IN_MODIFY");
+    for (var sql :
+        new String[] {
+          "UPDATE t SET a = 1",
+          // SET 에만 파라미터 - WHERE 가 없어 전체 행이 바뀐다
+          "UPDATE t SET a = :a",
+          "UPDATE t SET a = :a WHERE b = 1",
+          "DELETE FROM t -- WHERE id = :id",
+          "DELETE FROM t WHERE note = ':id'"
+        }) {
+      var kind = sql.startsWith("UPDATE") ? QueryKind.UPDATE : QueryKind.DELETE;
+      assertThatThrownBy(() -> QueryText.validate(sql, kind))
+          .as(sql)
+          .isInstanceOf(BlueskyException.class)
+          .extracting("errorCode")
+          .isEqualTo("QueryErrorCode.NO_PARAMETER_IN_MODIFY");
+    }
+    QueryText.validate("UPDATE t SET a = :a WHERE id = :id", QueryKind.UPDATE);
+    QueryText.validate("delete from t where id in (:ids)", QueryKind.DELETE);
   }
 
   @Test

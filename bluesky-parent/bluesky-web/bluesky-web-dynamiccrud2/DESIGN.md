@@ -168,6 +168,30 @@
      - jar 내용: 사전 컴파일 JTE 24개 · `static/main.css` · poi-ooxml · jsqlparser 포함.
      - jar 를 사전 컴파일 템플릿(`gg.jte.developmentMode=false`, `usePrecompiledTemplates=true`)으로 띄워 로그인 상태로 `/setting` · `/use` 렌더 확인, 서버 로그 ERROR 0. 확인 뒤 catalog 에 QA 데이터 없음.
 
+## 1차 이후 고친 것(2026-11-17)
+- 주소: 사용 화면 `/use` → `/menu`(`/menu/{id}` = 메뉴 화면), 관리 화면 `/setting` → `/admin`(관리자 전용이라 의미가 분명). 루트 `/` → `/menu`. 상단 메뉴 문구 "메뉴 · 관리". 자바 패키지 · 템플릿 폴더 이름(`use` · `setting`)은 그대로. 위 본문의 `/use` · `/setting` 표기는 옛 주소다.
+- 상단 오른쪽 로그인 상태: 로그인이면 사용자 이름 + 로그아웃(`POST /logout`), 아니면 로그인(`login-url?redirectUrl=지금 주소`). 레이아웃이 `UserUtil` 로 직접 판단(화면마다 넘기지 않음).
+- 관리 화면 순서: 새 프로젝트 · 메인 메뉴의 "순서" 입력칸을 없앴다. 새 항목은 맨 끝(최대 displayOrder + 1). 순서는 ⠿ 손잡이 드래그 앤 드롭 또는 손잡이에서 ↑ ↓ 키(`static/js/reorder.js`, 라이브러리 없음) → `POST /admin/project/order` · `/admin/project/{id}/mainMenu/order`(ids 순서대로 0, 1, 2 …, 다른 프로젝트 메인 메뉴 id 는 무시). 메뉴 순서는 메뉴 화면의 숫자 입력 그대로.
+  - 관리 첫 화면 모양(사용자 요청): 삭제 · 이름 바꾸기 · 하위 추가는 이름 바로 옆 작은 단추(× · ✎ · +), 메인 메뉴는 프로젝트 아래 들여쓰기(왼쪽 선), 입력칸은 + / ✎ 를 눌렀을 때만 펼친다(`static/js/toggle.js`, aria-expanded · 첫 입력칸 초점). 새 프로젝트도 "+ 새 프로젝트" 단추로 펼친다. 메인 메뉴의 + 는 메뉴 추가 화면으로 이동.
+  - 메뉴 추가의 connection 고르기: 전체 select(수백 개) 대신 검색어 입력 + 자동완성. `ConnectionNameService.search` = `LOWER(connection) LIKE LOWER(:keyword) ESCAPE '!'`(대소문자 무시, % · _ 는 글자 그대로, ESCAPE 는 MySQL 문자열 백슬래시 해석을 피해 '!'), 최대 30개 · 이름순. 화면은 `<input list>` + `<datalist>` 를 htmx 로 채움(`GET /admin/connection/search`, 입력 250ms 지연), 값이 바뀌면 테이블 select 가 `GET /admin/connection/tables` 로 다시 채움. 없는 이름이면 테이블 칸에 "connection 을 찾을 수 없습니다" 안내(오류 화면 아님).
+  - 확인: `SettingControllerTest.newItemsGoLastAndReorderSaves`(맨 끝 추가 · 순서 저장 · USER 403), 브라우저(Playwright): 프로젝트 ↑ 키 · 드래그, 메인 메뉴 ↑ 키 모두 새로 고침 뒤에도 유지.
+
+- 사용 화면 주소를 사람이 읽는 주소로(2026-11-17 사용자 결정): `/{프로젝트 code}/{메인 메뉴 code}/{메뉴 code}`, 접두어 없음. `/` = 볼 수 있는 프로젝트 목록, `/{프로젝트}` = 그 프로젝트 첫 메뉴로 이동. 사용 화면 왼쪽에 그 프로젝트의 메인 메뉴 · 메뉴(지금 메뉴 강조), 상단에 프로젝트 이름.
+  - `code`: Project(전체 유일) · MainMenu(프로젝트 안 유일) · Menu(메인 메뉴 안 유일), 영문 소문자 · 숫자 · -, 1~50자. 프로젝트 code 는 앱 경로와 겹치면 거부(`MenuService.RESERVED_PROJECT_CODES`: admin · error · actuator · login · logout · oauth2 · js · webjars). 경로 변수에 같은 정규식을 걸어 점 든 정적 파일(/main.css, /js/x.js)과 안 겹친다.
+  - DB: `schema-alter-postgresql-dynamiccrud2.sql` 2026-11-17 묶음(열 추가 · 기존 행 임시 code · NOT NULL · unique 인덱스), create 파일도 최종 모양으로. **적용은 사용자.**
+  - 없는 code 는 404(`ResponseStatusException` 을 AccessDeniedAdvice 가 상태 코드 그대로 응답 — 공통 처리기는 500 으로 바꾼다).
+  - 확인(2026-11-17, DDL 적용 뒤): 모듈 테스트 37/37, 브라우저(localdev) — 예약어 `admin` 거부 문구, `/{p}` → 첫 메뉴 이동, 사이드 메뉴 이동 · 현재 메뉴 강조, 없는 메뉴 404, 만든 QA 항목 정리.
+- 패키지 정리(2026-11-17): `setting` → `admin`(controller · service), `use` → `menu`(controller · service), 공용 `setting.domain` · `setting.repository` → 최상위 `domain` · `repository`. 클래스 `SettingController` → `AdminController`, `SettingAccessInterceptor` → `AdminAccessInterceptor`, `UseController` · `UseService` → `MenuPageController` · `MenuPageService`. 템플릿 폴더 `setting/` → `admin/`, `use/` → `menu/`(`use/menu.jte` → `menu/page.jte`). git mv 로 옮겼다.
+- 관리 화면 배치(2026-11-17 사용자 결정 "왼쪽 목록+오른쪽 상세"): 프로젝트가 수십 개여도 스크롤이 짧게 왼쪽은 프로젝트 이름 목록(끌어서 순서), 오른쪽은 고른 프로젝트 하나(`/admin?project={id}`, 없거나 모르는 id 면 첫 프로젝트)의 메인 메뉴 · 메뉴.
+- 처리 후 이동(2026-11-17 자율 점검): 프로젝트 · 메인 메뉴 저장 / 삭제, 메뉴 삭제는 `/admin?project={id}` 로 돌아온다(전엔 늘 `/admin`). 메뉴 화면 "← 관리" · 메뉴 추가 "취소" 도 그 프로젝트로. 필드 화면은 여러 메뉴가 공유하므로 들어온 메뉴를 `?menu={id}` 로 들고 다녀 "← 메뉴" 로 돌아간다(저장 · 다시 읽기 뒤에도 유지).
+- 메뉴 순서도 끌어서 바꾼다(`POST /admin/mainMenu/{id}/menu/order`), 메뉴 설정의 "순서" 입력칸은 뺐다. 새 메뉴는 맨 끝.
+- 수정 · 삭제 쿼리 보호 강화: 파라미터가 하나라도 있으면 통과하던 검사를 "WHERE 뒤에 파라미터가 있어야" 로(`UPDATE t SET a = :a` 는 전체 행을 바꾸므로 거부). 저장 때뿐 아니라 실행 때도 검사해 이전에 저장된 쿼리도 막는다.
+- 오류 화면: `error.jte`(상태별 안내 + 메뉴 목록 · 뒤로, 스택 트레이스 없음). 관리 화면의 없는 id(`findById().orElseThrow()`)는 500 대신 404(`AccessDeniedAdvice`). 사용 화면 빈 목록은 "조회 결과가 없습니다", 상단 · 본문 폭 `max-w-7xl` 통일, 좁은 화면에서 상단 줄바꿈, favicon 404 제거(`data:` 아이콘).
+- htmx 요청 실패 알림(`static/js/htmx-errors.js`): 실패하면 화면이 그대로라 단추가 안 듣는 것처럼 보였다 - 401 은 화면을 다시 열어 로그인으로, 403 · 5xx · 연결 실패는 사유를 알린다. 오류 화면은 요청에 세션이 안 붙어 로그인해 있어도 "로그인" 이 보여 사용자 영역을 숨긴다(layout `showUser`).
+- 확인(2026-11-17): 모듈 테스트 37/37(메뉴 순서 · 없는 id 404 · WHERE 검사 사례 추가), 브라우저 전 흐름 28단계(페이지 넘김 · 정렬 유지 포함)(관리 → 작업 쿼리 3종 → 필드 → 사용 화면 입력 실패 안내 · 입력 · 검색 · 정렬 · 엑셀 · 수정 · 선택 삭제 → 정리).
+- 알려진 것(코드 아님): 로컬 실행은 `~/.m2` 의 bluesky-client-user jar(2026-10-28)를 쓰는데 이 jar 는 세션 속성 삭제를 서버에 보내지 않는다(2026-11-03 수정 이전) → 읽은 오류 안내(flash)가 만료(180초)까지 다시 보일 수 있다. client-user 를 새로 설치하거나 reactor 로 빌드하면 사라진다.
+- 테스트는 프로파일이 필요하다: `mvn -o -pl bluesky-web/bluesky-web-dynamiccrud2 test "-DargLine=-Dspring.profiles.active=localdev"`(없으면 configserver import 누락으로 컨텍스트 기동 실패).
+
 ## 1차 마무리 상태(2026-11-17)
 - 미커밋: `bluesky-web/pom.xml`(`<module>` 추가) + `bluesky-web-dynamiccrud2/` 전체(`src/main/frontend/node_modules` 는 gitignore). user 역할 변경은 사용자가 커밋함(33127074).
 - 배포 설정(2026-11-17, 미커밋) — 옛 dynamiccrud 와 같은 방식:
@@ -177,4 +201,4 @@
   - config server: 추가할 것 없음(앱 설정은 jar 의 application.properties, connectionInfo 읽기 설정은 공통 config).
   - 확인: `helm template` 으로 work 에만 앱 등록 · Service/Deployment(포트 · 이미지 · TZ) 렌더 확인. hosts 에 `dynamiccrud2.web.bluesky.local` 은 이미 있음.
   - 반영 순서: bluesky-project push → CI 이미지 → bluesky-cloud push → 게이트웨이 이미지 → bluesky-argocd-applications push → 루트 앱 sync(앱 생성 · 게이트웨이 재배포). 이미지보다 앱 sync 가 먼저면 ImagePullBackOff 후 이미지가 생기면 회복.
-- 2차 이후: Mongo 어댑터 · Mongo connection 목록, 403 전용 화면, 변경 이력 조회 화면, MySQL/MariaDB · MSSQL 실제 DB 검증(MSSQL 주석 조회 포함), favicon.
+- 2차 이후: Mongo 어댑터 · Mongo connection 목록, 변경 이력 조회 화면, MySQL/MariaDB · MSSQL 실제 DB 검증(MSSQL 주석 조회 포함). (403 화면 · favicon 은 2026-11-17 오류 화면 · data: 아이콘으로 처리)

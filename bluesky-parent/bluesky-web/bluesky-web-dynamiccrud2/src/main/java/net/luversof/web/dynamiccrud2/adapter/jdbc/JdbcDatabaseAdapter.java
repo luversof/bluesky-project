@@ -21,7 +21,7 @@ import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis;
 import net.luversof.web.dynamiccrud2.adapter.TableMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
 import net.luversof.web.dynamiccrud2.config.Dynamiccrud2Properties;
-import net.luversof.web.dynamiccrud2.setting.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
 /** JDBC 3종(PostgreSQL · MySQL/MariaDB · MSSQL) 어댑터. 차이는 {@link SqlDialect} 에 둔다. */
 public class JdbcDatabaseAdapter implements DatabaseAdapter {

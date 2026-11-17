@@ -13,13 +13,13 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import net.luversof.web.dynamiccrud2.setting.domain.Menu;
-import net.luversof.web.dynamiccrud2.setting.domain.MenuQuery;
+import net.luversof.web.dynamiccrud2.domain.Menu;
+import net.luversof.web.dynamiccrud2.domain.MenuQuery;
 
 class MenuAuthorizerTest {
 
   private final MenuAuthorizer authorizer = new MenuAuthorizer();
-  private final SettingAccessInterceptor interceptor = new SettingAccessInterceptor(authorizer);
+  private final AdminAccessInterceptor interceptor = new AdminAccessInterceptor(authorizer);
 
   @AfterEach
   void clear() {
@@ -90,6 +90,6 @@ class MenuAuthorizerTest {
         .isInstanceOf(AccessDeniedException.class);
     loginAs("ROLE_ADMIN");
     assertThat(interceptor.preHandle(null, null, null)).isTrue();
-    assertThat(List.of(SettingAccessInterceptor.PATH_PATTERN)).containsExactly("/setting/**");
+    assertThat(List.of(AdminAccessInterceptor.PATH_PATTERN)).containsExactly("/admin/**");
   }
 }

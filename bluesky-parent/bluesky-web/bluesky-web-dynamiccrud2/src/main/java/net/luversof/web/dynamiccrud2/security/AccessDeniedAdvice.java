@@ -51,6 +51,20 @@ public class AccessDeniedAdvice {
             .toUriString());
   }
 
+  /** 없는 주소(프로젝트 · 메뉴 code) - 공통 처리기가 500 으로 바꾸지 않게 상태 코드 그대로 */
+  @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+  public void handleStatus(
+      org.springframework.web.server.ResponseStatusException e, HttpServletResponse response)
+      throws IOException {
+    response.sendError(e.getStatusCode().value());
+  }
+
+  /** 관리 화면의 없는 id(findById(..).orElseThrow()) - 공통 처리기는 500 으로 바꾸므로 404 로 */
+  @ExceptionHandler(java.util.NoSuchElementException.class)
+  public void handleNotFound(HttpServletResponse response) throws IOException {
+    response.sendError(HttpServletResponse.SC_NOT_FOUND);
+  }
+
   /** htmx 요청이거나 JSON 을 주고받는 요청 - 화면 이동이 아니라 상태 코드를 기대한다 */
   private static boolean expectsStatus(HttpServletRequest request) {
     if (request.getHeader("HX-Request") != null) {

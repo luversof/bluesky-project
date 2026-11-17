@@ -7,7 +7,7 @@ import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud2.adapter.ColumnMeta;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
 import net.luversof.web.dynamiccrud2.adapter.TableMeta;
-import net.luversof.web.dynamiccrud2.setting.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
 /** 테이블 정보로 기본 C/R/U/D 쿼리를 만든다. 사용자가 편집하기 전 출발점이다. */
 public final class DefaultQueryGenerator {

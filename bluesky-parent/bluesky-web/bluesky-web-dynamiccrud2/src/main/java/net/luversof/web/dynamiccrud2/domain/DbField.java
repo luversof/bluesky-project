@@ -1,0 +1,159 @@
+package net.luversof.web.dynamiccrud2.domain;
+
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
+/**
+ * 테이블 단위 필드 메타(DbTable 묶음의 하위). 키는 (dbTable_id, columnName). PK · unique 는 저장하지 않고 쓸 때 DB 에서 읽는다.
+ */
+@Table("DbField")
+public class DbField {
+
+  @Column("columnName")
+  private String columnName;
+
+  /** 계산 · 함수 결과처럼 DB 에 없는 조회 전용 필드 */
+  @Column("virtual")
+  private boolean virtual;
+
+  /** 사용자 지정 라벨. 화면 제목 = 쿼리 별칭 → label → dbComment → columnName */
+  @Column("label")
+  private String label;
+
+  @Column("dbComment")
+  private String dbComment;
+
+  /** DB 가 알려 준 타입 이름 */
+  @Column("dataType")
+  private String dataType;
+
+  @Column("inputType")
+  private InputType inputType;
+
+  @Column("required")
+  private boolean required;
+
+  @Column("maxLength")
+  private Integer maxLength;
+
+  @Column("autoIncrement")
+  private boolean autoIncrement;
+
+  @Column("sortable")
+  private boolean sortable;
+
+  /** 사용자가 sortable 을 바꿨으면 "컬럼 다시 읽기" 가 덮어쓰지 않는다 */
+  @Column("sortableUserSet")
+  private boolean sortableUserSet;
+
+  /** 다시 읽었을 때 DB 에서 사라진 컬럼 */
+  @Column("missingInDb")
+  private boolean missingInDb;
+
+  @Column("displayOrder")
+  private int displayOrder;
+
+  public String getColumnName() {
+    return columnName;
+  }
+
+  public void setColumnName(String columnName) {
+    this.columnName = columnName;
+  }
+
+  public boolean isVirtual() {
+    return virtual;
+  }
+
+  public void setVirtual(boolean virtual) {
+    this.virtual = virtual;
+  }
+
+  public String getLabel() {
+    return label;
+  }
+
+  public void setLabel(String label) {
+    this.label = label;
+  }
+
+  public String getDbComment() {
+    return dbComment;
+  }
+
+  public void setDbComment(String dbComment) {
+    this.dbComment = dbComment;
+  }
+
+  public String getDataType() {
+    return dataType;
+  }
+
+  public void setDataType(String dataType) {
+    this.dataType = dataType;
+  }
+
+  public InputType getInputType() {
+    return inputType;
+  }
+
+  public void setInputType(InputType inputType) {
+    this.inputType = inputType;
+  }
+
+  public boolean isRequired() {
+    return required;
+  }
+
+  public void setRequired(boolean required) {
+    this.required = required;
+  }
+
+  public Integer getMaxLength() {
+    return maxLength;
+  }
+
+  public void setMaxLength(Integer maxLength) {
+    this.maxLength = maxLength;
+  }
+
+  public boolean isAutoIncrement() {
+    return autoIncrement;
+  }
+
+  public void setAutoIncrement(boolean autoIncrement) {
+    this.autoIncrement = autoIncrement;
+  }
+
+  public boolean isSortable() {
+    return sortable;
+  }
+
+  public void setSortable(boolean sortable) {
+    this.sortable = sortable;
+  }
+
+  public boolean isSortableUserSet() {
+    return sortableUserSet;
+  }
+
+  public void setSortableUserSet(boolean sortableUserSet) {
+    this.sortableUserSet = sortableUserSet;
+  }
+
+  public boolean isMissingInDb() {
+    return missingInDb;
+  }
+
+  public void setMissingInDb(boolean missingInDb) {
+    this.missingInDb = missingInDb;
+  }
+
+  public int getDisplayOrder() {
+    return displayOrder;
+  }
+
+  public void setDisplayOrder(int displayOrder) {
+    this.displayOrder = displayOrder;
+  }
+}

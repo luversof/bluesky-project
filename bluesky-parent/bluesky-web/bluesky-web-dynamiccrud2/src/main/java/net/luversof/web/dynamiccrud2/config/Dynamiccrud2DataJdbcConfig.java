@@ -18,13 +18,13 @@ import io.github.luversof.boot.connectioninfo.ConnectionInfoUtil;
 import io.github.luversof.boot.data.convert.MapToPGobjectConverter;
 import io.github.luversof.boot.data.convert.PGobjectToMapConverter;
 import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
-import net.luversof.web.dynamiccrud2.setting.domain.Menu;
+import net.luversof.web.dynamiccrud2.domain.Menu;
 
 /** 설정 catalog(dynamiccrud2, PostgreSQL) 저장소 설정. 대상 DB 는 여기서 다루지 않는다. */
 @Configuration
 @EnableJdbcAuditing
 @EnableJdbcRepositories(
-    basePackages = "net.luversof.web.dynamiccrud2.setting.repository",
+    basePackages = "net.luversof.web.dynamiccrud2.repository",
     transactionManagerRef = "dynamiccrud2TransactionManager")
 public class Dynamiccrud2DataJdbcConfig {
 

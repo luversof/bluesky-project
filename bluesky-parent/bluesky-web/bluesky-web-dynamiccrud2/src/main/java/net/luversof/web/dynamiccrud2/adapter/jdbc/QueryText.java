@@ -11,7 +11,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterUtils;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
-import net.luversof.web.dynamiccrud2.setting.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
 /**
  * SQL 쿼리 원문 검사 · 파라미터 추출. 파싱(JSqlParser) 없이 동작해 벤더 문법에 영향받지 않는다.
@@ -22,6 +22,8 @@ public final class QueryText {
 
   /** Spring 은 :{name} · &amp;name 도 파라미터로 보지만 JSqlParser 와 해석이 갈려 거부한다. */
   private static final Pattern UNSUPPORTED_PARAMETER_FORM = Pattern.compile(":\\{|&\\w");
+
+  private static final Pattern WHERE = Pattern.compile("\\bWHERE\\b", Pattern.CASE_INSENSITIVE);
 
   private QueryText() {}
 
@@ -55,7 +57,7 @@ public final class QueryText {
     return new ArrayList<>(names);
   }
 
-  /** 저장 전 검사: 문장 1개, 작업 종류와 문장 종류 일치, 파라미터 없는 UPDATE · DELETE 거부. */
+  /** 저장 전 검사: 문장 1개, 작업 종류와 문장 종류 일치, WHERE 에 파라미터가 없는 UPDATE · DELETE 거부. */
   public static void validate(String sql, QueryKind expected) {
     var stripped = stripCommentsAndLiterals(sql).strip();
     if (stripped.endsWith(";")) {
@@ -68,10 +70,19 @@ public final class QueryText {
     if (actual != expected) {
       throw new BlueskyException(QueryErrorCode.STATEMENT_KIND_MISMATCH, expected, actual);
     }
-    var names = parameterNames(sql);
-    if ((actual == QueryKind.UPDATE || actual == QueryKind.DELETE) && names.isEmpty()) {
+    parameterNames(sql);
+    if ((actual == QueryKind.UPDATE || actual == QueryKind.DELETE) && !whereHasParameter(sql)) {
       throw new BlueskyException(QueryErrorCode.NO_PARAMETER_IN_MODIFY);
     }
+  }
+
+  /**
+   * WHERE 뒤에 파라미터가 하나라도 있는가. SET 에만 파라미터가 있으면(UPDATE t SET a = :a) 전체 행이 바뀌므로 거부 대상이다. 주석 · 문자열 안의
+   * WHERE 는 보지 않는다(stripCommentsAndLiterals 는 길이를 유지해 위치가 원문과 같다).
+   */
+  private static boolean whereHasParameter(String sql) {
+    var matcher = WHERE.matcher(stripCommentsAndLiterals(sql));
+    return matcher.find() && !parameterNames(sql.substring(matcher.end())).isEmpty();
   }
 
   /** 끝의 세미콜론 하나를 뺀다(실행 · 감싸기 전에). */
