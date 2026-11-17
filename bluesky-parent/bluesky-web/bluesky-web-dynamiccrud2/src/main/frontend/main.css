@@ -1,0 +1,115 @@
+@import "tailwindcss";
+@source "../jte";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* 디자인 토큰. daisyUI 를 쓰지 않는다 - gate(bluesky-web-gate main.css)의 토큰 값을 그대로 가져왔다.
+   light 기본, dark 는 [data-theme="dark"]. */
+@theme {
+	--text-2xs: 0.6875rem;
+	--color-base-100: #ffffff;
+	--color-base-200: #f5f7fa;
+	--color-base-300: #e5e9f0;
+	--color-base-content: #0d111b;
+	--color-primary: #3763d0;
+	--color-primary-content: #ffffff;
+	--color-secondary: #4b5563;
+	--color-secondary-content: #ffffff;
+	--color-info: #2062ab;
+	--color-info-content: #ffffff;
+	--color-success: #15803d;
+	--color-success-content: #ffffff;
+	--color-warning: #92400e;
+	--color-warning-content: #ffffff;
+	--color-error: #c30115;
+	--color-error-content: #ffffff;
+	--radius-box: 0.875rem;
+	--radius-field: 0.5rem;
+	--shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px -4px rgba(15, 23, 42, 0.08);
+	--color-surface-line: rgba(15, 23, 42, 0.07);
+	/* 입력칸 경계는 배경과 3:1 이상(WCAG 1.4.11) - gate 실측 값 */
+	--color-control-line: #868fa1;
+}
+
+[data-theme="dark"] {
+	--color-base-100: #0f1623;
+	--color-base-200: #161f2e;
+	--color-base-300: #232f42;
+	--color-base-content: #e6eaf2;
+	--color-primary: #4dabf7;
+	--color-primary-content: #07101f;
+	--color-secondary: #94a3b8;
+	--color-secondary-content: #0b1220;
+	--color-info: #60a5fa;
+	--color-info-content: #07101f;
+	--color-success: #4ade80;
+	--color-success-content: #07101f;
+	--color-warning: #fbbf24;
+	--color-warning-content: #1a1203;
+	--color-error: #f87171;
+	--color-error-content: #1a0606;
+	--shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px -4px rgba(0, 0, 0, 0.45);
+	--color-surface-line: rgba(255, 255, 255, 0.10);
+	--color-control-line: #5e6a84;
+}
+
+@layer base {
+	html { color-scheme: light; }
+	html[data-theme="dark"] { color-scheme: dark; }
+	body { background-color: var(--color-base-100); color: var(--color-base-content); }
+	:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+	:where(p, h1, h2, h3, li, label, .btn, .badge):not(:where(table *)) { word-break: keep-all; overflow-wrap: anywhere; }
+}
+
+/* 컴포넌트 - 화면에서 쓰는 것만 */
+@layer components {
+	.btn {
+		display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+		height: 2.5rem; padding-inline: 1rem; font-size: 0.875rem; font-weight: 600; line-height: 1;
+		border-radius: var(--radius-field); border: 1px solid transparent;
+		background-color: var(--color-base-200); color: var(--color-base-content);
+		cursor: pointer; user-select: none; white-space: nowrap;
+		transition: background-color .15s, border-color .15s, color .15s;
+	}
+	.btn:hover { background-color: var(--color-base-300); }
+	.btn-sm { height: 2rem; padding-inline: 0.75rem; font-size: 0.8125rem; }
+	.btn-primary { background-color: var(--color-primary); color: var(--color-primary-content); }
+	.btn-primary:hover { background-color: color-mix(in oklab, var(--color-primary) 88%, black); }
+	.btn-error { background-color: var(--color-error); color: var(--color-error-content); }
+	/* .btn:hover 가 특이도가 높아 덮으면 회색 바탕에 흰 글자가 된다(2026-11-17 실측) */
+	.btn-error:hover { background-color: color-mix(in oklab, var(--color-error) 88%, black); }
+	.btn-ghost { background-color: transparent; }
+	.btn-ghost:hover { background-color: color-mix(in oklab, var(--color-base-content) 10%, transparent); }
+	.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+	.card {
+		border: 1px solid var(--color-surface-line); border-radius: var(--radius-box);
+		background-color: var(--color-base-100); box-shadow: var(--shadow-card); padding: 1.25rem;
+	}
+
+	.input, .select, .textarea {
+		border: 1px solid var(--color-control-line); border-radius: var(--radius-field);
+		background-color: var(--color-base-100); color: var(--color-base-content);
+		padding: 0.5rem 0.75rem; font-size: 0.875rem; min-height: 2.5rem;
+	}
+	.input-sm, .select-sm { min-height: 2rem; padding: 0.25rem 0.5rem; font-size: 0.8125rem; }
+	.textarea.code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.8125rem; line-height: 1.5; }
+	.checkbox { width: 1.125rem; height: 1.125rem; accent-color: var(--color-primary); }
+	.label { display: block; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.25rem; }
+	.hint { font-size: 0.75rem; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
+
+	.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
+	.table :where(th, td) { padding: 0.5rem 0.75rem; vertical-align: middle; border-bottom: 1px solid var(--color-base-300); }
+	.table thead :where(th) { font-size: 0.75rem; font-weight: 600; background-color: var(--color-base-200); }
+
+	.badge {
+		display: inline-flex; align-items: center; height: 1.375rem; padding-inline: 0.5rem; font-size: 0.75rem;
+		border-radius: 9999px; background-color: var(--color-base-200); white-space: nowrap;
+	}
+	.badge-primary { background-color: var(--color-primary); color: var(--color-primary-content); }
+	.badge-warning { background-color: var(--color-warning); color: var(--color-warning-content); }
+
+	.alert { border-radius: var(--radius-field); padding: 0.75rem 1rem; font-size: 0.875rem; border: 1px solid; }
+	.alert-error { border-color: var(--color-error); color: var(--color-error); background-color: color-mix(in oklab, var(--color-error) 8%, transparent); }
+	.alert-warning { border-color: var(--color-warning); color: var(--color-warning); background-color: color-mix(in oklab, var(--color-warning) 8%, transparent); }
+	.alert-info { border-color: var(--color-info); color: var(--color-info); background-color: color-mix(in oklab, var(--color-info) 8%, transparent); }
+}

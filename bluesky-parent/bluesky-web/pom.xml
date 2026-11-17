@@ -13,6 +13,7 @@
 		<module>bluesky-web-apidocs</module>
 		<module>bluesky-web-common</module>
 		<module>bluesky-web-dynamiccrud</module>
+		<module>bluesky-web-dynamiccrud2</module>
 		<module>bluesky-web-gate</module>
 		<module>bluesky-web-user</module>
 	</modules>

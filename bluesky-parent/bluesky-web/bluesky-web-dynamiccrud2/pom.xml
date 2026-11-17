@@ -1,0 +1,190 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>net.luversof</groupId>
+		<artifactId>bluesky-web</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>bluesky-web-dynamiccrud2</artifactId>
+
+	<dependencies>
+		<!-- (s) spring-boot -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jdbc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+		<!-- (e) spring-boot -->
+
+		<!-- (s) spring-boot-admin -->
+		<dependency>
+			<groupId>de.codecentric</groupId>
+			<artifactId>spring-boot-admin-starter-client</artifactId>
+		</dependency>
+		<!-- (e) spring-boot-admin -->
+
+		<!-- (s) bluesky boot connectioninfo -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot connectioninfo -->
+
+		<!-- (s) bluesky boot crypto -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-crypto</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot crypto -->
+
+		<!-- (s) bluesky boot devcheck -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-devcheck</artifactId>
+		</dependency>
+		<!-- (e) bluesky boot devcheck -->
+
+		<!-- (s) jdbc -->
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mariadb.jdbc</groupId>
+			<artifactId>mariadb-java-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+		</dependency>
+		<!-- (e) jdbc -->
+
+		<!-- (s) jte -->
+		<dependency>
+			<groupId>gg.jte</groupId>
+			<artifactId>jte-spring-boot-starter-4</artifactId>
+			<version>3.2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>gg.jte</groupId>
+			<artifactId>jte-models</artifactId>
+			<version>3.2.4</version>
+		</dependency>
+		<!-- (e) jte -->
+
+		<!-- excel download -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+		</dependency>
+
+		<!-- UuidGenerator bean (ids of setting catalog rows) -->
+		<dependency>
+			<groupId>com.github.f4b6a3</groupId>
+			<artifactId>uuid-creator</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.jsqlparser</groupId>
+			<artifactId>jsqlparser</artifactId>
+		</dependency>
+
+		<!-- (s) webjars -->
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>webjars-locator-lite</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>theme-change</artifactId>
+			<version>2.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>htmx.org</artifactId>
+			<version>2.0.4</version>
+		</dependency>
+		<!-- (e) webjars -->
+
+		<!-- (s) bluesky -->
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-client-user</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-web-common</artifactId>
+		</dependency>
+		<!-- (e) bluesky -->
+
+		<!-- MockMvc with mock users (setting screen access tests) -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>gg.jte</groupId>
+				<artifactId>jte-maven-plugin</artifactId>
+				<version>3.1.12</version>
+				<executions>
+					<execution>
+						<id>jte-generate</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
+							<contentType>Html</contentType>
+							<binaryStaticContent>true</binaryStaticContent>
+							<targetResourceDirectory>
+								${project.build.directory}/generated-sources/jte</targetResourceDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>add-resource</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>add-resource</goal>
+						</goals>
+						<configuration>
+							<resources>
+								<resource>
+									<directory>
+										${project.build.directory}/generated-sources/jte</directory>
+									<includes>
+										<include>**/*.bin</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+</project>
