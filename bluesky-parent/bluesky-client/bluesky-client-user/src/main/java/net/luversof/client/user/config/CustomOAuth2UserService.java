@@ -77,7 +77,10 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             .getUserInfoEndpoint()
             .getUserNameAttributeName();
 
-    return new DefaultOAuth2User(withUserRole(oauth2User), attributes, userNameAttributeName);
+    return new DefaultOAuth2User(
+        withUserRole(oauth2User, userInfo == null ? null : userInfo.authorities()),
+        attributes,
+        userNameAttributeName);
   }
 
   /**
@@ -85,8 +88,22 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
    * {@code hasRole('USER')} 라, 이게 없으면 로그인한 사용자도 막힌다.
    */
   static Set<GrantedAuthority> withUserRole(OAuth2User oauth2User) {
+    return withUserRole(oauth2User, null);
+  }
+
+  /**
+   * 위에 더해 user API 가 돌려준 역할("UserAuthority" 테이블, 예: ROLE_ADMIN)도 더한다. user API 호출이 실패하면 ROLE_USER 만
+   * 갖고 로그인은 그대로 진행된다.
+   */
+  static Set<GrantedAuthority> withUserRole(
+      OAuth2User oauth2User, java.util.Collection<String> userAuthorities) {
     Set<GrantedAuthority> authorities = new LinkedHashSet<>(oauth2User.getAuthorities());
     authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+    if (userAuthorities != null) {
+      userAuthorities.stream()
+          .filter(a -> a != null && !a.isBlank())
+          .forEach(a -> authorities.add(new SimpleGrantedAuthority(a.strip())));
+    }
     return authorities;
   }
 

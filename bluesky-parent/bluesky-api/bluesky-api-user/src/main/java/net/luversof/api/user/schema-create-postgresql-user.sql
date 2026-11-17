@@ -43,3 +43,13 @@ CREATE TABLE "UserInfo" (
 
 CREATE UNIQUE INDEX uk_userInfo_username ON "UserInfo" ("username");
 CREATE UNIQUE INDEX uk_userInfo_provider_providerId ON "UserInfo" ("provider", "provider_id");
+
+-- OAuth2 로그인 사용자 역할(2026-11-17 추가). 위 authorities 는 폼 로그인용 users 를 FK 로 물어 GitHub 사용자(UserInfo)에게 못 쓴다.
+-- 로그인할 때 user API 가 읽어 client-user 가 ROLE_USER 에 더한다. 세션에 들어가므로 바꾸면 다시 로그인해야 반영된다.
+-- 역할 계층(앱에서): ROLE_MASTER > ROLE_ADMIN > ROLE_USER
+CREATE TABLE "UserAuthority" (
+	"userInfo_id" UUID NOT NULL,
+	"authority" VARCHAR(50) NOT NULL,
+	PRIMARY KEY ("userInfo_id", "authority"),
+	CONSTRAINT fk_userAuthority_userInfo FOREIGN KEY ("userInfo_id") REFERENCES "UserInfo" ("id") ON DELETE CASCADE
+);

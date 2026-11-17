@@ -132,16 +132,36 @@ public class UserInfoController {
     return userInfoService.findByProviderAndProviderId(provider, providerId);
   }
 
+  /** 로그인 때 부른다. 응답의 authorities 를 client-user 가 ROLE_USER 에 더한다. */
   @PostMapping("/oauth2")
-  public UserInfo saveOAuth2User(@RequestBody OAuth2UserRequest request) {
-    return userInfoService.saveOAuth2User(
-        request.provider(),
-        request.providerId(),
-        request.username(),
-        request.email(),
-        request.avatarUrl());
+  public OAuth2UserResponse saveOAuth2User(@RequestBody OAuth2UserRequest request) {
+    var userInfo =
+        userInfoService.saveOAuth2User(
+            request.provider(),
+            request.providerId(),
+            request.username(),
+            request.email(),
+            request.avatarUrl());
+    return new OAuth2UserResponse(
+        userInfo.getId() == null ? null : userInfo.getId().toString(),
+        userInfo.getUsername(),
+        userInfo.getProvider(),
+        userInfo.getProviderId(),
+        userInfo.getEmail(),
+        userInfo.getAvatarUrl(),
+        userInfo.getId() == null ? List.of() : userInfoService.findAuthorities(userInfo.getId()));
   }
 
   record OAuth2UserRequest(
       String provider, String providerId, String username, String email, String avatarUrl) {}
+
+  /** client-user 의 UserInfoApiClient.UserInfoResponse 와 같은 이름(password 는 내보내지 않는다) */
+  public record OAuth2UserResponse(
+      String id,
+      String username,
+      String provider,
+      String providerId,
+      String email,
+      String avatarUrl,
+      List<String> authorities) {}
 }

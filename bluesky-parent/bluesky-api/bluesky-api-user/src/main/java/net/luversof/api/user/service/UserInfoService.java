@@ -6,6 +6,8 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 
 import net.luversof.api.user.domain.UserInfo;
@@ -16,9 +18,28 @@ public class UserInfoService {
 
   private UserInfoRepository userInfoRepository;
 
+  private JdbcClient userJdbcClient;
+
   @Autowired
   public void setUserInfoRepository(UserInfoRepository userInfoRepository) {
     this.userInfoRepository = userInfoRepository;
+  }
+
+  @Autowired
+  public void setUserJdbcClient(@Qualifier("userJdbcClient") JdbcClient userJdbcClient) {
+    this.userJdbcClient = userJdbcClient;
+  }
+
+  /**
+   * OAuth2 로그인 사용자에게 더할 역할(예: ROLE_ADMIN). "UserAuthority" 테이블에 직접 넣어 관리한다. 로그인할 때 세션에 들어가므로 바꾸면 다시
+   * 로그인해야 반영된다.
+   */
+  public List<String> findAuthorities(UUID userInfoId) {
+    return userJdbcClient
+        .sql("SELECT \"authority\" FROM \"UserAuthority\" WHERE \"userInfo_id\" = :id")
+        .param("id", userInfoId)
+        .query(String.class)
+        .list();
   }
 
   public UserInfo save(UserInfo userInfo) {

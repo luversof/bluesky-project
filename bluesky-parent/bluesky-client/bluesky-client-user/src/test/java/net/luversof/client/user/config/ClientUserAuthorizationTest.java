@@ -31,6 +31,23 @@ class ClientUserAuthorizationTest {
   }
 
   @Test
+  void user_API_가_돌려준_역할을_더한다() {
+    var github =
+        new DefaultOAuth2User(
+            List.of(new OAuth2UserAuthority(Map.of("login", "octo"))),
+            Map.of("login", "octo"),
+            "login");
+
+    assertThat(CustomOAuth2UserService.withUserRole(github, List.of("ROLE_ADMIN", " ")))
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactlyInAnyOrder("OAUTH2_USER", "ROLE_USER", "ROLE_ADMIN");
+    // user API 호출이 실패하면(null) ROLE_USER 만
+    assertThat(CustomOAuth2UserService.withUserRole(github, null))
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactlyInAnyOrder("OAUTH2_USER", "ROLE_USER");
+  }
+
+  @Test
   void htmx_와_JSON_요청은_상태코드를_기대한다() {
     var htmx = new MockHttpServletRequest();
     htmx.addHeader("HX-Request", "true");
