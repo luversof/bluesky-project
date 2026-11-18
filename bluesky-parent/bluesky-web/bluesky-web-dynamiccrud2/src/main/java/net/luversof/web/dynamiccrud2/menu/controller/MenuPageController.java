@@ -120,10 +120,16 @@ public class MenuPageController {
       @RequestParam MultiValueMap<String, String> form,
       Model model) {
     var path = useService.resolve(project, mainMenu, menu);
-    model.addAttribute(
-        "form",
-        useService.form(
-            path.menu().getId(), queryId, targetRows(form.get("rows"), form.get("row"))));
+    try {
+      model.addAttribute(
+          "form",
+          useService.form(
+              path.menu().getId(), queryId, targetRows(form.get("rows"), form.get("row"))));
+    } catch (IllegalArgumentException e) {
+      // 서명이 맞지 않는 행(RowSigner) - 공통 처리기가 500 으로 바꾸지 않게 400
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage(), e);
+    }
     model.addAttribute("menuPath", path.url());
     model.addAttribute("error", null);
     model.addAttribute("inputs", Map.of());
@@ -165,7 +171,14 @@ public class MenuPageController {
       var message = QueryErrorCode.messageOf(e);
       error = message == null ? e.getErrorCode() : message;
     }
-    model.addAttribute("form", useService.form(menuId, queryId, targets));
+    MenuPageService.ActionForm actionForm;
+    try {
+      actionForm = useService.form(menuId, queryId, targets);
+    } catch (IllegalArgumentException e) {
+      // 행 서명이 맞지 않으면 그 행을 다시 싣지 않는다(오류 문구가 목록을 다시 열라고 안내한다)
+      actionForm = useService.form(menuId, queryId, List.of());
+    }
+    model.addAttribute("form", actionForm);
     model.addAttribute("error", error);
     model.addAttribute("inputs", inputs);
     return "menu/actionForm";

@@ -71,6 +71,7 @@ public class MenuPageService {
   private final ProjectRepository projectRepository;
   private final MainMenuRepository mainMenuRepository;
   private final MenuRepository menuRepository;
+  private final RowSigner rowSigner;
 
   public MenuPageService(
       MenuService menuService,
@@ -82,7 +83,8 @@ public class MenuPageService {
       ObjectMapper objectMapper,
       ProjectRepository projectRepository,
       MainMenuRepository mainMenuRepository,
-      MenuRepository menuRepository) {
+      MenuRepository menuRepository,
+      RowSigner rowSigner) {
     this.menuService = menuService;
     this.fieldService = fieldService;
     this.dbTableRepository = dbTableRepository;
@@ -93,6 +95,7 @@ public class MenuPageService {
     this.projectRepository = projectRepository;
     this.mainMenuRepository = mainMenuRepository;
     this.menuRepository = menuRepository;
+    this.rowSigner = rowSigner;
   }
 
   // ---- 주소(/{프로젝트}/{메인 메뉴}/{메뉴}) ----
@@ -243,7 +246,7 @@ public class MenuPageService {
         columns.addAll(columnsOf(ctx, result.labels()));
         total = result.total();
         for (var values : result.rows()) {
-          rows.add(rowOf(result.labels(), values));
+          rows.add(rowOf(ctx.menu().getId(), result.labels(), values));
         }
       } catch (DataAccessException e) {
         message = "조회 실패: " + firstLine(e.getMostSpecificCause().getMessage());
@@ -311,7 +314,10 @@ public class MenuPageService {
     var query = queryOf(ctx.menu(), queryId);
     authorizer.checkRun(ctx.menu(), query);
     var rows = rowJsons == null ? List.<String>of() : rowJsons;
-    var firstRow = rows.size() == 1 ? parseRow(rows.get(0)) : Map.<String, String>of();
+    // 여러 행이면 값은 안 쓰지만 서명은 모두 확인한다(고친 행이 폼을 거쳐 실행으로 넘어가지 않게)
+    rows.forEach(json -> parseRow(ctx.menu().getId(), json));
+    var firstRow =
+        rows.size() == 1 ? parseRow(ctx.menu().getId(), rows.get(0)) : Map.<String, String>of();
     var fields = new ArrayList<FormField>();
     var settings = QueryService.settingsOf(query);
     for (var name : paramNames(ctx, query)) {
@@ -355,7 +361,7 @@ public class MenuPageService {
     var needsRow = names.stream().anyMatch(n -> settingOf(settings, n).role() == Role.ROW_KEY);
     var rows = new ArrayList<Map<String, String>>();
     if (rowJsons != null) {
-      rowJsons.forEach(json -> rows.add(parseRow(json)));
+      rowJsons.forEach(json -> rows.add(parseRow(ctx.menu().getId(), json)));
     }
     if (needsRow && rows.isEmpty()) {
       throw new IllegalArgumentException("작업할 행을 선택하세요.");
@@ -734,7 +740,7 @@ public class MenuPageService {
     return field.getColumnName();
   }
 
-  private Row rowOf(List<String> labels, List<Object> values) {
+  private Row rowOf(UUID menuId, List<String> labels, List<Object> values) {
     var texts = new ArrayList<String>(values.size());
     var map = new LinkedHashMap<String, String>();
     for (int i = 0; i < values.size(); i++) {
@@ -742,10 +748,12 @@ public class MenuPageService {
       texts.add(text);
       map.putIfAbsent(labels.get(i), text);
     }
-    return new Row(texts, objectMapper.writeValueAsString(map));
+    return new Row(texts, rowSigner.sign(menuId, objectMapper.writeValueAsString(map)));
   }
 
-  private Map<String, String> parseRow(String json) {
+  /** 서명을 확인한 행 JSON 만 읽는다({@link RowSigner}) */
+  private Map<String, String> parseRow(UUID menuId, String signed) {
+    var json = rowSigner.verify(menuId, signed);
     try {
       return objectMapper.readValue(json, new TypeReference<Map<String, String>>() {});
     } catch (RuntimeException e) {

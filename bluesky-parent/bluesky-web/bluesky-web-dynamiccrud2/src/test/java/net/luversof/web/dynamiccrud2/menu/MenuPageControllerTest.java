@@ -30,6 +30,7 @@ import net.luversof.web.dynamiccrud2.domain.ParamSetting;
 import net.luversof.web.dynamiccrud2.domain.ParamSetting.Role;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
 import net.luversof.web.dynamiccrud2.domain.SearchOperator;
+import net.luversof.web.dynamiccrud2.menu.service.RowSigner;
 import net.luversof.web.dynamiccrud2.repository.ChangeLogRepository;
 import net.luversof.web.dynamiccrud2.repository.DbTableRepository;
 import net.luversof.web.dynamiccrud2.repository.ProjectRepository;
@@ -48,6 +49,7 @@ class MenuPageControllerTest implements GeneralWebTest {
   @Autowired DbTableRepository dbTableRepository;
   @Autowired ProjectRepository projectRepository;
   @Autowired ChangeLogRepository changeLogRepository;
+  @Autowired RowSigner rowSigner;
 
   MockMvc mvc;
 
@@ -200,8 +202,22 @@ class MenuPageControllerTest implements GeneralWebTest {
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("전체 0건")));
 
-      // 수정 폼: 선택한 행 값으로 채운다(별칭 "이름" → 파라미터 name)
-      var rowJson = "{\"id\":\"" + rowId + "\",\"이름\":\"" + name + "\"}";
+      // 수정 폼: 선택한 행 값으로 채운다(별칭 "이름" → 파라미터 name). 행 JSON 은 목록이 서명해 내보낸다
+      var plainRowJson = "{\"id\":\"" + rowId + "\",\"이름\":\"" + name + "\"}";
+      var rowJson = rowSigner.sign(menuId, plainRowJson);
+      // 서명 없는(화면에서 고친) 행은 폼 · 실행 모두 거부
+      mvc.perform(
+              post(base + "/action/" + update + "/form")
+                  .param("row", plainRowJson)
+                  .with(normalUser()))
+          .andExpect(status().isBadRequest());
+      mvc.perform(
+              post(base + "/action/" + update + "/run")
+                  .param("rows", plainRowJson)
+                  .param("v.name", name + "-forged")
+                  .with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("선택한 행 정보가 올바르지 않습니다")));
       mvc.perform(
               post(base + "/action/" + update + "/form").param("row", rowJson).with(normalUser()))
           .andExpect(status().isOk())
