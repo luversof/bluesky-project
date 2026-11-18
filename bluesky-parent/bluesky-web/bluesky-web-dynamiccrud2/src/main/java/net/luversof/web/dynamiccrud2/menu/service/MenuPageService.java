@@ -58,6 +58,9 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class MenuPageService {
 
+  private static final org.slf4j.Logger LOG =
+      org.slf4j.LoggerFactory.getLogger(MenuPageService.class);
+
   private static final Set<String> RESERVED_PARAMS =
       Set.of(ReadQueryRewriter.LIMIT_PARAM, ReadQueryRewriter.OFFSET_PARAM);
 
@@ -414,7 +417,19 @@ public class MenuPageService {
     changeLog.setUsername(currentUsername());
     changeLog.setBindValues(Map.of("rows", logged));
     changeLog.setAffectedRows(affected);
-    changeLogRepository.save(changeLog);
+    try {
+      changeLogRepository.save(changeLog);
+    } catch (RuntimeException e) {
+      // 대상 DB 는 이미 커밋됐다. 실패로 보이면 사용자가 다시 실행해 입력이 중복되므로 성공으로 두고, 이력은 로그로 남긴다
+      LOG.error(
+          "[CHANGE_LOG_FAILED] menu={} query={} user={} affected={} binds={}",
+          changeLog.getMenuId(),
+          changeLog.getMenuQueryId(),
+          changeLog.getUsername(),
+          affected,
+          logged,
+          e);
+    }
     return affected;
   }
 
