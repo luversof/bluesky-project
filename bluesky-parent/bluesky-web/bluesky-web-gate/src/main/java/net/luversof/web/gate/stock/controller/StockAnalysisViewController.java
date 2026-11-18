@@ -60,9 +60,14 @@ public class StockAnalysisViewController {
       return StockViewSupport.loginRedirectView(request);
     }
     try {
-      model.addAttribute("summary", stockAnalysisClient.summary());
       String q = keyword == null ? "" : keyword.strip();
       model.addAttribute("keyword", q);
+      StockAnalysisClient.AnalysisInput input = stockAnalysisClient.input(UserUtil.getUserId());
+      // 검색이 분석 대상 한 종목만 가리키면 적중률 · 회차 비교 통계도 그 종목 기준(사용자 요청 2026-11-15).
+      StockAnalysisClient.AnalysisItem focus = input == null ? null : focusOf(q, input.items());
+      String focusSymbol = focus == null ? null : focus.symbol();
+      model.addAttribute("focus", focus);
+      model.addAttribute("summary", stockAnalysisClient.summary(focusSymbol));
       List<StockAnalysisClient.RecentPrediction> recent =
           stockAnalysisClient.recent(RECENT_DAYS).stream()
               .filter(p -> matches(q, p.name(), p.symbol()))
@@ -81,7 +86,7 @@ public class StockAnalysisViewController {
               .encode()
               .toUriString());
       // 회차 비교: 그날의 회차들을 종목 · 기간별로 나란히(사용자 요청 2026-11-10). 종목 검색 · 불일치만 보기를 함께 건다.
-      StockAnalysisClient.RunComparison runs = stockAnalysisClient.runs(runDate);
+      StockAnalysisClient.RunComparison runs = stockAnalysisClient.runs(runDate, focusSymbol);
       model.addAttribute("onlyDisagree", onlyDisagree);
       if (runs != null) {
         Page<StockAnalysisClient.RunRow> runRows =
@@ -97,10 +102,10 @@ public class StockAnalysisViewController {
         model.addAttribute("runsPagination", new Pagination(runRows));
       }
       model.addAttribute("runs", runs);
-      StockAnalysisClient.AnalysisInput input = stockAnalysisClient.input(UserUtil.getUserId());
       if (input != null) {
         // 종목별 예측(사용자 요청 2026-11-15): 고른 종목의 일자별 예측 · 적중률. 기본은 삼성전자, 없으면 첫 대상.
-        String symbol = historySymbolOf(historySymbol, input.items());
+        String symbol =
+            historySymbolOf(historySymbol != null ? historySymbol : focusSymbol, input.items());
         model.addAttribute("historyOptions", input.items());
         model.addAttribute("historySymbol", symbol);
         if (symbol != null) {
@@ -130,6 +135,20 @@ public class StockAnalysisViewController {
   }
 
   static final String DEFAULT_HISTORY_SYMBOL = "005930";
+
+  /** 검색어가 분석 대상 하나에만 맞으면 그 종목, 아니면(빈 검색 · 여러 종목) null. 코드가 정확히 같으면 그것을 고른다. */
+  static StockAnalysisClient.AnalysisItem focusOf(
+      String keyword, List<StockAnalysisClient.AnalysisItem> items) {
+    if (keyword == null || keyword.isBlank()) {
+      return null;
+    }
+    List<StockAnalysisClient.AnalysisItem> hits =
+        items.stream().filter(i -> matches(keyword, i.name(), i.symbol())).toList();
+    if (hits.size() == 1) {
+      return hits.get(0);
+    }
+    return hits.stream().filter(i -> keyword.strip().equals(i.symbol())).findFirst().orElse(null);
+  }
 
   /** 고른 종목이 분석 대상이면 그것, 아니면 삼성전자, 그것도 없으면 첫 대상. */
   static String historySymbolOf(String wanted, List<StockAnalysisClient.AnalysisItem> items) {

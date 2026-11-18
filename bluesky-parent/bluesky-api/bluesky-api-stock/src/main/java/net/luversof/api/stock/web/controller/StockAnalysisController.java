@@ -142,9 +142,9 @@ public class StockAnalysisController {
   /** 분석 날짜(KST) 하루의 회차들을 종목 · 기간별로 나란히. date 를 빼면 가장 최근 날짜. */
   @GetMapping("/runs")
   public StockAnalysisService.RunComparison runs(
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate date) {
-    return stockAnalysisService.runs(date);
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+      @RequestParam(required = false) String symbol) {
+    return stockAnalysisService.runs(date, symbol);
   }
 
   /** 한 종목의 일자별 예측과 버전별 적중률. */
@@ -154,7 +154,7 @@ public class StockAnalysisController {
   }
 
   @GetMapping("/summary")
-  public StockAnalysisService.Summary summary() {
-    return stockAnalysisService.summary();
+  public StockAnalysisService.Summary summary(@RequestParam(required = false) String symbol) {
+    return stockAnalysisService.summary(symbol);
   }
 }

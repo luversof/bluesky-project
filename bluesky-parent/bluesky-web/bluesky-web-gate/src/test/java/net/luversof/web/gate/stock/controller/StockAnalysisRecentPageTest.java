@@ -44,4 +44,20 @@ class StockAnalysisRecentPageTest {
         .isEqualTo("000660");
     assertThat(StockAnalysisViewController.historySymbolOf(null, List.of())).isNull();
   }
+
+  private static net.luversof.web.gate.stock.httpexchange.StockAnalysisClient.AnalysisItem item(
+      String symbol, String name) {
+    return new net.luversof.web.gate.stock.httpexchange.StockAnalysisClient.AnalysisItem(
+        symbol, name, null, null, null, null, null, null);
+  }
+
+  @Test
+  void 검색이_한_종목만_가리킬_때만_그_종목_기준() {
+    var items = List.of(item("005930", "삼성전자"), item("005935", "삼성전자우"), item("000660", "SK하이닉스"));
+    assertThat(StockAnalysisViewController.focusOf("하이닉스", items).symbol()).isEqualTo("000660");
+    // 여러 종목에 맞으면 코드가 정확히 같은 것만, 그것도 없으면 전체 기준
+    assertThat(StockAnalysisViewController.focusOf("005930", items).symbol()).isEqualTo("005930");
+    assertThat(StockAnalysisViewController.focusOf("삼성전자", items)).isNull();
+    assertThat(StockAnalysisViewController.focusOf("", items)).isNull();
+  }
 }

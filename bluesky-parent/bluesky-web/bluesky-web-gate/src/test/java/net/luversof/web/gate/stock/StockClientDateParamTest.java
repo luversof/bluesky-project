@@ -51,7 +51,7 @@ class StockClientDateParamTest {
         .andExpect(queryParam("payDate", "2025-11-05"))
         .andRespond(withSuccess());
 
-    analysis.runs(LocalDate.of(2025, 10, 30));
+    analysis.runs(LocalDate.of(2025, 10, 30), null);
     analysis.deletePredictions(LocalDate.of(2025, 10, 30));
     dividend.deletePayout("005930", LocalDate.of(2025, 10, 30), LocalDate.of(2025, 11, 5));
     server.verify();

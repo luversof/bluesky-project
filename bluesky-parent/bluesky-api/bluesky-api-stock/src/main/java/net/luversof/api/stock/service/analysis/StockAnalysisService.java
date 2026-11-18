@@ -693,9 +693,11 @@ public class StockAnalysisService {
   record Graded(StockPrediction prediction, StockPredictionGrade grade) {}
 
   /** 늦은 예측은 뺀다(장중 정보가 섞여 적중률을 부풀린다). */
-  public Summary summary() {
-    List<StockPrediction> predictions =
+  /** symbol 을 주면 그 종목 예측만으로 센다(사용자 요청 2026-11-15: 한 종목을 검색하면 화면 통계도 그 종목 기준). */
+  public Summary summary(String symbol) {
+    List<StockPrediction> all =
         StreamSupport.stream(stockPredictionRepository.findAll().spliterator(), false).toList();
+    List<StockPrediction> predictions = ofSymbol(all, symbol);
     Map<UUID, StockPredictionGrade> grades = gradesOf(predictions);
     List<Graded> onTime =
         predictions.stream()
@@ -703,7 +705,8 @@ public class StockAnalysisService {
             .map(p -> new Graded(p, grades.get(p.getId())))
             .toList();
     int late = (int) grades.values().stream().filter(StockPredictionGrade::isLate).count();
-    Map<UUID, Integer> runSeqs = runSeqs(predictions);
+    // 회차 순번은 종목과 무관하게 그날 전체 기준(종목을 골라도 회차 이름이 바뀌지 않게).
+    Map<UUID, Integer> runSeqs = runSeqs(all);
 
     return new Summary(
         predictions.size(),
@@ -1020,14 +1023,16 @@ public class StockAnalysisService {
       LocalDate date, List<LocalDate> dates, List<RunInfo> runs, List<RunRow> rows) {}
 
   /** date 가 null 이면 회차가 있는 가장 최근 날짜. */
-  public RunComparison runs(LocalDate date) {
+  /** symbol 을 주면 그 종목 예측만 놓는다 - 회차별 적중률 · FLAT 비율도 그 종목 기준. */
+  public RunComparison runs(LocalDate date, String symbol) {
     // shortcut: 전체 예측을 읽어 날짜로 거른다(하루 수십 건 규모), 수만 건을 넘으면 날짜 조건 쿼리로 바꾼다.
     List<StockPrediction> all =
         StreamSupport.stream(stockPredictionRepository.findAll().spliterator(), false)
             .filter(p -> p.getCreatedDate() != null)
             .toList();
+    List<StockPrediction> mine = ofSymbol(all, symbol);
     List<LocalDate> dates =
-        all.stream()
+        mine.stream()
             .map(p -> p.getCreatedDate().atZone(PredictionMath.MARKET_ZONE_ID).toLocalDate())
             .distinct()
             .sorted(Comparator.reverseOrder())
@@ -1037,7 +1042,7 @@ public class StockAnalysisService {
       return new RunComparison(null, dates, List.of(), List.of());
     }
     List<StockPrediction> ofDay =
-        all.stream()
+        mine.stream()
             .filter(p ->
                 p.getCreatedDate().atZone(PredictionMath.MARKET_ZONE_ID).toLocalDate().equals(day))
             .toList();
@@ -1121,6 +1126,17 @@ public class StockAnalysisService {
                     .thenComparingInt(RunRow::horizonDays))
             .toList();
     return new RunComparison(day, dates, runs, rows);
+  }
+
+  /** symbol 이 비면 그대로, 아니면 그 종목 예측만(없는 종목이면 빈 목록). */
+  private List<StockPrediction> ofSymbol(List<StockPrediction> all, String symbol) {
+    if (symbol == null || symbol.isBlank()) {
+      return all;
+    }
+    StockItem item = stockItemRepository.findBySymbol(symbol);
+    return item == null
+        ? List.of()
+        : all.stream().filter(p -> item.getId().equals(p.getStockItemId())).toList();
   }
 
   private Map<UUID, StockPredictionGrade> gradesOf(List<StockPrediction> predictions) {

@@ -24,6 +24,7 @@
 @param List<StockAnalysisClient.RateRow> historyRates = null
 @param List<StockAnalysisClient.RecentPrediction> history = null
 @param net.luversof.web.common.menu.domain.Pagination historyPagination = null
+@param StockAnalysisClient.AnalysisItem focus = null
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
@@ -80,6 +81,10 @@
 					`)
 				@endif
 
+				@if(focus != null)
+					<%-- 한 종목을 검색하면 적중률 · 회차 비교 통계가 그 종목 기준임을 알린다. --%>
+					<p class="text-sm font-semibold" role="status">${StockViewSupport.msg("stock.analysis.focus", focus.name(), focus.symbol())}</p>
+				@endif
 				<div class="grid gap-6 lg:grid-cols-2">
 					@for(var section : List.of(
 							List.of("stock.analysis.rate.run", summary.byRun() == null ? List.of() : summary.byRun()),
