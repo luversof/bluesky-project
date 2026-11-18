@@ -20,6 +20,7 @@ import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter.ReadResult;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter.Sort;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
+import net.luversof.web.dynamiccrud2.adapter.Filter;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.ResultColumn;
@@ -39,6 +40,8 @@ import net.luversof.web.dynamiccrud2.domain.ParamSetting;
 import net.luversof.web.dynamiccrud2.domain.ParamSetting.Role;
 import net.luversof.web.dynamiccrud2.domain.Project;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.SearchOperator;
+import net.luversof.web.dynamiccrud2.domain.SearchSettings;
 import net.luversof.web.dynamiccrud2.repository.ChangeLogRepository;
 import net.luversof.web.dynamiccrud2.repository.DbTableRepository;
 import net.luversof.web.dynamiccrud2.repository.MainMenuRepository;
@@ -137,6 +140,31 @@ public class MenuPageService {
   public record SearchField(
       String name, String header, InputType inputType, boolean required, String value) {}
 
+  /**
+   * 사용 화면 검색 입력.
+   *
+   * @param params 쿼리 :파라미터 검색칸(s.이름)
+   * @param filters 메뉴 검색 설정 칸(f.결과이름, 범위의 까지는 f.결과이름.to)
+   * @param keyword 통합 검색어(q)
+   */
+  public record SearchInput(
+      Map<String, String> params, Map<String, String> filters, String keyword) {
+
+    public static final SearchInput EMPTY = new SearchInput(Map.of(), Map.of(), null);
+  }
+
+  /** 메뉴 검색 설정으로 만든 검색칸(범위면 value · valueTo 두 칸) */
+  public record FilterField(
+      String label,
+      String header,
+      InputType inputType,
+      SearchOperator operator,
+      String value,
+      String valueTo) {}
+
+  /** 통합 검색칸. headers 는 함께 찾는 컬럼 제목(안내용) */
+  public record KeywordBox(List<String> headers, String value) {}
+
   /** 행: 화면에 보일 값들 + 작업으로 넘길 값(결과 이름 → 문자열 JSON) */
   public record Row(List<String> values, String json) {}
 
@@ -150,6 +178,8 @@ public class MenuPageService {
       String sort,
       boolean descending,
       List<SearchField> searchFields,
+      List<FilterField> filterFields,
+      KeywordBox keyword,
       String message,
       List<MenuQuery> insertActions,
       List<MenuQuery> updateActions,
@@ -161,19 +191,25 @@ public class MenuPageService {
       InputType inputType,
       boolean required,
       Integer maxLength,
-      String value) {}
+      String value,
+      boolean readonly) {}
 
   public record ActionForm(Menu menu, MenuQuery query, List<FormField> fields, List<String> rows) {}
 
   public record Export(List<String> headers, List<List<Object>> rows) {}
 
-  /** 로그인한 사용자가 볼 수 있는 메뉴(표시 켬 + 메뉴 권한)만 남긴 트리. 빈 메인 메뉴 · 프로젝트는 뺀다 */
+  /**
+   * 로그인한 사용자가 볼 수 있는 메뉴(표시 켬 + 메뉴 권한)만 남긴 트리. 숨긴 프로젝트 · 메인 메뉴는 아래까지 통째로 빼고, 볼 메뉴가 없는 메인 메뉴 · 프로젝트도
+   * 뺀다
+   */
   public List<ProjectNode> visibleTree() {
     return menuService.tree().stream()
+        .filter(project -> project.project().isEnableDisplay())
         .map(project ->
             new ProjectNode(
                 project.project(),
                 project.mainMenus().stream()
+                    .filter(mainMenu -> mainMenu.mainMenu().isEnableDisplay())
                     .map(mainMenu ->
                         new MenuService.MainMenuNode(
                             mainMenu.mainMenu(),
@@ -188,22 +224,22 @@ public class MenuPageService {
 
   // ---- 조회 ----
 
-  public UsePage page(
-      UUID menuId, Map<String, String> search, int page, String sort, boolean descending) {
+  public UsePage page(UUID menuId, SearchInput search, int page, String sort, boolean descending) {
     var ctx = context(menuId);
     authorizer.checkRead(ctx.menu());
-    var bound = bindSearch(ctx, search);
+    var bound = bindSearch(ctx, search.params());
+    var filtered = bindFilters(ctx, search, bound.params());
     var columns = new ArrayList<Column>();
     var rows = new ArrayList<Row>();
     long total = 0;
-    var message = bound.message();
+    var message = bound.message() != null ? bound.message() : filtered.message();
     var effectiveSort = sortOf(ctx, sort, descending);
     if (effectiveSort == null) {
       sort = null;
     }
     if (message == null) {
       try {
-        var result = read(ctx, bound, effectiveSort, Math.max(page, 0));
+        var result = read(ctx, bound, filtered.filters(), effectiveSort, Math.max(page, 0));
         columns.addAll(columnsOf(ctx, result.labels()));
         total = result.total();
         for (var values : result.rows()) {
@@ -211,6 +247,9 @@ public class MenuPageService {
         }
       } catch (DataAccessException e) {
         message = "조회 실패: " + firstLine(e.getMostSpecificCause().getMessage());
+      } catch (IllegalArgumentException e) {
+        // 검색 조건을 붙일 수 없는 쿼리 등(ReadQueryRewriter)
+        message = e.getMessage();
       }
     }
     if (columns.isEmpty()) {
@@ -233,6 +272,8 @@ public class MenuPageService {
         sort,
         descending,
         bound.fields(),
+        filtered.fields(),
+        filtered.keyword(),
         message,
         queries.stream().filter(q -> q.getKind() == QueryKind.INSERT).toList(),
         queries.stream().filter(q -> q.getKind() == QueryKind.UPDATE).toList(),
@@ -240,14 +281,15 @@ public class MenuPageService {
   }
 
   /** 엑셀: 화면과 같은 검색 · 정렬로 전체(설정 한도까지). 필수 검색 조건이 비면 빈 결과 */
-  public Export export(UUID menuId, Map<String, String> search, String sort, boolean descending) {
+  public Export export(UUID menuId, SearchInput search, String sort, boolean descending) {
     var ctx = context(menuId);
     authorizer.checkRead(ctx.menu());
     if (!ctx.menu().isEnableExcel()) {
       throw new org.springframework.security.access.AccessDeniedException("excel disabled");
     }
-    var bound = bindSearch(ctx, search);
-    if (bound.message() != null) {
+    var bound = bindSearch(ctx, search.params());
+    var filtered = bindFilters(ctx, search, bound.params());
+    if (bound.message() != null || filtered.message() != null) {
       return new Export(List.of(), List.of());
     }
     var result =
@@ -256,6 +298,7 @@ public class MenuPageService {
                 ctx.read().getQueryText(),
                 bound.params(),
                 bound.emptyOptional(),
+                filtered.filters(),
                 sortOf(ctx, sort, descending));
     return new Export(
         columnsOf(ctx, result.labels()).stream().map(Column::header).toList(), result.rows());
@@ -281,6 +324,7 @@ public class MenuPageService {
       if (value == null) {
         value = setting.defaultValue();
       }
+      var readonly = isLocked(query, field);
       fields.add(
           new FormField(
               name,
@@ -288,7 +332,8 @@ public class MenuPageService {
               field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType(),
               setting.required(),
               field == null ? null : field.getMaxLength(),
-              value));
+              readonly && rows.size() > 1 ? null : value,
+              readonly));
     }
     return new ActionForm(ctx.menu(), query, fields, rows);
   }
@@ -333,6 +378,13 @@ public class MenuPageService {
           if (raw == null || raw.isEmpty()) {
             throw new IllegalArgumentException("선택한 행에서 " + name + " 값을 찾지 못했습니다.");
           }
+        } else if (isLocked(query, field)) {
+          // 수정 불가 컬럼은 받은 값을 쓰지 않고 선택한 행의 원래 값을 그대로 넣는다(화면 조작으로 바꾸지 못하게)
+          raw = row.get(labelOfParam(ctx, name));
+          if (raw == null) {
+            throw new IllegalArgumentException(
+                headerOf(field, name) + " 은(는) 수정할 수 없는 값인데 조회 결과에 없어 원래 값을 알 수 없습니다.");
+          }
         } else {
           raw = inputs == null ? null : inputs.get(name);
           if ((raw == null || raw.isEmpty()) && setting.defaultValue() != null) {
@@ -362,6 +414,11 @@ public class MenuPageService {
 
   // ---- 내부 ----
 
+  /** 수정 작업에서 바꿀 수 없는 필드인가(입력 작업은 새 행이라 모든 값을 받는다) */
+  private static boolean isLocked(MenuQuery query, DbField field) {
+    return query.getKind() == QueryKind.UPDATE && field != null && !field.isUpdatable();
+  }
+
   private record Context(
       Menu menu,
       MenuQuery read,
@@ -385,6 +442,10 @@ public class MenuPageService {
             .findFirst()
             .orElseThrow();
     var base = fieldService.get(menu.getDbTableId());
+    if (base.getFields().stream().anyMatch(f -> !f.isVirtual() && f.getUpdatable() == null)) {
+      // "수정 가능" 이 생기기 전에 등록된 테이블 - 한 번 다시 읽어 PK · unique 를 수정 불가로 채운다
+      base = fieldService.resync(base.getId());
+    }
     var adapter = resolver.resolve(base.getConnectionName());
     var baseFields = new HashMap<String, DbField>();
     base.getFields().forEach(f -> baseFields.put(f.getColumnName(), f));
@@ -441,12 +502,123 @@ public class MenuPageService {
     return new Bound(params, empty, fields, message);
   }
 
-  private ReadResult read(Context ctx, Bound bound, Sort sort, int page) {
+  private record Filtered(
+      List<Filter> filters, List<FilterField> fields, KeywordBox keyword, String message) {}
+
+  /**
+   * 메뉴 검색 설정(관리 화면에서 고른 칸)과 통합 검색을 조회 조건으로 바꾼다. 값은 params 에 _f0 · _f0_to · _q 로 넣는다. 설정한 컬럼이 조회
+   * 쿼리에서 사라졌으면 그 칸은 조용히 뺀다(쿼리를 고친 뒤 검색 설정을 다시 저장하기 전).
+   */
+  private Filtered bindFilters(Context ctx, SearchInput search, Map<String, Object> params) {
+    var settings = SearchSettings.of(ctx.menu().getSearchSettings());
+    var byLabel = new HashMap<String, ResultColumn>();
+    ctx.analysis().columns().stream()
+        .filter(c -> c.kind() == ResultColumn.Kind.COLUMN)
+        .forEach(c -> byLabel.putIfAbsent(c.label(), c));
+    var filters = new ArrayList<Filter>();
+    var fields = new ArrayList<FilterField>();
+    String message = null;
+    var index = 0;
+    for (var item : settings.fields()) {
+      var column = byLabel.get(item.label());
+      if (column == null) {
+        continue;
+      }
+      var field = fieldOf(ctx, column);
+      var inputType =
+          field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType();
+      var allowed = SearchOperator.allowedFor(inputType);
+      var operator = allowed.contains(item.operator()) ? item.operator() : allowed.get(0);
+      var value = blankToNull(search.filters().get(item.label()));
+      var valueTo =
+          operator == SearchOperator.RANGE
+              ? blankToNull(search.filters().get(item.label() + ".to"))
+              : null;
+      fields.add(
+          new FilterField(
+              item.label(),
+              column.alias() != null ? column.alias() : headerOf(field, item.label()),
+              inputType,
+              operator,
+              value,
+              valueTo));
+      var param = "_f" + index;
+      var paramTo = "_f" + index + "_to";
+      index++;
+      try {
+        switch (operator) {
+          case CONTAINS, STARTS_WITH -> {
+            if (value != null) {
+              var like = Filter.escapeLike(value) + "%";
+              params.put(param, operator == SearchOperator.CONTAINS ? "%" + like : like);
+              filters.add(new Filter(List.of(item.label()), operator, param, null));
+            }
+          }
+          case EQUALS -> {
+            if (value != null) {
+              params.put(param, ValueConverter.toBindValue(value, field));
+              filters.add(new Filter(List.of(item.label()), operator, param, null));
+            }
+          }
+          case RANGE -> {
+            if (value != null) {
+              params.put(param, ValueConverter.toBindValue(value, field));
+            }
+            if (valueTo != null) {
+              params.put(paramTo, ValueConverter.toBindValue(valueTo, field));
+            }
+            if (value != null || valueTo != null) {
+              filters.add(
+                  new Filter(
+                      List.of(item.label()),
+                      operator,
+                      value == null ? null : param,
+                      valueTo == null ? null : paramTo));
+            }
+          }
+        }
+      } catch (IllegalArgumentException e) {
+        message = e.getMessage();
+      }
+    }
+    // 통합 검색: 고른 글자 컬럼 중 하나라도 검색어를 포함(대소문자 무시)
+    var keywordLabels = new ArrayList<String>();
+    var keywordHeaders = new ArrayList<String>();
+    for (var label : settings.keyword()) {
+      var column = byLabel.get(label);
+      if (column == null) {
+        continue;
+      }
+      var field = fieldOf(ctx, column);
+      if (!SearchOperator.isText(field == null ? null : field.getInputType())) {
+        continue;
+      }
+      keywordLabels.add(label);
+      keywordHeaders.add(column.alias() != null ? column.alias() : headerOf(field, label));
+    }
+    KeywordBox keyword = null;
+    if (!keywordLabels.isEmpty()) {
+      var value = blankToNull(search.keyword());
+      keyword = new KeywordBox(keywordHeaders, value);
+      if (value != null) {
+        params.put("_q", "%" + Filter.escapeLike(value) + "%");
+        filters.add(new Filter(keywordLabels, SearchOperator.CONTAINS, "_q", null));
+      }
+    }
+    return new Filtered(filters, fields, keyword, message);
+  }
+
+  private static String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value.strip();
+  }
+
+  private ReadResult read(Context ctx, Bound bound, List<Filter> filters, Sort sort, int page) {
     return ctx.adapter()
         .read(
             ctx.read().getQueryText(),
             bound.params(),
             bound.emptyOptional(),
+            filters,
             sort,
             page,
             ctx.menu().getPageSize());
@@ -528,9 +700,7 @@ public class MenuPageService {
                       .findIdByLocation(
                           ctx.base().getConnectionName(),
                           ctx.base().getCatalogName(),
-                          column.tableSchema() == null
-                              ? ctx.base().getSchemaName()
-                              : column.tableSchema(),
+                          ctx.base().schemaOf(column.tableSchema()),
                           table)
                       .flatMap(dbTableRepository::findById)
                       .ifPresent(t -> t.getFields().forEach(f -> map.put(f.getColumnName(), f)));
@@ -587,7 +757,8 @@ public class MenuPageService {
     var query =
         menu.getQueries().stream().filter(q -> q.getId().equals(queryId)).findFirst().orElseThrow();
     if (query.getKind() == QueryKind.READ) {
-      throw new BlueskyException(QueryErrorCode.STATEMENT_KIND_MISMATCH, "작업", QueryKind.READ);
+      throw new BlueskyException(
+          QueryErrorCode.STATEMENT_KIND_MISMATCH, "입력 · 수정 · 삭제", QueryKind.READ);
     }
     return query;
   }

@@ -8,6 +8,9 @@
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>bluesky-api-blog</artifactId>
+	<properties>
+		<therapi-runtime-javadoc.version>0.15.0</therapi-runtime-javadoc.version>
+	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>net.luversof</groupId>
@@ -30,6 +33,12 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 		</dependency>
+		<!-- Javadoc of the controllers becomes the API description -->
+		<dependency>
+			<groupId>com.github.therapi</groupId>
+			<artifactId>therapi-runtime-javadoc</artifactId>
+			<version>${therapi-runtime-javadoc.version}</version>
+		</dependency>
 		<!-- (e) springdoc-openapi -->
 
 		<!-- (s) spring-boot-admin -->
@@ -51,6 +60,22 @@
 	</dependencies>
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths combine.children="append">
+						<path>
+							<groupId>com.github.therapi</groupId>
+							<artifactId>therapi-runtime-javadoc-scribe</artifactId>
+							<version>${therapi-runtime-javadoc.version}</version>
+						</path>
+					</annotationProcessorPaths>
+					<compilerArgs combine.children="append">
+						<arg>-Ajavadoc.packages=net.luversof.api.blog.controller</arg>
+					</compilerArgs>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

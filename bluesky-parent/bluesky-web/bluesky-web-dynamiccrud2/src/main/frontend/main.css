@@ -90,30 +90,135 @@
 	}
 	.drag-handle:hover { background-color: var(--color-base-200); color: var(--color-base-content); }
 	.drag-handle:active { cursor: grabbing; }
+	/* 목록 맨 아래 "+ ○○ 추가" 줄(_components/addToggle). + 는 ⠿ 자리(같은 폭), 글자는 이름 자리에 와서 같은 깊이로 읽힌다 */
+	.add-row {
+		display: inline-flex; align-items: center; gap: 0.25rem; min-height: 2rem; padding-right: 0.5rem;
+		border-radius: var(--radius-field); font-size: 0.875rem; cursor: pointer;
+		color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+	}
+	.add-row:hover, .add-row[aria-expanded="true"] { background-color: var(--color-base-200); color: var(--color-base-content); }
+	.add-row-icon { display: inline-flex; justify-content: center; width: 1.75rem; }
 
-	/* 이름 옆 작은 단추(✎ 이름 바꾸기 · × 삭제 · + 하위 추가) */
+	/* 이름 옆 작은 단추(✎ 이름 바꾸기 · 눈 노출 · 휴지통 삭제). 24px = 클릭 목표 최소(WCAG 2.5.8) - 더 키우면 16px 그림 사이가 벌어져 보인다 */
 	.icon-btn {
-		display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem;
+		display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem;
 		border-radius: var(--radius-field); font-size: 1rem; line-height: 1; cursor: pointer;
 		color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 	}
+	/* 이름 옆 아이콘 묶음: 칸끼리 붙여(간격 0) 그림 사이를 칸 여백(8px)만큼만 둔다. 이름 · 주소와의 간격은 바깥 gap */
+	.icon-group { display: inline-flex; align-items: center; }
 	.icon-btn:hover, .icon-btn[aria-expanded="true"] { background-color: var(--color-base-200); color: var(--color-base-content); }
+	/* 목록 쪽 번호. 너비를 고정해 쪽이 바뀌어도 단추 자리가 흔들리지 않는다 */
+	.page-btn {
+		display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; height: 2rem; padding: 0 0.5rem;
+		border-radius: var(--radius-field); font-variant-numeric: tabular-nums;
+	}
+	a.page-btn:hover { background-color: var(--color-base-200); }
+	.page-btn-current { background-color: var(--color-primary); color: var(--color-primary-content); font-weight: 600; }
+	.page-btn-disabled { opacity: .3; }
+
+	/* 그 자리 수정 칸(_components/codeNameForm inline): 표시 글자와 같은 글꼴 · 크기, 칸 테두리 없이 밑줄만, 폭은 글자만큼 */
+	.inline-edit {
+		font: inherit; color: inherit; background: transparent; padding: 0 0.125rem; margin: 0;
+		border: 0; border-bottom: 1px dashed var(--color-control-line); border-radius: 0;
+		field-sizing: content; min-width: 3ch; max-width: 100%;
+	}
+	.inline-edit:focus { outline: none; border-bottom: 2px solid var(--color-primary); }
+	.inline-edit:invalid { border-bottom-color: var(--color-error); }
+
+	/* 검색해서 고르는 입력칸(_components/combobox): 목록은 입력칸과 같은 시작 위치 · 같은 폭 */
+	.combobox { position: relative; }
+	.combobox-list {
+		position: absolute; left: 0; right: 0; top: calc(100% + 0.25rem); z-index: 30;
+		max-height: 16rem; overflow: auto; padding: 0.25rem;
+		background-color: var(--color-base-100); color: var(--color-base-content);
+		border: 1px solid var(--color-control-line); border-radius: var(--radius-field); box-shadow: var(--shadow-card);
+	}
+	.combobox-list li { padding: 0.375rem 0.625rem; border-radius: calc(var(--radius-field) - 0.125rem); font-size: 0.875rem; }
+	.combobox-list li[role="option"] { cursor: pointer; }
+	.combobox-list li[role="option"]:hover, .combobox-list li[aria-selected="true"] { background-color: var(--color-base-200); }
+	.combobox-list li[aria-disabled="true"], .combobox-empty { cursor: default; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
+	.combobox-list .combobox-sub { font-size: 0.75rem; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
+
+	/* htmx 조각 레이어(_components/modal) */
+	.modal {
+		margin: auto; padding: 0; background: transparent; color: inherit;
+		width: min(42rem, calc(100vw - 2rem)); max-height: 90vh; overflow: auto;
+	}
+	.modal::backdrop { background-color: rgb(0 0 0 / 0.45); }
+
+	/* 테마 전환 단추(_components/themeToggle): 지금 테마의 반대를 보여 준다 */
+	.theme-icon-dark { display: none; }
+	[data-theme="dark"] .theme-icon-light { display: none; }
+	[data-theme="dark"] .theme-icon-dark { display: inline; }
 	.icon-btn-danger:hover { background-color: color-mix(in oklab, var(--color-error) 12%, transparent); color: var(--color-error); }
 
 	.card {
 		border: 1px solid var(--color-surface-line); border-radius: var(--radius-box);
-		background-color: var(--color-base-100); box-shadow: var(--shadow-card); padding: 1.25rem;
+		background-color: var(--color-base-100); box-shadow: var(--shadow-card); padding: 1rem;
 	}
 
+	/* 입력칸: 평소 테두리는 배경과 3:1(--color-control-line, WCAG 1.4.11) - 더 흐리게 하지 않는다.
+	   마우스를 올리면 진하게, 입력 중이면 기본색 테두리 + 옅은 둘레 */
 	.input, .select, .textarea {
-		border: 1px solid var(--color-control-line); border-radius: var(--radius-field);
+		border: 1px solid var(--color-control-line); border-radius: 0.375rem;
 		background-color: var(--color-base-100); color: var(--color-base-content);
-		padding: 0.5rem 0.75rem; font-size: 0.875rem; min-height: 2.5rem;
+		padding: 0.375rem 0.625rem; font-size: 0.875rem; min-height: 2.25rem;
+		transition: border-color .15s, box-shadow .15s;
 	}
+	.input:hover, .select:hover, .textarea:hover { border-color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+	.input:focus-visible, .select:focus-visible, .textarea:focus-visible {
+		outline: none; border-color: var(--color-primary);
+		box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 22%, transparent);
+	}
+	.input:disabled, .select:disabled { opacity: .45; cursor: not-allowed; }
 	.input-sm, .select-sm { min-height: 2rem; padding: 0.25rem 0.5rem; font-size: 0.8125rem; }
 	.textarea.code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.8125rem; line-height: 1.5; }
-	.checkbox { width: 1.125rem; height: 1.125rem; accent-color: var(--color-primary); }
-	.label { display: block; font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.25rem; }
+	.checkbox { width: 1rem; height: 1rem; accent-color: var(--color-primary); }
+	.label {
+		display: block; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem;
+		color: color-mix(in oklab, var(--color-base-content) 78%, transparent);
+	}
+
+	/* 고른 검색칸 한 줄(_components/searchFieldRow) */
+	.pick-row {
+		display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; min-width: 0;
+		padding: 0.25rem 0.5rem; border: 1px solid var(--color-base-300); border-radius: 0.375rem;
+		background-color: var(--color-base-100);
+	}
+
+	/* 고른 값 칩(_components/pickChip) */
+	.chip {
+		display: inline-flex; align-items: center; gap: 0.25rem; max-width: 100%; height: 1.75rem;
+		padding-inline: 0.625rem 0.25rem; font-size: 0.8125rem; border-radius: 9999px;
+		background-color: color-mix(in oklab, var(--color-primary) 12%, transparent); color: var(--color-base-content);
+	}
+	.chip-remove {
+		display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem;
+		border-radius: 9999px; cursor: pointer; color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+	}
+	.chip-remove:hover { background-color: color-mix(in oklab, var(--color-error) 14%, transparent); color: var(--color-error); }
+
+	/* 상단 앱 이동(_components/appNav): 사용자 메뉴 이름과 구분되는 단추 모양, 지금 구역은 눌린 모양 */
+	.app-nav { display: flex; align-items: center; gap: 0.25rem; padding: 0.125rem; border-radius: var(--radius-field); background-color: var(--color-base-200); }
+	.app-nav-link { padding: 0.25rem 0.625rem; border-radius: calc(var(--radius-field) - 0.125rem); font-size: 0.8125rem; color: color-mix(in oklab, var(--color-base-content) 75%, transparent); }
+	.app-nav-link:hover { color: var(--color-base-content); }
+	.app-nav-link[aria-current="page"] { background-color: var(--color-base-100); color: var(--color-base-content); font-weight: 600; box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+
+	/* 눌러서 다른 화면으로 가는 글자 링크: 링크 색 + 마우스 올리면 밑줄 */
+	.link { color: var(--color-primary); font-weight: 500; }
+	.link:hover { text-decoration: underline; }
+
+	/* 인덱스 사용 여부(검색 방식마다) */
+	.index-badge { font-size: 0.75rem; min-width: 0; }
+	.index-ok { color: var(--color-success); }
+	.index-warn { color: var(--color-warning); }
+	/* 필드 관리 정렬 칸: 정렬을 켰을 때만 인덱스 사용 여부를 보인다 */
+	.sort-index { display: none; }
+	.sort-cell:has(input:checked) .sort-index { display: inline; }
+
+	/* 촘촘한 표(인덱스 목록 등) */
+	.table-compact :where(th, td) { padding: 0.25rem 0.5rem; }
 	.hint { font-size: 0.75rem; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
 
 	.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
@@ -131,4 +236,5 @@
 	.alert-error { border-color: var(--color-error); color: var(--color-error); background-color: color-mix(in oklab, var(--color-error) 8%, transparent); }
 	.alert-warning { border-color: var(--color-warning); color: var(--color-warning); background-color: color-mix(in oklab, var(--color-warning) 8%, transparent); }
 	.alert-info { border-color: var(--color-info); color: var(--color-info); background-color: color-mix(in oklab, var(--color-info) 8%, transparent); }
+	.alert-success { border-color: var(--color-success); color: var(--color-success); background-color: color-mix(in oklab, var(--color-success) 8%, transparent); }
 }

@@ -38,7 +38,11 @@ public class Menu {
   private String authority;
 
   @Column("pageSize")
-  private int pageSize = 20;
+  private int pageSize = 15;
+
+  /** 검색 설정(SearchSettings 를 jsonb 로). null = 화면에서 정한 검색칸 없음 */
+  @Column("searchSettings")
+  private java.util.Map<String, Object> searchSettings;
 
   @Column("enableExcel")
   private boolean enableExcel;
@@ -102,6 +106,14 @@ public class Menu {
 
   public void setAuthority(String authority) {
     this.authority = authority;
+  }
+
+  public java.util.Map<String, Object> getSearchSettings() {
+    return searchSettings;
+  }
+
+  public void setSearchSettings(java.util.Map<String, Object> searchSettings) {
+    this.searchSettings = searchSettings;
   }
 
   public int getPageSize() {

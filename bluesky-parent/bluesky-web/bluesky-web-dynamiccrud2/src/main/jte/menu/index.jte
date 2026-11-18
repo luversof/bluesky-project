@@ -5,7 +5,7 @@
 
 @template._layout.layout(title = "메뉴", content = @`
 	@if(tree.isEmpty())
-		<p class="hint">쓸 수 있는 메뉴가 없습니다.</p>
+		@template._components.emptyState(message = "쓸 수 있는 메뉴가 없습니다.")
 	@endif
 	<div class="grid gap-4 sm:grid-cols-2">
 		@for(var project : tree)

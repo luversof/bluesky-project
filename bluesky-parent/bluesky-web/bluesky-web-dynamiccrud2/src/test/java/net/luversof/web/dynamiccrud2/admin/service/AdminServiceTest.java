@@ -47,6 +47,60 @@ class AdminServiceTest implements GeneralWebTest {
         .orElse(null);
   }
 
+  /** 공유 테이블에 등록 뒤 늘어난 컬럼: 메뉴를 새로 만들거나 작업을 저장하면 필드로 들어온다(빠지면 값이 문자열로 바인딩돼 실패) */
+  @Test
+  void sharedTablePicksUpNewColumns() {
+    var preexisting = existingTableId("MainMenu");
+    var project =
+        menuService.saveProject(
+            null,
+            "t" + UUID.randomUUID().toString().substring(0, 8),
+            "svc-test-" + UUID.randomUUID());
+    var mainMenu = menuService.saveMainMenu(null, project.getId(), "main", "main");
+    var menuIds = new ArrayList<UUID>();
+    try {
+      var first =
+          menuService.createMenu(mainMenu.getId(), "a", "a", "dynamiccrud2", table("MainMenu"));
+      menuIds.add(first.getId());
+      // DB 에 컬럼이 늘었는데 필드는 예전 그대로인 상태를 흉내 낸다
+      dropField(first.getDbTableId(), "enableDisplay");
+      var second =
+          menuService.createMenu(mainMenu.getId(), "b", "b", "dynamiccrud2", table("MainMenu"));
+      menuIds.add(second.getId());
+      assertThat(fieldNames(second.getDbTableId())).contains("enableDisplay");
+
+      dropField(first.getDbTableId(), "enableDisplay");
+      queryService.save(
+          first.getId(),
+          null,
+          QueryKind.INSERT,
+          null,
+          queryService.draft(menuService.getMenu(first.getId()), QueryKind.INSERT).queryText(),
+          null,
+          null);
+      assertThat(fieldNames(first.getDbTableId())).contains("enableDisplay");
+    } finally {
+      menuIds.forEach(menuService::deleteMenu);
+      var id = existingTableId("MainMenu");
+      if (id != null && preexisting == null) {
+        dbTableRepository.deleteById(id);
+      }
+      menuService.deleteMainMenu(mainMenu.getId());
+      menuService.deleteProject(project.getId());
+    }
+  }
+
+  private void dropField(UUID dbTableId, String columnName) {
+    var dbTable = fieldService.get(dbTableId);
+    dbTable.getFields().removeIf(f -> f.getColumnName().equals(columnName));
+    dbTableRepository.save(dbTable);
+    assertThat(fieldNames(dbTableId)).doesNotContain(columnName);
+  }
+
+  private List<String> fieldNames(UUID dbTableId) {
+    return fieldService.get(dbTableId).getFields().stream().map(DbField::getColumnName).toList();
+  }
+
   @Test
   void registerMenuThenAddActionsAndCustomRead() {
     // 이미 등록돼 있던 공유 테이블은 지우지 않는다

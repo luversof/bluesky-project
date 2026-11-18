@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.exception.BlueskyException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
 import net.luversof.web.dynamiccrud2.menu.service.MenuPageService;
@@ -73,6 +72,25 @@ public class MenuPageController {
     return "redirect:" + MenuPath.url(node.project(), mainMenu.mainMenu(), mainMenu.menus().get(0));
   }
 
+  /** 메인 메뉴 주소까지만 오면 그 메인 메뉴의 첫 메뉴로(볼 수 있는 메뉴가 없으면 404) */
+  @GetMapping("/{project:" + CODE + "}/{mainMenu:" + CODE + "}")
+  public String mainMenu(@PathVariable String project, @PathVariable String mainMenu) {
+    authorizer.checkLoggedIn();
+    var node = useService.visibleProject(project).orElseThrow(MenuPageController::notFound);
+    var mainMenuNode =
+        node.mainMenus().stream()
+            .filter(m -> m.mainMenu().getCode().equals(mainMenu))
+            .findFirst()
+            .orElseThrow(MenuPageController::notFound);
+    return "redirect:"
+        + MenuPath.url(node.project(), mainMenuNode.mainMenu(), mainMenuNode.menus().get(0));
+  }
+
+  private static org.springframework.web.server.ResponseStatusException notFound() {
+    return new org.springframework.web.server.ResponseStatusException(
+        org.springframework.http.HttpStatus.NOT_FOUND);
+  }
+
   @GetMapping(MENU_PATH)
   public String menu(
       @PathVariable String project,
@@ -84,10 +102,9 @@ public class MenuPageController {
       @RequestParam(defaultValue = "false") boolean desc,
       Model model) {
     var path = useService.resolve(project, mainMenu, menu);
-    var search = prefixed(query, "s.");
-    var usePage = useService.page(path.menu().getId(), search, page, sort, desc);
+    var usePage = useService.page(path.menu().getId(), searchInput(query), page, sort, desc);
     model.addAttribute("usePage", usePage);
-    model.addAttribute("searchQuery", searchQuery(search));
+    model.addAttribute("searchQuery", searchQuery(query));
     model.addAttribute("menuPath", path.url());
     model.addAttribute("nav", useService.visibleProject(project).orElse(null));
     return "menu/page";
@@ -121,7 +138,6 @@ public class MenuPageController {
       @PathVariable String menu,
       @PathVariable UUID queryId,
       @RequestParam MultiValueMap<String, String> form,
-      HttpServletRequest request,
       Model model) {
     var path = useService.resolve(project, mainMenu, menu);
     var menuId = path.menu().getId();
@@ -132,13 +148,13 @@ public class MenuPageController {
     String error;
     try {
       useService.run(menuId, queryId, inputs, targets);
-      var current = request.getHeader("HX-Current-URL");
+      // 보던 목록을 다시 연다. HX-Redirect(새 이동)는 맨 위로 가지만 HX-Refresh(새로 고침)는 스크롤 위치를 지킨다
       // HttpServletResponse 를 인자로 받으면 요청이 처리된 것으로 보여 실패 때 폼을 못 그린다 - 그래서 여기서 꺼낸다
       ((org.springframework.web.context.request.ServletRequestAttributes)
               org.springframework.web.context.request.RequestContextHolder
                   .currentRequestAttributes())
           .getResponse()
-          .setHeader("HX-Redirect", current == null ? path.url() : current);
+          .setHeader("HX-Refresh", "true");
       return "menu/empty";
     } catch (IllegalArgumentException e) {
       error = e.getMessage();
@@ -166,7 +182,7 @@ public class MenuPageController {
       HttpServletResponse response)
       throws IOException {
     var path = useService.resolve(project, mainMenu, menu);
-    var export = useService.export(path.menu().getId(), prefixed(query, "s."), sort, desc);
+    var export = useService.export(path.menu().getId(), searchInput(query), sort, desc);
     response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     response.setHeader(
         "Content-Disposition",
@@ -216,14 +232,26 @@ public class MenuPageController {
     return result;
   }
 
-  /** 정렬 · 페이지 링크에 다시 붙일 검색 값 */
-  private static String searchQuery(Map<String, String> search) {
+  /** 검색 입력: 쿼리 파라미터 칸(s.) · 메뉴 검색칸(f.) · 통합 검색(q) */
+  private static MenuPageService.SearchInput searchInput(MultiValueMap<String, String> query) {
+    return new MenuPageService.SearchInput(
+        prefixed(query, "s."), prefixed(query, "f."), query.getFirst("q"));
+  }
+
+  /** 정렬 · 페이지 · 엑셀 링크에 다시 붙일 검색 값(비어 있는 칸은 뺀다) */
+  private static String searchQuery(MultiValueMap<String, String> query) {
     var parts = new ArrayList<String>();
-    search.forEach((k, v) ->
+    query.forEach((key, values) -> {
+      if ((key.startsWith("s.") || key.startsWith("f.") || key.equals("q"))
+          && !values.isEmpty()
+          && values.get(0) != null
+          && !values.get(0).isBlank()) {
         parts.add(
-            URLEncoder.encode("s." + k, StandardCharsets.UTF_8)
+            URLEncoder.encode(key, StandardCharsets.UTF_8)
                 + "="
-                + URLEncoder.encode(v, StandardCharsets.UTF_8)));
+                + URLEncoder.encode(values.get(0), StandardCharsets.UTF_8));
+      }
+    });
     return parts.stream().collect(Collectors.joining("&"));
   }
 }

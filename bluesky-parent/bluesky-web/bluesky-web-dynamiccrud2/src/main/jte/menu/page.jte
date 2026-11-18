@@ -1,4 +1,3 @@
-@import net.luversof.web.dynamiccrud2.domain.InputType
 @import net.luversof.web.dynamiccrud2.menu.service.MenuPageService.UsePage
 
 @param UsePage usePage
@@ -31,22 +30,33 @@
 	</nav>
 `, content = @`
 
-	@if(!usePage.searchFields().isEmpty())
-		<form method="get" action="${menuPath}" class="card mb-4 flex flex-wrap items-end gap-3">
-			@for(var field : usePage.searchFields())
-				<div>
-					<label class="label" for="s-${field.name()}">${field.header()}@if(field.required()) <span class="text-error">*</span>@endif</label>
-					<input id="s-${field.name()}" class="input input-sm" name="s.${field.name()}" value="${field.value()}"
-						type="${field.inputType() == InputType.NUMBER ? "number" : field.inputType() == InputType.DATE ? "date" : field.inputType() == InputType.DATETIME ? "datetime-local" : "text"}"
-						step="${field.inputType() == InputType.NUMBER ? "any" : field.inputType() == InputType.DATETIME ? "1" : null}" />
-				</div>
+	<%-- 검색: 통합 검색 · 메뉴 검색 설정 칸 · 쿼리 :파라미터 칸을 한 폼으로. 페이지 · 정렬은 새 검색에서 처음으로 돌린다 --%>
+	@if(usePage.keyword() != null || !usePage.filterFields().isEmpty() || !usePage.searchFields().isEmpty())
+		<form method="get" action="${menuPath}" class="card mb-4 flex flex-wrap items-end gap-3" role="search" aria-label="${menu.getName()} 검색">
+			@if(usePage.keyword() != null)
+				@template._components.field(label = "통합 검색", forId = "q", content = @`
+					<input id="q" class="input input-sm w-64" type="search" name="q" value="${usePage.keyword().value()}"
+						placeholder="${String.join(" · ", usePage.keyword().headers())}" aria-describedby="q-hint" />
+					<span id="q-hint" class="sr-only">${String.join(", ", usePage.keyword().headers())} 중 하나라도 포함하면 찾습니다</span>
+				`)
+			@endif
+			@for(var i = 0; i < usePage.filterFields().size(); i++)
+				@template._components.searchFilter(field = usePage.filterFields().get(i), index = i)
 			@endfor
-			<button class="btn btn-sm btn-primary">검색</button>
+			@for(var field : usePage.searchFields())
+				@template._components.field(label = field.header(), forId = "s-" + field.name(), required = field.required(), content = @`
+					@template._components.typedInput(id = "s-" + field.name(), name = "s." + field.name(), value = field.value(), inputType = field.inputType(), small = true)
+				`)
+			@endfor
+			<div class="flex gap-2">
+				<button class="btn btn-sm btn-primary">검색</button>
+				<a class="btn btn-sm btn-ghost" href="${menuPath}">초기화</a>
+			</div>
 		</form>
 	@endif
 
 	@if(usePage.message() != null)
-		<div class="alert alert-warning mb-4" role="alert">${usePage.message()}</div>
+		@template._components.alert(message = usePage.message(), tone = "warning")
 	@endif
 
 	<div class="flex flex-wrap items-center gap-2 mb-2">
@@ -64,13 +74,14 @@
 		</span>
 	</div>
 
-	<div id="actionPanel" class="mb-3"></div>
+	<%-- 작업 폼은 목록 위 레이어로 띄워 스크롤 위치를 바꾸지 않는다 --%>
+	@template._components.modal(id = "actionDialog", panelId = "actionPanel", label = "작업")
 
 	<div class="overflow-x-auto">
-		<table class="table">
+		<table class="table" aria-label="${menu.getName()}">
 			<thead>
 				<tr>
-					@if(!usePage.deleteActions().isEmpty())<th class="w-8"><span class="sr-only">선택</span></th>@endif
+					@if(!usePage.deleteActions().isEmpty())<th class="w-8"><input class="checkbox" type="checkbox" data-check-all="rows" aria-label="이 쪽 행 전체 선택" /></th>@endif
 					@for(var column : usePage.columns())
 						<th>
 							@if(column.sortable())
@@ -107,17 +118,11 @@
 					</tr>
 				@endfor
 				@if(usePage.rows().isEmpty())
-					<tr><td class="hint py-6" colspan="${usePage.columns().size() + (usePage.deleteActions().isEmpty() ? 0 : 1) + (usePage.updateActions().isEmpty() ? 0 : 1)}">조회 결과가 없습니다.</td></tr>
+					@template._components.emptyState(message = "조회 결과가 없습니다.", colspan = usePage.columns().size() + (usePage.deleteActions().isEmpty() ? 0 : 1) + (usePage.updateActions().isEmpty() ? 0 : 1))
 				@endif
 			</tbody>
 		</table>
 	</div>
 
-	@if(lastPage > 0)
-		<nav class="mt-4 flex items-center gap-2 text-sm" aria-label="페이지">
-			@if(usePage.page() > 0)<a class="btn btn-sm" href="${base}${sortPart}&page=${usePage.page() - 1}">이전</a>@endif
-			<span>${usePage.page() + 1} / ${lastPage + 1}</span>
-			@if(usePage.page() < lastPage)<a class="btn btn-sm" href="${base}${sortPart}&page=${usePage.page() + 1}">다음</a>@endif
-		</nav>
-	@endif
+	@template._components.pagination(current = usePage.page(), lastPage = lastPage, pageUrl = base + sortPart + "&page=")
 `)

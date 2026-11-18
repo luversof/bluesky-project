@@ -24,6 +24,7 @@ import net.luversof.web.dynamiccrud2.adapter.TableRef;
 import net.luversof.web.dynamiccrud2.admin.service.FieldService;
 import net.luversof.web.dynamiccrud2.admin.service.MenuService;
 import net.luversof.web.dynamiccrud2.admin.service.QueryService;
+import net.luversof.web.dynamiccrud2.admin.service.SearchService;
 import net.luversof.web.dynamiccrud2.connection.ConnectionNameService;
 import net.luversof.web.dynamiccrud2.domain.InputType;
 import net.luversof.web.dynamiccrud2.domain.Menu;
@@ -31,6 +32,7 @@ import net.luversof.web.dynamiccrud2.domain.MenuQuery;
 import net.luversof.web.dynamiccrud2.domain.ParamSetting;
 import net.luversof.web.dynamiccrud2.domain.ParamSetting.Role;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.SearchOperator;
 
 /** 설정 화면. 경로 전체가 ROLE_ADMIN 전용(AdminAccessInterceptor). */
 @Controller
@@ -44,18 +46,21 @@ public class AdminController {
   private final FieldService fieldService;
   private final ConnectionNameService connectionNameService;
   private final DatabaseAdapterResolver resolver;
+  private final SearchService searchService;
 
   public AdminController(
       MenuService menuService,
       QueryService queryService,
       FieldService fieldService,
       ConnectionNameService connectionNameService,
-      DatabaseAdapterResolver resolver) {
+      DatabaseAdapterResolver resolver,
+      SearchService searchService) {
     this.menuService = menuService;
     this.queryService = queryService;
     this.fieldService = fieldService;
     this.connectionNameService = connectionNameService;
     this.resolver = resolver;
+    this.searchService = searchService;
   }
 
   // ---- Project · MainMenu ----
@@ -125,6 +130,18 @@ public class AdminController {
         () -> menuService.saveMainMenu(id, projectId, code, name));
   }
 
+  @PostMapping("/project/{id}/display")
+  public String projectDisplay(@PathVariable UUID id, @RequestParam boolean display) {
+    menuService.setProjectDisplay(id, display);
+    return redirectToProject(id);
+  }
+
+  @PostMapping("/mainMenu/{id}/display")
+  public String mainMenuDisplay(@PathVariable UUID id, @RequestParam boolean display) {
+    menuService.setMainMenuDisplay(id, display);
+    return redirectToProject(menuService.getMainMenu(id).getProjectId());
+  }
+
   @PostMapping("/mainMenu/{id}/delete")
   public String deleteMainMenu(@PathVariable UUID id, RedirectAttributes redirect) {
     var projectId = menuService.getMainMenu(id).getProjectId();
@@ -133,21 +150,14 @@ public class AdminController {
 
   // ---- 메뉴 등록 ----
 
-  @GetMapping("/mainMenu/{mainMenuId}/menu/new")
-  public String newMenu(@PathVariable UUID mainMenuId, Model model) {
-    model.addAttribute("mainMenuId", mainMenuId);
-    model.addAttribute("projectId", menuService.getMainMenu(mainMenuId).getProjectId());
-    return "admin/menuNew";
-  }
-
-  /** connection 자동완성 후보(htmx, datalist 의 option) */
+  /** connection 검색 후보(htmx, combobox 목록의 li) */
   @GetMapping("/connection/search")
   public String connectionOptions(@RequestParam(defaultValue = "") String keyword, Model model) {
     model.addAttribute("names", connectionNameService.search(keyword));
     return "admin/connectionOptions";
   }
 
-  /** connection 을 고르면 테이블 select 를 채운다(htmx). 값은 catalog|schema|name. 없는 이름이면 안내 option 하나 */
+  /** connection 을 고르면 테이블 후보를 채운다(htmx, combobox 목록의 li). 값은 catalog|schema|name. 없는 이름이면 안내 한 줄 */
   @GetMapping("/connection/tables")
   public String tableOptions(@RequestParam(defaultValue = "") String connectionName, Model model) {
     String error = null;
@@ -174,14 +184,21 @@ public class AdminController {
       @RequestParam String connectionName,
       @RequestParam String table,
       RedirectAttributes redirect) {
+    // 관리 화면 메인 메뉴 아래 폼에서 온다. 성공 · 실패 모두 그 프로젝트 관리 화면으로(실패면 사유)
+    var projectPage = redirectToProject(menuService.getMainMenu(mainMenuId).getProjectId());
     var parts = table.split("\\|", -1);
+    if (parts.length != 3 || parts[2].isBlank()) {
+      redirect.addFlashAttribute("error", "테이블을 목록에서 고르세요.");
+      return projectPage;
+    }
     var ref = new TableRef(emptyToNull(parts[0]), emptyToNull(parts[1]), parts[2]);
     try {
-      var menu = menuService.createMenu(mainMenuId, code, name, connectionName, ref);
-      return "redirect:/admin/menu/" + menu.getId();
+      // 만들면 관리 화면에 머문다(만든 메뉴가 목록에 보인다). 검색 · 작업 설정은 메뉴 이름을 눌러 메뉴 설정 화면에서
+      menuService.createMenu(mainMenuId, code, name, connectionName, ref);
+      return projectPage;
     } catch (BlueskyException e) {
       redirect.addFlashAttribute("error", messageOf(e));
-      return "redirect:/admin/mainMenu/" + mainMenuId + "/menu/new";
+      return projectPage;
     }
   }
 
@@ -192,7 +209,12 @@ public class AdminController {
     var menu = menuService.getMenu(id);
     model.addAttribute("menu", menu);
     model.addAttribute("projectId", menuService.getMainMenu(menu.getMainMenuId()).getProjectId());
-    model.addAttribute("dbTable", fieldService.get(menu.getDbTableId()));
+    var dbTable = fieldService.get(menu.getDbTableId());
+    model.addAttribute("dbTable", dbTable);
+    addSource(model, dbTable);
+    var crumbs = pathTo(menu, false);
+    model.addAttribute("breadcrumb", crumbs);
+    model.addAttribute("search", searchService.setup(menu));
     model.addAttribute(
         "queries",
         menu.getQueries().stream()
@@ -204,13 +226,41 @@ public class AdminController {
     return "admin/menu";
   }
 
+  /** 데이터 출처 줄의 DB 종류와 대상 이름(테이블 · 컬렉션). connection 을 못 열면(설정에서 빠짐 등) 화면은 그대로 보이게 사유만, 대상 이름은 테이블 */
+  private void addSource(Model model, net.luversof.web.dynamiccrud2.domain.DbTable dbTable) {
+    String databaseType;
+    String targetNoun;
+    try {
+      var adapter = resolver.resolve(dbTable.getConnectionName());
+      databaseType = adapter.databaseType();
+      targetNoun = adapter.targetNoun();
+    } catch (RuntimeException e) {
+      databaseType = "알 수 없음(연결 실패)";
+      targetNoun = "테이블";
+    }
+    model.addAttribute("databaseType", databaseType);
+    model.addAttribute("targetNoun", targetNoun);
+  }
+
+  /**
+   * 위치 표시는 화면 단계(프로젝트 관리 › 메뉴 관리 › 테이블 필드 관리 · 쿼리 추가)로 보인다(사용자 결정 - 프로젝트 · 메인 메뉴 이름 단계는 화면이 아니라
+   * 헷갈렸다). 프로젝트 관리 링크는 그 메뉴의 프로젝트를 고른 상태로, withMenuLink 면 메뉴 관리도 링크
+   */
+  private List<Crumb> pathTo(Menu menu, boolean withMenuLink) {
+    var projectId = menuService.getMainMenu(menu.getMainMenuId()).getProjectId();
+    var crumbs = new java.util.ArrayList<Crumb>();
+    crumbs.add(new Crumb("프로젝트 관리", "/admin?project=" + projectId));
+    crumbs.add(new Crumb("메뉴 관리", withMenuLink ? "/admin/menu/" + menu.getId() : null));
+    return crumbs;
+  }
+
   @PostMapping("/menu/{id}")
   public String updateMenu(
       @PathVariable UUID id,
       @RequestParam String code,
       @RequestParam String name,
       @RequestParam(required = false) String authority,
-      @RequestParam(defaultValue = "20") int pageSize,
+      @RequestParam(defaultValue = "15") int pageSize,
       @RequestParam(defaultValue = "false") boolean enableExcel,
       @RequestParam(defaultValue = "false") boolean enableDisplay,
       RedirectAttributes redirect) {
@@ -220,6 +270,38 @@ public class AdminController {
         () ->
             menuService.updateMenu(
                 id, code, name, authority, pageSize, enableExcel, enableDisplay));
+  }
+
+  /** 검색 설정: on = 검색칸으로 고른 결과 이름들, op.결과이름 = 방식, kw = 통합 검색에 넣은 결과 이름들 */
+  @PostMapping("/menu/{id}/search")
+  public String saveSearch(
+      @PathVariable UUID id, @RequestParam MultiValueMap<String, String> form) {
+    var operators = new LinkedHashMap<String, SearchOperator>();
+    var on = form.get("on") == null ? List.<String>of() : form.get("on");
+    for (var label : on) {
+      // 모르는 방식이면 null - 서비스가 그 컬럼의 기본 방식으로 바꾼다
+      var operator = form.getFirst("op." + label);
+      operators.put(
+          label,
+          java.util.Arrays.stream(SearchOperator.values())
+              .filter(o -> o.name().equals(operator))
+              .findFirst()
+              .orElse(null));
+    }
+    searchService.save(id, operators, form.get("kw") == null ? List.of() : form.get("kw"));
+    return "redirect:/admin/menu/" + id;
+  }
+
+  /** 관리 화면 메뉴 줄의 그 자리 수정(이름 · 주소 이름) - 끝나면 그 프로젝트로 돌아온다 */
+  @PostMapping("/menu/{id}/rename")
+  public String renameMenu(
+      @PathVariable UUID id,
+      @RequestParam String code,
+      @RequestParam String name,
+      RedirectAttributes redirect) {
+    var projectId = menuService.getMainMenu(menuService.getMenu(id).getMainMenuId()).getProjectId();
+    return run(
+        redirect, redirectToProject(projectId), () -> menuService.renameMenu(id, code, name));
   }
 
   @PostMapping("/menu/{id}/delete")
@@ -303,7 +385,18 @@ public class AdminController {
       @PathVariable UUID id, @RequestParam(required = false) UUID menu, Model model) {
     var dbTable = fieldService.get(id);
     model.addAttribute("dbTable", dbTable);
+    addSource(model, dbTable);
     model.addAttribute("menuId", menu);
+    // 메뉴에서 왔으면 그 메뉴 아래로, 아니면 프로젝트 관리 바로 아래로(테이블은 여러 메뉴가 공유한다)
+    var crumbs = new java.util.ArrayList<Crumb>();
+    if (menu != null) {
+      var owner = menuService.getMenu(menu);
+      crumbs.addAll(pathTo(owner, true));
+    } else {
+      crumbs.add(new Crumb("프로젝트 관리", "/admin"));
+    }
+    crumbs.add(new Crumb(model.getAttribute("targetNoun") + " 필드 관리", null));
+    model.addAttribute("breadcrumb", crumbs);
     model.addAttribute(
         "fields",
         dbTable.getFields().stream()
@@ -313,6 +406,22 @@ public class AdminController {
                     .thenComparing(net.luversof.web.dynamiccrud2.domain.DbField::getDisplayOrder))
             .toList());
     model.addAttribute("inputTypes", InputType.values());
+    // 인덱스 표와 정렬 안내: 정렬은 어떤 인덱스의 첫 컬럼일 때 인덱스를 쓴다(못 읽으면 표에 사유, 안내는 생략)
+    var title =
+        (dbTable.getSchemaName() == null ? "" : dbTable.getSchemaName() + ".")
+            + dbTable.getTableName();
+    SearchService.TableIndexes indexes;
+    java.util.Set<String> leading;
+    try {
+      var meta = fieldService.readMeta(dbTable);
+      indexes = new SearchService.TableIndexes(title, meta.indexes(), null);
+      leading = meta.indexLeadingColumns();
+    } catch (RuntimeException e) {
+      indexes = new SearchService.TableIndexes(title, List.of(), "인덱스 정보를 읽지 못했습니다");
+      leading = null;
+    }
+    model.addAttribute("indexes", indexes);
+    model.addAttribute("indexLeading", leading);
     return "admin/table";
   }
 
@@ -325,8 +434,10 @@ public class AdminController {
       @RequestParam(defaultValue = "false") boolean required,
       @RequestParam(required = false) Integer maxLength,
       @RequestParam(defaultValue = "false") boolean sortable,
+      @RequestParam(defaultValue = "false") boolean updatable,
       @RequestParam(required = false) UUID menu) {
-    fieldService.updateField(id, columnName, label, inputType, required, maxLength, sortable);
+    fieldService.updateField(
+        id, columnName, label, inputType, required, maxLength, sortable, updatable);
     return redirectToTable(id, menu);
   }
 
@@ -356,6 +467,9 @@ public class AdminController {
     model.addAttribute("menu", menu);
     model.addAttribute("queryId", queryId);
     model.addAttribute("kind", kind);
+    var crumbs = pathTo(menu, true);
+    crumbs.add(new Crumb((queryId == null ? "쿼리 추가: " : "쿼리 편집: ") + kind.name(), null));
+    model.addAttribute("breadcrumb", crumbs);
     model.addAttribute("name", name == null ? "" : name);
     model.addAttribute("queryText", queryText == null ? "" : queryText);
     model.addAttribute("authority", authority == null ? "" : authority);
@@ -363,7 +477,7 @@ public class AdminController {
     model.addAttribute(
         "inspection",
         queryText == null || queryText.isBlank()
-            ? new QueryService.QueryInspection(null, List.of(), List.of(), List.of())
+            ? QueryService.QueryInspection.EMPTY
             : queryService.inspect(menu, kind, queryText, settings));
     return "admin/query";
   }

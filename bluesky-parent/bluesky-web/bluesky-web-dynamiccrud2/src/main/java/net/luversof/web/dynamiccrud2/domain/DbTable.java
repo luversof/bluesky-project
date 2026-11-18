@@ -71,6 +71,14 @@ public class DbTable {
     return schemaName;
   }
 
+  /**
+   * 쿼리에서 테이블 앞에 붙인 이름(qualifier)을 이 테이블과 같은 DB 안의 스키마로 바꾼다. 없거나 이 테이블의 catalog 와 같으면(MySQL 은 DB 이름이
+   * catalog 이고 스키마가 없다 - {@code dynamiccrud_localdev.mainmenu}) 이 테이블의 스키마. 그래야 같은 테이블을 둘로 세지 않는다.
+   */
+  public String schemaOf(String qualifier) {
+    return qualifier == null || qualifier.equalsIgnoreCase(catalogName) ? schemaName : qualifier;
+  }
+
   public void setSchemaName(String schemaName) {
     this.schemaName = schemaName;
   }

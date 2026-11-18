@@ -26,9 +26,21 @@ public class Project {
   @Column("displayOrder")
   private int displayOrder;
 
+  /** 끄면 사용 화면 메뉴 목록에서 이 프로젝트(와 그 아래 전부)를 뺀다. 주소로는 그대로 열린다 */
+  @Column("enableDisplay")
+  private boolean enableDisplay = true;
+
   @CreatedDate
   @Column("createdDate")
   private Instant createdDate;
+
+  public boolean isEnableDisplay() {
+    return enableDisplay;
+  }
+
+  public void setEnableDisplay(boolean enableDisplay) {
+    this.enableDisplay = enableDisplay;
+  }
 
   public String getCode() {
     return code;

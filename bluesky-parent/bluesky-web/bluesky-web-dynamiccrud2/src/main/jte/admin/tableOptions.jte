@@ -1,3 +1,4 @@
+<%-- 테이블 후보(_components/combobox 목록 칸). 값은 catalog|schema|name, 입력칸에서 거른다 --%>
 @import java.util.List
 @import net.luversof.web.dynamiccrud2.adapter.TableRef
 
@@ -5,11 +6,14 @@
 @param String error = null
 
 @if(error != null)
-	<option value="">${error}</option>
+	<li aria-disabled="true">${error}</li>
 @else
-	<option value="">고르세요(${tables.size()}개)</option>
 	@for(var table : tables)
 		!{var value = (table.catalog() == null ? "" : table.catalog()) + "|" + (table.schema() == null ? "" : table.schema()) + "|" + table.name();}
-		<option value="${value}">${table.schema() == null ? "" : table.schema() + "."}${table.name()}</option>
+		!{var label = (table.schema() == null ? "" : table.schema() + ".") + table.name();}
+		<li role="option" aria-selected="false" data-value="${value}" data-label="${label}">${label}</li>
 	@endfor
+	@if(tables.isEmpty())
+		<li aria-disabled="true">테이블이 없습니다</li>
+	@endif
 @endif

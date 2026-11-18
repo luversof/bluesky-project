@@ -46,6 +46,17 @@ public class DbField {
   @Column("sortableUserSet")
   private boolean sortableUserSet;
 
+  /**
+   * 수정 작업(UPDATE)에서 값을 바꿀 수 있는가. PK · unique · 자동 증가 컬럼은 처음에 false. null 은 아직 정하지 않은 것(이 열이 생기기 전에
+   * 등록된 필드) - 사용 화면이 처음 쓸 때 "컬럼 다시 읽기" 로 채운다
+   */
+  @Column("updatable")
+  private Boolean updatable;
+
+  /** 사용자가 updatable 을 바꿨으면 "컬럼 다시 읽기" 가 덮어쓰지 않는다 */
+  @Column("updatableUserSet")
+  private boolean updatableUserSet;
+
   /** 다시 읽었을 때 DB 에서 사라진 컬럼 */
   @Column("missingInDb")
   private boolean missingInDb;
@@ -139,6 +150,27 @@ public class DbField {
 
   public void setSortableUserSet(boolean sortableUserSet) {
     this.sortableUserSet = sortableUserSet;
+  }
+
+  public Boolean getUpdatable() {
+    return updatable;
+  }
+
+  public void setUpdatable(Boolean updatable) {
+    this.updatable = updatable;
+  }
+
+  /** 수정 작업에서 바꿀 수 있는가(정하지 않았으면 바꿀 수 있는 것으로 본다) */
+  public boolean isUpdatable() {
+    return !Boolean.FALSE.equals(updatable);
+  }
+
+  public boolean isUpdatableUserSet() {
+    return updatableUserSet;
+  }
+
+  public void setUpdatableUserSet(boolean updatableUserSet) {
+    this.updatableUserSet = updatableUserSet;
   }
 
   public boolean isMissingInDb() {

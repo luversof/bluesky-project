@@ -7,6 +7,7 @@ CREATE TABLE "Project" (
 	"code" VARCHAR(50) NOT NULL,
 	"name" VARCHAR(100) NOT NULL,
 	"displayOrder" INTEGER NOT NULL DEFAULT 0,
+	"enableDisplay" BOOLEAN NOT NULL DEFAULT TRUE,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
@@ -19,6 +20,7 @@ CREATE TABLE "MainMenu" (
 	"code" VARCHAR(50) NOT NULL,
 	"name" VARCHAR(100) NOT NULL,
 	"displayOrder" INTEGER NOT NULL DEFAULT 0,
+	"enableDisplay" BOOLEAN NOT NULL DEFAULT TRUE,
 	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
@@ -60,6 +62,10 @@ CREATE TABLE "DbField" (
 	"sortable" BOOLEAN NOT NULL DEFAULT FALSE,
 	-- 사용자가 sortable 을 바꿨으면 "컬럼 다시 읽기" 가 덮어쓰지 않는다
 	"sortableUserSet" BOOLEAN NOT NULL DEFAULT FALSE,
+	-- 수정 작업에서 값을 바꿀 수 있는가. PK · unique · 자동 증가는 처음에 FALSE. NULL = 아직 안 정함(앱이 처음 쓸 때 다시 읽어 채운다)
+	"updatable" BOOLEAN,
+	-- 사용자가 updatable 을 바꿨으면 "컬럼 다시 읽기" 가 덮어쓰지 않는다
+	"updatableUserSet" BOOLEAN NOT NULL DEFAULT FALSE,
 	-- 다시 읽었을 때 DB 에서 사라진 컬럼(지우지 않고 표시)
 	"missingInDb" BOOLEAN NOT NULL DEFAULT FALSE,
 	"displayOrder" INTEGER NOT NULL DEFAULT 0,
@@ -76,7 +82,9 @@ CREATE TABLE "Menu" (
 	"name" VARCHAR(100) NOT NULL,
 	-- 역할 문자열 하나(예: ROLE_ADMIN). NULL = 로그인한 사용자 누구나
 	"authority" VARCHAR(50),
-	"pageSize" INTEGER NOT NULL DEFAULT 20,
+	"pageSize" INTEGER NOT NULL DEFAULT 15,
+	-- 화면에서 고른 검색칸 · 통합 검색 컬럼({"fields":[{"label","operator"}],"keyword":[label]}). NULL = 없음
+	"searchSettings" JSONB,
 	"enableExcel" BOOLEAN NOT NULL DEFAULT FALSE,
 	"enableDisplay" BOOLEAN NOT NULL DEFAULT TRUE,
 	"displayOrder" INTEGER NOT NULL DEFAULT 0,

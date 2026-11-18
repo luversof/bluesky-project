@@ -154,6 +154,19 @@ public class MenuService {
     mainMenuRepository.deleteById(id);
   }
 
+  /** 사용 화면 메뉴 목록에 보일지(관리 화면 표시 · 숨김 단추) */
+  public void setProjectDisplay(UUID id, boolean display) {
+    var project = projectRepository.findById(id).orElseThrow();
+    project.setEnableDisplay(display);
+    projectRepository.save(project);
+  }
+
+  public void setMainMenuDisplay(UUID id, boolean display) {
+    var mainMenu = getMainMenu(id);
+    mainMenu.setEnableDisplay(display);
+    mainMenuRepository.save(mainMenu);
+  }
+
   public MainMenu getMainMenu(UUID id) {
     return mainMenuRepository.findById(id).orElseThrow();
   }
@@ -207,6 +220,14 @@ public class MenuService {
     menu.setPageSize(Math.max(1, pageSize));
     menu.setEnableExcel(enableExcel);
     menu.setEnableDisplay(enableDisplay);
+    return menuRepository.save(menu);
+  }
+
+  /** 관리 화면에서 그 자리 수정: 이름 · 주소 이름만(나머지 설정은 메뉴 설정 화면) */
+  public Menu renameMenu(UUID id, String code, String name) {
+    var menu = getMenu(id);
+    menu.setCode(checkMenuCode(menu.getMainMenuId(), id, code));
+    menu.setName(name.strip());
     return menuRepository.save(menu);
   }
 

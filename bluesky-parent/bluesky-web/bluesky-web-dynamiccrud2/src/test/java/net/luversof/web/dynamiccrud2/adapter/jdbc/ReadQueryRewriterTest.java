@@ -7,8 +7,10 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter.Sort;
+import net.luversof.web.dynamiccrud2.adapter.Filter;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.ResultColumn;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.SearchCondition;
+import net.luversof.web.dynamiccrud2.domain.SearchOperator;
 
 class ReadQueryRewriterTest {
 
@@ -123,5 +125,54 @@ class ReadQueryRewriterTest {
   void countQueryDropsOrderBy() {
     assertThat(ReadQueryRewriter.countQuery("SELECT * FROM t WHERE a = :a ORDER BY id", Set.of()))
         .isEqualTo("SELECT COUNT(*) FROM (SELECT * FROM t WHERE a = :a) t");
+  }
+
+  @Test
+  void filtersUseOriginalColumnExpressionAndKeepOrInsideParentheses() {
+    var filters =
+        java.util.List.of(
+            new Filter(java.util.List.of("제목"), SearchOperator.CONTAINS, "_f0", null),
+            new Filter(java.util.List.of("id"), SearchOperator.RANGE, null, "_f1_to"),
+            new Filter(
+                java.util.List.of("제목", "writer_name"), SearchOperator.CONTAINS, "_q", null));
+    var sql =
+        ReadQueryRewriter.pageQuery(JOIN_QUERY, SqlDialect.POSTGRESQL, Set.of(), filters, null);
+    // 별칭이 아니라 원래 식(a.title · u.name)으로 걸러야 인덱스를 탈 수 있다
+    assertThat(sql)
+        .contains("LOWER(a.title) LIKE LOWER(:_f0) ESCAPE '!'")
+        .contains("a.id <= :_f1_to")
+        .contains("LOWER(u.name) LIKE LOWER(:_q) ESCAPE '!'")
+        .contains(" OR LOWER(u.name)")
+        // 원래 WHERE 의 OR 가 새 AND 와 섞이지 않게 괄호로 감싼다
+        .containsPattern("WHERE \\(+a\\.status = :status");
+    assertThat(sql).doesNotContain(":_f1 ");
+    assertThat(ReadQueryRewriter.countQuery(JOIN_QUERY, SqlDialect.POSTGRESQL, Set.of(), filters))
+        .contains("LOWER(a.title) LIKE LOWER(:_f0)")
+        .doesNotContain("ORDER BY");
+  }
+
+  @Test
+  void filtersOnComputedColumnAreRejectedAndUnparsedQueryFiltersOutside() {
+    var computed =
+        java.util.List.of(
+            new Filter(java.util.List.of("full_name"), SearchOperator.EQUALS, "_f0", null));
+    org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+            ReadQueryRewriter.pageQuery(
+                JOIN_QUERY, SqlDialect.POSTGRESQL, Set.of(), computed, null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("full_name");
+
+    var union = "SELECT a FROM x UNION SELECT a FROM y";
+    var filters =
+        java.util.List.of(new Filter(java.util.List.of("a"), SearchOperator.EQUALS, "_f0", null));
+    assertThat(ReadQueryRewriter.pageQuery(union, SqlDialect.POSTGRESQL, Set.of(), filters, null))
+        .startsWith("SELECT * FROM (" + union + ") t WHERE t.a = :_f0");
+    assertThat(ReadQueryRewriter.countQuery(union, SqlDialect.POSTGRESQL, Set.of(), filters))
+        .isEqualTo("SELECT COUNT(*) FROM (" + union + ") t WHERE t.a = :_f0");
+  }
+
+  @Test
+  void likeValuesEscapeWildcards() {
+    assertThat(Filter.escapeLike("10%_a!b")).isEqualTo("10!%!_a!!b");
   }
 }

@@ -35,3 +35,55 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_menu_mainMenuId_code ON "Menu" ("mainMenu_i
 -- ALTER TABLE "Project" DROP COLUMN IF EXISTS "code";
 -- ALTER TABLE "MainMenu" DROP COLUMN IF EXISTS "code";
 -- ALTER TABLE "Menu" DROP COLUMN IF EXISTS "code";
+
+-- 2026-11-18 메뉴 기본 페이지 크기 20 → 15
+-- 까닭: 20 행이면 목록이 화면을 넘어 페이지를 넘길 때마다 스크롤을 내려야 한다(사용자 요청), 10 은 너무 적다(사용자). 앱의 새 메뉴 기본값도 15.
+ALTER TABLE "Menu" ALTER COLUMN "pageSize" SET DEFAULT 15;
+-- 기존 메뉴 중 기본값(20) 그대로인 것 · 앞서 안내한 10 을 적용했던 것만 15 로(관리 화면에서 직접 바꾼 값은 둔다). 원치 않으면 이 줄은 빼고 실행
+UPDATE "Menu" SET "pageSize" = 15 WHERE "pageSize" IN (10, 20);
+
+-- 확인
+-- SELECT column_default FROM information_schema.columns WHERE table_name = 'Menu' AND column_name = 'pageSize';
+-- SELECT "pageSize", count(*) FROM "Menu" GROUP BY "pageSize";
+
+-- 되돌리기(UPDATE 로 바꾼 행은 어느 것이었는지 남지 않는다)
+-- ALTER TABLE "Menu" ALTER COLUMN "pageSize" SET DEFAULT 20;
+
+-- 2026-11-18 필드 "수정 가능"(updatable)
+-- 까닭: 수정 작업에서 PK · unique 값은 바꾸면 안 된다(사용자 요청). 기존 필드는 NULL(안 정함)로 두면
+-- 앱이 그 메뉴를 처음 쓸 때 "컬럼 다시 읽기" 를 한 번 해 PK · unique · 자동 증가를 FALSE 로 채운다.
+-- 이 열이 없으면 앱이 필드를 못 읽으므로 앱 배포 전에 적용할 것.
+ALTER TABLE "DbField" ADD COLUMN IF NOT EXISTS "updatable" BOOLEAN;
+ALTER TABLE "DbField" ADD COLUMN IF NOT EXISTS "updatableUserSet" BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- 확인(열 2 개)
+-- SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'DbField' AND column_name IN ('updatable', 'updatableUserSet');
+
+-- 되돌리기(앱을 이전 판으로 돌린 뒤에만)
+-- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "updatable";
+-- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "updatableUserSet";
+
+-- 2026-11-18 메뉴 검색 설정(searchSettings)
+-- 까닭: 쿼리를 고치지 않고 메뉴 설정에서 검색칸 · 통합 검색을 고르게 한다(사용자 요청). NULL = 검색칸 없음.
+-- 이 열이 없으면 앱이 메뉴를 못 읽으므로 앱 배포 전에 적용할 것.
+ALTER TABLE "Menu" ADD COLUMN IF NOT EXISTS "searchSettings" JSONB;
+
+-- 확인(열 1 개)
+-- SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'Menu' AND column_name = 'searchSettings';
+
+-- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 고른 검색칸이 사라진다)
+-- ALTER TABLE "Menu" DROP COLUMN IF EXISTS "searchSettings";
+
+-- 2026-11-18 프로젝트 · 메인 메뉴 노출 여부(enableDisplay)
+-- 까닭: 메뉴처럼 프로젝트 · 메인 메뉴도 사용 화면 메뉴 목록에서 숨길 수 있게 한다(사용자 요청). 기존 행은 TRUE(지금처럼 보임).
+-- 이 열이 없으면 앱이 프로젝트 · 메인 메뉴를 못 읽으므로 앱 배포 전에 적용할 것.
+ALTER TABLE "Project" ADD COLUMN IF NOT EXISTS "enableDisplay" BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE "MainMenu" ADD COLUMN IF NOT EXISTS "enableDisplay" BOOLEAN NOT NULL DEFAULT TRUE;
+
+-- 확인(열 2 개, 모두 TRUE)
+-- SELECT table_name, column_name, data_type, column_default FROM information_schema.columns WHERE table_name IN ('Project', 'MainMenu') AND column_name = 'enableDisplay';
+-- SELECT 'Project', "enableDisplay", count(*) FROM "Project" GROUP BY "enableDisplay" UNION ALL SELECT 'MainMenu', "enableDisplay", count(*) FROM "MainMenu" GROUP BY "enableDisplay";
+
+-- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 숨김 설정이 사라진다)
+-- ALTER TABLE "Project" DROP COLUMN IF EXISTS "enableDisplay";
+-- ALTER TABLE "MainMenu" DROP COLUMN IF EXISTS "enableDisplay";

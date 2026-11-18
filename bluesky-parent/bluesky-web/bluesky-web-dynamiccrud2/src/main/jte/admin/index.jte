@@ -5,35 +5,27 @@
 @param ProjectNode selected = null
 @param String error = null
 
-@template._layout.layout(title = "관리", content = @`
-	@if(error != null)
-		<div class="alert alert-error mb-4" role="alert">${error}</div>
-	@endif
+@template._layout.layout(title = "프로젝트 관리", content = @`
+	@template._components.alert(message = error)
 
 	<div class="grid gap-6 md:grid-cols-[16rem_1fr] items-start">
 		<nav aria-label="프로젝트" class="grid gap-2">
 			<div class="flex items-center justify-between">
 				<h2 class="font-semibold">프로젝트</h2>
-				<button type="button" class="icon-btn" data-toggle="add-project" aria-expanded="false" aria-label="새 프로젝트" title="새 프로젝트">+</button>
+				@template._components.iconToggle(target = "add-project", icon = "+", label = "새 프로젝트")
 			</div>
-			<form id="add-project" method="post" action="/admin/project" class="card grid gap-2" hidden>
-				<input class="input input-sm font-mono" name="code" required maxlength="50" pattern="[a-z0-9][a-z0-9\-]{0,49}" title="영문 소문자 · 숫자 · -" placeholder="주소 이름(예: event)" aria-label="새 프로젝트 주소 이름" />
-				<input class="input input-sm" name="name" required maxlength="100" placeholder="프로젝트 이름" aria-label="새 프로젝트 이름" />
-				<div class="flex gap-2">
-					<button class="btn btn-sm btn-primary">추가</button>
-					<button type="button" class="btn btn-sm btn-ghost" data-toggle="add-project">취소</button>
-				</div>
-			</form>
+			@template._components.codeNameForm(formId = "add-project", action = "/admin/project", noun = "프로젝트", stacked = true)
 			@if(tree.isEmpty())
-				<p class="hint">프로젝트가 없습니다. + 로 추가하세요.</p>
+				@template._components.emptyState(message = "프로젝트가 없습니다. + 로 추가하세요.")
 			@endif
 			<ul class="grid gap-0.5" data-reorder-url="/admin/project/order">
 				@for(var projectNode : tree)
 					!{var project = projectNode.project();}
 					!{var current = selected != null && selected.project().getId().equals(project.getId());}
 					<li class="flex items-center gap-1 rounded ${current ? "bg-base-200" : ""}" data-id="${project.getId().toString()}">
-						<button type="button" class="drag-handle" aria-label="${project.getName()} 순서 바꾸기(끌기 또는 위 · 아래 화살표)">⠿</button>
+						@template._components.dragHandle(name = project.getName())
 						<a class="flex-1 py-1 truncate hover:underline ${current ? "font-semibold" : ""}" href="/admin?project=${project.getId().toString()}" aria-current="${current ? "page" : null}">${project.getName()}</a>
+						@if(!project.isEnableDisplay())<span class="hint inline-flex">@template._components.eyeIcon(slashed = true, label = "메뉴 목록에서 숨김")</span>@endif
 						<span class="hint font-mono text-xs pr-2">/${project.getCode()}</span>
 					</li>
 				@endfor
@@ -47,77 +39,79 @@
 			!{var project = selected.project();}
 			!{var projectId = project.getId().toString();}
 			<section class="min-w-0">
-				<div class="flex items-center gap-1">
-					<h2 class="text-lg font-semibold">${project.getName()}</h2>
-					<a class="hint font-mono mr-1 hover:underline" href="/${project.getCode()}" title="사용 화면 열기">/${project.getCode()}</a>
-					<button type="button" class="icon-btn" data-toggle="rename-p-${projectId}" aria-expanded="false" aria-label="${project.getName()} 이름 바꾸기" title="이름 바꾸기">✎</button>
-					<form method="post" action="/admin/project/${projectId}/delete" class="inline-flex">
-						<button class="icon-btn icon-btn-danger" aria-label="${project.getName()} 삭제" title="삭제" onclick="return confirm('프로젝트를 지울까요?')">×</button>
-					</form>
-					<button type="button" class="icon-btn" data-toggle="add-mm-${projectId}" aria-expanded="false" aria-label="${project.getName()} 에 메인 메뉴 추가" title="메인 메뉴 추가">+</button>
+				<%-- ✎ 를 누르면 이 줄(이름 /주소)이 그 자리에서 입력칸으로 바뀐다(data-hidden-by, js/toggle.js) --%>
+				<div class="flex flex-wrap items-center gap-1 min-h-9">
+					<div class="flex items-center gap-1" data-hidden-by="rename-p-${projectId}">
+						<h2 class="text-lg font-semibold">${project.getName()}</h2>
+						<a class="hint font-mono mr-1 hover:underline" href="/${project.getCode()}" title="사용 화면 열기">/${project.getCode()}</a>
+						<span class="icon-group">
+							@template._components.iconToggle(target = "rename-p-" + projectId, icon = "✎", label = project.getName() + " 이름 바꾸기")
+							@template._components.displayToggle(action = "/admin/project/" + projectId + "/display", name = project.getName(), shown = project.isEnableDisplay())
+							@template._components.iconDelete(action = "/admin/project/" + projectId + "/delete", label = project.getName() + " 삭제", confirm = "프로젝트를 지울까요?")
+						</span>
+					</div>
+					@template._components.codeNameForm(formId = "rename-p-" + projectId, action = "/admin/project", noun = "프로젝트",
+						itemId = projectId, code = project.getCode(), name = project.getName(), submitText = "저장", inline = true, nameClass = "text-lg font-semibold")
 				</div>
-				<form id="rename-p-${projectId}" method="post" action="/admin/project" class="mt-2 flex flex-wrap items-center gap-2" hidden>
-					<input type="hidden" name="id" value="${projectId}" />
-					<input class="input input-sm w-40 font-mono" name="code" value="${project.getCode()}" required maxlength="50" pattern="[a-z0-9][a-z0-9\-]{0,49}" title="영문 소문자 · 숫자 · -" aria-label="프로젝트 주소 이름" />
-					<input class="input input-sm" name="name" value="${project.getName()}" required maxlength="100" aria-label="프로젝트 새 이름" />
-					<button class="btn btn-sm btn-primary">저장</button>
-					<button type="button" class="btn btn-sm btn-ghost" data-toggle="rename-p-${projectId}">취소</button>
-				</form>
-				<form id="add-mm-${projectId}" method="post" action="/admin/project/${projectId}/mainMenu" class="mt-2 flex flex-wrap items-center gap-2" hidden>
-					<input class="input input-sm w-40 font-mono" name="code" required maxlength="50" pattern="[a-z0-9][a-z0-9\-]{0,49}" title="영문 소문자 · 숫자 · -" placeholder="주소 이름" aria-label="새 메인 메뉴 주소 이름" />
-					<input class="input input-sm" name="name" required maxlength="100" placeholder="메인 메뉴 이름" aria-label="새 메인 메뉴 이름" />
-					<button class="btn btn-sm btn-primary">추가</button>
-					<button type="button" class="btn btn-sm btn-ghost" data-toggle="add-mm-${projectId}">취소</button>
-				</form>
 
 				@if(selected.mainMenus().isEmpty())
-					<p class="hint mt-3">메인 메뉴가 없습니다. + 로 추가하세요.</p>
+					@template._components.emptyState(message = "메인 메뉴가 없습니다. 아래 \"+ 메인 메뉴 추가\" 로 추가하세요.", cssClass = "mt-3")
 				@endif
 				<div class="mt-3 ml-1 pl-4 border-l border-base-300" data-reorder-url="/admin/project/${projectId}/mainMenu/order">
 					@for(var mainMenuNode : selected.mainMenus())
 						!{var mainMenu = mainMenuNode.mainMenu();}
 						!{var mainMenuId = mainMenu.getId().toString();}
 						<div class="py-1.5 bg-base-100" data-id="${mainMenuId}">
-							<div class="flex items-center gap-1">
-								<button type="button" class="drag-handle" aria-label="${mainMenu.getName()} 순서 바꾸기(끌기 또는 위 · 아래 화살표)">⠿</button>
-								<h3 class="font-semibold">${mainMenu.getName()}</h3>
-								<span class="hint font-mono mr-1">/${mainMenu.getCode()}</span>
-								<button type="button" class="icon-btn" data-toggle="rename-mm-${mainMenuId}" aria-expanded="false" aria-label="${mainMenu.getName()} 이름 바꾸기" title="이름 바꾸기">✎</button>
-								<form method="post" action="/admin/mainMenu/${mainMenuId}/delete" class="inline-flex">
-									<button class="icon-btn icon-btn-danger" aria-label="${mainMenu.getName()} 삭제" title="삭제" onclick="return confirm('메인 메뉴를 지울까요?')">×</button>
-								</form>
-								<a class="icon-btn" href="/admin/mainMenu/${mainMenuId}/menu/new" aria-label="${mainMenu.getName()} 에 메뉴 추가" title="메뉴 추가">+</a>
+							<div class="flex flex-wrap items-center gap-1 min-h-9">
+								@template._components.dragHandle(name = mainMenu.getName())
+								<div class="flex items-center gap-1" data-hidden-by="rename-mm-${mainMenuId}">
+									<h3 class="font-semibold">${mainMenu.getName()}</h3>
+									<a class="hint font-mono mr-1 hover:underline" href="/${project.getCode()}/${mainMenu.getCode()}" title="사용 화면 열기">/${mainMenu.getCode()}</a>
+									<span class="icon-group">
+										@template._components.iconToggle(target = "rename-mm-" + mainMenuId, icon = "✎", label = mainMenu.getName() + " 이름 바꾸기")
+										@template._components.displayToggle(action = "/admin/mainMenu/" + mainMenuId + "/display", name = mainMenu.getName(), shown = mainMenu.isEnableDisplay())
+										@template._components.iconDelete(action = "/admin/mainMenu/" + mainMenuId + "/delete", label = mainMenu.getName() + " 삭제", confirm = "메인 메뉴를 지울까요?")
+									</span>
+								</div>
+								@template._components.codeNameForm(formId = "rename-mm-" + mainMenuId, action = "/admin/project/" + projectId + "/mainMenu",
+									noun = "메인 메뉴", itemId = mainMenuId, code = mainMenu.getCode(), name = mainMenu.getName(), submitText = "저장", inline = true, nameClass = "font-semibold")
 							</div>
-							<form id="rename-mm-${mainMenuId}" method="post" action="/admin/project/${projectId}/mainMenu" class="mt-1 ml-8 flex flex-wrap items-center gap-2" hidden>
-								<input type="hidden" name="id" value="${mainMenuId}" />
-								<input class="input input-sm w-40 font-mono" name="code" value="${mainMenu.getCode()}" required maxlength="50" pattern="[a-z0-9][a-z0-9\-]{0,49}" title="영문 소문자 · 숫자 · -" aria-label="메인 메뉴 주소 이름" />
-								<input class="input input-sm" name="name" value="${mainMenu.getName()}" required maxlength="100" aria-label="메인 메뉴 새 이름" />
-								<button class="btn btn-sm btn-primary">저장</button>
-								<button type="button" class="btn btn-sm btn-ghost" data-toggle="rename-mm-${mainMenuId}">취소</button>
-							</form>
 							@if(!mainMenuNode.menus().isEmpty())
 								<ul class="ml-6 mt-1 grid gap-0.5 text-sm" data-reorder-url="/admin/mainMenu/${mainMenuId}/menu/order">
 									@for(var menu : mainMenuNode.menus())
-										<li class="flex items-center gap-2 bg-base-100" data-id="${menu.getId().toString()}">
-											<button type="button" class="drag-handle" aria-label="${menu.getName()} 순서 바꾸기(끌기 또는 위 · 아래 화살표)">⠿</button>
-											<a class="hover:underline" href="/admin/menu/${menu.getId().toString()}">${menu.getName()}</a>
-											<a class="hint font-mono hover:underline" href="/${project.getCode()}/${mainMenu.getCode()}/${menu.getCode()}" title="사용 화면 열기">/${menu.getCode()}</a>
-											@if(menu.getAuthority() != null)
-												<span class="badge">${menu.getAuthority()}</span>
-											@endif
-											@if(!menu.isEnableDisplay())
-												<span class="badge">숨김</span>
-											@endif
+										!{var menuId = menu.getId().toString();}
+										<li class="flex flex-wrap items-center gap-1 bg-base-100 min-h-8" data-id="${menuId}">
+											@template._components.dragHandle(name = menu.getName())
+											<%-- 프로젝트 · 메인 메뉴와 같게 ✎ 로 그 자리에서 이름 · 주소 이름을 고친다(나머지 설정은 이름을 눌러 메뉴 설정 화면) --%>
+											<div class="flex items-center gap-2" data-hidden-by="rename-m-${menuId}">
+												<a class="link" href="/admin/menu/${menuId}" title="메뉴 설정 열기">${menu.getName()}</a>
+												<a class="hint font-mono hover:underline" href="/${project.getCode()}/${mainMenu.getCode()}/${menu.getCode()}" title="사용 화면 열기">/${menu.getCode()}</a>
+												@if(menu.getAuthority() != null)
+													<span class="badge">${menu.getAuthority()}</span>
+												@endif
+												@if(!menu.isEnableDisplay())
+													<span class="hint inline-flex">@template._components.eyeIcon(slashed = true, label = "메뉴 목록에서 숨김")</span>
+												@endif
+												@template._components.iconToggle(target = "rename-m-" + menuId, icon = "✎", label = menu.getName() + " 이름 바꾸기")
+											</div>
+											@template._components.codeNameForm(formId = "rename-m-" + menuId, action = "/admin/menu/" + menuId + "/rename",
+												noun = "메뉴", itemId = menuId, code = menu.getCode(), name = menu.getName(), submitText = "저장", inline = true)
 										</li>
 									@endfor
 								</ul>
 							@endif
+							<%-- 메뉴 추가는 그 메인 메뉴의 메뉴 목록 맨 아래, 메뉴와 같은 깊이(ml-6)(이름 옆 + 는 메인 메뉴를 만드는 것으로 읽힌다) --%>
+							@template._components.addToggle(target = "add-menu-" + mainMenuId, label = "메뉴 추가", cssClass = "ml-6 mt-0.5")
+							@template.admin.menuCreateForm(mainMenuId = mainMenuId, mainMenuName = mainMenu.getName())
 						</div>
 					@endfor
+					<%-- 메인 메뉴 추가는 메인 메뉴 목록(세로줄) 안 맨 아래, 메인 메뉴와 같은 깊이. data-id 가 없어 순서 바꾸기 대상은 아니다
+					     (프로젝트 이름 옆 + 는 왼쪽 프로젝트 + 와 같은 자리라 프로젝트 추가로 읽힌다) --%>
+					@template._components.addToggle(target = "add-mm-" + projectId, label = "메인 메뉴 추가", cssClass = "mt-1")
+					@template._components.codeNameForm(formId = "add-mm-" + projectId, action = "/admin/project/" + projectId + "/mainMenu",
+						noun = "메인 메뉴", cssClass = "mt-2")
 				</div>
 			</section>
 		@endif
 	</div>
-	<script src="/js/reorder.js"></script>
-	<script src="/js/toggle.js"></script>
 `)

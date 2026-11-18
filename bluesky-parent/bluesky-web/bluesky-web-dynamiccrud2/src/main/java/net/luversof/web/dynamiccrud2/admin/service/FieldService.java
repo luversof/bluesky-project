@@ -35,11 +35,15 @@ public class FieldService {
     return dbTableRepository.findById(dbTableId).orElseThrow();
   }
 
-  /** 테이블을 처음 쓰면 컬럼 전체를 등록하고, 이미 있으면 그대로 돌려준다(메뉴끼리 공유). */
+  /**
+   * 테이블을 처음 쓰면 컬럼 전체를 등록하고, 이미 있으면(메뉴끼리 공유) 방금 읽은 컬럼으로 다시 맞춘다. 등록 뒤 DB 에 늘어난 컬럼이 필드에 없으면 자동 생성 쿼리에는
+   * 들어가는데 타입 변환 없이 문자열로 바인딩돼 실패하기 때문(예: boolean 컬럼). 사용자가 고친 값은 유지된다.
+   */
   public DbTable registerOrGet(String connectionName, TableMeta meta) {
     var existing = find(connectionName, meta.ref());
     if (existing != null) {
-      return existing;
+      sync(existing, meta, null);
+      return dbTableRepository.save(existing);
     }
     var dbTable = newTable(connectionName, meta.ref());
     sync(dbTable, meta, null);
@@ -49,14 +53,17 @@ public class FieldService {
   /** "컬럼 다시 읽기" */
   public DbTable resync(UUID dbTableId) {
     var dbTable = get(dbTableId);
-    var meta =
-        resolver
-            .resolve(dbTable.getConnectionName())
-            .readTable(
-                new TableRef(
-                    dbTable.getCatalogName(), dbTable.getSchemaName(), dbTable.getTableName()));
-    sync(dbTable, meta, null);
+    sync(dbTable, readMeta(dbTable), null);
     return dbTableRepository.save(dbTable);
+  }
+
+  /** 지금 DB 의 컬럼 · 인덱스(필드 관리 화면의 인덱스 표 · 정렬 안내) */
+  public TableMeta readMeta(DbTable dbTable) {
+    return resolver
+        .resolve(dbTable.getConnectionName())
+        .readTable(
+            new TableRef(
+                dbTable.getCatalogName(), dbTable.getSchemaName(), dbTable.getTableName()));
   }
 
   /** 조인한 다른 테이블의 실제 컬럼: 그 테이블을 쓰인 컬럼만으로 등록(또는 빠진 컬럼만 추가)해 그 테이블 메뉴들과 라벨을 공유한다. */
@@ -108,7 +115,8 @@ public class FieldService {
       InputType inputType,
       boolean required,
       Integer maxLength,
-      boolean sortable) {
+      boolean sortable,
+      boolean updatable) {
     var dbTable = get(dbTableId);
     var field =
         dbTable.getFields().stream()
@@ -122,6 +130,10 @@ public class FieldService {
     if (field.isSortable() != sortable) {
       field.setSortable(sortable && !field.isVirtual());
       field.setSortableUserSet(true);
+    }
+    if (field.isUpdatable() != updatable) {
+      field.setUpdatable(updatable);
+      field.setUpdatableUserSet(true);
     }
     return dbTableRepository.save(dbTable);
   }
@@ -156,6 +168,8 @@ public class FieldService {
       seen.add(column.name());
       var field = existing.get(column.name());
       var sortable = meta.indexLeadingColumns().contains(column.name());
+      // 행을 가리키는 값(PK · unique)과 DB 가 만드는 값(자동 증가)은 수정 작업에서 바꾸지 않는다
+      var updatable = !meta.isKeyColumn(column.name()) && !column.autoIncrement();
       if (field == null) {
         if (onlyColumns != null && !onlyColumns.contains(column.name())) {
           order++;
@@ -170,6 +184,9 @@ public class FieldService {
         dbTable.getFields().add(field);
       } else if (!field.isSortableUserSet()) {
         field.setSortable(sortable);
+      }
+      if (!field.isUpdatableUserSet()) {
+        field.setUpdatable(updatable);
       }
       field.setDataType(column.typeName());
       field.setDbComment(column.comment());

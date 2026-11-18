@@ -11,6 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.stereotype.Service;
 
 import io.github.luversof.boot.exception.BlueskyException;
@@ -55,9 +56,19 @@ public class QueryService {
    * @param params 파라미터별 설정
    * @param columns 조회 결과 컬럼(조회 작업만)
    * @param warnings 저장은 되지만 알아야 할 것(해석 불가 · 인덱스 없는 검색 등)
+   * @param passed DB 에서 확인해 문제가 없을 때 그 안내(확인하지 않았거나 문제가 있으면 null)
    */
   public record QueryInspection(
-      String error, List<ParamRow> params, List<ResultColumn> columns, List<String> warnings) {}
+      String error,
+      List<ParamRow> params,
+      List<ResultColumn> columns,
+      List<String> warnings,
+      String passed) {
+
+    /** 쿼리가 비어 아직 검사하지 않은 상태 */
+    public static final QueryInspection EMPTY =
+        new QueryInspection(null, List.of(), List.of(), List.of(), null);
+  }
 
   /**
    * @param optionalCapable 선택(값이 비면 조건 제거)으로 바꿀 수 있는지(조회 작업만 의미 있음)
@@ -86,7 +97,8 @@ public class QueryService {
     try {
       adapter.validate(queryText, kind);
     } catch (BlueskyException e) {
-      return new QueryInspection(QueryErrorCode.messageOf(e), List.of(), List.of(), List.of());
+      return new QueryInspection(
+          QueryErrorCode.messageOf(e), List.of(), List.of(), List.of(), null);
     }
     var meta = adapter.readTable(refOf(base));
     var warnings = new ArrayList<String>();
@@ -127,11 +139,20 @@ public class QueryService {
         warnIndex(name, condition.expression(), meta, warnings);
       }
     }
-    if (analysis != null) {
-      tryEmptyRun(adapter, queryText, params, warnings);
+    // DB 에서 확인: 조회는 한 행 시험 실행, 입력 · 수정 · 삭제는 실행하지 않고 검사(EXPLAIN 등). 문법 · 없는 테이블 · 컬럼이면 오류
+    var error =
+        analysis != null
+            ? tryEmptyRun(adapter, queryText, params, warnings)
+            : checkModify(adapter, queryText, warnings);
+    String passed = null;
+    if (error == null) {
+      passed =
+          analysis != null
+              ? "DB 에서 한 행을 시험 실행했습니다(파라미터는 NULL 로). 문제가 없습니다."
+              : "DB 에서 실행하지 않고 검사했습니다(파라미터는 NULL 로). 문제가 없습니다.";
     }
     return new QueryInspection(
-        null, params, analysis == null ? List.of() : analysis.columns(), warnings);
+        error, params, analysis == null ? List.of() : analysis.columns(), warnings, passed);
   }
 
   /** 작업 저장(queryId null = 새 작업). 조회 작업이면 결과 컬럼 중 다른 테이블 · 계산 컬럼을 필드로 등록한다. */
@@ -148,6 +169,10 @@ public class QueryService {
     var adapter = resolver.resolve(base.getConnectionName());
     adapter.validate(queryText, kind);
     var inspection = inspect(menu, kind, queryText, submitted);
+    // DB 에서 확인되지 않는 쿼리(문법 · 없는 테이블 · 컬럼)는 저장하지 않는다
+    if (inspection.error() != null) {
+      throw new BlueskyException(QueryErrorCode.QUERY_CHECK_FAILED, inspection.error());
+    }
     for (var row : inspection.params()) {
       var asked = submitted == null ? null : submitted.get(row.name());
       if (asked != null && !asked.required() && row.setting().required()) {
@@ -181,6 +206,8 @@ public class QueryService {
     inspection.params().forEach(row -> settings.put(row.name(), row.setting().toMap()));
     query.setParamSettings(settings);
 
+    // 메뉴를 만든 뒤 DB 에 늘어난 컬럼도 필드로(작업 초안은 지금 컬럼으로 만들어지므로 필드와 어긋나지 않게)
+    fieldService.resync(base.getId());
     if (kind == QueryKind.READ) {
       registerResultFields(base, inspection.columns());
     }
@@ -247,8 +274,13 @@ public class QueryService {
     }
   }
 
-  /** 조회 쿼리를 한 행만 실제로 실행해 본다. 실패해도 저장은 막지 않고 경고로 보여 준다. */
-  private static void tryEmptyRun(
+  /**
+   * 조회 쿼리를 한 행만 실제로 실행해 본다. 문법 · 없는 테이블 · 컬럼(BadSqlGrammarException)은 오류로 돌려주고(저장 거부), 그 밖의 실패(값 형식
+   * 등 - 파라미터를 NULL 로 넣어 생길 수 있다)는 경고로만 남긴다.
+   *
+   * @return 오류 문구(없으면 null)
+   */
+  private static String tryEmptyRun(
       DatabaseAdapter adapter, String queryText, List<ParamRow> params, List<String> warnings) {
     var bind = new HashMap<String, Object>();
     var empty = new java.util.HashSet<String>();
@@ -260,10 +292,34 @@ public class QueryService {
     }
     try {
       adapter.read(queryText, bind, empty, null, 0, 1);
+    } catch (BadSqlGrammarException e) {
+      return "DB 가 쿼리를 받지 않습니다: " + firstLine(e);
     } catch (DataAccessException e) {
-      var message = e.getMostSpecificCause().getMessage();
-      warnings.add("시험 실행 실패(파라미터를 NULL 로 넣어 실행): " + message.lines().findFirst().orElse(message));
+      warnings.add("시험 실행 실패(파라미터를 NULL 로 넣어 실행, 쿼리 문법은 통과): " + firstLine(e));
+    } catch (IllegalArgumentException e) {
+      warnings.add("시험 실행을 하지 못했습니다: " + e.getMessage());
     }
+    return null;
+  }
+
+  /** 입력 · 수정 · 삭제 쿼리를 실행하지 않고 DB 에서 검사한다(tryEmptyRun 과 같은 오류 · 경고 규칙). */
+  private static String checkModify(
+      DatabaseAdapter adapter, String queryText, List<String> warnings) {
+    try {
+      adapter.check(queryText);
+    } catch (BadSqlGrammarException e) {
+      return "DB 가 쿼리를 받지 않습니다: " + firstLine(e);
+    } catch (DataAccessException e) {
+      warnings.add("DB 검사 중 오류(쿼리 문법은 통과): " + firstLine(e));
+    }
+    return null;
+  }
+
+  private static String firstLine(DataAccessException e) {
+    var message = e.getMostSpecificCause().getMessage();
+    return message == null
+        ? e.getClass().getSimpleName()
+        : message.lines().findFirst().orElse(message);
   }
 
   private void registerResultFields(DbTable base, List<ResultColumn> columns) {
@@ -277,7 +333,7 @@ public class QueryService {
               || column.tableName().equalsIgnoreCase(base.getTableName())) {
             continue;
           }
-          var schema = column.tableSchema() == null ? base.getSchemaName() : column.tableSchema();
+          var schema = base.schemaOf(column.tableSchema());
           others
               .computeIfAbsent(
                   new TableRef(base.getCatalogName(), schema, column.tableName()),

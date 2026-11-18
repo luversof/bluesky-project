@@ -13,6 +13,14 @@ import net.luversof.web.dynamiccrud2.domain.QueryKind;
  */
 public interface DatabaseAdapter {
 
+  /** 화면에 보일 DB 종류 이름(PostgreSQL · MySQL · MariaDB · SQL Server, 2차에 MongoDB) */
+  String databaseType();
+
+  /** 데이터를 담는 단위의 이름(화면 문구: "테이블 필드 관리" · "테이블 인덱스"). RDB 는 테이블, 2차 Mongo 어댑터는 "컬렉션" 을 돌려준다 */
+  default String targetNoun() {
+    return "테이블";
+  }
+
   /** 고를 수 있는 테이블(컬렉션) 목록 */
   List<TableRef> listTables();
 
@@ -24,6 +32,11 @@ public interface DatabaseAdapter {
 
   /** 저장 전 검사. 문제가 있으면 BlueskyException */
   void validate(String query, QueryKind kind);
+
+  /**
+   * 입력 · 수정 · 삭제 쿼리를 실행하지 않고 DB 에서 검사한다(파라미터는 모두 NULL). 문법 · 없는 테이블 · 컬럼이면 BadSqlGrammarException.
+   */
+  void check(String query);
 
   /** 쿼리가 쓰는 파라미터 이름(나온 순서) */
   List<String> parameterNames(String query);
@@ -40,17 +53,38 @@ public interface DatabaseAdapter {
    * @param page 0 부터
    * @param size 한 페이지 행 수(설정 한도로 자른다)
    */
+  default ReadResult read(
+      String query,
+      Map<String, Object> params,
+      Set<String> emptyOptionalParams,
+      Sort sort,
+      int page,
+      int size) {
+    return read(query, params, emptyOptionalParams, List.of(), sort, page, size);
+  }
+
+  /**
+   * 한 페이지 조회 + 화면 검색 조건.
+   *
+   * @param filters 덧붙일 검색 조건(값은 params 에 같이 넣는다)
+   * @throws IllegalArgumentException 검색 조건을 붙일 수 없는 쿼리
+   */
   ReadResult read(
       String query,
       Map<String, Object> params,
       Set<String> emptyOptionalParams,
+      List<Filter> filters,
       Sort sort,
       int page,
       int size);
 
   /** 엑셀 내려받기용 전체 조회(첫 행부터 설정 한도 excelMaxRows 까지, 건수는 세지 않아 total = -1) */
   ReadResult export(
-      String query, Map<String, Object> params, Set<String> emptyOptionalParams, Sort sort);
+      String query,
+      Map<String, Object> params,
+      Set<String> emptyOptionalParams,
+      List<Filter> filters,
+      Sort sort);
 
   /** 입력 · 수정 · 삭제를 행마다 실행. 전부 한 트랜잭션, 행마다 영향 행 수를 돌려준다 */
   int[] modify(String query, List<Map<String, Object>> rows);

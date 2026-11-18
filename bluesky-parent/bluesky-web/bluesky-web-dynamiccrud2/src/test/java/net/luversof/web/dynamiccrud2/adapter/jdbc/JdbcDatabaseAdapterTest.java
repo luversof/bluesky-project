@@ -54,6 +54,21 @@ class JdbcDatabaseAdapterTest implements GeneralWebTest {
     // uk_menuQuery_menuId_read 는 WHERE 가 붙은 부분 인덱스라 행 키가 될 수 없다
     assertThat(menuQuery.uniqueKeys()).isEmpty();
     assertThat(menuQuery.indexLeadingColumns()).contains("id", "menu_id");
+    // 화면용 인덱스 목록: PK · 일반 · 부분 unique 를 모두 보인다
+    assertThat(menuQuery.indexes())
+        .anySatisfy(i -> {
+          assertThat(i.primary()).isTrue();
+          assertThat(i.columns()).containsExactly("id");
+        })
+        .anySatisfy(i -> {
+          assertThat(i.name()).isEqualToIgnoringCase("idx_menuQuery_menuId");
+          assertThat(i.unique()).isFalse();
+        })
+        .anySatisfy(i -> {
+          assertThat(i.name()).isEqualToIgnoringCase("uk_menuQuery_menuId_read");
+          assertThat(i.unique()).isTrue();
+          assertThat(i.partial()).isTrue();
+        });
     var columns = menuQuery.columns();
     assertThat(columns)
         .filteredOn(c -> c.name().equals("queryText"))
@@ -100,6 +115,8 @@ class JdbcDatabaseAdapterTest implements GeneralWebTest {
                     name,
                     "displayOrder",
                     7,
+                    "enableDisplay",
+                    true,
                     "createdDate",
                     OffsetDateTime.now())));
     try {

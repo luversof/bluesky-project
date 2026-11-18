@@ -26,6 +26,7 @@ import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
 import net.luversof.web.dynamiccrud2.admin.service.MenuService;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
 import net.luversof.web.dynamiccrud2.repository.DbTableRepository;
+import net.luversof.web.dynamiccrud2.repository.MenuRepository;
 
 /**
  * 설정 화면을 실제 컨트롤러 · JTE · 보안 필터로 렌더한다(브라우저 없이). 설정 catalog(dynamiccrud2) 자체 테이블을 대상으로 쓰고 만든 행만 지운다.
@@ -37,6 +38,7 @@ class AdminControllerTest implements GeneralWebTest {
   @Autowired MenuService menuService;
   @Autowired DatabaseAdapterResolver resolver;
   @Autowired DbTableRepository dbTableRepository;
+  @Autowired MenuRepository menuRepository;
 
   MockMvc mvc;
 
@@ -190,9 +192,12 @@ class AdminControllerTest implements GeneralWebTest {
       mvc.perform(get("/admin").with(admin()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString(project.getName())));
-      mvc.perform(get("/admin/mainMenu/" + mainMenu.getId() + "/menu/new").with(admin()))
+      // 메뉴 추가는 관리 화면 메인 메뉴 아래 펼침 폼(connection · 테이블은 검색해서 고르는 칸)
+      mvc.perform(get("/admin").param("project", project.getId().toString()).with(admin()))
           .andExpect(status().isOk())
-          .andExpect(content().string(Matchers.containsString("list=\"connectionOptions\"")));
+          .andExpect(
+              content().string(Matchers.containsString("id=\"add-menu-" + mainMenu.getId() + "\"")))
+          .andExpect(content().string(Matchers.containsString("data-combobox")));
       // 자동완성: 이름 일부로 찾는다
       mvc.perform(
               get("/admin/connection/search")
@@ -200,7 +205,7 @@ class AdminControllerTest implements GeneralWebTest {
                   .header("HX-Request", "true")
                   .with(admin()))
           .andExpect(status().isOk())
-          .andExpect(content().string(Matchers.containsString("<option value=\"dynamiccrud2\">")));
+          .andExpect(content().string(Matchers.containsString("data-value=\"dynamiccrud2\"")));
       // 없는 이름을 적으면 테이블 칸에 안내가 나온다(오류 화면이 아니라)
       mvc.perform(
               get("/admin/connection/tables")
@@ -233,8 +238,11 @@ class AdminControllerTest implements GeneralWebTest {
                       .with(admin()))
               .andExpect(status().is3xxRedirection())
               .andReturn();
-      var location = result.getResponse().getRedirectedUrl();
-      var menuId = UUID.fromString(location.substring(location.lastIndexOf('/') + 1));
+      // 만들면 관리 화면(그 프로젝트)에 머문다 - 설정은 메뉴 이름을 눌러 메뉴 설정 화면에서
+      assertThat(result.getResponse().getRedirectedUrl())
+          .isEqualTo("/admin?project=" + project.getId());
+      var menuId =
+          menuRepository.findByMainMenuIdAndCode(mainMenu.getId(), "screen").orElseThrow().getId();
       created.add(menuId);
       var menu = menuService.getMenu(menuId);
 
@@ -242,7 +250,7 @@ class AdminControllerTest implements GeneralWebTest {
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("수정 추가")))
           // 라벨을 정하는 필드 화면으로 가는 단추(들어온 메뉴로 돌아오도록 menu 를 붙인다)
-          .andExpect(content().string(Matchers.containsString("필드 · 라벨 설정")))
+          .andExpect(content().string(Matchers.containsString("필드 관리")))
           .andExpect(content().string(Matchers.containsString("?menu=" + menuId)));
       mvc.perform(get("/admin/menu/" + menuId + "/query/new").param("kind", "UPDATE").with(admin()))
           .andExpect(status().isOk())
@@ -265,6 +273,23 @@ class AdminControllerTest implements GeneralWebTest {
                   .with(admin()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("전체 행을 바꿀 수 있어")));
+      // DB 가 받지 않는 쿼리(없는 컬럼)는 저장하지 않는다 - 실행하지 않는 검사(EXPLAIN)로 확인
+      mvc.perform(
+              post("/admin/menu/" + menuId + "/query")
+                  .param("kind", "UPDATE")
+                  .param("queryText", "UPDATE \"MainMenu\" SET no_such_column = :x WHERE id = :id")
+                  .with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("DB 가 쿼리를 받지 않습니다")));
+      // 쿼리 테스트: 문제가 없으면 성공 안내
+      mvc.perform(
+              post("/admin/menu/" + menuId + "/query/inspect")
+                  .param("kind", "UPDATE")
+                  .param("queryText", "UPDATE \"MainMenu\" SET name = :name WHERE id = :id")
+                  .header("HX-Request", "true")
+                  .with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("문제가 없습니다")));
       mvc.perform(
               post("/admin/menu/" + menuId + "/query")
                   .param("kind", "DELETE")

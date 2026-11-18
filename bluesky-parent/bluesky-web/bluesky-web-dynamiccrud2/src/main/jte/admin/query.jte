@@ -11,35 +11,36 @@
 @param String authority
 @param String error
 @param QueryInspection inspection
+@param java.util.List<net.luversof.web.dynamiccrud2.admin.controller.Crumb> breadcrumb = null
 
 !{var menuId = menu.getId().toString();}
 
-@template._layout.layout(title = (queryId == null ? "작업 추가: " : "작업 편집: ") + kind.name(), content = @`
-	<p class="mb-4 text-sm"><a class="hover:underline" href="/admin/menu/${menuId}">← ${menu.getName()}</a></p>
-	@if(error != null)
-		<div class="alert alert-error mb-4" role="alert">${error}</div>
-	@endif
+@template._layout.layout(title = (queryId == null ? "쿼리 추가: " : "쿼리 편집: ") + kind.name(), breadcrumb = breadcrumb, content = @`
+	@template._components.alert(message = error)
 
-	<form method="post" action="/admin/menu/${menuId}/query" class="grid gap-4">
+	<form method="post" action="/admin/menu/${menuId}/query">
 		<input type="hidden" name="kind" value="${kind.name()}" />
 		@if(queryId != null)
 			<input type="hidden" name="queryId" value="${queryId.toString()}" />
 		@endif
+		@template._components.card(title = "기본 정보", body = @`
 		<div class="grid gap-4 sm:grid-cols-2">
-			<div>
-				<label class="label" for="name">이름</label>
+			@template._components.field(label = "이름", forId = "name", content = @`
 				<input id="name" class="input w-full" name="name" value="${name}" maxlength="100" placeholder="비우면 종류 이름" />
-			</div>
+			`)
 			@if(kind != QueryKind.READ)
-				<div>
-					<label class="label" for="authority">실행 권한</label>
+				@template._components.field(label = "실행 권한", forId = "authority", content = @`
 					<input id="authority" class="input w-full" name="authority" value="${authority}" maxlength="50" placeholder="비우면 메뉴 권한을 따릅니다" />
-				</div>
+				`)
 			@endif
 		</div>
+		`)
+		@template._components.card(title = "쿼리", actions = @`
+			<span class="hint">DB 에서 쿼리를 확인하고 아래 표를 새로 만듭니다. 저장할 때도 같은 확인을 하고, 실패하면 저장하지 않습니다.</span>
+			<button type="button" class="btn btn-sm" hx-post="/admin/menu/${menuId}/query/inspect" hx-include="closest form" hx-target="#inspection" hx-swap="innerHTML">쿼리 테스트</button>
+		`, body = @`
 		<div>
-			<label class="label" for="queryText">쿼리</label>
-			<textarea id="queryText" class="textarea code w-full" name="queryText" rows="12" spellcheck="false" required>${queryText}</textarea>
+			<textarea aria-label="쿼리" id="queryText" class="textarea code w-full" name="queryText" rows="12" spellcheck="false" required>${queryText}</textarea>
 			<p class="hint mt-1">
 				파라미터는 <code>:이름</code> 으로 씁니다. 쓰던 쿼리를 그대로 붙여 넣으면 아래 표가 쿼리에서 만들어집니다.
 				@if(kind == QueryKind.READ)
@@ -47,15 +48,13 @@
 				@endif
 			</p>
 		</div>
-		<div>
-			<button type="button" class="btn btn-sm" hx-post="/admin/menu/${menuId}/query/inspect" hx-include="closest form" hx-target="#inspection" hx-swap="innerHTML">쿼리 다시 읽기</button>
-		</div>
-		<div id="inspection">
+		<div id="inspection" class="mt-4">
 			@template.admin.queryInspection(kind = kind, inspection = inspection)
 		</div>
-		<div class="flex gap-2">
-			<button class="btn btn-primary">저장</button>
+		`)
+		@template._components.formActions(content = @`
 			<a class="btn btn-ghost" href="/admin/menu/${menuId}">취소</a>
-		</div>
+			<button class="btn btn-primary">저장</button>
+		`)
 	</form>
 `)

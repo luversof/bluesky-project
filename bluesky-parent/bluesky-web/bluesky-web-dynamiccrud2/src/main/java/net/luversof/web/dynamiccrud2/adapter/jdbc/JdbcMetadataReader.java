@@ -76,6 +76,11 @@ final class JdbcMetadataReader {
     Map<String, TreeMap<Integer, String>> uniqueIndexes = new LinkedHashMap<>();
     var excludedIndexes = new HashSet<String>();
     var leading = new HashSet<String>();
+    // 화면에 보일 인덱스 전체: 이름 → 순서 → 컬럼(식이면 DB 가 준 글자)
+    Map<String, TreeMap<Integer, String>> allIndexes = new LinkedHashMap<>();
+    var nonUnique = new HashSet<String>();
+    var partialIndexes = new HashSet<String>();
+    var expressionIndexes = new HashSet<String>();
     try (var rs = meta.getIndexInfo(ref.catalog(), ref.schema(), ref.name(), false, true)) {
       while (rs.next()) {
         var indexName = rs.getString("INDEX_NAME");
@@ -86,6 +91,18 @@ final class JdbcMetadataReader {
         var partial = rs.getString("FILTER_CONDITION") != null;
         var expression = column == null || !columnNames.contains(column);
         var ordinal = rs.getInt("ORDINAL_POSITION");
+        allIndexes
+            .computeIfAbsent(indexName, k -> new TreeMap<>())
+            .put(ordinal, column == null ? "(식)" : column);
+        if (rs.getBoolean("NON_UNIQUE")) {
+          nonUnique.add(indexName);
+        }
+        if (partial) {
+          partialIndexes.add(indexName);
+        }
+        if (expression) {
+          expressionIndexes.add(indexName);
+        }
         if (partial || expression) {
           excludedIndexes.add(indexName);
         }
@@ -106,6 +123,19 @@ final class JdbcMetadataReader {
       }
     });
     pk.stream().findFirst().ifPresent(leading::add);
-    return new TableMeta(ref, columns, pk, uniqueKeys, leading);
+    var indexes = new ArrayList<TableMeta.IndexInfo>();
+    allIndexes.forEach((indexName, indexColumns) -> {
+      var columnList = List.copyOf(indexColumns.values());
+      var unique = !nonUnique.contains(indexName);
+      indexes.add(
+          new TableMeta.IndexInfo(
+              indexName,
+              columnList,
+              unique && !pk.isEmpty() && columnList.equals(pk),
+              unique,
+              partialIndexes.contains(indexName),
+              expressionIndexes.contains(indexName)));
+    });
+    return new TableMeta(ref, columns, pk, uniqueKeys, leading, indexes);
   }
 }

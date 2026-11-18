@@ -9,7 +9,9 @@ document.querySelectorAll('[data-reorder-url]').forEach((list) => {
   const items = () => [...list.children].filter((c) => c.dataset.id);
   let dragged = null;
 
+  // 주소가 비어 있으면 바로 저장하지 않는다 - 폼 안 목록(검색칸)은 저장 단추를 누를 때 화면 순서대로 보낸다
   const save = () =>
+    list.dataset.reorderUrl &&
     fetch(list.dataset.reorderUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

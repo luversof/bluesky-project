@@ -25,9 +25,11 @@ import net.luversof.GeneralWebTest;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
 import net.luversof.web.dynamiccrud2.admin.service.MenuService;
 import net.luversof.web.dynamiccrud2.admin.service.QueryService;
+import net.luversof.web.dynamiccrud2.admin.service.SearchService;
 import net.luversof.web.dynamiccrud2.domain.ParamSetting;
 import net.luversof.web.dynamiccrud2.domain.ParamSetting.Role;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.SearchOperator;
 import net.luversof.web.dynamiccrud2.repository.ChangeLogRepository;
 import net.luversof.web.dynamiccrud2.repository.DbTableRepository;
 import net.luversof.web.dynamiccrud2.repository.ProjectRepository;
@@ -41,6 +43,7 @@ class MenuPageControllerTest implements GeneralWebTest {
   @Autowired WebApplicationContext context;
   @Autowired MenuService menuService;
   @Autowired QueryService queryService;
+  @Autowired SearchService searchService;
   @Autowired DatabaseAdapterResolver resolver;
   @Autowired DbTableRepository dbTableRepository;
   @Autowired ProjectRepository projectRepository;
@@ -119,7 +122,27 @@ class MenuPageControllerTest implements GeneralWebTest {
 
       mvc.perform(get("/").with(normalUser()))
           .andExpect(status().isOk())
-          .andExpect(content().string(Matchers.containsString("프로젝트 관리")));
+          .andExpect(content().string(Matchers.containsString("프로젝트 관리")))
+          // 관리 권한이 없으면 상단 "관리" 링크도 없다
+          .andExpect(content().string(Matchers.not(Matchers.containsString("href=\"/admin\""))));
+      // 프로젝트 · 메인 메뉴 주소까지만 와도 첫 메뉴로, 없는 메인 메뉴는 404
+      mvc.perform(get("/" + owner.getCode() + "/main").with(normalUser()))
+          .andExpect(status().is3xxRedirection())
+          .andExpect(header().string("Location", base));
+      mvc.perform(get("/" + owner.getCode()).with(normalUser()))
+          .andExpect(header().string("Location", base));
+      mvc.perform(get("/" + owner.getCode() + "/nope").with(normalUser()))
+          .andExpect(status().isNotFound());
+      // 메인 메뉴 · 프로젝트를 숨기면 전체 메뉴에서 아래 메뉴까지 빠지고, 메뉴 주소로는 그대로 열린다
+      menuService.setMainMenuDisplay(mainMenu.getId(), false);
+      mvc.perform(get("/").with(normalUser()))
+          .andExpect(content().string(Matchers.not(Matchers.containsString("프로젝트 관리"))));
+      mvc.perform(get(base).with(normalUser())).andExpect(status().isOk());
+      menuService.setMainMenuDisplay(mainMenu.getId(), true);
+      menuService.setProjectDisplay(owner.getId(), false);
+      mvc.perform(get("/").with(normalUser()))
+          .andExpect(content().string(Matchers.not(Matchers.containsString("프로젝트 관리"))));
+      menuService.setProjectDisplay(owner.getId(), true);
       mvc.perform(get(base).param("s.name", name).with(normalUser()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("전체 0건")));
@@ -131,17 +154,51 @@ class MenuPageControllerTest implements GeneralWebTest {
                   .param("v.code", "r" + rowId.toString().substring(0, 8))
                   .param("v.name", name)
                   .param("v.displayOrder", "3")
+                  .param("v.enableDisplay", "true")
                   .param("v.createdDate", "2026-11-17T10:00:00")
                   .header("HX-Request", "true")
-                  .header("HX-Current-URL", "https://dev.bluesky.local:40125" + base)
                   .with(normalUser()))
           .andExpect(status().isOk())
-          .andExpect(header().string("HX-Redirect", "https://dev.bluesky.local:40125" + base));
+          // 성공하면 새로 고침(스크롤 위치 유지)
+          .andExpect(header().string("HX-Refresh", "true"));
       mvc.perform(get(base).param("s.name", name).with(normalUser()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("전체 1건")))
           .andExpect(content().string(Matchers.containsString("이름")))
           .andExpect(content().string(Matchers.containsString("2026-11-17T10:00")));
+
+      // 메뉴 검색 설정: "이름" 포함 검색칸 + 통합 검색(대소문자 무시). 쿼리를 고치지 않고 WHERE 에 붙는다
+      searchService.save(
+          menuId, Map.of("이름", SearchOperator.CONTAINS), java.util.List.of("이름", "createdDate"));
+      assertThat(
+              searchService.setup(menuService.getMenu(menuId)).candidates().stream()
+                  .filter(c -> c.label().equals("createdDate"))
+                  .findFirst()
+                  .orElseThrow()
+                  .keywordOn())
+          .as("날짜 컬럼은 통합 검색에 넣을 수 없다")
+          .isFalse();
+      var setup = searchService.setup(menuService.getMenu(menuId));
+      assertThat(
+              setup.candidates().stream()
+                  .filter(c -> c.label().equals("id"))
+                  .findFirst()
+                  .orElseThrow()
+                  .operators()
+                  .get(0))
+          .as("PK(uuid)는 같음이 기본")
+          .isEqualTo(SearchOperator.EQUALS);
+      assertThat(setup.candidates().get(0).label()).as("고른 검색칸이 앞").isEqualTo("이름");
+      mvc.perform(get(base).param("f.이름", rowId.toString().substring(0, 13)).with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("통합 검색")))
+          .andExpect(content().string(Matchers.containsString("전체 1건")));
+      mvc.perform(get(base).param("q", name.toUpperCase()).with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("전체 1건")));
+      mvc.perform(get(base).param("q", "%").param("f.이름", name).with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("전체 0건")));
 
       // 수정 폼: 선택한 행 값으로 채운다(별칭 "이름" → 파라미터 name)
       var rowJson = "{\"id\":\"" + rowId + "\",\"이름\":\"" + name + "\"}";
@@ -161,7 +218,39 @@ class MenuPageControllerTest implements GeneralWebTest {
                   .param("rows", rowJson)
                   .param("v.name", name + "-2")
                   .with(normalUser()))
-          .andExpect(header().exists("HX-Redirect"));
+          .andExpect(header().string("HX-Refresh", "true"));
+      // 수정 불가(unique 인 code): 폼은 읽기 전용, 받은 값은 쓰지 않는다. 조회 결과에 원래 값이 없으면 거부
+      queryService.save(
+          menuId,
+          null,
+          QueryKind.UPDATE,
+          "주소 수정",
+          "UPDATE \"Project\" SET code = :code WHERE id = :id",
+          null,
+          null);
+      var codeUpdate =
+          menuService.getMenu(menuId).getQueries().stream()
+              .filter(q -> "주소 수정".equals(q.getName()))
+              .findFirst()
+              .orElseThrow()
+              .getId();
+      mvc.perform(
+              post(base + "/action/" + codeUpdate + "/form")
+                  .param("row", rowJson)
+                  .with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("수정할 수 없는 값입니다")))
+          .andExpect(content().string(Matchers.containsString("readonly")));
+      mvc.perform(
+              post(base + "/action/" + codeUpdate + "/run")
+                  .param("rows", rowJson)
+                  .param("v.code", "changed-by-form")
+                  .with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("원래 값을 알 수 없습니다")));
+      assertThat(projectRepository.findById(rowId).orElseThrow().getCode())
+          .isEqualTo("r" + rowId.toString().substring(0, 8));
+
       mvc.perform(
               get(base)
                   .param("s.name", name + "-2")
@@ -180,7 +269,7 @@ class MenuPageControllerTest implements GeneralWebTest {
 
       mvc.perform(
               post(base + "/action/" + delete + "/run").param("rows", rowJson).with(normalUser()))
-          .andExpect(header().exists("HX-Redirect"));
+          .andExpect(header().string("HX-Refresh", "true"));
       assertThat(projectRepository.findById(rowId)).isEmpty();
       assertThat(changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId))
           .hasSize(3)

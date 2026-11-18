@@ -11,12 +11,15 @@ import javax.sql.DataSource;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterUtils;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.support.JdbcUtils;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter;
+import net.luversof.web.dynamiccrud2.adapter.Filter;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis;
 import net.luversof.web.dynamiccrud2.adapter.TableMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
@@ -42,6 +45,15 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
   }
 
   @Override
+  public String databaseType() {
+    return switch (dialect) {
+      case POSTGRESQL -> "PostgreSQL";
+      case MYSQL -> "MySQL · MariaDB";
+      case MSSQL -> "SQL Server";
+    };
+  }
+
+  @Override
   public List<TableRef> listTables() {
     return withConnection(connection -> JdbcMetadataReader.listTables(connection, dialect));
   }
@@ -61,6 +73,52 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
     QueryText.validate(query, kind);
   }
 
+  /**
+   * 실행하지 않는 검사: PostgreSQL · MySQL 은 EXPLAIN, MSSQL 은 SET NOEXEC ON(컴파일만). 파라미터는 모두 NULL. 예외는
+   * JdbcTemplate 이 Spring 예외로 바꾼다(문법 · 없는 이름 = BadSqlGrammarException).
+   */
+  // shortcut: MSSQL NOEXEC 는 실제 MSSQL 로 아직 확인하지 않았다, MSSQL 연결이 생기면 통합 테스트를 붙일 것
+  @Override
+  public void check(String query) {
+    var sql = QueryText.trimTrailingSemicolon(query);
+    var parsed = NamedParameterUtils.parseSqlStatement(sql);
+    var source = new MapSqlParameterSource();
+    QueryText.parameterNames(sql).forEach(name -> source.addValue(name, null));
+    var positional = NamedParameterUtils.substituteNamedParameters(parsed, source);
+    var count = NamedParameterUtils.buildValueArray(parsed, source, null).length;
+    var template = new JdbcTemplate(dataSource);
+    template.setQueryTimeout(properties.queryTimeoutSeconds());
+    template.execute(
+        (org.springframework.jdbc.core.ConnectionCallback<Void>)
+            connection -> {
+              if (dialect == SqlDialect.MSSQL) {
+                try (var statement = connection.createStatement()) {
+                  statement.execute("SET NOEXEC ON");
+                }
+                try {
+                  runWithNulls(connection, positional, count);
+                } finally {
+                  try (var statement = connection.createStatement()) {
+                    statement.execute("SET NOEXEC OFF");
+                  }
+                }
+              } else {
+                runWithNulls(connection, "EXPLAIN " + positional, count);
+              }
+              return null;
+            });
+  }
+
+  private static void runWithNulls(java.sql.Connection connection, String sql, int count)
+      throws SQLException {
+    try (var statement = connection.prepareStatement(sql)) {
+      for (int i = 1; i <= count; i++) {
+        statement.setNull(i, java.sql.Types.NULL);
+      }
+      statement.execute();
+    }
+  }
+
   @Override
   public List<String> parameterNames(String query) {
     return QueryText.parameterNames(query);
@@ -76,6 +134,7 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
       String query,
       Map<String, Object> params,
       Set<String> emptyOptionalParams,
+      List<Filter> filters,
       Sort sort,
       int page,
       int size) {
@@ -86,19 +145,25 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
     var template = template(limit);
     var total =
         template.queryForObject(
-            ReadQueryRewriter.countQuery(query, emptyOptionalParams), bind, Long.class);
-    var pageQuery = ReadQueryRewriter.pageQuery(query, dialect, emptyOptionalParams, sort);
+            ReadQueryRewriter.countQuery(query, dialect, emptyOptionalParams, filters),
+            bind,
+            Long.class);
+    var pageQuery = ReadQueryRewriter.pageQuery(query, dialect, emptyOptionalParams, filters, sort);
     return template.query(pageQuery, bind, extractor(total == null ? 0 : total));
   }
 
   @Override
   public ReadResult export(
-      String query, Map<String, Object> params, Set<String> emptyOptionalParams, Sort sort) {
+      String query,
+      Map<String, Object> params,
+      Set<String> emptyOptionalParams,
+      List<Filter> filters,
+      Sort sort) {
     var limit = properties.excelMaxRows();
     var bind = new HashMap<String, Object>(params);
     bind.put(ReadQueryRewriter.LIMIT_PARAM, limit);
     bind.put(ReadQueryRewriter.OFFSET_PARAM, 0);
-    var pageQuery = ReadQueryRewriter.pageQuery(query, dialect, emptyOptionalParams, sort);
+    var pageQuery = ReadQueryRewriter.pageQuery(query, dialect, emptyOptionalParams, filters, sort);
     return template(limit).query(pageQuery, bind, extractor(-1));
   }
 

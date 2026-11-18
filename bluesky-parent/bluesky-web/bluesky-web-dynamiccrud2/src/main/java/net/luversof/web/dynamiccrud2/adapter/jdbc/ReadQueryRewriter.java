@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter.Sort;
+import net.luversof.web.dynamiccrud2.adapter.Filter;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.ResultColumn;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.SearchCondition;
@@ -71,6 +72,21 @@ public final class ReadQueryRewriter {
    */
   public static String pageQuery(
       String sql, SqlDialect dialect, Set<String> emptyOptionalParams, Sort sort) {
+    return pageQuery(sql, dialect, emptyOptionalParams, List.of(), sort);
+  }
+
+  /**
+   * 한 페이지 조회 쿼리 + 화면 검색 조건. 해석한 쿼리는 WHERE 에 결과 컬럼의 원래 식으로 AND 해 인덱스를 쓸 수 있게 하고, 해석하지 못한 쿼리는 감싼 바깥에서
+   * 결과 이름으로 거른다.
+   *
+   * @throws IllegalArgumentException 검색 조건을 붙일 수 없을 때(메시지는 화면에 보인다)
+   */
+  public static String pageQuery(
+      String sql,
+      SqlDialect dialect,
+      Set<String> emptyOptionalParams,
+      List<Filter> filters,
+      Sort sort) {
     var source = QueryText.trimTrailingSemicolon(sql);
     var userPaging = QueryText.parameterNames(source).contains(LIMIT_PARAM);
     PlainSelect select;
@@ -78,15 +94,17 @@ public final class ReadQueryRewriter {
       select = parse(source);
     } catch (JSQLParserException | ClassCastException e) {
       if (userPaging) {
+        rejectFiltersOnUserPaging(filters);
         return source;
       }
-      var wrapped = "SELECT * FROM (" + source + ") t";
+      var wrapped = "SELECT * FROM (" + source + ") t" + outerWhere(dialect, filters);
       if (sort != null) {
         wrapped += orderByClause(dialect, sort);
       }
       return wrapped + dialect.pagingSuffix(sort != null);
     }
     dropConditions(select, emptyOptionalParams);
+    applyFilters(select, filters);
     if (sort != null) {
       var element = new OrderByElement();
       element.setExpression(new Column(dialect.quote(sort.label())));
@@ -101,17 +119,118 @@ public final class ReadQueryRewriter {
 
   /** 전체 건수 쿼리. ORDER BY 는 빼고 감싼다(MSSQL 은 서브쿼리 안 ORDER BY 를 막는다). */
   public static String countQuery(String sql, Set<String> emptyOptionalParams) {
+    return countQuery(sql, SqlDialect.POSTGRESQL, emptyOptionalParams, List.of());
+  }
+
+  /** 전체 건수 쿼리 + 화면 검색 조건(pageQuery 와 같은 규칙) */
+  public static String countQuery(
+      String sql, SqlDialect dialect, Set<String> emptyOptionalParams, List<Filter> filters) {
     var source = QueryText.trimTrailingSemicolon(sql);
     String inner;
+    var outer = "";
     try {
       var select = parse(source);
       dropConditions(select, emptyOptionalParams);
+      applyFilters(select, filters);
       select.setOrderByElements(null);
       inner = select.toString();
     } catch (JSQLParserException | ClassCastException e) {
+      if (QueryText.parameterNames(source).contains(LIMIT_PARAM)) {
+        rejectFiltersOnUserPaging(filters);
+      }
       inner = source;
+      outer = outerWhere(dialect, filters);
     }
-    return "SELECT COUNT(*) FROM (" + inner + ") t";
+    return "SELECT COUNT(*) FROM (" + inner + ") t" + outer;
+  }
+
+  /**
+   * 검색 조건을 WHERE 에 AND 로 붙인다. 결과 컬럼이 실제 컬럼(p.name)이면 그 식을 쓴다 - 인덱스를 탈 수 있다. 원래 WHERE 는 괄호로 감싸 OR 와
+   * 섞여도 뜻이 바뀌지 않게 한다.
+   */
+  private static void applyFilters(PlainSelect select, List<Filter> filters) {
+    if (filters == null || filters.isEmpty()) {
+      return;
+    }
+    var expressions = new HashMap<String, String>();
+    for (var item : select.getSelectItems()) {
+      if (item.getExpression() instanceof Column column) {
+        var label =
+            item.getAlias() == null
+                ? unquote(column.getColumnName())
+                : unquote(item.getAlias().getName());
+        expressions.putIfAbsent(label, column.toString());
+      }
+    }
+    var conditions = new ArrayList<String>();
+    for (var filter : filters) {
+      var parts = new ArrayList<String>();
+      for (var label : filter.labels()) {
+        var expression = expressions.get(label);
+        if (expression == null) {
+          throw new IllegalArgumentException(
+              "검색칸 " + label + " 은(는) 조회 결과의 실제 컬럼이 아니어서 쓸 수 없습니다. 메뉴 검색 설정을 다시 저장하세요.");
+        }
+        parts.add(condition(expression, filter));
+      }
+      conditions.add(parts.size() == 1 ? parts.get(0) : "(" + String.join(" OR ", parts) + ")");
+    }
+    var combined = String.join(" AND ", conditions);
+    var where =
+        select.getWhere() == null ? combined : "(" + select.getWhere() + ") AND " + combined;
+    try {
+      select.setWhere(CCJSqlParserUtil.parseCondExpression(where));
+    } catch (JSQLParserException e) {
+      throw new IllegalArgumentException("검색 조건을 붙이지 못했습니다: " + rootMessage(e), e);
+    }
+  }
+
+  /** 해석하지 못한 쿼리: 감싼 바깥(t)에서 결과 이름으로 거른다 */
+  private static String outerWhere(SqlDialect dialect, List<Filter> filters) {
+    if (filters == null || filters.isEmpty()) {
+      return "";
+    }
+    var conditions = new ArrayList<String>();
+    for (var filter : filters) {
+      var parts =
+          filter.labels().stream()
+              .map(label -> condition("t." + dialect.quote(label), filter))
+              .toList();
+      conditions.add(parts.size() == 1 ? parts.get(0) : "(" + String.join(" OR ", parts) + ")");
+    }
+    return " WHERE " + String.join(" AND ", conditions);
+  }
+
+  private static String condition(String expression, Filter filter) {
+    return switch (filter.operator()) {
+      case CONTAINS, STARTS_WITH ->
+          "LOWER("
+              + expression
+              + ") LIKE LOWER(:"
+              + filter.param()
+              + ") ESCAPE '"
+              + Filter.ESCAPE
+              + "'";
+      case EQUALS -> expression + " = :" + filter.param();
+      case RANGE -> {
+        var bounds = new ArrayList<String>();
+        if (filter.param() != null) {
+          bounds.add(expression + " >= :" + filter.param());
+        }
+        if (filter.paramTo() != null) {
+          bounds.add(expression + " <= :" + filter.paramTo());
+        }
+        yield String.join(" AND ", bounds);
+      }
+    };
+  }
+
+  /** 페이징을 직접 한(:_limit) 해석 불가 쿼리는 바깥에서 거르면 쪽 단위로 걸러져 결과가 틀린다 */
+  private static void rejectFiltersOnUserPaging(List<Filter> filters) {
+    if (filters != null && !filters.isEmpty()) {
+      throw new IllegalArgumentException(
+          "페이징을 직접 하는(:_limit) 쿼리는 구조를 해석하지 못해 검색칸을 쓸 수 없습니다. 쿼리의 :파라미터 조건으로 검색하세요.");
+    }
   }
 
   private static PlainSelect parse(String sql) throws JSQLParserException {

@@ -5,16 +5,15 @@
 @param QueryKind kind
 @param QueryInspection inspection
 
-@if(inspection.error() != null)
-	<div class="alert alert-error mb-3" role="alert">${inspection.error()}</div>
-@endif
+@template._components.alert(message = inspection.error(), cssClass = "mb-3")
+@template._components.alert(message = inspection.passed() == null ? null : "✓ " + inspection.passed(), tone = "success", cssClass = "mb-3")
 @for(var warning : inspection.warnings())
-	<div class="alert alert-warning mb-2">${warning}</div>
+	@template._components.alert(message = warning, tone = "warning", cssClass = "mb-2")
 @endfor
 
 @if(!inspection.params().isEmpty())
 	<h3 class="font-semibold mt-4 mb-2">파라미터</h3>
-	<table class="table">
+	<table class="table" aria-label="파라미터">
 		<thead><tr><th>이름</th><th>역할</th><th>필수</th><th>기본값</th><th>조건</th></tr></thead>
 		<tbody>
 			@for(var param : inspection.params())
@@ -50,7 +49,7 @@
 @if(!inspection.columns().isEmpty())
 	<h3 class="font-semibold mt-4 mb-2">결과 컬럼</h3>
 	<p class="hint mb-2">별칭이 있으면 화면 제목으로 씁니다. 다른 테이블 컬럼은 그 테이블의 필드로, 계산 결과는 이 메뉴 테이블의 조회 전용 필드로 저장 때 등록됩니다.</p>
-	<table class="table">
+	<table class="table" aria-label="결과 컬럼">
 		<thead><tr><th>결과 이름</th><th>원래 위치</th><th>종류</th></tr></thead>
 		<tbody>
 			@for(var column : inspection.columns())

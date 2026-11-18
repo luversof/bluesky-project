@@ -1,5 +1,4 @@
 @import java.util.Map
-@import net.luversof.web.dynamiccrud2.domain.InputType
 @import net.luversof.web.dynamiccrud2.domain.QueryKind
 @import net.luversof.web.dynamiccrud2.menu.service.MenuPageService.ActionForm
 
@@ -17,9 +16,7 @@
 			<span class="badge">선택한 행 ${form.rows().size()}개</span>
 		@endif
 	</div>
-	@if(error != null)
-		<div class="alert alert-error" role="alert">${error}</div>
-	@endif
+	@template._components.alert(message = error, cssClass = "")
 	@for(var row : form.rows())
 		<input type="hidden" name="rows" value="${row}" />
 	@endfor
@@ -29,26 +26,15 @@
 	<div class="grid gap-3 sm:grid-cols-2">
 		@for(var field : form.fields())
 			!{var value = inputs.containsKey(field.name()) ? inputs.get(field.name()) : field.value();}
-			<div>
-				<label class="label" for="v-${field.name()}">${field.header()}@if(field.required()) <span class="text-error">*</span>@endif</label>
-				@if(field.inputType() == InputType.TEXTAREA)
-					<textarea id="v-${field.name()}" class="textarea w-full" name="v.${field.name()}" rows="4" maxlength="${field.maxLength()}" required="${field.required()}">${value}</textarea>
-				@elseif(field.inputType() == InputType.BOOLEAN)
-					<select id="v-${field.name()}" class="select w-full" name="v.${field.name()}" required="${field.required()}">
-						<option value="">-</option>
-						<option value="true" selected="${"true".equals(value)}">true</option>
-						<option value="false" selected="${"false".equals(value)}">false</option>
-					</select>
-				@else
-					<input id="v-${field.name()}" class="input w-full" name="v.${field.name()}" value="${value}" required="${field.required()}" maxlength="${field.maxLength()}"
-						type="${field.inputType() == InputType.NUMBER ? "number" : field.inputType() == InputType.DATE ? "date" : field.inputType() == InputType.DATETIME ? "datetime-local" : "text"}"
-						step="${field.inputType() == InputType.NUMBER ? "any" : field.inputType() == InputType.DATETIME ? "1" : null}" />
-				@endif
-			</div>
+			@template._components.field(label = field.header(), forId = "v-" + field.name(), required = field.required() && !field.readonly(),
+				hint = field.readonly() ? "수정할 수 없는 값입니다." : null, content = @`
+				@template._components.typedInput(id = "v-" + field.name(), name = "v." + field.name(), value = value,
+					inputType = field.inputType(), required = field.required(), maxLength = field.maxLength(), readonly = field.readonly())
+			`)
 		@endfor
 	</div>
-	<div class="flex gap-2">
+	@template._components.formActions(content = @`
+		<button type="button" class="btn btn-sm btn-ghost" data-modal-close>닫기</button>
 		<button class="btn btn-sm ${query.getKind() == QueryKind.DELETE ? "btn-error" : "btn-primary"}">실행</button>
-		<button type="button" class="btn btn-sm btn-ghost" onclick="this.closest('#actionPanel').innerHTML = ''">닫기</button>
-	</div>
+	`)
 </form>
