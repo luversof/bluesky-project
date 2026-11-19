@@ -13,7 +13,7 @@ import { BASE2, httpGet } from "./ninja-protocol2.mjs";
 import { MEMBERS_PATH, writeConsensus } from "./archetype-consensus2.mjs";
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; // 로컬 api 자가서명 인증서
-const API = "https://localhost:40135";
+const API = process.env.POE_API_BASE ?? "https://localhost:40135"; // k8s pod 은 values.yaml 에서 지정
 const DIR = path.join(os.homedir(), ".poe-gamedata", "poe2", "ninja");
 const TOP_N = Number(process.argv[2] || 60); // 시뮬레이터 표의 "실빌드 출발" 칸이 비지 않게 — 레이트리밋으로 첫 수집은 ~20분, 이후엔 스냅샷이 바뀔 때만
 // 아키타입당 인원 — 10-14 5 → 8: 재던 사람 전원을 공통 특성(archetype-consensus2)에 쓰므로 한 명이라도 더(레이트리밋과의 타협)

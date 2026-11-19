@@ -17,7 +17,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; // 로컬 api 자가서명 인�
 
 const UA = { headers: { "User-Agent": "Mozilla/5.0", Accept: "*/*" } };
 const NINJA = "https://poe.ninja/poe1";
-const API = "https://localhost:40135";
+const API = process.env.POE_API_BASE ?? "https://localhost:40135"; // k8s pod 은 values.yaml 에서 지정
 const OUT_DIR = path.join(DATA_DIR, "ninja");
 const TOP_N = Number(process.argv[2] || 60); // 시뮬 폼 미리보기·결과 카드의 출발점 커버리지(PoE2 와 같게 60)
 const PER = Number(process.argv[3] || 5);
