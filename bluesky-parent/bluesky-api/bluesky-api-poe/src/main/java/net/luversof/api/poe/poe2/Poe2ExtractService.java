@@ -228,6 +228,7 @@ public class Poe2ExtractService {
                 if (code == 0) {
                   dataService.reload();
                   append("[poe2] 데이터 다시 읽음");
+                  append(poeExtractService.reloadPeer("/api/poe2/reload"));
                 }
               } catch (Exception e) {
                 logger.warn("PoE2 추출 실패", e);
