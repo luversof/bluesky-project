@@ -51,7 +51,6 @@ public class PoeExtractService {
   }
 
   private final Path extractDir;
-  private final String peerReloadUrl;
   private final PoeGemDataService poeGemDataService;
   private final PoeUniqueDataService poeUniqueDataService;
   private final PoeBaseItemDataService poeBaseItemDataService;
@@ -82,7 +81,6 @@ public class PoeExtractService {
 
   public PoeExtractService(
       @Value("${poe.extract-dir:tools/poe-extract}") String extractDir,
-      @Value("${poe.extract.peer-reload-url:}") String peerReloadUrl,
       PoeGemDataService poeGemDataService,
       PoeUniqueDataService poeUniqueDataService,
       PoeBaseItemDataService poeBaseItemDataService,
@@ -104,7 +102,6 @@ public class PoeExtractService {
       PoeDataLoadStamp poeDataLoadStamp,
       PoeMetaPopularityService poeMetaPopularityService) {
     this.extractDir = Path.of(extractDir).toAbsolutePath();
-    this.peerReloadUrl = peerReloadUrl;
     this.poeGemDataService = poeGemDataService;
     this.poeUniqueDataService = poeUniqueDataService;
     this.poeBaseItemDataService = poeBaseItemDataService;
@@ -125,67 +122,6 @@ public class PoeExtractService {
     this.poePobEngineService = poePobEngineService;
     this.poeDataLoadStamp = poeDataLoadStamp;
     this.poeMetaPopularityService = poeMetaPopularityService;
-  }
-
-  /** 갱신된 데이터 파일을 모두 다시 읽는다 — 파이프라인 성공 뒤, 또는 다른 서버가 같은 폴더를 갱신한 뒤(POST /reload). */
-  public void reloadAll() {
-    // 상주 PoB 워커는 기동 시 소스/트리를 메모리에 올려두므로 갱신 후 그대로 두면 낡은 상태로 계산해
-    // 예외 없이 빈 결과를 돌려준다(엔진 벤치 캘리브레이션이 전건 실패한 실사고). 먼저 비운다.
-    poePobEngineService.reset();
-    poeGemDataService.reload();
-    // 베이스를 먼저 재로드해야 고유의 세부 itemClass 조인이 최신 데이터로 계산된다
-    poeBaseItemDataService.reload();
-    poeUniqueDataService.reload();
-    poeTreeGraphService.reload();
-    poeModPoolDataService.reload();
-    // 표시/탐색용 데이터도 함께 — 빠지면 원클릭 갱신 후 옛 풀이 그대로 보인다
-    poeModDataService.reload();
-    poeEldritchDataService.reload();
-    poeFoulbornDataService.reload();
-    poeEssenceDataService.reload();
-    poeBenchDataService.reload();
-    // 최적화기 탐색이 쓰는 데이터도 함께 — 빠지면 갱신해도 재시작 전까지 옛 풀/옛 리그 시드로
-    // 계속 돌아 결과가 조용히 나빠진다(클러스터·무기 제한·문신·거래소 스탯·ninja 시드/엔진 벤치).
-    poeClusterJewelDataService.reload();
-    poeSkillWeaponDataService.reload();
-    poeTattooDataService.reload();
-    poeTradeStatDataService.reload();
-    poeEngineUnmodeledDataService.reload();
-    poeSpectreDataService.reload();
-    poeOptimizeService.reloadNinja();
-    // 시뮬레이터 선택지 순서(같은 ninja-archetypes.json) — 빠져 있어 갱신해도 재시작 전까지 옛 순서였다(10-01)
-    poeMetaPopularityService.reload();
-    // 화면이 "파일은 새것인데 API 는 옛것"을 구분할 수 있게 로드 시각을 남긴다
-    poeDataLoadStamp.markReloaded();
-  }
-
-  /**
-   * 같은 데이터 폴더를 읽는 다른 서버(로컬 PC 의 k8s 파드 — hostPath 로 같은 ~/.poe-gamedata)에 다시 읽으라고 알린다. 파드는 파이프라인을 못
-   * 돌리므로 로컬에서 갱신한 뒤 이걸로 반영한다. 실패해도 로컬 갱신은 성공으로 둔다.
-   *
-   * @return 관리 화면 로그에 남길 한 줄
-   */
-  public String reloadPeer(String path) {
-    if (peerReloadUrl.isBlank()) {
-      return "다른 서버 반영 건너뜀(poe.extract.peer-reload-url 없음)";
-    }
-    String url = peerReloadUrl.replaceAll("/+$", "") + path;
-    try {
-      HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
-      HttpResponse<Void> response =
-          client.send(
-              HttpRequest.newBuilder(URI.create(url))
-                  .timeout(Duration.ofMinutes(2))
-                  .POST(HttpRequest.BodyPublishers.noBody())
-                  .build(),
-              HttpResponse.BodyHandlers.discarding());
-      return response.statusCode() / 100 == 2
-          ? "다른 서버 반영 완료: " + url
-          : "다른 서버 반영 실패(HTTP " + response.statusCode() + "): " + url;
-    } catch (Exception e) {
-      logger.warn("다른 서버 반영 실패: {}", url, e);
-      return "다른 서버 반영 실패(" + e.getMessage() + "): " + url;
-    }
   }
 
   /** 파이프라인 스크립트가 서버 로컬에 존재하는가 (k8s 파드에서는 false) */
@@ -353,8 +289,34 @@ public class PoeExtractService {
                 int exitCode = process.waitFor();
                 if (exitCode == 0) {
                   appendLog("데이터 재로드 중...");
-                  reloadAll();
-                  appendLog(reloadPeer("/api/poe/extract/reload"));
+                  // 상주 PoB 워커는 기동 시 소스/트리를 메모리에 올려두므로 갱신 후 그대로 두면 낡은 상태로 계산해
+                  // 예외 없이 빈 결과를 돌려준다(엔진 벤치 캘리브레이션이 전건 실패한 실사고). 먼저 비운다.
+                  poePobEngineService.reset();
+                  poeGemDataService.reload();
+                  // 베이스를 먼저 재로드해야 고유의 세부 itemClass 조인이 최신 데이터로 계산된다
+                  poeBaseItemDataService.reload();
+                  poeUniqueDataService.reload();
+                  poeTreeGraphService.reload();
+                  poeModPoolDataService.reload();
+                  // 표시/탐색용 데이터도 함께 — 빠지면 원클릭 갱신 후 옛 풀이 그대로 보인다
+                  poeModDataService.reload();
+                  poeEldritchDataService.reload();
+                  poeFoulbornDataService.reload();
+                  poeEssenceDataService.reload();
+                  poeBenchDataService.reload();
+                  // 최적화기 탐색이 쓰는 데이터도 함께 — 빠지면 갱신해도 재시작 전까지 옛 풀/옛 리그 시드로
+                  // 계속 돌아 결과가 조용히 나빠진다(클러스터·무기 제한·문신·거래소 스탯·ninja 시드/엔진 벤치).
+                  poeClusterJewelDataService.reload();
+                  poeSkillWeaponDataService.reload();
+                  poeTattooDataService.reload();
+                  poeTradeStatDataService.reload();
+                  poeEngineUnmodeledDataService.reload();
+                  poeSpectreDataService.reload();
+                  poeOptimizeService.reloadNinja();
+                  // 시뮬레이터 선택지 순서(같은 ninja-archetypes.json) — 빠져 있어 갱신해도 재시작 전까지 옛 순서였다(10-01)
+                  poeMetaPopularityService.reload();
+                  // 화면이 "파일은 새것인데 API 는 옛것"을 구분할 수 있게 로드 시각을 남긴다
+                  poeDataLoadStamp.markReloaded();
                   if (engineUnhealthy) {
                     // 데이터는 반영됐다. 다만 시뮬레이터가 못 돌 상태라 **성공으로 덮으면 안 된다** —
                     // 이걸 숨기면 사용자는 나중에 시뮬을 돌리다 "스펙 임포트 실패"로 처음 알게 된다(타 PC 사고).

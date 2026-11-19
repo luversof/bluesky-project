@@ -64,12 +64,6 @@ public class PoeExtractController {
     return poeExtractService.start(toLatest);
   }
 
-  /** 데이터 파일을 다시 읽는다 — 같은 폴더를 다른 서버(로컬 PC)가 갱신한 뒤 부른다. */
-  @PostMapping("/reload")
-  public void reload() {
-    poeExtractService.reloadAll();
-  }
-
   @GetMapping("/status")
   public ExtractStatus status() {
     return new ExtractStatus(
