@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 class RowSignerTest {
 
-  private final RowSigner signer = new RowSigner();
+  private final RowSigner signer = new RowSigner((String) null);
   private final UUID menuId = UUID.randomUUID();
 
   @Test
@@ -34,8 +34,17 @@ class RowSignerTest {
     assertThatThrownBy(() -> signer.verify(menuId, signed.substring(0, 10) + signed))
         .as("서명 앞을 고친 행")
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> new RowSigner().verify(menuId, signed))
+    assertThatThrownBy(() -> new RowSigner((String) null).verify(menuId, signed))
         .as("다른 키(재시작)")
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void configuredKeySurvivesRestartAndReplicas() {
+    var json = "{\"id\":\"1\"}";
+    var signed = new RowSigner("secret").sign(menuId, json);
+    assertThat(new RowSigner("secret").verify(menuId, signed)).isEqualTo(json);
+    assertThatThrownBy(() -> new RowSigner("other").verify(menuId, signed))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }

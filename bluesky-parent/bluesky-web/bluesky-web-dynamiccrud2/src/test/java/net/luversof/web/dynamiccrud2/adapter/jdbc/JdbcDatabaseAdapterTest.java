@@ -137,6 +137,24 @@ class JdbcDatabaseAdapterTest implements GeneralWebTest {
       assertThat(result.rows())
           .singleElement()
           .satisfies(row -> assertThat(row.get(1)).isEqualTo(name));
+
+      // 행 키로 지금 값 읽기(동시 수정 확인)
+      assertThat(adapter.currentRow(table("Project"), List.of("name"), Map.of("id", id)))
+          .containsExactly(name);
+      assertThat(
+              adapter.currentRow(
+                  table("Project"), List.of("name"), Map.of("id", UUID.randomUUID())))
+          .isNull();
+
+      // 조회는 읽기 전용 트랜잭션 - 조회로 저장된 쓰기 CTE 는 실패하고 행은 그대로
+      var writingRead =
+          "WITH changed AS (UPDATE \"Project\" SET name = 'hacked' WHERE id = :id RETURNING id)"
+              + " SELECT id FROM changed WHERE :_limit > 0";
+      org.assertj.core.api.Assertions.assertThatThrownBy(
+              () -> adapter.sample(writingRead, Map.of("id", id), Set.of(), 10))
+          .isInstanceOf(org.springframework.dao.DataAccessException.class);
+      assertThat(adapter.currentRow(table("Project"), List.of("name"), Map.of("id", id)))
+          .containsExactly(name);
     } finally {
       assertThat(adapter.modify(delete, List.of(Map.of("id", id)))).containsExactly(1);
     }

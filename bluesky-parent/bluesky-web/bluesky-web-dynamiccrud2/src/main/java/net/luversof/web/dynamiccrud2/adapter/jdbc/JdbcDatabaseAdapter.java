@@ -143,23 +143,74 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
     bind.put(ReadQueryRewriter.LIMIT_PARAM, limit);
     bind.put(ReadQueryRewriter.OFFSET_PARAM, Math.max(0, page) * limit);
     var template = template(limit);
-    var total =
-        template.queryForObject(
-            ReadQueryRewriter.countQuery(query, dialect, emptyOptionalParams, filters),
-            bind,
-            Long.class);
+    var countQuery = ReadQueryRewriter.countQuery(query, dialect, emptyOptionalParams, filters);
     var pageQuery = ReadQueryRewriter.pageQuery(query, dialect, emptyOptionalParams, filters, sort);
-    return template.query(pageQuery, bind, extractor(total == null ? 0 : total));
+    return readOnly(() -> {
+      var total = template.queryForObject(countQuery, bind, Long.class);
+      return template.query(pageQuery, bind, extractor(total == null ? 0 : total));
+    });
   }
 
+  // shortcut: MySQL Connector/J 는 useCursorFetch=true 가 없으면 fetchSize 를 무시하고 한 번에 다 받는다, MySQL 메뉴의
+  // 엑셀이 커지면 연결 설정에 넣을 것
+  private static final int EXPORT_FETCH_SIZE = 1000;
+
   @Override
-  public ReadResult export(
+  public void export(
       String query,
       Map<String, Object> params,
       Set<String> emptyOptionalParams,
       List<Filter> filters,
-      Sort sort) {
-    return firstRows(query, params, emptyOptionalParams, filters, sort, properties.excelMaxRows());
+      Sort sort,
+      RowSink sink) {
+    var limit = properties.excelMaxRows();
+    var bind = new HashMap<String, Object>(params);
+    bind.put(ReadQueryRewriter.LIMIT_PARAM, limit);
+    bind.put(ReadQueryRewriter.OFFSET_PARAM, 0);
+    var pageQuery = ReadQueryRewriter.pageQuery(query, dialect, emptyOptionalParams, filters, sort);
+    var template = template(limit);
+    template.getJdbcTemplate().setFetchSize(EXPORT_FETCH_SIZE);
+    readOnly(() ->
+        template.query(
+            pageQuery,
+            bind,
+            (ResultSetExtractor<Void>)
+                rs -> {
+                  forEachRow(rs, sink);
+                  return null;
+                }));
+  }
+
+  @Override
+  public List<Object> currentRow(TableRef table, List<String> columns, Map<String, Object> keys) {
+    var bind = new HashMap<String, Object>();
+    var where = new ArrayList<String>();
+    for (var key : keys.entrySet()) {
+      // 컬럼 이름은 파라미터 이름으로 못 쓸 수 있어(공백 · 한글) 번호로 바인딩한다
+      var param = "k" + bind.size();
+      bind.put(param, key.getValue());
+      where.add(dialect.quote(key.getKey()) + " = :" + param);
+    }
+    var sql =
+        "SELECT "
+            + String.join(", ", columns.stream().map(dialect::quote).toList())
+            + " FROM "
+            + dialect.qualifiedName(table.catalog(), table.schema(), table.name())
+            + " WHERE "
+            + String.join(" AND ", where);
+    var rows = readOnly(() -> template(2).query(sql, bind, extractor(-1))).rows();
+    return rows.size() == 1 ? rows.get(0) : null;
+  }
+
+  /**
+   * 조회는 읽기 전용 트랜잭션에서 돌린다. 조회로 저장된 쓰기 CTE(WITH x AS (DELETE ...) SELECT) · 부작용 함수가 대상 DB 를 바꾸지 못하게
+   * 한다. PostgreSQL · MySQL 드라이버는 Connection.setReadOnly 를 서버에 READ ONLY 로 보낸다.
+   */
+  // shortcut: MSSQL 드라이버는 setReadOnly 를 무시한다, MSSQL 연결이 생기면 읽기 전용 DB 계정으로 막을 것
+  private <T> T readOnly(java.util.function.Supplier<T> work) {
+    var transaction = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
+    transaction.setReadOnly(true);
+    return transaction.execute(status -> work.get());
   }
 
   @Override
@@ -186,26 +237,45 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
     bind.put(ReadQueryRewriter.LIMIT_PARAM, limit);
     bind.put(ReadQueryRewriter.OFFSET_PARAM, 0);
     var pageQuery = ReadQueryRewriter.pageQuery(query, dialect, emptyOptionalParams, filters, sort);
-    return template(limit).query(pageQuery, bind, extractor(-1));
+    return readOnly(() -> template(limit).query(pageQuery, bind, extractor(-1)));
   }
 
   private static ResultSetExtractor<ReadResult> extractor(long total) {
     return rs -> {
-      var meta = rs.getMetaData();
       var labels = new ArrayList<String>();
-      for (int i = 1; i <= meta.getColumnCount(); i++) {
-        labels.add(JdbcUtils.lookupColumnName(meta, i));
-      }
       var rows = new ArrayList<List<Object>>();
-      while (rs.next()) {
-        var row = new ArrayList<Object>(labels.size());
-        for (int i = 1; i <= labels.size(); i++) {
-          row.add(JdbcUtils.getResultSetValue(rs, i));
-        }
-        rows.add(row);
-      }
+      forEachRow(
+          rs,
+          new RowSink() {
+            @Override
+            public void labels(List<String> names) {
+              labels.addAll(names);
+            }
+
+            @Override
+            public void row(List<Object> values) {
+              rows.add(values);
+            }
+          });
       return new ReadResult(labels, rows, total);
     };
+  }
+
+  private static void forEachRow(java.sql.ResultSet rs, RowSink sink) throws SQLException {
+    var meta = rs.getMetaData();
+    var count = meta.getColumnCount();
+    var labels = new ArrayList<String>(count);
+    for (int i = 1; i <= count; i++) {
+      labels.add(JdbcUtils.lookupColumnName(meta, i));
+    }
+    sink.labels(labels);
+    while (rs.next()) {
+      var row = new ArrayList<Object>(count);
+      for (int i = 1; i <= count; i++) {
+        row.add(JdbcUtils.getResultSetValue(rs, i));
+      }
+      sink.row(row);
+    }
   }
 
   @Override

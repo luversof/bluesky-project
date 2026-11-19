@@ -283,8 +283,24 @@ class MenuPageControllerTest implements GeneralWebTest {
               header()
                   .string("Content-Type", Matchers.startsWith("application/vnd.openxmlformats")));
 
+      // 이름을 바꾸기 전에 연 목록의 행(rowJson)으로는 지우지 못한다(동시 수정), 다시 연 목록의 행으로는 지운다
       mvc.perform(
               post(base + "/action/" + delete + "/run").param("rows", rowJson).with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("다른 사람이 이 행을 바꿨습니다")));
+      assertThat(projectRepository.findById(rowId)).isPresent();
+      var freshRowJson =
+          rowSigner.sign(menuId, "{\"id\":\"" + rowId + "\",\"이름\":\"" + name + "-2\"}");
+      // 없는 작업은 404
+      mvc.perform(
+              post(base + "/action/" + UUID.randomUUID() + "/run")
+                  .param("rows", freshRowJson)
+                  .with(normalUser()))
+          .andExpect(status().isNotFound());
+      mvc.perform(
+              post(base + "/action/" + delete + "/run")
+                  .param("rows", freshRowJson)
+                  .with(normalUser()))
           .andExpect(header().string("HX-Refresh", "true"));
       assertThat(projectRepository.findById(rowId)).isEmpty();
       assertThat(changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId))

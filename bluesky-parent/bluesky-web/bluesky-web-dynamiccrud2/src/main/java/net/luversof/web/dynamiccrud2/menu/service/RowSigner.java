@@ -10,8 +10,10 @@ import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import net.luversof.web.dynamiccrud2.config.Dynamiccrud2Properties;
 import net.luversof.web.dynamiccrud2.config.Msg;
 
 /**
@@ -24,12 +26,27 @@ public class RowSigner {
   private static final String ALGORITHM = "HmacSHA256";
   private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
 
-  // shortcut: 키가 메모리에만 있어 재시작 전에 연 목록의 행은 다시 열어야 한다, replica 가 2개 이상이 되면 설정 키로 바꿀 것
   private final SecretKeySpec key;
 
-  public RowSigner() {
-    var bytes = new byte[32];
-    new SecureRandom().nextBytes(bytes);
+  @Autowired
+  public RowSigner(Dynamiccrud2Properties properties) {
+    this(properties.rowSignKey());
+  }
+
+  /** secret 이 비면 메모리에만 있는 임의 키(재시작하면 바뀐다) */
+  RowSigner(String secret) {
+    byte[] bytes;
+    if (secret == null || secret.isBlank()) {
+      bytes = new byte[32];
+      new SecureRandom().nextBytes(bytes);
+    } else {
+      try {
+        bytes =
+            MessageDigest.getInstance("SHA-256").digest(secret.getBytes(StandardCharsets.UTF_8));
+      } catch (GeneralSecurityException e) {
+        throw new IllegalStateException(e);
+      }
+    }
     this.key = new SecretKeySpec(bytes, ALGORITHM);
   }
 

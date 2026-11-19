@@ -63,18 +63,26 @@ public class MenuService {
   public record ProjectNode(Project project, List<MainMenuNode> mainMenus) {}
 
   public List<ProjectNode> tree() {
+    // 프로젝트 · 메인 메뉴마다 묻지 않고 세 번에 읽어 메모리에서 묶는다(사용 화면이 요청마다 부른다)
+    var menus =
+        menuRepository.findAll().stream()
+            .sorted(
+                java.util.Comparator.comparingInt(Menu::getDisplayOrder)
+                    .thenComparing(Menu::getName))
+            .collect(java.util.stream.Collectors.groupingBy(Menu::getMainMenuId));
+    var mainMenus =
+        mainMenuRepository.findAll().stream()
+            .sorted(
+                java.util.Comparator.comparingInt(MainMenu::getDisplayOrder)
+                    .thenComparing(MainMenu::getName))
+            .collect(java.util.stream.Collectors.groupingBy(MainMenu::getProjectId));
     return projectRepository.findAllByOrderByDisplayOrderAscNameAsc().stream()
         .map(project ->
             new ProjectNode(
                 project,
-                mainMenuRepository
-                    .findByProjectIdOrderByDisplayOrderAscNameAsc(project.getId())
-                    .stream()
+                mainMenus.getOrDefault(project.getId(), List.of()).stream()
                     .map(mainMenu ->
-                        new MainMenuNode(
-                            mainMenu,
-                            menuRepository.findByMainMenuIdOrderByDisplayOrderAscNameAsc(
-                                mainMenu.getId())))
+                        new MainMenuNode(mainMenu, menus.getOrDefault(mainMenu.getId(), List.of())))
                     .toList()))
         .toList();
   }

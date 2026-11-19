@@ -24,6 +24,7 @@ import net.luversof.web.dynamiccrud2.adapter.Filter;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.ResultColumn;
+import net.luversof.web.dynamiccrud2.adapter.TableRef;
 import net.luversof.web.dynamiccrud2.adapter.jdbc.ReadQueryRewriter;
 import net.luversof.web.dynamiccrud2.admin.service.FieldService;
 import net.luversof.web.dynamiccrud2.admin.service.MenuService;
@@ -202,8 +203,6 @@ public class MenuPageService {
 
   public record ActionForm(Menu menu, MenuQuery query, List<FormField> fields, List<String> rows) {}
 
-  public record Export(List<String> headers, List<List<Object>> rows) {}
-
   /**
    * 로그인한 사용자가 볼 수 있는 메뉴(표시 켬 + 메뉴 권한)만 남긴 트리. 숨긴 프로젝트 · 메인 메뉴는 아래까지 통째로 빼고, 볼 메뉴가 없는 메인 메뉴 · 프로젝트도
    * 뺀다
@@ -286,8 +285,15 @@ public class MenuPageService {
         queries.stream().filter(q -> q.getKind() == QueryKind.DELETE).toList());
   }
 
-  /** 엑셀: 화면과 같은 검색 · 정렬로 전체(설정 한도까지). 필수 검색 조건이 비면 빈 결과 */
-  public Export export(UUID menuId, SearchInput search, String sort, boolean descending) {
+  /**
+   * 엑셀: 화면과 같은 검색 · 정렬로 전체(설정 한도까지)를 읽는 대로 sink 에 넘긴다(labels 는 화면 열 제목). 필수 검색 조건이 비면 아무것도 넘기지 않는다
+   */
+  public void export(
+      UUID menuId,
+      SearchInput search,
+      String sort,
+      boolean descending,
+      DatabaseAdapter.RowSink sink) {
     var ctx = context(menuId);
     authorizer.checkRead(ctx.menu());
     if (!ctx.menu().isEnableExcel()) {
@@ -296,18 +302,26 @@ public class MenuPageService {
     var bound = bindSearch(ctx, search.params());
     var filtered = bindFilters(ctx, search, bound.params());
     if (bound.message() != null || filtered.message() != null) {
-      return new Export(List.of(), List.of());
+      return;
     }
-    var result =
-        ctx.adapter()
-            .export(
-                ctx.read().getQueryText(),
-                bound.params(),
-                bound.emptyOptional(),
-                filtered.filters(),
-                sortOf(ctx, sort, descending));
-    return new Export(
-        columnsOf(ctx, result.labels()).stream().map(Column::header).toList(), result.rows());
+    ctx.adapter()
+        .export(
+            ctx.read().getQueryText(),
+            bound.params(),
+            bound.emptyOptional(),
+            filtered.filters(),
+            sortOf(ctx, sort, descending),
+            new DatabaseAdapter.RowSink() {
+              @Override
+              public void labels(List<String> labels) {
+                sink.labels(columnsOf(ctx, labels).stream().map(Column::header).toList());
+              }
+
+              @Override
+              public void row(List<Object> values) {
+                sink.row(values);
+              }
+            });
   }
 
   // ---- 작업 ----
@@ -419,6 +433,9 @@ public class MenuPageService {
       binds.add(bind);
       logged.add(log);
     }
+    if (needsRow) {
+      checkUnchanged(ctx, settings, names, rows);
+    }
     var counts = ctx.adapter().modify(query.getQueryText(), binds);
     var affected = java.util.Arrays.stream(counts).sum();
     var changeLog = new ChangeLog();
@@ -449,6 +466,82 @@ public class MenuPageService {
   }
 
   // ---- 내부 ----
+
+  /**
+   * 동시 수정 확인: 고른 행(목록을 열 때 값)이 지금 DB 값과 같은지 본다. 다르면 그 사이 누가 바꾼 것이라 덮어쓰지 않고 목록을 다시 열게 한다. 비교는 목록에
+   * 그대로 실린 메뉴 테이블 컬럼만(계산식 · 다른 테이블 컬럼은 값 모양이 달라 뺀다), 행 키가 메뉴 테이블 컬럼이 아니면 확인하지 않는다.
+   */
+  // shortcut: 확인과 실행이 한 트랜잭션이 아니라 그 사이 몇 ms 의 변경은 못 잡는다, 필요하면 modify 안에서 SELECT ... FOR UPDATE 로 옮길
+  // 것
+  private void checkUnchanged(
+      Context ctx,
+      Map<String, ParamSetting> settings,
+      List<String> names,
+      List<Map<String, String>> rows) {
+    var keyColumns =
+        names.stream().filter(n -> settingOf(settings, n).role() == Role.ROW_KEY).toList();
+    var labels = baseColumnLabels(ctx);
+    if (labels.isEmpty() || !ctx.baseFields().keySet().containsAll(keyColumns)) {
+      return;
+    }
+    var columns = List.copyOf(labels.keySet());
+    var table =
+        new TableRef(
+            ctx.base().getCatalogName(), ctx.base().getSchemaName(), ctx.base().getTableName());
+    for (var row : rows) {
+      var keys = new LinkedHashMap<String, Object>();
+      for (var key : keyColumns) {
+        keys.put(
+            key,
+            ValueConverter.toBindValue(row.get(labelOfParam(ctx, key)), ctx.baseFields().get(key)));
+      }
+      var current = ctx.adapter().currentRow(table, columns, keys);
+      if (current == null) {
+        throw new IllegalArgumentException(Msg.t("menu.action.rowGone"));
+      }
+      for (int i = 0; i < columns.size(); i++) {
+        var label = labels.get(columns.get(i));
+        if (row.containsKey(label)
+            && !java.util.Objects.equals(row.get(label), ValueConverter.toText(current.get(i)))) {
+          throw new IllegalArgumentException(Msg.t("menu.action.rowChanged"));
+        }
+      }
+    }
+  }
+
+  /** 목록에 그대로 실린 메뉴 테이블 컬럼 → 결과 이름. * 는 메뉴 테이블 * 일 때만 컬럼 이름 그대로 */
+  private static Map<String, String> baseColumnLabels(Context ctx) {
+    var columns = ctx.analysis().columns();
+    var baseTable = ctx.base().getTableName();
+    var star =
+        columns.stream()
+            .anyMatch(c ->
+                c.kind() == ResultColumn.Kind.ALL
+                    || (c.kind() == ResultColumn.Kind.ALL_TABLE
+                        && baseTable.equalsIgnoreCase(c.tableName())));
+    var labels = new HashSet<String>();
+    columns.forEach(c -> labels.add(c.label()));
+    var result = new LinkedHashMap<String, String>();
+    for (var field : ctx.base().getFields()) {
+      if (field.isVirtual()) {
+        continue;
+      }
+      var name = field.getColumnName();
+      var explicit =
+          columns.stream()
+              .filter(c -> c.kind() == ResultColumn.Kind.COLUMN)
+              .filter(c -> c.tableName() == null || c.tableName().equalsIgnoreCase(baseTable))
+              .filter(c -> name.equals(c.columnName()))
+              .map(ResultColumn::label)
+              .findFirst();
+      if (explicit.isPresent()) {
+        result.put(name, explicit.get());
+      } else if (star && !labels.contains(name)) {
+        result.put(name, name);
+      }
+    }
+    return result;
+  }
 
   /** 수정 작업에서 바꿀 수 없는 필드인가(입력 작업은 새 행이라 모든 값을 받는다) */
   private static boolean isLocked(MenuQuery query, DbField field) {
@@ -767,7 +860,10 @@ public class MenuPageService {
 
   private static MenuQuery queryOf(Menu menu, UUID queryId) {
     var query =
-        menu.getQueries().stream().filter(q -> q.getId().equals(queryId)).findFirst().orElseThrow();
+        menu.getQueries().stream()
+            .filter(q -> q.getId().equals(queryId))
+            .findFirst()
+            .orElseThrow(MenuPageService::notFound);
     if (query.getKind() == QueryKind.READ) {
       throw new BlueskyException(
           QueryErrorCode.STATEMENT_KIND_MISMATCH, Msg.t("query.kind.modify"), QueryKind.READ);

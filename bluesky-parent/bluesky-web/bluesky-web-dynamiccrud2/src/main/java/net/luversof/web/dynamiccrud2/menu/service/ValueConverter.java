@@ -72,6 +72,18 @@ public final class ValueConverter {
     return String.valueOf(value);
   }
 
+  /** 엑셀 수(double)로 넣어도 자릿수가 그대로인가. 엑셀은 15자리까지만 지켜 큰 ID · 정밀한 numeric 은 글자로 넣어야 한다 */
+  public static boolean fitsExcelNumber(Number number) {
+    if (number instanceof Double || number instanceof Float) {
+      return true;
+    }
+    try {
+      return new BigDecimal(number.toString()).precision() <= 15;
+    } catch (NumberFormatException e) {
+      return false;
+    }
+  }
+
   /** datetime-local("2026-11-17T13:20") · 초 포함 · "2026-11-17 13:20:00" 모두 받는다 */
   private static LocalDateTime toLocalDateTime(String raw) {
     var normalized = raw.replace(' ', 'T');

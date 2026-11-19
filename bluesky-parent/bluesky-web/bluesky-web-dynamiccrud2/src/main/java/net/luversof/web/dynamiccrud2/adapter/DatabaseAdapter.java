@@ -79,13 +79,30 @@ public interface DatabaseAdapter {
       int page,
       int size);
 
-  /** 엑셀 내려받기용 전체 조회(첫 행부터 설정 한도 excelMaxRows 까지, 건수는 세지 않아 total = -1) */
-  ReadResult export(
+  /** 엑셀 내려받기용 전체 조회(첫 행부터 설정 한도 excelMaxRows 까지). 행을 모으지 않고 읽는 대로 sink 에 넘긴다 */
+  void export(
       String query,
       Map<String, Object> params,
       Set<String> emptyOptionalParams,
       List<Filter> filters,
-      Sort sort);
+      Sort sort,
+      RowSink sink);
+
+  /**
+   * 행 키로 메뉴 테이블의 지금 값을 읽는다(동시 수정 확인용).
+   *
+   * @param columns 읽을 컬럼
+   * @param keys 행 키 컬럼 → 값
+   * @return columns 순서의 값, 행이 없거나 하나가 아니면 null
+   */
+  List<Object> currentRow(TableRef table, List<String> columns, Map<String, Object> keys);
+
+  /** 조회 결과를 한 행씩 받는다. labels 가 먼저 한 번 온다 */
+  interface RowSink {
+    void labels(List<String> labels);
+
+    void row(List<Object> values);
+  }
 
   /** 쿼리 화면 시험 실행 · 미리 보기: 첫 행부터 size 행, 건수는 세지 않는다(total = -1, 큰 테이블에서 COUNT 를 피하려고) */
   ReadResult sample(

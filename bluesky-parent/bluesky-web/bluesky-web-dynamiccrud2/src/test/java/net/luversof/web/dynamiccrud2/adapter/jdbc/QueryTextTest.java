@@ -64,7 +64,9 @@ class QueryTextTest {
           "UPDATE t SET a = :a",
           "UPDATE t SET a = :a WHERE b = 1",
           "DELETE FROM t -- WHERE id = :id",
-          "DELETE FROM t WHERE note = ':id'"
+          "DELETE FROM t WHERE note = ':id'",
+          // 서브쿼리의 WHERE 는 문장의 WHERE 가 아니다 - 전체 행이 바뀐다
+          "UPDATE t SET a = (SELECT b FROM u WHERE u.id = :id)"
         }) {
       var kind = sql.startsWith("UPDATE") ? QueryKind.UPDATE : QueryKind.DELETE;
       assertThatThrownBy(() -> QueryText.validate(sql, kind))
@@ -74,6 +76,8 @@ class QueryTextTest {
           .isEqualTo("QueryErrorCode.NO_PARAMETER_IN_MODIFY");
     }
     QueryText.validate("UPDATE t SET a = :a WHERE id = :id", QueryKind.UPDATE);
+    QueryText.validate(
+        "UPDATE t SET a = (SELECT b FROM u WHERE u.id = :b) WHERE id = :id", QueryKind.UPDATE);
     QueryText.validate("delete from t where id in (:ids)", QueryKind.DELETE);
   }
 

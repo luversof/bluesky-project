@@ -78,11 +78,31 @@ public final class QueryText {
 
   /**
    * WHERE 뒤에 파라미터가 하나라도 있는가. SET 에만 파라미터가 있으면(UPDATE t SET a = :a) 전체 행이 바뀌므로 거부 대상이다. 주석 · 문자열 안의
-   * WHERE 는 보지 않는다(stripCommentsAndLiterals 는 길이를 유지해 위치가 원문과 같다).
+   * WHERE 는 보지 않는다(stripCommentsAndLiterals 는 길이를 유지해 위치가 원문과 같다). 괄호 안(SET 의 서브쿼리 등) WHERE 는 문장의
+   * WHERE 가 아니므로 괄호 밖 WHERE 만 본다.
    */
   private static boolean whereHasParameter(String sql) {
-    var matcher = WHERE.matcher(stripCommentsAndLiterals(sql));
-    return matcher.find() && !parameterNames(sql.substring(matcher.end())).isEmpty();
+    var stripped = stripCommentsAndLiterals(sql);
+    var matcher = WHERE.matcher(stripped);
+    while (matcher.find()) {
+      if (depthAt(stripped, matcher.start()) == 0) {
+        return !parameterNames(sql.substring(matcher.end())).isEmpty();
+      }
+    }
+    return false;
+  }
+
+  private static int depthAt(String stripped, int position) {
+    var depth = 0;
+    for (int i = 0; i < position; i++) {
+      var c = stripped.charAt(i);
+      if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+      }
+    }
+    return depth;
   }
 
   /** 끝의 세미콜론 하나를 뺀다(실행 · 감싸기 전에). */

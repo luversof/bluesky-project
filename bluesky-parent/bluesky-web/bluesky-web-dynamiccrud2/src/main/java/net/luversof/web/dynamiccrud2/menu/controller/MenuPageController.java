@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.apache.poi.ss.SpreadsheetVersion;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import jakarta.servlet.http.HttpServletResponse;
+import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
 import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.menu.service.MenuPageService;
@@ -199,35 +202,55 @@ public class MenuPageController {
       HttpServletResponse response)
       throws IOException {
     var path = useService.resolve(project, mainMenu, menu);
-    var export = useService.export(path.menu().getId(), searchInput(query), sort, desc);
-    response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    response.setHeader(
-        "Content-Disposition",
-        "attachment; filename*=UTF-8''"
-            + URLEncoder.encode(
-                path.project().getCode() + "-" + path.menu().getCode() + ".xlsx",
-                StandardCharsets.UTF_8));
+    // 행은 SXSSF 가 임시 파일로 내보내고 응답 헤더 · 본문은 다 읽은 뒤에 쓴다 - 읽다가 실패하면 첨부 파일이 아닌 오류 화면이 나간다
     try (var workbook = new SXSSFWorkbook(100)) {
       var sheet = workbook.createSheet("data");
-      var header = sheet.createRow(0);
-      for (int i = 0; i < export.headers().size(); i++) {
-        header.createCell(i).setCellValue(export.headers().get(i));
-      }
-      for (int r = 0; r < export.rows().size(); r++) {
-        var row = sheet.createRow(r + 1);
-        var values = export.rows().get(r);
-        for (int c = 0; c < values.size(); c++) {
-          var value = values.get(c);
-          var cell = row.createCell(c);
-          if (value instanceof Number number) {
-            cell.setCellValue(number.doubleValue());
-          } else {
-            cell.setCellValue(ValueConverter.toText(value));
-          }
-        }
-      }
+      useService.export(
+          path.menu().getId(),
+          searchInput(query),
+          sort,
+          desc,
+          new DatabaseAdapter.RowSink() {
+            private int next;
+
+            @Override
+            public void labels(List<String> labels) {
+              writeRow(sheet.createRow(next++), List.<Object>copyOf(labels));
+            }
+
+            @Override
+            public void row(List<Object> values) {
+              writeRow(sheet.createRow(next++), values);
+            }
+          });
+      response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      response.setHeader(
+          "Content-Disposition",
+          "attachment; filename*=UTF-8''"
+              + URLEncoder.encode(
+                  path.project().getCode() + "-" + path.menu().getCode() + ".xlsx",
+                  StandardCharsets.UTF_8));
       workbook.write(response.getOutputStream());
       workbook.dispose();
+    }
+  }
+
+  private static final int EXCEL_MAX_TEXT = SpreadsheetVersion.EXCEL2007.getMaxTextLength();
+
+  /** 수는 엑셀 수로(15자리를 넘으면 엑셀이 끝자리를 버려 글자로), 글자는 엑셀 칸 한도까지 */
+  private static void writeRow(Row row, List<Object> values) {
+    for (int c = 0; c < values.size(); c++) {
+      var value = values.get(c);
+      var cell = row.createCell(c);
+      if (value instanceof Number number && ValueConverter.fitsExcelNumber(number)) {
+        cell.setCellValue(number.doubleValue());
+      } else {
+        var text = ValueConverter.toText(value);
+        cell.setCellValue(
+            text != null && text.length() > EXCEL_MAX_TEXT
+                ? text.substring(0, EXCEL_MAX_TEXT)
+                : text);
+      }
     }
   }
 
