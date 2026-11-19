@@ -1,10 +1,11 @@
 <%-- 이름 옆 삭제 단추(확인 후 POST). 휴지통 SVG(currentColor, 눈 아이콘과 같은 선 굵기) - × 는 취소 · 빼기에 쓴다 --%>
+@import static net.luversof.web.dynamiccrud2.config.Msg.t
 @param String action
 @param String label
 @param String confirm
 
 <form method="post" action="${action}" class="inline-flex">
-	<button class="icon-btn icon-btn-danger" aria-label="${label}" title="삭제" data-confirm="${confirm}">
+	<button class="icon-btn icon-btn-danger" aria-label="${label}" title="${t("common.delete")}" data-confirm="${confirm}">
 		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 			<path d="M3 6h18" />
 			<path d="M8 6V4h8v2" />

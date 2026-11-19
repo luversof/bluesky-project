@@ -90,6 +90,97 @@ class AdminServiceTest implements GeneralWebTest {
     }
   }
 
+  /** 메뉴 복사(쿼리 · 설정 그대로, 숨김, 쿼리 id 새로) + 조회 쿼리 검사의 결과 미리 보기 */
+  @Test
+  void copyMenuAndPreviewRead() {
+    var preexisting = existingTableId("MainMenu");
+    var project =
+        menuService.saveProject(
+            null,
+            "t" + UUID.randomUUID().toString().substring(0, 8),
+            "svc-test-" + UUID.randomUUID());
+    var mainMenu = menuService.saveMainMenu(null, project.getId(), "main", "main");
+    var menuIds = new ArrayList<UUID>();
+    try {
+      var source =
+          menuService.createMenu(mainMenu.getId(), "src", "src", "dynamiccrud2", table("MainMenu"));
+      menuIds.add(source.getId());
+      source =
+          queryService.save(
+              source.getId(),
+              null,
+              QueryKind.UPDATE,
+              "이름만 수정",
+              "UPDATE public.\"MainMenu\" SET name = :name WHERE id = :id",
+              null,
+              "ROLE_ADMIN");
+
+      var copy = menuService.copyMenu(source.getId(), "src-copy", "복사본");
+      menuIds.add(copy.getId());
+      assertThat(copy.isEnableDisplay()).isFalse();
+      assertThat(copy.getDbTableId()).isEqualTo(source.getDbTableId());
+      assertThat(copy.getDisplayOrder()).isGreaterThan(source.getDisplayOrder());
+      assertThat(copy.getQueries())
+          .extracting(q -> q.getKind() + " " + q.getName() + " " + q.getAuthority())
+          .containsExactlyInAnyOrderElementsOf(
+              source.getQueries().stream()
+                  .map(q -> q.getKind() + " " + q.getName() + " " + q.getAuthority())
+                  .toList());
+      var sourceQueryIds = source.getQueries().stream().map(q -> q.getId()).toList();
+      assertThat(copy.getQueries()).noneMatch(q -> sourceQueryIds.contains(q.getId()));
+      // 원래 메뉴는 그대로
+      assertThat(menuService.getMenu(source.getId()).getQueries()).hasSize(2);
+      var sourceId = source.getId();
+      assertThatThrownBy(() -> menuService.copyMenu(sourceId, "src", "겹침"))
+          .isInstanceOf(BlueskyException.class);
+
+      // 미리 보기: 방금 만든 메인 메뉴 행이 있어 비지 않고, 최대 PREVIEW_ROWS 행
+      var read =
+          copy.getQueries().stream()
+              .filter(q -> q.getKind() == QueryKind.READ)
+              .findFirst()
+              .orElseThrow();
+      var inspection = queryService.inspect(copy, QueryKind.READ, read.getQueryText(), null);
+      assertThat(inspection.error()).isNull();
+      assertThat(inspection.preview()).isNotNull();
+      assertThat(inspection.preview().labels()).contains("id", "name");
+      // 결과 컬럼마다 필드 설정 연결(제목 · 형식 · 필드 관리 링크)
+      assertThat(inspection.views())
+          .filteredOn(v -> v.label().equals("name"))
+          .singleElement()
+          .satisfies(v -> {
+            assertThat(v.tableId()).isEqualTo(copy.getDbTableId());
+            assertThat(v.tableName()).isEqualTo("MainMenu");
+          });
+      assertThat(inspection.fieldTables())
+          .singleElement()
+          .satisfies(ft -> assertThat(ft.id()).isEqualTo(copy.getDbTableId()));
+      // 미리 보기는 건수를 세지 않는다(큰 테이블 COUNT 회피)
+      assertThat(inspection.preview().total()).isEqualTo(-1);
+      assertThat(inspection.preview().rows())
+          .isNotEmpty()
+          .hasSizeLessThanOrEqualTo(QueryService.PREVIEW_ROWS);
+      // 입력 · 수정 · 삭제는 실행하지 않으므로 미리 보기 없음
+      assertThat(
+              queryService
+                  .inspect(
+                      copy,
+                      QueryKind.UPDATE,
+                      "UPDATE public.\"MainMenu\" SET name = :name WHERE id = :id",
+                      null)
+                  .preview())
+          .isNull();
+    } finally {
+      menuIds.forEach(menuService::deleteMenu);
+      var id = existingTableId("MainMenu");
+      if (id != null && preexisting == null) {
+        dbTableRepository.deleteById(id);
+      }
+      menuService.deleteMainMenu(mainMenu.getId());
+      menuService.deleteProject(project.getId());
+    }
+  }
+
   private void dropField(UUID dbTableId, String columnName) {
     var dbTable = fieldService.get(dbTableId);
     dbTable.getFields().removeIf(f -> f.getColumnName().equals(columnName));

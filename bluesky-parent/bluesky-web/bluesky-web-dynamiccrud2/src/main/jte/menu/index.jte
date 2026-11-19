@@ -1,11 +1,12 @@
+@import static net.luversof.web.dynamiccrud2.config.Msg.t
 @import java.util.List
 @import net.luversof.web.dynamiccrud2.admin.service.MenuService.ProjectNode
 
 @param List<ProjectNode> tree
 
-@template._layout.layout(title = "메뉴", content = @`
+@template._layout.layout(title = t("menu.index.title"), content = @`
 	@if(tree.isEmpty())
-		@template._components.emptyState(message = "쓸 수 있는 메뉴가 없습니다.")
+		@template._components.emptyState(message = t("menu.index.empty"))
 	@endif
 	<div class="grid gap-4 sm:grid-cols-2">
 		@for(var project : tree)

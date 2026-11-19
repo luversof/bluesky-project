@@ -14,14 +14,15 @@ import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.ResultColumn;
 import net.luversof.web.dynamiccrud2.adapter.TableMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
-import net.luversof.web.dynamiccrud2.domain.DbField;
+import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.domain.DbTable;
 import net.luversof.web.dynamiccrud2.domain.InputType;
 import net.luversof.web.dynamiccrud2.domain.Menu;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
 import net.luversof.web.dynamiccrud2.domain.SearchOperator;
 import net.luversof.web.dynamiccrud2.domain.SearchSettings;
-import net.luversof.web.dynamiccrud2.repository.DbTableRepository;
+import net.luversof.web.dynamiccrud2.domain.SettingLog.Action;
+import net.luversof.web.dynamiccrud2.domain.SettingLog.Target;
 import net.luversof.web.dynamiccrud2.repository.MenuRepository;
 
 /**
@@ -33,18 +34,18 @@ public class SearchService {
 
   private final MenuRepository menuRepository;
   private final FieldService fieldService;
-  private final DbTableRepository dbTableRepository;
   private final DatabaseAdapterResolver resolver;
+  private final SettingLogService settingLog;
 
   public SearchService(
       MenuRepository menuRepository,
       FieldService fieldService,
-      DbTableRepository dbTableRepository,
-      DatabaseAdapterResolver resolver) {
+      DatabaseAdapterResolver resolver,
+      SettingLogService settingLog) {
     this.menuRepository = menuRepository;
     this.fieldService = fieldService;
-    this.dbTableRepository = dbTableRepository;
     this.resolver = resolver;
+    this.settingLog = settingLog;
   }
 
   /**
@@ -112,12 +113,12 @@ public class SearchService {
     readIndexes(adapter, base, base.getSchemaName(), base.getTableName(), tables, metas);
     var candidates = new ArrayList<Candidate>();
     var seen = new java.util.HashSet<String>();
-    var otherTables = new HashMap<String, Map<String, DbField>>();
+    var fields = fieldService.lookup(base);
     for (var column : analysis.columns()) {
       if (column.kind() != ResultColumn.Kind.COLUMN || !seen.add(column.label())) {
         continue;
       }
-      var field = fieldOf(base, column, otherTables);
+      var field = fields.fieldOf(column);
       var inputType =
           field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType();
       var meta =
@@ -143,7 +144,7 @@ public class SearchService {
       candidates.add(
           new Candidate(
               column.label(),
-              column.alias() != null ? column.alias() : headerOf(field, column.label()),
+              FieldService.headerOf(field, column.alias(), column.label()),
               inputType,
               List.copyOf(operators),
               operator != null,
@@ -189,7 +190,7 @@ public class SearchService {
       tables.put(key, new TableIndexes(title, meta.indexes(), null));
       return meta;
     } catch (RuntimeException e) {
-      tables.put(key, new TableIndexes(title, List.of(), "인덱스 정보를 읽지 못했습니다"));
+      tables.put(key, new TableIndexes(title, List.of(), Msg.t("index.readFailed")));
       return null;
     }
   }
@@ -200,13 +201,13 @@ public class SearchService {
    */
   static IndexUse indexUse(TableMeta meta, String column, SearchOperator operator) {
     if (operator == SearchOperator.CONTAINS) {
-      return new IndexUse(false, "부분 일치(%값%)는 인덱스를 못 씀");
+      return new IndexUse(false, Msg.t("indexUse.contains"));
     }
     if (operator == SearchOperator.STARTS_WITH) {
-      return new IndexUse(false, "앞부분 일치는 대소문자 무시 비교라 인덱스를 못 씀");
+      return new IndexUse(false, Msg.t("indexUse.startsWith"));
     }
     if (meta == null) {
-      return new IndexUse(false, "인덱스 정보를 읽지 못함");
+      return new IndexUse(false, Msg.t("indexUse.unknown"));
     }
     String later = null;
     for (var index : meta.indexes()) {
@@ -215,15 +216,15 @@ public class SearchService {
       }
       if (index.columns().get(0).equals(column)) {
         return new IndexUse(
-            true, "인덱스 " + index.name() + (index.partial() ? " 사용(부분 인덱스 - 조건에 맞는 행만)" : " 사용"));
+            true, Msg.t(index.partial() ? "indexUse.okPartial" : "indexUse.ok", index.name()));
       }
       if (later == null && index.columns().contains(column)) {
         later = index.name();
       }
     }
     return later == null
-        ? new IndexUse(false, "인덱스 없음 · 큰 테이블에서 느림")
-        : new IndexUse(false, "인덱스 " + later + " 의 첫 컬럼이 아니라 단독으로는 못 씀");
+        ? new IndexUse(false, Msg.t("indexUse.none"))
+        : new IndexUse(false, Msg.t("indexUse.notLeading", later));
   }
 
   /**
@@ -257,47 +258,21 @@ public class SearchService {
       }
     }
     var settings = new SearchSettings(fields, keywordLabels);
+    var before =
+        SettingLogService.snapshot(
+            menu.getSearchSettings() == null
+                ? SearchSettings.EMPTY
+                : SearchSettings.of(menu.getSearchSettings()));
     menu.setSearchSettings(settings.isEmpty() ? null : settings.toMap());
     menuRepository.save(menu);
-  }
-
-  /** 결과 컬럼의 필드: 메뉴 테이블이면 그 필드, 조인한 다른 테이블이면 등록된 그 테이블 필드 */
-  private DbField fieldOf(
-      DbTable base, ResultColumn column, Map<String, Map<String, DbField>> otherTables) {
-    if (column.tableName() == null || column.tableName().equalsIgnoreCase(base.getTableName())) {
-      return base.getFields().stream()
-          .filter(f -> f.getColumnName().equals(column.columnName()))
-          .findFirst()
-          .orElse(null);
-    }
-    return otherTables
-        .computeIfAbsent(
-            column.tableName(),
-            table -> {
-              var map = new HashMap<String, DbField>();
-              dbTableRepository
-                  .findIdByLocation(
-                      base.getConnectionName(),
-                      base.getCatalogName(),
-                      base.schemaOf(column.tableSchema()),
-                      table)
-                  .flatMap(dbTableRepository::findById)
-                  .ifPresent(t -> t.getFields().forEach(f -> map.put(f.getColumnName(), f)));
-              return map;
-            })
-        .get(column.columnName());
-  }
-
-  private static String headerOf(DbField field, String fallback) {
-    if (field == null) {
-      return fallback;
-    }
-    if (field.getLabel() != null && !field.getLabel().isBlank()) {
-      return field.getLabel();
-    }
-    if (field.getDbComment() != null && !field.getDbComment().isBlank()) {
-      return field.getDbComment();
-    }
-    return field.getColumnName();
+    settingLog.record(
+        Target.SEARCH,
+        Action.UPDATE,
+        menuId,
+        menu.getName(),
+        null,
+        menuId,
+        before,
+        SettingLogService.snapshot(settings));
   }
 }

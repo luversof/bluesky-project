@@ -126,3 +126,21 @@ CREATE TABLE "ChangeLog" (
 );
 
 CREATE INDEX idx_changeLog_menuId_createdDate ON "ChangeLog" ("menu_id", "createdDate");
+
+-- 설정 변경 이력(관리 화면). changes = {항목: {"before", "after"}} 바뀐 항목만. 필드 변경은 targetId = DbTable id(메뉴 · 프로젝트 없음)
+CREATE TABLE "SettingLog" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"project_id" UUID,
+	"menu_id" UUID,
+	"target" VARCHAR(20) NOT NULL,
+	"targetId" UUID,
+	"targetName" VARCHAR(200),
+	"action" VARCHAR(20) NOT NULL,
+	"username" VARCHAR(100) NOT NULL,
+	"changes" JSONB,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE INDEX idx_settingLog_menuId_createdDate ON "SettingLog" ("menu_id", "createdDate");
+CREATE INDEX idx_settingLog_projectId_createdDate ON "SettingLog" ("project_id", "createdDate");
+CREATE INDEX idx_settingLog_targetId_createdDate ON "SettingLog" ("targetId", "createdDate");

@@ -29,6 +29,7 @@ import net.luversof.web.dynamiccrud2.admin.service.FieldService;
 import net.luversof.web.dynamiccrud2.admin.service.MenuService;
 import net.luversof.web.dynamiccrud2.admin.service.MenuService.ProjectNode;
 import net.luversof.web.dynamiccrud2.admin.service.QueryService;
+import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.domain.ChangeLog;
 import net.luversof.web.dynamiccrud2.domain.DbField;
 import net.luversof.web.dynamiccrud2.domain.DbTable;
@@ -43,7 +44,6 @@ import net.luversof.web.dynamiccrud2.domain.QueryKind;
 import net.luversof.web.dynamiccrud2.domain.SearchOperator;
 import net.luversof.web.dynamiccrud2.domain.SearchSettings;
 import net.luversof.web.dynamiccrud2.repository.ChangeLogRepository;
-import net.luversof.web.dynamiccrud2.repository.DbTableRepository;
 import net.luversof.web.dynamiccrud2.repository.MainMenuRepository;
 import net.luversof.web.dynamiccrud2.repository.MenuRepository;
 import net.luversof.web.dynamiccrud2.repository.ProjectRepository;
@@ -66,7 +66,6 @@ public class MenuPageService {
 
   private final MenuService menuService;
   private final FieldService fieldService;
-  private final DbTableRepository dbTableRepository;
   private final ChangeLogRepository changeLogRepository;
   private final DatabaseAdapterResolver resolver;
   private final MenuAuthorizer authorizer;
@@ -79,7 +78,6 @@ public class MenuPageService {
   public MenuPageService(
       MenuService menuService,
       FieldService fieldService,
-      DbTableRepository dbTableRepository,
       ChangeLogRepository changeLogRepository,
       DatabaseAdapterResolver resolver,
       MenuAuthorizer authorizer,
@@ -90,7 +88,6 @@ public class MenuPageService {
       RowSigner rowSigner) {
     this.menuService = menuService;
     this.fieldService = fieldService;
-    this.dbTableRepository = dbTableRepository;
     this.changeLogRepository = changeLogRepository;
     this.resolver = resolver;
     this.authorizer = authorizer;
@@ -141,7 +138,10 @@ public class MenuPageService {
 
   // ---- 화면 모델 ----
 
-  public record Column(String label, String header, boolean sortable) {}
+  /**
+   * @param inputType 필드 입력 형식 - 목록 칸 표시 형식(_components/cellValue)에 쓴다
+   */
+  public record Column(String label, String header, boolean sortable, InputType inputType) {}
 
   public record SearchField(
       String name, String header, InputType inputType, boolean required, String value) {}
@@ -252,7 +252,7 @@ public class MenuPageService {
           rows.add(rowOf(ctx.menu().getId(), result.labels(), values));
         }
       } catch (DataAccessException e) {
-        message = "조회 실패: " + firstLine(e.getMostSpecificCause().getMessage());
+        message = Msg.t("menu.page.readFailed", firstLine(e.getMostSpecificCause().getMessage()));
       } catch (IllegalArgumentException e) {
         // 검색 조건을 붙일 수 없는 쿼리 등(ReadQueryRewriter)
         message = e.getMessage();
@@ -367,7 +367,7 @@ public class MenuPageService {
       rowJsons.forEach(json -> rows.add(parseRow(ctx.menu().getId(), json)));
     }
     if (needsRow && rows.isEmpty()) {
-      throw new IllegalArgumentException("작업할 행을 선택하세요.");
+      throw new IllegalArgumentException(Msg.t("menu.action.selectRows"));
     }
     if (!needsRow) {
       rows.clear();
@@ -375,7 +375,16 @@ public class MenuPageService {
     }
     var binds = new ArrayList<Map<String, Object>>();
     var logged = new ArrayList<Map<String, String>>();
+    // 변경 이력의 전후 비교: 고른 행(서명 확인한 목록 값 = 사용자가 보고 바꾼 값)에서 파라미터별 바뀌기 전 값과 행 전체를 남긴다
+    var before = new ArrayList<Map<String, String>>();
+    var beforeRows = new ArrayList<Map<String, String>>();
     for (var row : rows) {
+      if (needsRow) {
+        var previous = new LinkedHashMap<String, String>();
+        names.forEach(name -> previous.put(name, row.get(labelOfParam(ctx, name))));
+        before.add(previous);
+        beforeRows.add(new LinkedHashMap<>(row));
+      }
       var bind = new HashMap<String, Object>();
       var log = new LinkedHashMap<String, String>();
       for (var name : names) {
@@ -385,14 +394,14 @@ public class MenuPageService {
         if (setting.role() == Role.ROW_KEY) {
           raw = row.get(labelOfParam(ctx, name));
           if (raw == null || raw.isEmpty()) {
-            throw new IllegalArgumentException("선택한 행에서 " + name + " 값을 찾지 못했습니다.");
+            throw new IllegalArgumentException(Msg.t("menu.action.rowValueMissing", name));
           }
         } else if (isLocked(query, field)) {
           // 수정 불가 컬럼은 받은 값을 쓰지 않고 선택한 행의 원래 값을 그대로 넣는다(화면 조작으로 바꾸지 못하게)
           raw = row.get(labelOfParam(ctx, name));
           if (raw == null) {
             throw new IllegalArgumentException(
-                headerOf(field, name) + " 은(는) 수정할 수 없는 값인데 조회 결과에 없어 원래 값을 알 수 없습니다.");
+                Msg.t("menu.action.lockedMissing", headerOf(field, name)));
           }
         } else {
           raw = inputs == null ? null : inputs.get(name);
@@ -400,7 +409,8 @@ public class MenuPageService {
             raw = setting.defaultValue();
           }
           if ((raw == null || raw.isEmpty()) && setting.required()) {
-            throw new IllegalArgumentException(headerOf(field, name) + " 값을 입력하세요.");
+            throw new IllegalArgumentException(
+                Msg.t("menu.action.required", headerOf(field, name)));
           }
         }
         bind.put(name, ValueConverter.toBindValue(raw, field));
@@ -415,7 +425,12 @@ public class MenuPageService {
     changeLog.setMenuId(ctx.menu().getId());
     changeLog.setMenuQueryId(query.getId());
     changeLog.setUsername(currentUsername());
-    changeLog.setBindValues(Map.of("rows", logged));
+    // rows = 넣은 값(파라미터별), before = 그 파라미터의 바뀌기 전 값, beforeRows = 고른 행 전체(목록 제목별). 입력은 고른 행이 없어 rows
+    // 만
+    changeLog.setBindValues(
+        needsRow
+            ? Map.of("rows", logged, "before", before, "beforeRows", beforeRows)
+            : Map.of("rows", logged));
     changeLog.setAffectedRows(affected);
     try {
       changeLogRepository.save(changeLog);
@@ -447,7 +462,7 @@ public class MenuPageService {
       DatabaseAdapter adapter,
       ReadAnalysis analysis,
       Map<String, DbField> baseFields,
-      Map<String, Map<String, DbField>> otherFields) {}
+      FieldService.Lookup fields) {}
 
   private record Bound(
       Map<String, Object> params,
@@ -477,7 +492,7 @@ public class MenuPageService {
         adapter,
         adapter.analyzeRead(read.getQueryText()),
         baseFields,
-        new HashMap<>());
+        fieldService.lookup(base));
   }
 
   private Bound bindSearch(Context ctx, Map<String, String> search) {
@@ -518,7 +533,7 @@ public class MenuPageService {
       }
     }
     if (!missing.isEmpty()) {
-      message = "필수 검색 조건을 입력하세요: " + String.join(", ", missing);
+      message = Msg.t("menu.page.requiredSearch", String.join(", ", missing));
     }
     return new Bound(params, empty, fields, message);
   }
@@ -558,7 +573,7 @@ public class MenuPageService {
       fields.add(
           new FilterField(
               item.label(),
-              column.alias() != null ? column.alias() : headerOf(field, item.label()),
+              FieldService.headerOf(field, column.alias(), item.label()),
               inputType,
               operator,
               value,
@@ -615,7 +630,7 @@ public class MenuPageService {
         continue;
       }
       keywordLabels.add(label);
-      keywordHeaders.add(column.alias() != null ? column.alias() : headerOf(field, label));
+      keywordHeaders.add(FieldService.headerOf(field, column.alias(), label));
     }
     KeywordBox keyword = null;
     if (!keywordLabels.isEmpty()) {
@@ -689,45 +704,28 @@ public class MenuPageService {
     for (var label : labels) {
       var column = byLabel.get(label);
       var field = column == null ? ctx.baseFields().get(label) : fieldOf(ctx, column);
-      var header =
-          column != null && column.alias() != null ? column.alias() : headerOf(field, label);
+      var header = FieldService.headerOf(field, column == null ? null : column.alias(), label);
       var sortable =
           ctx.analysis().parsed()
               && field != null
               && field.isSortable()
               && !field.isVirtual()
               && (column == null || column.kind() == ResultColumn.Kind.COLUMN);
-      columns.add(new Column(label, header, sortable));
+      columns.add(
+          new Column(
+              label,
+              header,
+              sortable,
+              field == null || field.getInputType() == null
+                  ? InputType.TEXT
+                  : field.getInputType()));
     }
     return columns;
   }
 
   /** 결과 컬럼의 필드: 메뉴 테이블이면 그 필드, 조인한 다른 테이블이면 그 테이블 필드, 계산 결과면 가상 필드 */
-  private DbField fieldOf(Context ctx, ResultColumn column) {
-    if (column.kind() == ResultColumn.Kind.EXPRESSION) {
-      return ctx.baseFields().get(column.label());
-    }
-    if (column.tableName() == null
-        || column.tableName().equalsIgnoreCase(ctx.base().getTableName())) {
-      return ctx.baseFields().get(column.columnName());
-    }
-    var fields =
-        ctx.otherFields()
-            .computeIfAbsent(
-                column.tableName(),
-                table -> {
-                  var map = new HashMap<String, DbField>();
-                  dbTableRepository
-                      .findIdByLocation(
-                          ctx.base().getConnectionName(),
-                          ctx.base().getCatalogName(),
-                          ctx.base().schemaOf(column.tableSchema()),
-                          table)
-                      .flatMap(dbTableRepository::findById)
-                      .ifPresent(t -> t.getFields().forEach(f -> map.put(f.getColumnName(), f)));
-                  return map;
-                });
-    return fields.get(column.columnName());
+  private static DbField fieldOf(Context ctx, ResultColumn column) {
+    return ctx.fields().fieldOf(column);
   }
 
   /** 파라미터 이름 → 조회 결과의 이름(별칭을 썼으면 별칭). 메뉴 테이블의 같은 이름 컬럼을 찾는다 */
@@ -743,16 +741,7 @@ public class MenuPageService {
   }
 
   private static String headerOf(DbField field, String fallback) {
-    if (field == null) {
-      return fallback;
-    }
-    if (field.getLabel() != null && !field.getLabel().isBlank()) {
-      return field.getLabel();
-    }
-    if (field.getDbComment() != null && !field.getDbComment().isBlank()) {
-      return field.getDbComment();
-    }
-    return field.getColumnName();
+    return FieldService.headerOf(field, null, fallback);
   }
 
   private Row rowOf(UUID menuId, List<String> labels, List<Object> values) {
@@ -772,7 +761,7 @@ public class MenuPageService {
     try {
       return objectMapper.readValue(json, new TypeReference<Map<String, String>>() {});
     } catch (RuntimeException e) {
-      throw new IllegalArgumentException("선택한 행 값을 읽지 못했습니다.", e);
+      throw new IllegalArgumentException(Msg.t("menu.action.rowUnreadable"), e);
     }
   }
 
@@ -781,7 +770,7 @@ public class MenuPageService {
         menu.getQueries().stream().filter(q -> q.getId().equals(queryId)).findFirst().orElseThrow();
     if (query.getKind() == QueryKind.READ) {
       throw new BlueskyException(
-          QueryErrorCode.STATEMENT_KIND_MISMATCH, "입력 · 수정 · 삭제", QueryKind.READ);
+          QueryErrorCode.STATEMENT_KIND_MISMATCH, Msg.t("query.kind.modify"), QueryKind.READ);
     }
     return query;
   }

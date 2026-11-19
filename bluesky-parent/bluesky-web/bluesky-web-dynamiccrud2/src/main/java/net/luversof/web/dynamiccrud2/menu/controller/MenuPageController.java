@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import io.github.luversof.boot.exception.BlueskyException;
 import jakarta.servlet.http.HttpServletResponse;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
+import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.menu.service.MenuPageService;
 import net.luversof.web.dynamiccrud2.menu.service.MenuPageService.MenuPath;
 import net.luversof.web.dynamiccrud2.menu.service.ValueConverter;
@@ -166,7 +167,10 @@ public class MenuPageController {
       error = e.getMessage();
     } catch (DataAccessException e) {
       var message = e.getMostSpecificCause().getMessage();
-      error = "실행 실패: " + (message == null ? "" : message.lines().findFirst().orElse(message));
+      error =
+          Msg.t(
+              "menu.action.failed",
+              message == null ? "" : message.lines().findFirst().orElse(message));
     } catch (BlueskyException e) {
       var message = QueryErrorCode.messageOf(e);
       error = message == null ? e.getErrorCode() : message;

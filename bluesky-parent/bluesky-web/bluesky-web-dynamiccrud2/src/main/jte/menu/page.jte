@@ -1,3 +1,4 @@
+@import static net.luversof.web.dynamiccrud2.config.Msg.t
 @import net.luversof.web.dynamiccrud2.menu.service.MenuPageService.UsePage
 
 @param UsePage usePage
@@ -32,12 +33,12 @@
 
 	<%-- 검색: 통합 검색 · 메뉴 검색 설정 칸 · 쿼리 :파라미터 칸을 한 폼으로. 페이지 · 정렬은 새 검색에서 처음으로 돌린다 --%>
 	@if(usePage.keyword() != null || !usePage.filterFields().isEmpty() || !usePage.searchFields().isEmpty())
-		<form method="get" action="${menuPath}" class="card mb-4 flex flex-wrap items-end gap-3" role="search" aria-label="${menu.getName()} 검색">
+		<form method="get" action="${menuPath}" class="card mb-4 flex flex-wrap items-end gap-3" role="search" aria-label="${t("menu.page.searchLabel", menu.getName())}">
 			@if(usePage.keyword() != null)
-				@template._components.field(label = "통합 검색", forId = "q", content = @`
+				@template._components.field(label = t("menu.page.keyword"), forId = "q", content = @`
 					<input id="q" class="input input-sm w-64" type="search" name="q" value="${usePage.keyword().value()}"
 						placeholder="${String.join(" · ", usePage.keyword().headers())}" aria-describedby="q-hint" />
-					<span id="q-hint" class="sr-only">${String.join(", ", usePage.keyword().headers())} 중 하나라도 포함하면 찾습니다</span>
+					<span id="q-hint" class="sr-only">${t("menu.page.keyword.hint", String.join(", ", usePage.keyword().headers()))}</span>
 				`)
 			@endif
 			@for(var i = 0; i < usePage.filterFields().size(); i++)
@@ -49,8 +50,8 @@
 				`)
 			@endfor
 			<div class="flex gap-2">
-				<button class="btn btn-sm btn-primary">검색</button>
-				<a class="btn btn-sm btn-ghost" href="${menuPath}">초기화</a>
+				<button class="btn btn-sm btn-primary">${t("menu.page.search")}</button>
+				<a class="btn btn-sm btn-ghost" href="${menuPath}">${t("menu.page.reset")}</a>
 			</div>
 		</form>
 	@endif
@@ -60,28 +61,28 @@
 	@endif
 
 	<div class="flex flex-wrap items-center gap-2 mb-2">
-		<span class="text-sm">전체 ${usePage.total()}건</span>
+		<span class="text-sm">${t("menu.page.total", usePage.total())}</span>
 		<span class="ml-auto flex flex-wrap gap-2">
 			@for(var action : usePage.insertActions())
 				<button class="btn btn-sm" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-target="#actionPanel">${action.getName()}</button>
 			@endfor
 			@for(var action : usePage.deleteActions())
-				<button class="btn btn-sm btn-error" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-include="[name='rows']:checked" hx-target="#actionPanel">선택 ${action.getName()}</button>
+				<button class="btn btn-sm btn-error" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-include="[name='rows']:checked" hx-target="#actionPanel">${t("menu.page.selected", action.getName())}</button>
 			@endfor
 			@if(menu.isEnableExcel())
-				<a class="btn btn-sm" href="${menuPath}/excel?${searchQuery}${sortPart}">엑셀</a>
+				<a class="btn btn-sm" href="${menuPath}/excel?${searchQuery}${sortPart}">${t("menu.page.excel")}</a>
 			@endif
 		</span>
 	</div>
 
 	<%-- 작업 폼은 목록 위 레이어로 띄워 스크롤 위치를 바꾸지 않는다 --%>
-	@template._components.modal(id = "actionDialog", panelId = "actionPanel", label = "작업")
+	@template._components.modal(id = "actionDialog", panelId = "actionPanel", label = t("menu.page.actionLabel"))
 
 	<div class="overflow-x-auto">
 		<table class="table" aria-label="${menu.getName()}">
 			<thead>
 				<tr>
-					@if(!usePage.deleteActions().isEmpty())<th class="w-8"><input class="checkbox" type="checkbox" data-check-all="rows" aria-label="이 쪽 행 전체 선택" /></th>@endif
+					@if(!usePage.deleteActions().isEmpty())<th class="w-8"><input class="checkbox" type="checkbox" data-check-all="rows" aria-label="${t("menu.page.checkAll")}" /></th>@endif
 					@for(var column : usePage.columns())
 						<th>
 							@if(column.sortable())
@@ -102,10 +103,11 @@
 				@for(var row : usePage.rows())
 					<tr>
 						@if(!usePage.deleteActions().isEmpty())
-							<td><input class="checkbox" type="checkbox" name="rows" value="${row.json()}" aria-label="행 선택" /></td>
+							<td><input class="checkbox" type="checkbox" name="rows" value="${row.json()}" aria-label="${t("menu.page.checkRow")}" /></td>
 						@endif
-						@for(var value : row.values())
-							<td class="max-w-xs truncate" title="${value}">${value}</td>
+						@for(var i = 0; i < row.values().size(); i++)
+							@template._components.cellValue(value = row.values().get(i),
+								inputType = i < usePage.columns().size() ? usePage.columns().get(i).inputType() : null)
 						@endfor
 						@if(!usePage.updateActions().isEmpty())
 							<td class="whitespace-nowrap text-right">
@@ -118,7 +120,7 @@
 					</tr>
 				@endfor
 				@if(usePage.rows().isEmpty())
-					@template._components.emptyState(message = "조회 결과가 없습니다.", colspan = usePage.columns().size() + (usePage.deleteActions().isEmpty() ? 0 : 1) + (usePage.updateActions().isEmpty() ? 0 : 1))
+					@template._components.emptyState(message = t("menu.page.empty"), colspan = usePage.columns().size() + (usePage.deleteActions().isEmpty() ? 0 : 1) + (usePage.updateActions().isEmpty() ? 0 : 1))
 				@endif
 			</tbody>
 		</table>

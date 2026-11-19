@@ -12,6 +12,8 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.stereotype.Component;
 
+import net.luversof.web.dynamiccrud2.config.Msg;
+
 /**
  * 목록 행 JSON 서명. 행 키 · 수정 불가 값은 화면이 돌려보내는 행 JSON 에서 꺼내므로, 서버가 조회 결과로 내보낸 행인지 확인해야 한다(서명이 없으면 행 JSON
  * 을 고쳐 조회 쿼리에 안 보이는 행을 수정 · 삭제하거나 수정 불가 값을 바꿀 수 있다). 메뉴 id 를 함께 서명해 다른 메뉴의 행으로 쓰지 못하게 한다.
@@ -51,7 +53,7 @@ public class RowSigner {
         return json;
       }
     }
-    throw new IllegalArgumentException("선택한 행 정보가 올바르지 않습니다. 목록을 다시 열어 주세요.");
+    throw new IllegalArgumentException(Msg.t("menu.action.rowTampered"));
   }
 
   private String mac(UUID menuId, String json) {

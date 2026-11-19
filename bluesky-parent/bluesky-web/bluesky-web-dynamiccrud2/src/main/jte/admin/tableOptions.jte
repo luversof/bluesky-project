@@ -1,4 +1,5 @@
 <%-- 테이블 후보(_components/combobox 목록 칸). 값은 catalog|schema|name, 입력칸에서 거른다 --%>
+@import static net.luversof.web.dynamiccrud2.config.Msg.t
 @import java.util.List
 @import net.luversof.web.dynamiccrud2.adapter.TableRef
 
@@ -14,6 +15,6 @@
 		<li role="option" aria-selected="false" data-value="${value}" data-label="${label}">${label}</li>
 	@endfor
 	@if(tables.isEmpty())
-		<li aria-disabled="true">테이블이 없습니다</li>
+		<li aria-disabled="true">${t("admin.tables.empty")}</li>
 	@endif
 @endif

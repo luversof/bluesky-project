@@ -2,6 +2,7 @@
      고르지 않은 컬럼도 숨긴 채(입력 disabled - 폼으로 안 감) 그려 두고, "+ 검색칸 추가" 로 고르면 보인다(js/ui.js picklist).
      인덱스 문구는 방식마다 서버가 정해 option 의 data-* 에 싣고, 방식을 바꾸면 바로 바뀐다.
      폼 값: on = 결과 이름(화면 순서가 검색 폼 순서), op.결과이름 = 방식 --%>
+@import static net.luversof.web.dynamiccrud2.config.Msg.t
 @import net.luversof.web.dynamiccrud2.admin.service.SearchService.Candidate
 
 @param Candidate candidate
@@ -16,7 +17,7 @@
 		@if(!candidate.header().equals(candidate.label()))<span class="hint font-mono font-normal">${candidate.label()}</span>@endif
 	</span>
 	<input type="hidden" name="on" value="${candidate.label()}" disabled="${!candidate.searchOn()}" />
-	<label class="hint text-xs shrink-0" for="${selectId}">검색 방식</label>
+	<label class="hint text-xs shrink-0" for="${selectId}">${t("component.searchField.operator")}</label>
 	<select id="${selectId}" class="select select-sm shrink-0" name="op.${candidate.label()}" data-index-select disabled="${!candidate.searchOn()}">
 		@for(var operator : candidate.operators())
 			!{var u = candidate.indexUse().get(operator);}
@@ -25,5 +26,5 @@
 		@endfor
 	</select>
 	<span class="index-badge ${use.ok() ? "index-ok" : "index-warn"} w-56 truncate" data-index-badge title="${use.text()}">${use.ok() ? "✓ " : "⚠ "}${use.text()}</span>
-	<button type="button" class="icon-btn icon-btn-danger shrink-0" data-pick-remove aria-label="${candidate.header()} 검색칸에서 빼기" title="빼기">×</button>
+	<button type="button" class="icon-btn icon-btn-danger shrink-0" data-pick-remove aria-label="${t("component.searchField.remove", candidate.header())}" title="${t("common.remove")}">×</button>
 </li>

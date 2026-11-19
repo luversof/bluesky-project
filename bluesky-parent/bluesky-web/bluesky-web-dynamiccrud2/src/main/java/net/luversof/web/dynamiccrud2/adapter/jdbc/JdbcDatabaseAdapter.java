@@ -159,7 +159,29 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
       Set<String> emptyOptionalParams,
       List<Filter> filters,
       Sort sort) {
-    var limit = properties.excelMaxRows();
+    return firstRows(query, params, emptyOptionalParams, filters, sort, properties.excelMaxRows());
+  }
+
+  @Override
+  public ReadResult sample(
+      String query, Map<String, Object> params, Set<String> emptyOptionalParams, int size) {
+    return firstRows(
+        query,
+        params,
+        emptyOptionalParams,
+        List.of(),
+        null,
+        Math.max(1, Math.min(size, properties.pageMaxRows())));
+  }
+
+  /** 첫 행부터 limit 행, 건수는 세지 않는다(total = -1) */
+  private ReadResult firstRows(
+      String query,
+      Map<String, Object> params,
+      Set<String> emptyOptionalParams,
+      List<Filter> filters,
+      Sort sort,
+      int limit) {
     var bind = new HashMap<String, Object>(params);
     bind.put(ReadQueryRewriter.LIMIT_PARAM, limit);
     bind.put(ReadQueryRewriter.OFFSET_PARAM, 0);

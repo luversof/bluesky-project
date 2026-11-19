@@ -1,5 +1,6 @@
 package net.luversof.web.dynamiccrud2.admin.service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -11,11 +12,14 @@ import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
+import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.domain.MainMenu;
 import net.luversof.web.dynamiccrud2.domain.Menu;
 import net.luversof.web.dynamiccrud2.domain.MenuQuery;
 import net.luversof.web.dynamiccrud2.domain.Project;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.SettingLog.Action;
+import net.luversof.web.dynamiccrud2.domain.SettingLog.Target;
 import net.luversof.web.dynamiccrud2.repository.MainMenuRepository;
 import net.luversof.web.dynamiccrud2.repository.MenuRepository;
 import net.luversof.web.dynamiccrud2.repository.ProjectRepository;
@@ -36,18 +40,21 @@ public class MenuService {
   private final MenuRepository menuRepository;
   private final FieldService fieldService;
   private final DatabaseAdapterResolver resolver;
+  private final SettingLogService settingLog;
 
   public MenuService(
       ProjectRepository projectRepository,
       MainMenuRepository mainMenuRepository,
       MenuRepository menuRepository,
       FieldService fieldService,
-      DatabaseAdapterResolver resolver) {
+      DatabaseAdapterResolver resolver,
+      SettingLogService settingLog) {
     this.projectRepository = projectRepository;
     this.mainMenuRepository = mainMenuRepository;
     this.menuRepository = menuRepository;
     this.fieldService = fieldService;
     this.resolver = resolver;
+    this.settingLog = settingLog;
   }
 
   /** 설정 첫 화면과 사용 화면 메뉴 목록이 쓰는 트리 */
@@ -75,6 +82,7 @@ public class MenuService {
   /** 새 프로젝트는 맨 끝에 붙는다. 순서는 {@link #reorderProjects} 로 바꾼다 */
   public Project saveProject(UUID id, String code, String name) {
     var project = id == null ? new Project() : projectRepository.findById(id).orElseThrow();
+    var before = id == null ? null : SettingLogService.snapshot(project);
     var checked = checkCode(code);
     if (RESERVED_PROJECT_CODES.contains(checked)) {
       throw new BlueskyException(QueryErrorCode.RESERVED_CODE, checked);
@@ -93,7 +101,17 @@ public class MenuService {
               + 1);
     }
     project.setName(name.strip());
-    return projectRepository.save(project);
+    var saved = projectRepository.save(project);
+    settingLog.record(
+        Target.PROJECT,
+        id == null ? Action.CREATE : Action.UPDATE,
+        saved.getId(),
+        saved.getName(),
+        saved.getId(),
+        null,
+        before,
+        SettingLogService.snapshot(saved));
+    return saved;
   }
 
   /** 드래그 앤 드롭 결과: 받은 순서대로 0, 1, 2 … 를 매긴다. 목록에 없는 id 는 무시 */
@@ -103,18 +121,42 @@ public class MenuService {
       project.setDisplayOrder(orderedIds.indexOf(project.getId()));
     }
     projectRepository.saveAll(projects);
+    settingLog.record(
+        Target.PROJECT,
+        Action.REORDER,
+        null,
+        null,
+        null,
+        null,
+        null,
+        SettingLogService.order(
+            projects.stream()
+                .sorted(Comparator.comparingInt(Project::getDisplayOrder))
+                .map(Project::getName)
+                .toList()));
   }
 
   public void deleteProject(UUID id) {
     if (!mainMenuRepository.findByProjectIdOrderByDisplayOrderAscNameAsc(id).isEmpty()) {
       throw new BlueskyException(QueryErrorCode.HAS_CHILDREN);
     }
+    var project = projectRepository.findById(id).orElseThrow();
     projectRepository.deleteById(id);
+    settingLog.record(
+        Target.PROJECT,
+        Action.DELETE,
+        id,
+        project.getName(),
+        id,
+        null,
+        SettingLogService.snapshot(project),
+        null);
   }
 
   /** 새 메인 메뉴는 그 프로젝트의 맨 끝에 붙는다. 순서는 {@link #reorderMainMenus} 로 바꾼다 */
   public MainMenu saveMainMenu(UUID id, UUID projectId, String code, String name) {
     var mainMenu = id == null ? new MainMenu() : mainMenuRepository.findById(id).orElseThrow();
+    var before = id == null ? null : SettingLogService.snapshot(mainMenu);
     var checked = checkCode(code);
     var parentId = id == null ? projectId : mainMenu.getProjectId();
     mainMenuRepository
@@ -132,7 +174,17 @@ public class MenuService {
               + 1);
     }
     mainMenu.setName(name.strip());
-    return mainMenuRepository.save(mainMenu);
+    var saved = mainMenuRepository.save(mainMenu);
+    settingLog.record(
+        Target.MAIN_MENU,
+        id == null ? Action.CREATE : Action.UPDATE,
+        saved.getId(),
+        saved.getName(),
+        saved.getProjectId(),
+        null,
+        before,
+        SettingLogService.snapshot(saved));
+    return saved;
   }
 
   /** 한 프로젝트 안 메인 메뉴 순서. 다른 프로젝트의 id 가 섞여 오면 무시한다 */
@@ -145,26 +197,73 @@ public class MenuService {
       }
     }
     mainMenuRepository.saveAll(mainMenus);
+    settingLog.record(
+        Target.MAIN_MENU,
+        Action.REORDER,
+        null,
+        null,
+        projectId,
+        null,
+        null,
+        SettingLogService.order(
+            mainMenus.stream()
+                .sorted(Comparator.comparingInt(MainMenu::getDisplayOrder))
+                .map(MainMenu::getName)
+                .toList()));
   }
 
   public void deleteMainMenu(UUID id) {
     if (!menuRepository.findByMainMenuIdOrderByDisplayOrderAscNameAsc(id).isEmpty()) {
       throw new BlueskyException(QueryErrorCode.HAS_CHILDREN);
     }
+    var mainMenu = getMainMenu(id);
     mainMenuRepository.deleteById(id);
+    settingLog.record(
+        Target.MAIN_MENU,
+        Action.DELETE,
+        id,
+        mainMenu.getName(),
+        mainMenu.getProjectId(),
+        null,
+        SettingLogService.snapshot(mainMenu),
+        null);
   }
 
   /** 사용 화면 메뉴 목록에 보일지(관리 화면 표시 · 숨김 단추) */
   public void setProjectDisplay(UUID id, boolean display) {
     var project = projectRepository.findById(id).orElseThrow();
+    var before = SettingLogService.snapshot(project);
     project.setEnableDisplay(display);
     projectRepository.save(project);
+    settingLog.record(
+        Target.PROJECT,
+        Action.UPDATE,
+        id,
+        project.getName(),
+        id,
+        null,
+        before,
+        SettingLogService.snapshot(project));
   }
 
   public void setMainMenuDisplay(UUID id, boolean display) {
     var mainMenu = getMainMenu(id);
+    var before = SettingLogService.snapshot(mainMenu);
     mainMenu.setEnableDisplay(display);
     mainMenuRepository.save(mainMenu);
+    settingLog.record(
+        Target.MAIN_MENU,
+        Action.UPDATE,
+        id,
+        mainMenu.getName(),
+        mainMenu.getProjectId(),
+        null,
+        before,
+        SettingLogService.snapshot(mainMenu));
+  }
+
+  public Project getProject(UUID id) {
+    return projectRepository.findById(id).orElseThrow();
   }
 
   public MainMenu getMainMenu(UUID id) {
@@ -178,7 +277,7 @@ public class MenuService {
   /** 1차 등록: connection · 테이블을 고르면 필드를 테이블 단위로 등록하고 조회 쿼리만 자동 생성한다. */
   public Menu createMenu(
       UUID mainMenuId, String code, String name, String connectionName, TableRef ref) {
-    mainMenuRepository.findById(mainMenuId).orElseThrow();
+    var mainMenu = mainMenuRepository.findById(mainMenuId).orElseThrow();
     var checked = checkMenuCode(mainMenuId, null, code);
     var adapter = resolver.resolve(connectionName);
     var meta = adapter.readTable(ref);
@@ -186,7 +285,7 @@ public class MenuService {
 
     var read = new MenuQuery();
     read.setKind(QueryKind.READ);
-    read.setName("조회");
+    read.setName(Msg.t("query.kind.READ"));
     read.setQueryText(adapter.generate(QueryKind.READ, meta));
 
     var menu = new Menu();
@@ -202,7 +301,74 @@ public class MenuService {
     menu.setCode(checked);
     menu.setName(name.strip());
     menu.getQueries().add(read);
-    return menuRepository.save(menu);
+    var saved = menuRepository.save(menu);
+    var after = SettingLogService.snapshot(saved);
+    after.put("table", connectionName + " / " + ref.name());
+    settingLog.record(
+        Target.MENU,
+        Action.CREATE,
+        saved.getId(),
+        saved.getName(),
+        mainMenu.getProjectId(),
+        saved.getId(),
+        null,
+        after);
+    return saved;
+  }
+
+  /**
+   * 메뉴 복사: 같은 메인 메뉴 맨 끝에 같은 테이블 · 쿼리(조회 · 입력 · 수정 · 삭제) · 검색 설정 · 권한 · 페이지 크기 · 엑셀을 그대로 둔 새 메뉴. 다
+   * 고치기 전에 사용자 화면에 나오지 않게 숨김으로 만든다. 쿼리 id 는 새로 매긴다(데이터 변경 이력은 원래 메뉴에 남는다).
+   */
+  public Menu copyMenu(UUID id, String code, String name) {
+    var source = getMenu(id);
+    var copy = new Menu();
+    copy.setMainMenuId(source.getMainMenuId());
+    copy.setCode(checkMenuCode(source.getMainMenuId(), null, code));
+    copy.setName(name.strip());
+    copy.setDbTableId(source.getDbTableId());
+    copy.setAuthority(source.getAuthority());
+    copy.setPageSize(source.getPageSize());
+    copy.setEnableExcel(source.isEnableExcel());
+    copy.setEnableDisplay(false);
+    copy.setSearchSettings(
+        source.getSearchSettings() == null
+            ? null
+            : new java.util.LinkedHashMap<>(source.getSearchSettings()));
+    copy.setDisplayOrder(
+        menuRepository
+                .findByMainMenuIdOrderByDisplayOrderAscNameAsc(source.getMainMenuId())
+                .stream()
+                .mapToInt(Menu::getDisplayOrder)
+                .max()
+                .orElse(-1)
+            + 1);
+    for (var query : source.getQueries()) {
+      var copied = new MenuQuery();
+      copied.setKind(query.getKind());
+      copied.setName(query.getName());
+      copied.setQueryText(query.getQueryText());
+      copied.setParamSettings(
+          query.getParamSettings() == null
+              ? null
+              : new java.util.LinkedHashMap<>(query.getParamSettings()));
+      copied.setAuthority(query.getAuthority());
+      copied.setDisplayOrder(query.getDisplayOrder());
+      copy.getQueries().add(copied);
+    }
+    var saved = menuRepository.save(copy);
+    var after = SettingLogService.snapshot(saved);
+    after.put("copiedFrom", source.getName());
+    settingLog.record(
+        Target.MENU,
+        Action.CREATE,
+        saved.getId(),
+        saved.getName(),
+        getMainMenu(saved.getMainMenuId()).getProjectId(),
+        saved.getId(),
+        null,
+        after);
+    return saved;
   }
 
   public Menu updateMenu(
@@ -214,21 +380,43 @@ public class MenuService {
       boolean enableExcel,
       boolean enableDisplay) {
     var menu = getMenu(id);
+    var before = SettingLogService.snapshot(menu);
     menu.setCode(checkMenuCode(menu.getMainMenuId(), id, code));
     menu.setName(name.strip());
     menu.setAuthority(authority == null || authority.isBlank() ? null : authority.strip());
     menu.setPageSize(Math.max(1, pageSize));
     menu.setEnableExcel(enableExcel);
     menu.setEnableDisplay(enableDisplay);
-    return menuRepository.save(menu);
+    var saved = menuRepository.save(menu);
+    settingLog.record(
+        Target.MENU,
+        Action.UPDATE,
+        id,
+        saved.getName(),
+        null,
+        id,
+        before,
+        SettingLogService.snapshot(saved));
+    return saved;
   }
 
   /** 관리 화면에서 그 자리 수정: 이름 · 주소 이름만(나머지 설정은 메뉴 설정 화면) */
   public Menu renameMenu(UUID id, String code, String name) {
     var menu = getMenu(id);
+    var before = SettingLogService.snapshot(menu);
     menu.setCode(checkMenuCode(menu.getMainMenuId(), id, code));
     menu.setName(name.strip());
-    return menuRepository.save(menu);
+    var saved = menuRepository.save(menu);
+    settingLog.record(
+        Target.MENU,
+        Action.UPDATE,
+        id,
+        saved.getName(),
+        null,
+        id,
+        before,
+        SettingLogService.snapshot(saved));
+    return saved;
   }
 
   /** 메인 메뉴 안 메뉴 순서(드래그 앤 드롭). 목록에 없는 id 는 순서를 그대로 둔다 */
@@ -241,6 +429,20 @@ public class MenuService {
       }
     }
     menuRepository.saveAll(menus);
+    var mainMenu = getMainMenu(mainMenuId);
+    settingLog.record(
+        Target.MENU,
+        Action.REORDER,
+        mainMenuId,
+        mainMenu.getName(),
+        mainMenu.getProjectId(),
+        null,
+        null,
+        SettingLogService.order(
+            menus.stream()
+                .sorted(Comparator.comparingInt(Menu::getDisplayOrder))
+                .map(Menu::getName)
+                .toList()));
   }
 
   private String checkMenuCode(UUID mainMenuId, UUID menuId, String code) {
@@ -266,6 +468,22 @@ public class MenuService {
 
   /** 메뉴 삭제. 공유 필드(DbTable)는 다른 메뉴가 쓸 수 있어 남긴다. */
   public void deleteMenu(UUID id) {
+    var menu = menuRepository.findById(id).orElse(null);
     menuRepository.deleteById(id);
+    if (menu != null) {
+      // 메뉴가 지워져 메뉴 범위로는 못 보므로 프로젝트 범위로 남긴다
+      settingLog.record(
+          Target.MENU,
+          Action.DELETE,
+          id,
+          menu.getName(),
+          mainMenuRepository
+              .findById(menu.getMainMenuId())
+              .map(MainMenu::getProjectId)
+              .orElse(null),
+          null,
+          SettingLogService.snapshot(menu),
+          null);
+    }
   }
 }

@@ -81,7 +81,19 @@
 	.btn-ghost { background-color: transparent; }
 	.btn-ghost:hover { background-color: color-mix(in oklab, var(--color-base-content) 10%, transparent); }
 	.btn:disabled { opacity: .5; cursor: not-allowed; }
-
+	/* 처리 중(js/ui.js 가 누른 단추에 aria-busy): 글자 앞에 도는 고리, 다시 누를 수 없게.
+	   사용자가 원한 표시라 reduced-motion 에서도 멈추지 않고 천천히 돈다(이 PC 는 reduced-motion 이 늘 켜져 있다) */
+	[aria-busy="true"] { cursor: progress; pointer-events: none; }
+	.btn[aria-busy="true"] { opacity: .85; }
+	.btn[aria-busy="true"]::before {
+		content: ""; width: 1em; height: 1em; flex: none;
+		border: 2px solid currentColor; border-right-color: transparent; border-radius: 9999px;
+		animation: busy-spin .7s linear infinite;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.btn[aria-busy="true"]::before { animation-duration: 1.6s; }
+	}
+	@keyframes busy-spin { to { transform: rotate(1turn); } }
 	/* 순서 바꾸기 손잡이(js/reorder.js) */
 	.drag-handle {
 		display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem;
@@ -161,9 +173,10 @@
 	/* 입력칸: 평소 테두리는 배경과 3:1(--color-control-line, WCAG 1.4.11) - 더 흐리게 하지 않는다.
 	   마우스를 올리면 진하게, 입력 중이면 기본색 테두리 + 옅은 둘레 */
 	.input, .select, .textarea {
-		border: 1px solid var(--color-control-line); border-radius: 0.375rem;
+		/* 높이 · 둥글기는 .btn 과 같게 - 한 줄에 입력칸과 단추가 나란히 놓여도 맞는다 */
+		border: 1px solid var(--color-control-line); border-radius: var(--radius-field);
 		background-color: var(--color-base-100); color: var(--color-base-content);
-		padding: 0.375rem 0.625rem; font-size: 0.875rem; min-height: 2.25rem;
+		padding: 0.375rem 0.625rem; font-size: 0.875rem; min-height: 2.5rem;
 		transition: border-color .15s, box-shadow .15s;
 	}
 	.input:hover, .select:hover, .textarea:hover { border-color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
@@ -213,6 +226,28 @@
 	.index-badge { font-size: 0.75rem; min-width: 0; }
 	.index-ok { color: var(--color-success); }
 	.index-warn { color: var(--color-warning); }
+	/* 변경 이력 전후(admin/history): 이전 값은 줄 긋고 흐리게, 새 값은 굵게(밑줄 없이) */
+	.diff-old { text-decoration: line-through; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); }
+	.diff-new { text-decoration: none; font-weight: 600; }
+	/* 화면 안내 상자(_components/guide) */
+	.guide { border: 1px solid var(--color-surface-line); border-radius: var(--radius-box); background-color: var(--color-base-200); padding: 0.75rem 1rem; font-size: 0.875rem; }
+	.guide-title { cursor: pointer; font-weight: 600; }
+	.guide-body { margin-top: 0.5rem; }
+	.guide-body ol { list-style: decimal; padding-left: 1.25rem; display: grid; gap: 0.25rem; }
+	/* 도움말(_components/help): ⓘ 에 마우스를 올리거나 초점을 주면 설명이 뜬다 */
+	.help { position: relative; display: inline-flex; vertical-align: middle; }
+	.help-btn {
+		display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; border-radius: 9999px; cursor: help;
+		color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+	}
+	.help-btn:hover, .help-btn:focus-visible { color: var(--color-base-content); }
+	.help-tip {
+		display: none; position: absolute; z-index: 30; top: calc(100% + 0.25rem); left: -0.5rem; width: max-content; max-width: min(20rem, 80vw);
+		padding: 0.5rem 0.625rem; border-radius: var(--radius-field); font-size: 0.75rem; font-weight: 400; line-height: 1.5; white-space: normal; text-align: left;
+		background-color: var(--color-base-content); color: var(--color-base-100); box-shadow: var(--shadow-card);
+	}
+	.help:hover .help-tip, .help:focus-within .help-tip { display: block; }
+	.help-end .help-tip { left: auto; right: -0.5rem; }
 	/* 필드 관리 정렬 칸: 정렬을 켰을 때만 인덱스 사용 여부를 보인다 */
 	.sort-index { display: none; }
 	.sort-cell:has(input:checked) .sort-index { display: inline; }

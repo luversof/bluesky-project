@@ -10,6 +10,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.util.UUID;
 
+import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.domain.DbField;
 
 /**
@@ -42,7 +43,8 @@ public final class ValueConverter {
             "uuid".equalsIgnoreCase(field.getDataType()) ? UUID.fromString(raw.strip()) : raw;
       };
     } catch (RuntimeException e) {
-      throw new IllegalArgumentException(field.getColumnName() + " 값 형식이 맞지 않습니다: " + raw, e);
+      throw new IllegalArgumentException(
+          Msg.t("menu.action.badValue", field.getColumnName(), raw), e);
     }
   }
 

@@ -8,19 +8,14 @@ import java.util.List;
  * <p>화면 이름은 검색 도구에서 흔히 쓰는 완전 · 앞부분 · 부분 일치로 맞췄다(2026-11-18, "포함 · 시작 · 같음" 이 무슨 검색인지 바로 안 읽힌다는 의견).
  */
 public enum SearchOperator {
-  CONTAINS("부분 일치"),
-  STARTS_WITH("앞부분 일치"),
-  EQUALS("완전 일치"),
-  RANGE("범위");
+  CONTAINS,
+  STARTS_WITH,
+  EQUALS,
+  RANGE;
 
-  private final String title;
-
-  SearchOperator(String title) {
-    this.title = title;
-  }
-
+  /** 화면 이름(다국어 search.op.이름) */
   public String title() {
-    return title;
+    return net.luversof.web.dynamiccrud2.config.Msg.t("search.op." + name());
   }
 
   /**

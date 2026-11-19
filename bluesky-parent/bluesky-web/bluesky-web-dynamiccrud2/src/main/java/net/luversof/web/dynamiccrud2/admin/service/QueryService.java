@@ -23,12 +23,16 @@ import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.ResultColumn;
 import net.luversof.web.dynamiccrud2.adapter.TableMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
 import net.luversof.web.dynamiccrud2.adapter.jdbc.ReadQueryRewriter;
+import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.domain.DbTable;
+import net.luversof.web.dynamiccrud2.domain.InputType;
 import net.luversof.web.dynamiccrud2.domain.Menu;
 import net.luversof.web.dynamiccrud2.domain.MenuQuery;
 import net.luversof.web.dynamiccrud2.domain.ParamSetting;
 import net.luversof.web.dynamiccrud2.domain.ParamSetting.Role;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
+import net.luversof.web.dynamiccrud2.domain.SettingLog.Action;
+import net.luversof.web.dynamiccrud2.domain.SettingLog.Target;
 import net.luversof.web.dynamiccrud2.repository.MenuRepository;
 
 /** 메뉴 작업 쿼리: 기본 쿼리 초안, 등록 화면의 검사(파라미터 · 결과 컬럼 · 경고), 저장. 작업이 쓰는 필드는 쿼리에서 유추한다. */
@@ -41,12 +45,17 @@ public class QueryService {
   private final MenuRepository menuRepository;
   private final FieldService fieldService;
   private final DatabaseAdapterResolver resolver;
+  private final SettingLogService settingLog;
 
   public QueryService(
-      MenuRepository menuRepository, FieldService fieldService, DatabaseAdapterResolver resolver) {
+      MenuRepository menuRepository,
+      FieldService fieldService,
+      DatabaseAdapterResolver resolver,
+      SettingLogService settingLog) {
     this.menuRepository = menuRepository;
     this.fieldService = fieldService;
     this.resolver = resolver;
+    this.settingLog = settingLog;
   }
 
   /**
@@ -55,20 +64,70 @@ public class QueryService {
    * @param error 저장할 수 없는 사유(없으면 null)
    * @param params 파라미터별 설정
    * @param columns 조회 결과 컬럼(조회 작업만)
+   * @param views 결과 컬럼마다 사용 화면에서 보일 모습(필드 설정을 적용한 제목 · 형식 · 정렬)
    * @param warnings 저장은 되지만 알아야 할 것(해석 불가 · 인덱스 없는 검색 등)
    * @param passed DB 에서 확인해 문제가 없을 때 그 안내(확인하지 않았거나 문제가 있으면 null)
+   * @param preview 조회 작업 시험 실행 결과 앞 몇 행(조회가 아니거나 실행하지 못했으면 null)
    */
   public record QueryInspection(
       String error,
       List<ParamRow> params,
       List<ResultColumn> columns,
+      List<ColumnView> views,
       List<String> warnings,
-      String passed) {
+      String passed,
+      DatabaseAdapter.ReadResult preview) {
 
     /** 쿼리가 비어 아직 검사하지 않은 상태 */
     public static final QueryInspection EMPTY =
-        new QueryInspection(null, List.of(), List.of(), List.of(), null);
+        new QueryInspection(null, List.of(), List.of(), List.of(), List.of(), null, null);
+
+    /** 필수 파라미터가 있으면 값 없이(NULL) 실행해 미리 보기가 비어 보일 수 있다 */
+    public boolean previewWithoutValues() {
+      return params.stream().anyMatch(p -> p.setting().required());
+    }
+
+    /** 미리 보기 열(결과 이름)의 모습. 분석하지 못한 열(* 등)은 이름 그대로 · 글자 */
+    public ColumnView viewOf(String label) {
+      return views.stream()
+          .filter(v -> v.label().equals(label))
+          .findFirst()
+          .orElse(new ColumnView(label, label, null, InputType.TEXT, false, null, null, false));
+    }
+
+    public List<FieldTable> fieldTables() {
+      return views.stream()
+          .filter(v -> v.tableId() != null)
+          .map(v -> new FieldTable(v.tableId(), v.tableName()))
+          .distinct()
+          .toList();
+    }
   }
+
+  /**
+   * 결과 컬럼 하나가 사용 화면에서 보일 모습 - 쿼리 화면에서 필드 설정과의 연결을 보인다.
+   *
+   * @param header 화면 제목(필드 라벨 → 별칭 → DB 주석 → 컬럼 이름)
+   * @param alias 쿼리 별칭(없으면 null)
+   * @param tableId 필드가 있는 테이블(필드 관리 화면 링크, 등록된 필드가 없으면 null - 조회를 저장하면 등록된다)
+   * @param tableName 그 테이블 이름(조인해 테이블이 여럿일 때 단추를 나눠 보인다)
+   * @param labelOverAlias 별칭이 있지만 필드 라벨이 제목이 된다(안내용)
+   */
+  public record ColumnView(
+      String label,
+      String header,
+      String alias,
+      InputType inputType,
+      boolean sortable,
+      UUID tableId,
+      String tableName,
+      boolean labelOverAlias) {}
+
+  /** 결과 컬럼 표 위 "필드 관리" 단추: 결과 컬럼이 쓰는 등록된 테이블(나온 순서, 보통 메뉴 테이블 하나) */
+  public record FieldTable(UUID id, String name) {}
+
+  /** 조회 쿼리 미리 보기 행 수 */
+  static final int PREVIEW_ROWS = 5;
 
   /**
    * @param optionalCapable 선택(값이 비면 조건 제거)으로 바꿀 수 있는지(조회 작업만 의미 있음)
@@ -90,21 +149,34 @@ public class QueryService {
     }
   }
 
+  /** 쿼리 화면 검사(조회는 앞 PREVIEW_ROWS 행 미리 보기) */
   public QueryInspection inspect(
       Menu menu, QueryKind kind, String queryText, Map<String, ParamSetting> submitted) {
+    return inspect(menu, kind, queryText, submitted, false);
+  }
+
+  /**
+   * @param forSave 저장 전 검사(미리 보기 없이 사용 화면과 같은 한 행 실행)
+   */
+  private QueryInspection inspect(
+      Menu menu,
+      QueryKind kind,
+      String queryText,
+      Map<String, ParamSetting> submitted,
+      boolean forSave) {
     var base = fieldService.get(menu.getDbTableId());
     var adapter = resolver.resolve(base.getConnectionName());
     try {
       adapter.validate(queryText, kind);
     } catch (BlueskyException e) {
       return new QueryInspection(
-          QueryErrorCode.messageOf(e), List.of(), List.of(), List.of(), null);
+          QueryErrorCode.messageOf(e), List.of(), List.of(), List.of(), List.of(), null, null);
     }
     var meta = adapter.readTable(refOf(base));
     var warnings = new ArrayList<String>();
     var analysis = kind == QueryKind.READ ? adapter.analyzeRead(queryText) : null;
     if (analysis != null && !analysis.parsed()) {
-      warnings.add("쿼리 구조를 해석하지 못해 검색 조건은 모두 필수로 고정되고 페이징은 감싸기로 처리합니다: " + analysis.parseError());
+      warnings.add(Msg.t("inspect.unparsed", analysis.parseError()));
     }
     var conditions =
         analysis == null
@@ -139,21 +211,58 @@ public class QueryService {
         warnIndex(name, condition.expression(), meta, warnings);
       }
     }
-    // DB 에서 확인: 조회는 한 행 시험 실행, 입력 · 수정 · 삭제는 실행하지 않고 검사(EXPLAIN 등). 문법 · 없는 테이블 · 컬럼이면 오류
-    var error =
+    // DB 에서 확인: 조회는 앞 몇 행 시험 실행(미리 보기로 보인다), 입력 · 수정 · 삭제는 실행하지 않고 검사(EXPLAIN 등). 문법 · 없는 테이블 ·
+    // 컬럼이면 오류
+    var tried =
         analysis != null
-            ? tryEmptyRun(adapter, queryText, params, warnings)
-            : checkModify(adapter, queryText, warnings);
+            ? tryRun(adapter, queryText, params, warnings, forSave)
+            : new TryRun(checkModify(adapter, queryText, warnings), null);
     String passed = null;
-    if (error == null) {
-      passed =
-          analysis != null
-              ? "DB 에서 한 행을 시험 실행했습니다(파라미터는 NULL 로). 문제가 없습니다."
-              : "DB 에서 실행하지 않고 검사했습니다(파라미터는 NULL 로). 문제가 없습니다.";
+    if (tried.error() == null) {
+      passed = analysis != null ? Msg.t("inspect.passed.read") : Msg.t("inspect.passed.modify");
     }
+    var columns = analysis == null ? List.<ResultColumn>of() : analysis.columns();
     return new QueryInspection(
-        error, params, analysis == null ? List.of() : analysis.columns(), warnings, passed);
+        tried.error(),
+        params,
+        columns,
+        forSave ? List.of() : viewsOf(base, analysis, columns),
+        warnings,
+        passed,
+        tried.preview());
   }
+
+  /** 결과 컬럼마다 사용 화면 모습(MenuPageService 목록 열과 같은 규칙: FieldService.headerOf · 정렬은 해석된 실제 컬럼만) */
+  private List<ColumnView> viewsOf(
+      DbTable base, ReadAnalysis analysis, List<ResultColumn> columns) {
+    var fields = fieldService.lookup(base);
+    var views = new ArrayList<ColumnView>();
+    for (var column : columns) {
+      if (column.kind() == ResultColumn.Kind.ALL || column.kind() == ResultColumn.Kind.ALL_TABLE) {
+        continue;
+      }
+      var field = fields.fieldOf(column);
+      var table = field == null ? null : fields.tableOf(column).orElse(null);
+      var hasLabel = field != null && field.getLabel() != null && !field.getLabel().isBlank();
+      views.add(
+          new ColumnView(
+              column.label(),
+              FieldService.headerOf(field, column.alias(), column.label()),
+              column.alias(),
+              field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType(),
+              analysis.parsed()
+                  && field != null
+                  && field.isSortable()
+                  && !field.isVirtual()
+                  && column.kind() == ResultColumn.Kind.COLUMN,
+              table == null ? null : table.getId(),
+              table == null ? null : table.getTableName(),
+              hasLabel && column.alias() != null && !column.alias().equals(field.getLabel())));
+    }
+    return views;
+  }
+
+  private record TryRun(String error, DatabaseAdapter.ReadResult preview) {}
 
   /** 작업 저장(queryId null = 새 작업). 조회 작업이면 결과 컬럼 중 다른 테이블 · 계산 컬럼을 필드로 등록한다. */
   public Menu save(
@@ -168,7 +277,7 @@ public class QueryService {
     var base = fieldService.get(menu.getDbTableId());
     var adapter = resolver.resolve(base.getConnectionName());
     adapter.validate(queryText, kind);
-    var inspection = inspect(menu, kind, queryText, submitted);
+    var inspection = inspect(menu, kind, queryText, submitted, true);
     // DB 에서 확인되지 않는 쿼리(문법 · 없는 테이블 · 컬럼)는 저장하지 않는다
     if (inspection.error() != null) {
       throw new BlueskyException(QueryErrorCode.QUERY_CHECK_FAILED, inspection.error());
@@ -199,6 +308,8 @@ public class QueryService {
       query.setKind(kind);
       menu.getQueries().add(query);
     }
+    // 설정 변경 이력: 새 쿼리면 만들기, 있던 쿼리(조회 포함)면 바뀐 항목만
+    var before = query.getId() == null ? null : SettingLogService.snapshot(query);
     query.setName(name == null || name.isBlank() ? defaultName(kind) : name.strip());
     query.setQueryText(queryText.strip());
     query.setAuthority(authority == null || authority.isBlank() ? null : authority.strip());
@@ -211,7 +322,25 @@ public class QueryService {
     if (kind == QueryKind.READ) {
       registerResultFields(base, inspection.columns());
     }
-    return menuRepository.save(menu);
+    var saved = menuRepository.save(menu);
+    // 저장 전 콜백이 새 쿼리 id 를 채우므로 저장된 메뉴에서 다시 찾는다(이름 · 종류 · 있던 id)
+    var edited = query;
+    var savedQuery =
+        saved.getQueries().stream()
+            .filter(q -> q.getName().equals(edited.getName()) && q.getKind() == edited.getKind())
+            .filter(q -> edited.getId() == null || q.getId().equals(edited.getId()))
+            .findFirst()
+            .orElse(edited);
+    settingLog.record(
+        Target.QUERY,
+        before == null ? Action.CREATE : Action.UPDATE,
+        savedQuery.getId(),
+        savedQuery.getName(),
+        null,
+        menuId,
+        before,
+        SettingLogService.snapshot(savedQuery));
+    return saved;
   }
 
   public Menu delete(UUID menuId, UUID queryId) {
@@ -222,7 +351,17 @@ public class QueryService {
       throw new BlueskyException(QueryErrorCode.READ_QUERY_REQUIRED);
     }
     menu.getQueries().remove(query);
-    return menuRepository.save(menu);
+    var saved = menuRepository.save(menu);
+    settingLog.record(
+        Target.QUERY,
+        Action.DELETE,
+        queryId,
+        query.getName(),
+        null,
+        menuId,
+        SettingLogService.snapshot(query),
+        null);
+    return saved;
   }
 
   /** 저장된 설정을 화면 맵으로 */
@@ -236,10 +375,10 @@ public class QueryService {
 
   static String defaultName(QueryKind kind) {
     return switch (kind) {
-      case READ -> "조회";
-      case INSERT -> "입력";
-      case UPDATE -> "수정";
-      case DELETE -> "삭제";
+      case READ -> Msg.t("query.kind.READ");
+      case INSERT -> Msg.t("query.kind.INSERT");
+      case UPDATE -> Msg.t("query.kind.UPDATE");
+      case DELETE -> Msg.t("query.kind.DELETE");
     };
   }
 
@@ -265,23 +404,27 @@ public class QueryService {
       String name, String expression, TableMeta meta, List<String> warnings) {
     var upper = expression.toUpperCase();
     if (upper.contains("LIKE") && (expression.contains("'%'") || expression.contains("'%' ||"))) {
-      warnings.add(name + ": 앞이 % 인 LIKE 는 인덱스를 쓰지 못합니다(" + expression + ")");
+      warnings.add(Msg.t("inspect.leadingWildcard", name, expression));
       return;
     }
     var isColumn = meta.columns().stream().anyMatch(c -> c.name().equals(name));
     if (isColumn && !meta.indexLeadingColumns().contains(name)) {
-      warnings.add(name + ": 인덱스 첫 컬럼이 아니라 큰 테이블에서는 느릴 수 있습니다");
+      warnings.add(Msg.t("inspect.noIndex", name));
     }
   }
 
   /**
-   * 조회 쿼리를 한 행만 실제로 실행해 본다. 문법 · 없는 테이블 · 컬럼(BadSqlGrammarException)은 오류로 돌려주고(저장 거부), 그 밖의 실패(값 형식
-   * 등 - 파라미터를 NULL 로 넣어 생길 수 있다)는 경고로만 남긴다.
+   * 조회 쿼리를 앞 몇 행만 실제로 실행해 본다(선택 파라미터는 조건을 빼고, 필수는 NULL). 문법 · 없는 테이블 · 컬럼(BadSqlGrammarException)은
+   * 오류로 돌려주고(저장 거부), 그 밖의 실패(값 형식 등 - 파라미터를 NULL 로 넣어 생길 수 있다)는 경고로만 남긴다.
    *
-   * @return 오류 문구(없으면 null)
+   * @return 오류 문구(없으면 null)와 미리 보기(실행하지 못했으면 null)
    */
-  private static String tryEmptyRun(
-      DatabaseAdapter adapter, String queryText, List<ParamRow> params, List<String> warnings) {
+  private static TryRun tryRun(
+      DatabaseAdapter adapter,
+      String queryText,
+      List<ParamRow> params,
+      List<String> warnings,
+      boolean forSave) {
     var bind = new HashMap<String, Object>();
     var empty = new java.util.HashSet<String>();
     for (var row : params) {
@@ -291,15 +434,21 @@ public class QueryService {
       }
     }
     try {
-      adapter.read(queryText, bind, empty, null, 0, 1);
+      if (forSave) {
+        // 저장: 사용 화면과 똑같이(건수 쿼리 포함) 한 행 실행 - 건수 쿼리로 감쌀 때만 나는 오류(MySQL 결과 이름 중복 등)도 저장 전에 막는다
+        adapter.read(queryText, bind, empty, null, 0, 1);
+        return new TryRun(null, null);
+      }
+      // 테스트 단추: 자주 누르므로 건수를 세지 않고 앞 몇 행만(큰 테이블 COUNT 를 피한다)
+      return new TryRun(null, adapter.sample(queryText, bind, empty, PREVIEW_ROWS));
     } catch (BadSqlGrammarException e) {
-      return "DB 가 쿼리를 받지 않습니다: " + firstLine(e);
+      return new TryRun(Msg.t("inspect.rejected", firstLine(e)), null);
     } catch (DataAccessException e) {
-      warnings.add("시험 실행 실패(파라미터를 NULL 로 넣어 실행, 쿼리 문법은 통과): " + firstLine(e));
+      warnings.add(Msg.t("inspect.tryFailed", firstLine(e)));
     } catch (IllegalArgumentException e) {
-      warnings.add("시험 실행을 하지 못했습니다: " + e.getMessage());
+      warnings.add(Msg.t("inspect.tryError", e.getMessage()));
     }
-    return null;
+    return new TryRun(null, null);
   }
 
   /** 입력 · 수정 · 삭제 쿼리를 실행하지 않고 DB 에서 검사한다(tryEmptyRun 과 같은 오류 · 경고 규칙). */
@@ -308,9 +457,9 @@ public class QueryService {
     try {
       adapter.check(queryText);
     } catch (BadSqlGrammarException e) {
-      return "DB 가 쿼리를 받지 않습니다: " + firstLine(e);
+      return Msg.t("inspect.rejected", firstLine(e));
     } catch (DataAccessException e) {
-      warnings.add("DB 검사 중 오류(쿼리 문법은 통과): " + firstLine(e));
+      warnings.add(Msg.t("inspect.checkError", firstLine(e)));
     }
     return null;
   }

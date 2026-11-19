@@ -6,8 +6,10 @@ document.addEventListener('htmx:responseError', (event) => {
     location.reload();
     return;
   }
-  alert(status === 403 ? '이 작업을 할 권한이 없습니다.' : `요청을 처리하지 못했습니다(${status}). 잠시 뒤 다시 시도하세요.`);
+  // 문구는 layout body 의 data-msg-* (지금 언어)
+  const msg = document.body.dataset;
+  alert(status === 403 ? msg.msgForbidden : msg.msgFailed.replace('{0}', status));
 });
 document.addEventListener('htmx:sendError', () => {
-  alert('서버에 연결하지 못했습니다. 네트워크를 확인하세요.');
+  alert(document.body.dataset.msgOffline);
 });

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
 /**
@@ -18,7 +19,7 @@ public interface DatabaseAdapter {
 
   /** 데이터를 담는 단위의 이름(화면 문구: "테이블 필드 관리" · "테이블 인덱스"). RDB 는 테이블, 2차 Mongo 어댑터는 "컬렉션" 을 돌려준다 */
   default String targetNoun() {
-    return "테이블";
+    return Msg.t("target.table");
   }
 
   /** 고를 수 있는 테이블(컬렉션) 목록 */
@@ -85,6 +86,10 @@ public interface DatabaseAdapter {
       Set<String> emptyOptionalParams,
       List<Filter> filters,
       Sort sort);
+
+  /** 쿼리 화면 시험 실행 · 미리 보기: 첫 행부터 size 행, 건수는 세지 않는다(total = -1, 큰 테이블에서 COUNT 를 피하려고) */
+  ReadResult sample(
+      String query, Map<String, Object> params, Set<String> emptyOptionalParams, int size);
 
   /** 입력 · 수정 · 삭제를 행마다 실행. 전부 한 트랜잭션, 행마다 영향 행 수를 돌려준다 */
   int[] modify(String query, List<Map<String, Object>> rows);

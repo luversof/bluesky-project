@@ -1,10 +1,14 @@
 package net.luversof.web.dynamiccrud2.admin.controller;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,10 +25,13 @@ import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
+import net.luversof.web.dynamiccrud2.admin.service.ChangeLogService;
 import net.luversof.web.dynamiccrud2.admin.service.FieldService;
 import net.luversof.web.dynamiccrud2.admin.service.MenuService;
 import net.luversof.web.dynamiccrud2.admin.service.QueryService;
 import net.luversof.web.dynamiccrud2.admin.service.SearchService;
+import net.luversof.web.dynamiccrud2.admin.service.SettingLogService;
+import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.connection.ConnectionNameService;
 import net.luversof.web.dynamiccrud2.domain.InputType;
 import net.luversof.web.dynamiccrud2.domain.Menu;
@@ -47,6 +54,8 @@ public class AdminController {
   private final ConnectionNameService connectionNameService;
   private final DatabaseAdapterResolver resolver;
   private final SearchService searchService;
+  private final ChangeLogService changeLogService;
+  private final SettingLogService settingLogService;
 
   public AdminController(
       MenuService menuService,
@@ -54,13 +63,17 @@ public class AdminController {
       FieldService fieldService,
       ConnectionNameService connectionNameService,
       DatabaseAdapterResolver resolver,
-      SearchService searchService) {
+      SearchService searchService,
+      ChangeLogService changeLogService,
+      SettingLogService settingLogService) {
     this.menuService = menuService;
     this.queryService = queryService;
     this.fieldService = fieldService;
     this.connectionNameService = connectionNameService;
     this.resolver = resolver;
     this.searchService = searchService;
+    this.changeLogService = changeLogService;
+    this.settingLogService = settingLogService;
   }
 
   // ---- Project · MainMenu ----
@@ -163,7 +176,7 @@ public class AdminController {
     String error = null;
     var tables = java.util.List.<TableRef>of();
     if (connectionName.isBlank()) {
-      error = "connection 을 먼저 고르세요";
+      error = Msg.t("admin.menuCreate.connFirst");
     } else {
       try {
         tables = resolver.resolve(connectionName.strip()).listTables();
@@ -188,7 +201,7 @@ public class AdminController {
     var projectPage = redirectToProject(menuService.getMainMenu(mainMenuId).getProjectId());
     var parts = table.split("\\|", -1);
     if (parts.length != 3 || parts[2].isBlank()) {
-      redirect.addFlashAttribute("error", "테이블을 목록에서 고르세요.");
+      redirect.addFlashAttribute("error", Msg.t("admin.menuCreate.tableFromList"));
       return projectPage;
     }
     var ref = new TableRef(emptyToNull(parts[0]), emptyToNull(parts[1]), parts[2]);
@@ -235,8 +248,8 @@ public class AdminController {
       databaseType = adapter.databaseType();
       targetNoun = adapter.targetNoun();
     } catch (RuntimeException e) {
-      databaseType = "알 수 없음(연결 실패)";
-      targetNoun = "테이블";
+      databaseType = Msg.t("source.dbType.unknown");
+      targetNoun = Msg.t("target.table");
     }
     model.addAttribute("databaseType", databaseType);
     model.addAttribute("targetNoun", targetNoun);
@@ -249,9 +262,101 @@ public class AdminController {
   private List<Crumb> pathTo(Menu menu, boolean withMenuLink) {
     var projectId = menuService.getMainMenu(menu.getMainMenuId()).getProjectId();
     var crumbs = new java.util.ArrayList<Crumb>();
-    crumbs.add(new Crumb("프로젝트 관리", "/admin?project=" + projectId));
-    crumbs.add(new Crumb("메뉴 관리", withMenuLink ? "/admin/menu/" + menu.getId() : null));
+    crumbs.add(new Crumb(Msg.t("admin.index.title"), "/admin?project=" + projectId));
+    crumbs.add(
+        new Crumb(Msg.t("breadcrumb.menu"), withMenuLink ? "/admin/menu/" + menu.getId() : null));
     return crumbs;
+  }
+
+  /**
+   * 메뉴 변경 이력. tab=data(기본): 사용 화면에서 실행한 입력 · 수정 · 삭제(ChangeLog, 사용자 · 쿼리 · 기간). tab=settings: 관리
+   * 화면에서 바꾼 이 메뉴의 설정(SettingLog: 메뉴 · 쿼리 · 검색 + 이 메뉴 테이블의 필드, 사용자 · 대상 · 기간)
+   */
+  @GetMapping("/menu/{id}/history")
+  public String history(
+      @PathVariable UUID id,
+      @RequestParam(defaultValue = "data") String tab,
+      @RequestParam(required = false) String user,
+      @RequestParam(required = false) UUID query,
+      @RequestParam(required = false) String target,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+      @RequestParam(defaultValue = "0") int page,
+      Model model) {
+    var menu = menuService.getMenu(id);
+    var settingsTab = "settings".equals(tab);
+    model.addAttribute("menu", menu);
+    model.addAttribute("settingsTab", settingsTab);
+    // 탭 이름 "테이블 데이터 변경" / "컬렉션 데이터 변경"
+    addSource(model, fieldService.get(menu.getDbTableId()));
+    var params = new LinkedHashMap<String, Object>();
+    params.put("tab", settingsTab ? "settings" : null);
+    params.put("user", user);
+    params.put("from", from);
+    params.put("to", to);
+    if (settingsTab) {
+      var filter = new SettingLogService.Filter(user, target, from, to);
+      model.addAttribute("settingFilter", filter);
+      model.addAttribute("settings", settingLogService.page(menu, null, filter, page));
+      params.put("target", target);
+    } else {
+      var filter = new ChangeLogService.Filter(user, query, from, to);
+      model.addAttribute("filter", filter);
+      model.addAttribute("history", changeLogService.page(menu, filter, page));
+      params.put("query", query);
+    }
+    // 쪽 넘김 주소는 탭 · 거르기 조건을 그대로 잇는다
+    model.addAttribute(
+        "pageUrl", "/admin/menu/" + id + "/history?" + queryString(params) + "page=");
+    var crumbs = pathTo(menu, true);
+    crumbs.add(new Crumb(Msg.t("admin.history.title"), null));
+    model.addAttribute("breadcrumb", crumbs);
+    return "admin/history";
+  }
+
+  /** 프로젝트 설정 변경 이력: 프로젝트 · 메인 메뉴 · 그 아래 메뉴(지운 메뉴 포함) · 쿼리 · 검색 설정 */
+  @GetMapping("/project/{id}/history")
+  public String projectHistory(
+      @PathVariable UUID id,
+      @RequestParam(required = false) String user,
+      @RequestParam(required = false) String target,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+      @RequestParam(defaultValue = "0") int page,
+      Model model) {
+    var project = menuService.getProject(id);
+    var filter = new SettingLogService.Filter(user, target, from, to);
+    model.addAttribute("project", project);
+    model.addAttribute("settingFilter", filter);
+    model.addAttribute("settings", settingLogService.page(null, id, filter, page));
+    var params = new LinkedHashMap<String, Object>();
+    params.put("user", user);
+    params.put("target", target);
+    params.put("from", from);
+    params.put("to", to);
+    model.addAttribute(
+        "pageUrl", "/admin/project/" + id + "/history?" + queryString(params) + "page=");
+    model.addAttribute(
+        "breadcrumb",
+        List.of(
+            new Crumb(Msg.t("admin.index.title"), "/admin?project=" + id),
+            new Crumb(Msg.t("admin.history.settingsTitle"), null)));
+    return "admin/projectHistory";
+  }
+
+  /** 값이 있는 것만 이름=값& 로(값은 URL 인코딩) */
+  private static String queryString(Map<String, Object> params) {
+    var result = new StringBuilder();
+    params.forEach((name, value) -> {
+      if (value != null && !value.toString().isBlank()) {
+        result
+            .append(name)
+            .append('=')
+            .append(URLEncoder.encode(value.toString(), StandardCharsets.UTF_8))
+            .append('&');
+      }
+    });
+    return result.toString();
   }
 
   @PostMapping("/menu/{id}")
@@ -304,6 +409,21 @@ public class AdminController {
         redirect, redirectToProject(projectId), () -> menuService.renameMenu(id, code, name));
   }
 
+  /** 메뉴 복사: 성공하면 새 메뉴 설정 화면으로(숨김 상태라 고친 뒤 켠다), 주소 이름이 겹치는 등 실패하면 원래 메뉴로 사유와 함께 */
+  @PostMapping("/menu/{id}/copy")
+  public String copyMenu(
+      @PathVariable UUID id,
+      @RequestParam String code,
+      @RequestParam String name,
+      RedirectAttributes redirect) {
+    try {
+      return "redirect:/admin/menu/" + menuService.copyMenu(id, code, name).getId();
+    } catch (BlueskyException e) {
+      redirect.addFlashAttribute("error", messageOf(e));
+      return "redirect:/admin/menu/" + id;
+    }
+  }
+
   @PostMapping("/menu/{id}/delete")
   public String deleteMenu(@PathVariable UUID id) {
     var projectId = menuService.getMainMenu(menuService.getMenu(id).getMainMenuId()).getProjectId();
@@ -347,6 +467,7 @@ public class AdminController {
       Model model) {
     var menu = menuService.getMenu(menuId);
     model.addAttribute("kind", kind);
+    model.addAttribute("menuId", menuId);
     model.addAttribute("inspection", queryService.inspect(menu, kind, queryText, params(form)));
     return "admin/queryInspection";
   }
@@ -393,9 +514,9 @@ public class AdminController {
       var owner = menuService.getMenu(menu);
       crumbs.addAll(pathTo(owner, true));
     } else {
-      crumbs.add(new Crumb("프로젝트 관리", "/admin"));
+      crumbs.add(new Crumb(Msg.t("admin.index.title"), "/admin"));
     }
-    crumbs.add(new Crumb(model.getAttribute("targetNoun") + " 필드 관리", null));
+    crumbs.add(new Crumb(Msg.t("admin.table.name", model.getAttribute("targetNoun")), null));
     model.addAttribute("breadcrumb", crumbs);
     model.addAttribute(
         "fields",
@@ -417,7 +538,7 @@ public class AdminController {
       indexes = new SearchService.TableIndexes(title, meta.indexes(), null);
       leading = meta.indexLeadingColumns();
     } catch (RuntimeException e) {
-      indexes = new SearchService.TableIndexes(title, List.of(), "인덱스 정보를 읽지 못했습니다");
+      indexes = new SearchService.TableIndexes(title, List.of(), Msg.t("index.readFailed"));
       leading = null;
     }
     model.addAttribute("indexes", indexes);
@@ -431,13 +552,11 @@ public class AdminController {
       @RequestParam String columnName,
       @RequestParam(required = false) String label,
       @RequestParam InputType inputType,
-      @RequestParam(defaultValue = "false") boolean required,
       @RequestParam(required = false) Integer maxLength,
       @RequestParam(defaultValue = "false") boolean sortable,
       @RequestParam(defaultValue = "false") boolean updatable,
       @RequestParam(required = false) UUID menu) {
-    fieldService.updateField(
-        id, columnName, label, inputType, required, maxLength, sortable, updatable);
+    fieldService.updateField(id, columnName, label, inputType, maxLength, sortable, updatable);
     return redirectToTable(id, menu);
   }
 
@@ -468,7 +587,11 @@ public class AdminController {
     model.addAttribute("queryId", queryId);
     model.addAttribute("kind", kind);
     var crumbs = pathTo(menu, true);
-    crumbs.add(new Crumb((queryId == null ? "쿼리 추가: " : "쿼리 편집: ") + kind.name(), null));
+    crumbs.add(
+        new Crumb(
+            Msg.t(
+                queryId == null ? "admin.query.title.add" : "admin.query.title.edit", kind.name()),
+            null));
     model.addAttribute("breadcrumb", crumbs);
     model.addAttribute("name", name == null ? "" : name);
     model.addAttribute("queryText", queryText == null ? "" : queryText);

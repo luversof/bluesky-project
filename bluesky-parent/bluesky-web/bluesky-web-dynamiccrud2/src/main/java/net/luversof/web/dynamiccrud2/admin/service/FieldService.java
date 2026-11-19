@@ -9,11 +9,14 @@ import org.springframework.stereotype.Service;
 
 import net.luversof.web.dynamiccrud2.adapter.ColumnMeta;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
+import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.ResultColumn;
 import net.luversof.web.dynamiccrud2.adapter.TableMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
 import net.luversof.web.dynamiccrud2.domain.DbField;
 import net.luversof.web.dynamiccrud2.domain.DbTable;
 import net.luversof.web.dynamiccrud2.domain.InputType;
+import net.luversof.web.dynamiccrud2.domain.SettingLog.Action;
+import net.luversof.web.dynamiccrud2.domain.SettingLog.Target;
 import net.luversof.web.dynamiccrud2.repository.DbTableRepository;
 
 /**
@@ -25,10 +28,15 @@ public class FieldService {
 
   private final DbTableRepository dbTableRepository;
   private final DatabaseAdapterResolver resolver;
+  private final SettingLogService settingLog;
 
-  public FieldService(DbTableRepository dbTableRepository, DatabaseAdapterResolver resolver) {
+  public FieldService(
+      DbTableRepository dbTableRepository,
+      DatabaseAdapterResolver resolver,
+      SettingLogService settingLog) {
     this.dbTableRepository = dbTableRepository;
     this.resolver = resolver;
+    this.settingLog = settingLog;
   }
 
   public DbTable get(UUID dbTableId) {
@@ -107,13 +115,15 @@ public class FieldService {
     return changed ? dbTableRepository.save(dbTable) : dbTable;
   }
 
-  /** 필드 화면에서 사용자가 고친 값 */
+  /**
+   * 필드 화면에서 사용자가 고친 값. "필수" 는 받지 않는다 - 입력 필수는 작업마다 다를 수 있어(입력은 필수, 수정은 선택) 쿼리 화면 파라미터 설정 한 곳에서
+   * 정한다(2026-11-19 사용자 결정, 필드의 required 는 DB NOT NULL 기록으로만 남음)
+   */
   public DbTable updateField(
       UUID dbTableId,
       String columnName,
       String label,
       InputType inputType,
-      boolean required,
       Integer maxLength,
       boolean sortable,
       boolean updatable) {
@@ -123,9 +133,9 @@ public class FieldService {
             .filter(f -> f.getColumnName().equals(columnName))
             .findFirst()
             .orElseThrow();
+    var before = SettingLogService.snapshot(field);
     field.setLabel(label == null || label.isBlank() ? null : label.strip());
     field.setInputType(inputType);
-    field.setRequired(required);
     field.setMaxLength(maxLength);
     if (field.isSortable() != sortable) {
       field.setSortable(sortable && !field.isVirtual());
@@ -135,7 +145,18 @@ public class FieldService {
       field.setUpdatable(updatable);
       field.setUpdatableUserSet(true);
     }
-    return dbTableRepository.save(dbTable);
+    var saved = dbTableRepository.save(dbTable);
+    // 필드는 테이블 단위(여러 메뉴 공유): 대상 id = 테이블, 메뉴 이력에서는 그 메뉴 테이블의 필드 변경으로 보인다
+    settingLog.record(
+        Target.FIELD,
+        Action.UPDATE,
+        dbTableId,
+        dbTable.getTableName() + "." + columnName,
+        null,
+        null,
+        before,
+        SettingLogService.snapshot(field));
+    return saved;
   }
 
   private DbTable find(String connectionName, TableRef ref) {
@@ -200,5 +221,69 @@ public class FieldService {
       }
     }
     dbTable.setColumnsReadDate(Instant.now());
+  }
+
+  /**
+   * 화면 제목: 필드 라벨 → 쿼리 별칭 → DB 주석 → 컬럼 이름(fallback). 제목은 테이블 필드 관리 한 곳에서 정하고, 별칭은 라벨이 없을 때만 제목이
+   * 된다(2026-11-19 사용자 결정 - 예전엔 별칭이 라벨을 말없이 덮었다).
+   */
+  public static String headerOf(DbField field, String alias, String fallback) {
+    if (field != null && field.getLabel() != null && !field.getLabel().isBlank()) {
+      return field.getLabel();
+    }
+    if (alias != null) {
+      return alias;
+    }
+    if (field == null) {
+      return fallback;
+    }
+    if (field.getDbComment() != null && !field.getDbComment().isBlank()) {
+      return field.getDbComment();
+    }
+    return field.getColumnName();
+  }
+
+  /** 조회 결과 컬럼의 필드를 찾는다. 한 화면을 그리는 동안 쓰고 버린다(조인한 다른 테이블은 한 번만 읽는다) */
+  public Lookup lookup(DbTable base) {
+    return new Lookup(base);
+  }
+
+  public final class Lookup {
+
+    private final DbTable base;
+    private final java.util.Map<String, java.util.Optional<DbTable>> others = new HashMap<>();
+
+    private Lookup(DbTable base) {
+      this.base = base;
+    }
+
+    /** 메뉴 테이블이면 그 필드, 조인한 다른 테이블이면 등록된 그 테이블 필드, 계산 결과면 메뉴 테이블의 가상 필드 */
+    public DbField fieldOf(ResultColumn column) {
+      var name =
+          column.kind() == ResultColumn.Kind.EXPRESSION ? column.label() : column.columnName();
+      return tableOf(column)
+          .flatMap(
+              t -> t.getFields().stream().filter(f -> f.getColumnName().equals(name)).findFirst())
+          .orElse(null);
+    }
+
+    /** 필드가 있는 테이블(필드 관리 화면 링크용). 등록되지 않은 다른 테이블이면 빈 값 */
+    public java.util.Optional<DbTable> tableOf(ResultColumn column) {
+      if (column.kind() == ResultColumn.Kind.EXPRESSION
+          || column.tableName() == null
+          || column.tableName().equalsIgnoreCase(base.getTableName())) {
+        return java.util.Optional.of(base);
+      }
+      return others.computeIfAbsent(
+          column.tableName().toLowerCase(),
+          key ->
+              dbTableRepository
+                  .findIdByLocation(
+                      base.getConnectionName(),
+                      base.getCatalogName(),
+                      base.schemaOf(column.tableSchema()),
+                      column.tableName())
+                  .flatMap(dbTableRepository::findById));
+    }
   }
 }

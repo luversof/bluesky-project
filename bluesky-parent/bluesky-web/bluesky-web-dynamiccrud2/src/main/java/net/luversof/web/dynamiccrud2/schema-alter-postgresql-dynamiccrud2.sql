@@ -87,3 +87,30 @@ ALTER TABLE "MainMenu" ADD COLUMN IF NOT EXISTS "enableDisplay" BOOLEAN NOT NULL
 -- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 숨김 설정이 사라진다)
 -- ALTER TABLE "Project" DROP COLUMN IF EXISTS "enableDisplay";
 -- ALTER TABLE "MainMenu" DROP COLUMN IF EXISTS "enableDisplay";
+
+-- 2026-11-19 설정 변경 이력(SettingLog)
+-- 까닭: 관리 화면에서 바꾼 프로젝트 · 메인 메뉴 · 메뉴 · 쿼리 · 검색 · 필드 설정을 "누가 · 언제 · 무엇을 · 이전 → 이후" 로 남긴다(사용자 요청).
+-- 사용 화면의 데이터 변경 이력(ChangeLog)과 따로 저장 · 조회한다. 기존 데이터는 없다(새 테이블).
+-- 이 테이블이 없어도 앱은 설정을 저장한다(이력만 못 남기고 로그에 [SETTING_LOG_FAILED]). 이력 화면의 "설정" 탭은 오류가 나므로 앱 배포 전에 적용할 것.
+CREATE TABLE IF NOT EXISTS "SettingLog" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"project_id" UUID,
+	"menu_id" UUID,
+	"target" VARCHAR(20) NOT NULL,
+	"targetId" UUID,
+	"targetName" VARCHAR(200),
+	"action" VARCHAR(20) NOT NULL,
+	"username" VARCHAR(100) NOT NULL,
+	"changes" JSONB,
+	"createdDate" TIMESTAMP WITH TIME ZONE NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_settingLog_menuId_createdDate ON "SettingLog" ("menu_id", "createdDate");
+CREATE INDEX IF NOT EXISTS idx_settingLog_projectId_createdDate ON "SettingLog" ("project_id", "createdDate");
+CREATE INDEX IF NOT EXISTS idx_settingLog_targetId_createdDate ON "SettingLog" ("targetId", "createdDate");
+
+-- 확인(테이블 1 개 · 인덱스 3 개)
+-- SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'SettingLog' ORDER BY ordinal_position;
+-- SELECT indexname FROM pg_indexes WHERE tablename = 'SettingLog';
+
+-- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 설정 변경 이력이 사라진다)
+-- DROP TABLE IF EXISTS "SettingLog";

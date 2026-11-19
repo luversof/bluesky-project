@@ -39,6 +39,7 @@ class AdminControllerTest implements GeneralWebTest {
   @Autowired DatabaseAdapterResolver resolver;
   @Autowired DbTableRepository dbTableRepository;
   @Autowired MenuRepository menuRepository;
+  @Autowired net.luversof.web.dynamiccrud2.repository.SettingLogRepository settingLogRepository;
 
   MockMvc mvc;
 
@@ -69,6 +70,87 @@ class AdminControllerTest implements GeneralWebTest {
         .andExpect(status().isNotFound());
     mvc.perform(get("/admin/table/" + java.util.UUID.randomUUID()).with(admin()))
         .andExpect(status().isNotFound());
+  }
+
+  /** 다국어: 브라우저 언어(Accept-Language)를 따르고, 상단 언어 전환(POST /locale)이 쿠키로 바꾼 뒤 보던 화면으로 돌아간다 */
+  @Test
+  void localeFollowsBrowserAndSwitch() throws Exception {
+    mvc.perform(get("/admin").with(admin()))
+        .andExpect(content().string(Matchers.containsString("<title>프로젝트 관리")))
+        .andExpect(content().string(Matchers.containsString("lang=\"ko\"")));
+    mvc.perform(get("/admin").header("Accept-Language", "en-US,en;q=0.9").with(admin()))
+        .andExpect(content().string(Matchers.containsString("<title>Projects")))
+        .andExpect(content().string(Matchers.containsString("lang=\"en\"")));
+    var switched =
+        mvc.perform(
+                post("/locale")
+                    .param("lang", "en")
+                    .header("Referer", "https://dynamiccrud2.web.bluesky.local/admin?project=x")
+                    .with(admin()))
+            .andExpect(status().is3xxRedirection())
+            .andReturn();
+    assertThat(switched.getResponse().getRedirectedUrl()).isEqualTo("/admin?project=x");
+    var cookies = switched.getResponse().getCookies();
+    assertThat(cookies).isNotEmpty();
+    mvc.perform(get("/admin").cookie(cookies).with(admin()))
+        .andExpect(content().string(Matchers.containsString("<title>Projects")));
+  }
+
+  /** 설정 변경 이력: 프로젝트 이름을 바꾸면 프로젝트 설정 이력에 이전 → 새 이름, 메뉴 설정을 바꾸면 그 메뉴의 "설정 변경" 탭에 남는다 */
+  @Test
+  void settingChangesAreLogged() throws Exception {
+    var code = "t" + UUID.randomUUID().toString().substring(0, 8);
+    var project = menuService.saveProject(null, code, "set-log-a");
+    var mainMenu = menuService.saveMainMenu(null, project.getId(), "main", "main");
+    var ref =
+        resolver.resolve("dynamiccrud2").listTables().stream()
+            .filter(t -> t.name().equals("Project"))
+            .findFirst()
+            .orElseThrow();
+    var preexisting =
+        dbTableRepository.findIdByLocation("dynamiccrud2", ref.catalog(), ref.schema(), ref.name());
+    UUID menuId = null;
+    try {
+      mvc.perform(
+              post("/admin/project")
+                  .param("id", project.getId().toString())
+                  .param("code", code)
+                  .param("name", "set-log-b")
+                  .with(admin()))
+          .andExpect(status().is3xxRedirection());
+      mvc.perform(get("/admin/project/" + project.getId() + "/history").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("set-log-a</del>")))
+          .andExpect(content().string(Matchers.containsString("set-log-b</ins>")));
+      menuId = menuService.createMenu(mainMenu.getId(), "list", "m1", "dynamiccrud2", ref).getId();
+      menuService.updateMenu(menuId, "list", "m1", null, 30, false, true);
+      mvc.perform(get("/admin/menu/" + menuId + "/history").param("tab", "settings").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("페이지 크기")))
+          .andExpect(content().string(Matchers.containsString("30</ins>")));
+      // 바뀐 게 없는 저장은 남기지 않는다
+      var before = settingLogRepository.countSearch(menuId, null, null, null, null, null, null);
+      menuService.updateMenu(menuId, "list", "m1", null, 30, false, true);
+      assertThat(settingLogRepository.countSearch(menuId, null, null, null, null, null, null))
+          .isEqualTo(before);
+    } finally {
+      if (menuId != null) {
+        var dbTableId = menuService.getMenu(menuId).getDbTableId();
+        menuService.deleteMenu(menuId);
+        if (preexisting.isEmpty()) {
+          dbTableRepository.deleteById(dbTableId);
+        }
+      }
+      menuService.deleteMainMenu(mainMenu.getId());
+      menuService.deleteProject(project.getId());
+      settingLogRepository.deleteAll(
+          settingLogRepository.search(
+              null, null, project.getId(), null, null, null, null, 1000, 0));
+      if (menuId != null) {
+        settingLogRepository.deleteAll(
+            settingLogRepository.search(menuId, null, null, null, null, null, null, 1000, 0));
+      }
+    }
   }
 
   @Test

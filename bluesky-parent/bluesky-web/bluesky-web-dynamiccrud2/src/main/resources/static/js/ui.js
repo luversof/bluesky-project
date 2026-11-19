@@ -8,6 +8,41 @@ document.addEventListener('click', (event) => {
   }
 });
 
+// 처리 중 표시: 누른 단추에 aria-busy(회전 표시는 main.css 의 [aria-busy=true]) + 다시 누르기 막기.
+// - 폼 제출(새 화면으로 가는 것): 입력 검사를 통과하고 확인([data-confirm])도 받은 submit 만. 단추를 disabled 로 하면 단추의
+//   name · value 가 빠지므로 막지 않고 표시 + 같은 폼 두 번 제출만 막는다. 뒤로 가기로 돌아오면(bfcache) 풀어 준다.
+// - htmx 요청(테스트 단추 등): 요청을 보낸 단추, 폼이면 누른 단추에 표시하고 끝나면 푼다. 입력칸(자동완성)이 보낸 요청은 표시하지 않는다.
+(() => {
+  const busy = (button, on) => {
+    if (!button || !button.matches('button, input[type=submit]')) return;
+    if (on) {
+      button.setAttribute('aria-busy', 'true');
+      button.setAttribute('aria-disabled', 'true');
+    } else {
+      button.removeAttribute('aria-busy');
+      button.removeAttribute('aria-disabled');
+    }
+  };
+  document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (event.defaultPrevented || form.hasAttribute('hx-post') || form.hasAttribute('hx-get')) return;
+    if (form.dataset.submitting) {
+      event.preventDefault();
+      return;
+    }
+    form.dataset.submitting = 'true';
+    busy(event.submitter, true);
+  });
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+    document.querySelectorAll('form[data-submitting]').forEach((form) => delete form.dataset.submitting);
+    document.querySelectorAll('[aria-busy=true]').forEach((button) => busy(button, false));
+  });
+  const requester = (detail) => detail.requestConfig?.triggeringEvent?.submitter || detail.elt;
+  document.addEventListener('htmx:beforeRequest', (event) => busy(requester(event.detail), true));
+  document.addEventListener('htmx:afterRequest', (event) => busy(requester(event.detail), false));
+})();
+
 // [data-modal] 레이어(_components/modal): 안의 [data-modal-panel] 에 htmx 조각이 들어오면 열고, 닫으면 비운다.
 // 실패해 사유와 함께 다시 그려도 열린 채로 둔다. 바깥(배경)을 누르거나 [data-modal-close] 를 누르면 닫는다.
 document.addEventListener('htmx:afterSwap', (event) => {
@@ -41,7 +76,9 @@ document.querySelectorAll('dialog[data-modal]').forEach((dialog) =>
   const setValid = (box) => {
     const { input, value } = parts(box);
     // 필수가 아닌 칸("+ 추가" 처럼 고르면 바로 무언가 하는 칸)은 남은 글자로 폼 제출을 막지 않는다
-    input.setCustomValidity(!input.required || value.value || !input.value ? '' : '목록에서 고르세요.');
+    // 찾기 조건 칸(data-must-pick)은 비워 둘 수 있지만 친 글자는 목록에서 골라야 한다
+    const mustPick = input.required || input.hasAttribute('data-must-pick');
+    input.setCustomValidity(!mustPick || value.value || !input.value ? '' : document.body.dataset.msgPick);
   };
   const open = (box) => {
     const { input, list } = parts(box);
@@ -75,7 +112,7 @@ document.querySelectorAll('dialog[data-modal]').forEach((dialog) =>
       empty = document.createElement('li');
       empty.dataset.comboboxEmpty = '';
       empty.className = 'combobox-empty';
-      empty.textContent = box.dataset.emptyText || '후보가 없습니다';
+      empty.textContent = box.dataset.emptyText || document.body.dataset.msgNoCandidates;
       list.append(empty);
     }
     empty.hidden = shown > 0 || list.querySelector('li[role=option]') === null;

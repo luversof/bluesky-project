@@ -13,6 +13,7 @@ import java.util.TreeMap;
 import net.luversof.web.dynamiccrud2.adapter.ColumnMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
+import net.luversof.web.dynamiccrud2.config.Msg;
 
 /** {@link DatabaseMetaData} 로 테이블 목록 · 컬럼 · PK · unique · 인덱스를 읽는다(벤더 공통). */
 final class JdbcMetadataReader {
@@ -93,7 +94,7 @@ final class JdbcMetadataReader {
         var ordinal = rs.getInt("ORDINAL_POSITION");
         allIndexes
             .computeIfAbsent(indexName, k -> new TreeMap<>())
-            .put(ordinal, column == null ? "(식)" : column);
+            .put(ordinal, column == null ? Msg.t("index.expressionColumn") : column);
         if (rs.getBoolean("NON_UNIQUE")) {
           nonUnique.add(indexName);
         }

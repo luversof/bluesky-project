@@ -12,6 +12,7 @@ import net.luversof.web.dynamiccrud2.adapter.Filter;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.ResultColumn;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.SearchCondition;
+import net.luversof.web.dynamiccrud2.config.Msg;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
@@ -168,8 +169,7 @@ public final class ReadQueryRewriter {
       for (var label : filter.labels()) {
         var expression = expressions.get(label);
         if (expression == null) {
-          throw new IllegalArgumentException(
-              "검색칸 " + label + " 은(는) 조회 결과의 실제 컬럼이 아니어서 쓸 수 없습니다. 메뉴 검색 설정을 다시 저장하세요.");
+          throw new IllegalArgumentException(Msg.t("error.search.notColumn", label));
         }
         parts.add(condition(expression, filter));
       }
@@ -181,7 +181,7 @@ public final class ReadQueryRewriter {
     try {
       select.setWhere(CCJSqlParserUtil.parseCondExpression(where));
     } catch (JSQLParserException e) {
-      throw new IllegalArgumentException("검색 조건을 붙이지 못했습니다: " + rootMessage(e), e);
+      throw new IllegalArgumentException(Msg.t("error.search.attachFailed", rootMessage(e)), e);
     }
   }
 
@@ -228,8 +228,7 @@ public final class ReadQueryRewriter {
   /** 페이징을 직접 한(:_limit) 해석 불가 쿼리는 바깥에서 거르면 쪽 단위로 걸러져 결과가 틀린다 */
   private static void rejectFiltersOnUserPaging(List<Filter> filters) {
     if (filters != null && !filters.isEmpty()) {
-      throw new IllegalArgumentException(
-          "페이징을 직접 하는(:_limit) 쿼리는 구조를 해석하지 못해 검색칸을 쓸 수 없습니다. 쿼리의 :파라미터 조건으로 검색하세요.");
+      throw new IllegalArgumentException(Msg.t("error.search.manualPaging"));
     }
   }
 
