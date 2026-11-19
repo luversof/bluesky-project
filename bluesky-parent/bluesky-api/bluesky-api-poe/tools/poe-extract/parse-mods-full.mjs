@@ -52,7 +52,7 @@ const baseEn = loadTable("English", "BaseItemTypes");
 const itemClassesEn = loadTable("English", "ItemClasses");
 const itemClassesKo = loadTable("Korean", "ItemClasses");
 const describe = createStatDescriber(FILES_DIR, [
-	"metadata@statdescriptions@stat_descriptions.txt",
+	"metadata@statdescriptions@stat_descriptions.csd",
 ]);
 
 // 장비 아이템 클래스만 (base-items.json 에 있는 클래스 = 장비 파이프라인이 이미 거른 것)

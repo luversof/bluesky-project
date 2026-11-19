@@ -70,15 +70,20 @@ const HARVEST_COMMANDS = new Set(["reroll_with_mod", "reroll_with_current_tags_a
 const harvest = [];
 harvestEn.forEach((r, i) => {
 	if (!HARVEST_COMMANDS.has(r.Command)) return;
+	// 3.30 스키마: LifeforceType/Cost/SacredCost → 배열 LifeforceTypes/LifeforceCosts(같은 순서, 성스러운 생명력 = 종류 4)
+	const types = r.LifeforceTypes || [];
+	const costs = r.LifeforceCosts || [];
+	const main = types.findIndex((t) => t !== 4);
+	const sacred = types.indexOf(4);
 	harvest.push({
 		id: r.Id,
 		command: r.Command,
 		params: r.Parameters || "",
 		text: clean(r.Text) || r.Description,
 		textKo: clean(harvestKo[i]?.Text) || clean(harvestKo[i]?.Description) || null,
-		lifeforce: ({ 1: "Vivid", 2: "Primal", 3: "Wild", 4: "Sacred" })[r.LifeforceType] || null,
-		cost: r.LifeforceCost || 0,
-		sacredCost: r.SacredCost || 0,
+		lifeforce: ({ 1: "Vivid", 2: "Primal", 3: "Wild", 4: "Sacred" })[types[main >= 0 ? main : 0]] || null,
+		cost: costs[main >= 0 ? main : 0] || 0,
+		sacredCost: sacred >= 0 && sacred !== main ? costs[sacred] || 0 : 0,
 	});
 });
 

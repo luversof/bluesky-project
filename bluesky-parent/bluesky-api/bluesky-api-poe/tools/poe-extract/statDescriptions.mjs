@@ -194,10 +194,10 @@ export function createStatDescriber(fileDir, extraFiles = [], options = {}) {
 	const blocks = [];
 	// 뒤 파일이 앞 파일을 include 하는 구조 — 범용(stat) → 전용 순으로 파싱하고 뒤가 우선하도록 나중에 색인
 	for (const name of [
-		"metadata@statdescriptions@stat_descriptions.txt",
-		"metadata@statdescriptions@gem_stat_descriptions.txt",
-		"metadata@statdescriptions@active_skill_gem_stat_descriptions.txt",
-		"metadata@statdescriptions@skill_stat_descriptions.txt",
+		"metadata@statdescriptions@stat_descriptions.csd",
+		"metadata@statdescriptions@gem_stat_descriptions.csd",
+		"metadata@statdescriptions@active_skill_gem_stat_descriptions.csd",
+		"metadata@statdescriptions@skill_stat_descriptions.csd",
 		...extraFiles,
 	]) {
 		const path = /^([A-Za-z]:)?[\\/]/.test(name) ? name : fileDir + "/" + name; // 절대 경로 = 작업 폴더의 보조 설명 파일(10-13 C291)
@@ -295,10 +295,10 @@ export function unmark(text) {
 export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 	const blocks = [];
 	for (const name of [
-		"metadata@statdescriptions@stat_descriptions.txt",
-		"metadata@statdescriptions@gem_stat_descriptions.txt",
-		"metadata@statdescriptions@active_skill_gem_stat_descriptions.txt",
-		"metadata@statdescriptions@skill_stat_descriptions.txt",
+		"metadata@statdescriptions@stat_descriptions.csd",
+		"metadata@statdescriptions@gem_stat_descriptions.csd",
+		"metadata@statdescriptions@active_skill_gem_stat_descriptions.csd",
+		"metadata@statdescriptions@skill_stat_descriptions.csd",
 		...extraFiles,
 	]) {
 		const path = /^([A-Za-z]:)?[\\/]/.test(name) ? name : fileDir + "/" + name; // 절대 경로 = 작업 폴더의 보조 설명 파일(10-13 C291)
@@ -411,10 +411,10 @@ export function createModTranslator(fileDir, extraFiles = [], options = {}) {
 export function createReminderIndex(fileDir, extraFiles = []) {
 	const blocks = [];
 	for (const name of [
-		"metadata@statdescriptions@stat_descriptions.txt",
-		"metadata@statdescriptions@gem_stat_descriptions.txt",
-		"metadata@statdescriptions@active_skill_gem_stat_descriptions.txt",
-		"metadata@statdescriptions@skill_stat_descriptions.txt",
+		"metadata@statdescriptions@stat_descriptions.csd",
+		"metadata@statdescriptions@gem_stat_descriptions.csd",
+		"metadata@statdescriptions@active_skill_gem_stat_descriptions.csd",
+		"metadata@statdescriptions@skill_stat_descriptions.csd",
 		...extraFiles,
 	]) {
 		const path = /^([A-Za-z]:)?[\\/]/.test(name) ? name : fileDir + "/" + name; // 절대 경로 = 작업 폴더의 보조 설명 파일(10-13 C291)

@@ -22,7 +22,7 @@ const segCtx = new Map(); // 조각 → [{ ko, prev, next }]
 {
 	const placeholders = (s) => [...s.matchAll(/\{(\d*)[^}]*\}/g)].map((m) => m[1]).sort().join(",");
 	const pairs = new Map();
-	for (const name of ["metadata@statdescriptions@stat_descriptions.txt", "metadata@statdescriptions@passive_skill_stat_descriptions.txt", "metadata@statdescriptions@tincture_stat_descriptions.txt"]) {
+	for (const name of ["metadata@statdescriptions@stat_descriptions.csd", "metadata@statdescriptions@passive_skill_stat_descriptions.csd", "metadata@statdescriptions@tincture_stat_descriptions.csd"]) {
 		const file = path.join(FILES_DIR, name);
 		if (!fs.existsSync(file)) continue;
 		for (const block of parsedBlocks(file)) {
@@ -61,8 +61,8 @@ const segCtx = new Map(); // 조각 → [{ ko, prev, next }]
 // 영어 모드 배열 → 한국어 배열 역번역 (멀티라인 모드 결합, 매칭 실패 라인은 영어 유지)
 // 팅크처 옵션은 따로 있는 tincture_stat_descriptions(10-09 C210 — config.json files 에 추가. 없던 동안 재껍질 · 참나무 가지 등 팅크처 고유 6개 옵션이 영어 그대로)
 const toKoRaw = createModTranslator(FILES_DIR, [
-	"metadata@statdescriptions@passive_skill_stat_descriptions.txt",
-	"metadata@statdescriptions@tincture_stat_descriptions.txt",
+	"metadata@statdescriptions@passive_skill_stat_descriptions.csd",
+	"metadata@statdescriptions@tincture_stat_descriptions.csd",
 ], { keepLineBreaks: true });
 // 조각 번역기 — 위 번역기로 안 풀린 줄에만 쓴다(먼저 붙였더니 제대로 맞던 두 줄 문장 · 어순이 다른 문장까지 가로챘다: 카탈의 간헐천 · 꿈 주얼 · 제국의 무게).
 // WORK_DIR 엔 기본 설명 파일이 없어 조각 파일만 읽는다
@@ -799,7 +799,7 @@ items.sort((a, b) => a.name.localeCompare(b.name));
 // 리마인더(인게임 회색 부연 — "최근"은 지난 4초 …, 10-04 C114): 옵션 줄의 템플릿 reminderstring Id → ReminderText 영 · 한.
 //   explicits 와 같은 길이의 줄별 배열(그 줄 밑에 붙인다). 하나도 없으면 필드를 두지 않는다. 변형도 같은 규칙
 {
-	const reminderIdsOf = createReminderIndex(FILES_DIR, ["metadata@statdescriptions@passive_skill_stat_descriptions.txt", "metadata@statdescriptions@tincture_stat_descriptions.txt"]);
+	const reminderIdsOf = createReminderIndex(FILES_DIR, ["metadata@statdescriptions@passive_skill_stat_descriptions.csd", "metadata@statdescriptions@tincture_stat_descriptions.csd"]);
 	const remEn = load("English", "ReminderText");
 	const remKo = load("Korean", "ReminderText");
 	const textById = new Map(remEn.map((r, i) => [r.Id, { en: r.Text, ko: remKo[i]?.Id === r.Id && remKo[i]?.Text ? remKo[i].Text : r.Text }]));

@@ -13,7 +13,7 @@ const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "eldritch-implicits.
 const mods = loadTable("English", "Mods");
 const stats = loadTable("English", "Stats");
 const tags = loadTable("English", "Tags");
-const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.txt"]);
+const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.csd"]);
 
 // 팩션: GenerationType → {key, 이름}
 const FACTION = {

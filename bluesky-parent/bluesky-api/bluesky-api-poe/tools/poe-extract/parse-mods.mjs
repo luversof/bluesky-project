@@ -14,8 +14,8 @@ const stats = loadTable("English", "Stats");
 // 아이템 옵션이라 stat_descriptions 가 최우선(10-10 C258 — 예전엔 passive 만 덧붙인 기본 사슬이라 뒤의 skill_stat_descriptions 문장이 이겼다:
 //   "# to # Added Fire Damage"(PoB 는 공격 · 주문 공통 추가 피해로 읽는다) ↔ 게임 "Adds # to # Fire Damage to Attacks"(공격 전용) 등 243곳)
 const describe = createStatDescriber(FILES_DIR, [
-	"metadata@statdescriptions@passive_skill_stat_descriptions.txt",
-	"metadata@statdescriptions@stat_descriptions.txt",
+	"metadata@statdescriptions@passive_skill_stat_descriptions.csd",
+	"metadata@statdescriptions@stat_descriptions.csd",
 ]);
 
 // 슬롯 카테고리: weaponAttack, weaponSpell, body, helmet, gloves, boots, amulet, ring, belt, shield, quiver

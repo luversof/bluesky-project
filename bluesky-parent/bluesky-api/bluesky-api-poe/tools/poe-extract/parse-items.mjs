@@ -60,7 +60,7 @@ const ko = {
 // stat_descriptions 를 마지막(최우선)으로(10-10 C256 — 기본 사슬은 뒤의 skill_stat_descriptions 가 같은 스탯을 스킬 문장으로 덮어 단검 임플리싯이
 //   "Global" 없이 "(60-65)% increased Critical Strike Chance" · "치명타 확률" 이었다. 게임 · poedb "일반 치명타 확률". parse-eldritch 와 같은 처리)
 // 줄 순서 = 게임 설명 파일 순서(10-30 R15 — 32개 베이스의 고정 속성 순서가 게임 · PoB 와 달랐다. transform.mjs 젬과 같은 fileOrder)
-const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.txt"], { fileOrder: true });
+const describe = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.csd"], { fileOrder: true });
 
 const armourByBase = new Map(en.armour.map((row) => [row.BaseItemTypesKey, row]));
 // 방패 기본 막기 확률 (ShieldTypes.BaseItemTypesKey = 행 인덱스, Block = 정수 %)

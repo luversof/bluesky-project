@@ -15,7 +15,7 @@ if (!fs.existsSync(SRC)) {
 	console.warn("WatchersEye.lua 없음 — PoB 소스 갱신 후 다시. 건너뜀");
 	process.exit(0);
 }
-const toKo = createModTranslator(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.txt", "metadata@statdescriptions@passive_skill_stat_descriptions.txt"]) /* 게임 passive 사슬 = stat → passive(C257 과 같다, 10-13 C288 — 기본 사슬의 gem/skill 문장이 이기지 않게) */;
+const toKo = createModTranslator(FILES_DIR, ["metadata@statdescriptions@stat_descriptions.csd", "metadata@statdescriptions@passive_skill_stat_descriptions.csd"]) /* 게임 passive 사슬 = stat → passive(C257 과 같다, 10-13 C288 — 기본 사슬의 gem/skill 문장이 이기지 않게) */;
 const source = fs.readFileSync(SRC, "utf8");
 
 // 음수 범위 "-(10-5)" 는 번역기가 못 맞춘다(10-13 C300 — 명상 "스킬의 총 마나 소모" 2개가 영어로 남았다). 안 옮겨졌을 때만

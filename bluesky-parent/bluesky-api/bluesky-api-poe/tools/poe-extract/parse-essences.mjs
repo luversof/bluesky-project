@@ -16,7 +16,7 @@ const tags = loadTable("English", "Tags");
 const baseEn = loadTable("English", "BaseItemTypes");
 const baseKo = loadTable("Korean", "BaseItemTypes");
 const describe = createStatDescriber(FILES_DIR, [
-	"metadata@statdescriptions@stat_descriptions.txt",
+	"metadata@statdescriptions@stat_descriptions.csd",
 ]);
 
 // 우리 itemClass Id → Essences 테이블 컬럼. 룬 단검/전쟁지팡이는 게임이 단검/지팡이 컬럼을 그대로 쓴다.

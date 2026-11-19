@@ -31,7 +31,7 @@ const en = {
 const describe = createStatDescriber(FILES_DIR, [], { fileOrder: true });
 // 보조 젬 문장은 gem_stat_descriptions 가 우선(10-09 C229 — 게임 "Supported Skills gain 39% of Physical Damage as Extra Fire Damage"
 //   / "보조 대상 스킬로 …"). 기본 서술기는 뒤에 파싱되는 skill_stat_descriptions 가 같은 스탯을 "Gain … of your …" 로 덮어 보조 젬이 일반 문장이었다
-const describeSupport = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@gem_stat_descriptions.txt"], { fileOrder: true });
+const describeSupport = createStatDescriber(FILES_DIR, ["metadata@statdescriptions@gem_stat_descriptions.csd"], { fileOrder: true });
 // 리마인더(인게임 회색 부연, 10-04 C115) — 레벨 문장마다 고른 템플릿의 reminderstring Id(describe.reminders)를 statReminders 로,
 //   그 젬이 쓰는 Id 의 영 · 한 문구는 젬마다 한 번 reminderText 로(레벨마다 문구를 넣으면 25MB 파일이 부푼다)
 const remEn = load("English", "ReminderText");
@@ -89,7 +89,7 @@ const unlink = (text) => (text == null ? text : text.replace(/\[([^\]|]+)\|([^\]
 function describerForScope(scope) {
 	if (!scope || scope === "skill_stat_descriptions") return describe;
 	if (scope === "gem_stat_descriptions") return describeSupport;
-	const file = `metadata@statdescriptions@${scope}.txt`;
+	const file = `metadata@statdescriptions@${scope}.csd`;
 	if (!fs.existsSync(path.join(FILES_DIR, file))) return describe;
 	if (!scopeDescribers.has(scope)) scopeDescribers.set(scope, createStatDescriber(FILES_DIR, [file], { fileOrder: true }));
 	return scopeDescribers.get(scope);

@@ -24,8 +24,8 @@ const OUT = path.join(process.env.POE_DATA_OUT || DATA_DIR, "foulborn-mods.json"
 const mods = loadTable("English", "Mods");
 const stats = loadTable("English", "Stats");
 const describe = createStatDescriber(FILES_DIR, [
-	"metadata@statdescriptions@stat_descriptions.txt",
-	"metadata@statdescriptions@passive_skill_stat_descriptions.txt",
+	"metadata@statdescriptions@stat_descriptions.csd",
+	"metadata@statdescriptions@passive_skill_stat_descriptions.csd",
 ]);
 
 /** 모드의 스탯 → 값 맵 (min|max) — 다른 추출기와 동일 규칙 */

@@ -18,7 +18,7 @@ const itemClassesEn = loadTable("English", "ItemClasses");
 const baseEn = loadTable("English", "BaseItemTypes");
 const baseKo = loadTable("Korean", "BaseItemTypes");
 const describe = createStatDescriber(FILES_DIR, [
-	"metadata@statdescriptions@stat_descriptions.txt",
+	"metadata@statdescriptions@stat_descriptions.csd",
 ]);
 
 // 장비 파이프라인이 다루는 클래스만 (mods.json 과 동일 범위)

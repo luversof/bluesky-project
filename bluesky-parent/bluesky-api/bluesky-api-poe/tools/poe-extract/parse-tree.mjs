@@ -33,8 +33,8 @@ const tree = JSON.parse(fs.readFileSync(RAW, "utf8"));
 // 게임 passive_skill_stat_descriptions 는 stat_descriptions 만 include 한다(10-10 C257) — 기본 사슬은 skill 계열이 끼어 노드 한국어가
 //   "소환수 최대 생명력" · "저주 효과" · "보조 대상 스킬의 …"(젬 문장)였다. 영어 줄은 GGG 트리 원본("Minions have …% increased maximum Life")이라 한국어만 어긋났다
 const describe = createStatDescriber(FILES_DIR, [
-	"metadata@statdescriptions@stat_descriptions.txt",
-	"metadata@statdescriptions@passive_skill_stat_descriptions.txt",
+	"metadata@statdescriptions@stat_descriptions.csd",
+	"metadata@statdescriptions@passive_skill_stat_descriptions.csd",
 ]);
 const statsTable = loadTable("English", "Stats");
 const passivesEn = loadTable("English", "PassiveSkills");
@@ -47,7 +47,7 @@ const result = buildTree(tree, koByGraphId);
 //   second" 가 한국어 화면에 영어로 남았다: 게임 PassiveSkills 행엔 첫 스탯뿐이고 둘째 줄은 GGG 트리 원문에만 있어 서술기로는 못 만든다).
 //   한국어가 비어 영어로 남은 줄만 aura_skill_stat_descriptions 역번역기로 옮긴다(서술 사슬 자체는 C257 대로 그대로)
 {
-	const auraTranslate = createModTranslator(FILES_DIR, ["metadata@statdescriptions@aura_skill_stat_descriptions.txt"]);
+	const auraTranslate = createModTranslator(FILES_DIR, ["metadata@statdescriptions@aura_skill_stat_descriptions.csd"]);
 	let fixed = 0;
 	const fill = (ko) => {
 		if (!ko || ko.every((line) => /[가-힣]/.test(line))) return ko;

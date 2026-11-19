@@ -16,7 +16,7 @@ const modsKo = loadTable("Korean", "Mods");
 const stats = loadTable("English", "Stats");
 const tags = loadTable("English", "Tags");
 const describe = createStatDescriber(FILES_DIR, [
-	"metadata@statdescriptions@map_stat_descriptions.txt",
+	"metadata@statdescriptions@map_stat_descriptions.csd",
 ]);
 
 // 스폰웨이트는 **첫 매치 우선**: 모드의 태그 목록을 앞에서부터 베이스(맵)의 태그 집합과 대조해

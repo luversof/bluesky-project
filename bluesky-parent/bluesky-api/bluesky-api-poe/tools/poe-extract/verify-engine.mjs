@@ -88,6 +88,7 @@ if (fs.existsSync(specFile)) {
 //    실제로 상류가 Main.lua 에 `count += 1` 을 넣은 뒤 다른 PC 의 시뮬이 **모든 빌드에서** 이렇게 죽었다.
 //    patch-pob.mjs 가 되돌리지만, 놓친 경우를 여기서 잡아야 사용자가 시뮬을 돌리다 처음 알게 되지 않는다.
 //    생성 데이터(TreeData/·Data/)는 제외 — 손으로 쓴 코드가 아니고 5MB 짜리라 점검만 느려진다.
+//    Export/ 도 제외 — 상류 개발자가 게임 파일에서 Data/ 를 만드는 도구라 엔진이 로드하지 않는다(11-19 statdesc.lua 의 `?.` 오탐).
 const luajit = findLuaJit();
 if (!luajit) {
 	notes.push("luajit 없음 — Lua 구문 점검 건너뜀(엔진도 못 돕니다)");
@@ -97,7 +98,7 @@ if (!luajit) {
 		for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
 			const full = path.join(dir, entry.name);
 			if (entry.isDirectory()) {
-				if (entry.name !== "TreeData" && entry.name !== "Data") walk(full);
+				if (entry.name !== "TreeData" && entry.name !== "Data" && entry.name !== "Export") walk(full);
 			} else if (entry.name.endsWith(".lua")) {
 				targets.push(full);
 			}
