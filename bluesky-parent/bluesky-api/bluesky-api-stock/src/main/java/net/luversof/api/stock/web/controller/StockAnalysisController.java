@@ -111,6 +111,24 @@ public class StockAnalysisController {
     return stockAnalysisService.evaluate(asOf, request);
   }
 
+  /**
+   * 규칙 예측: night = 입력의 K200NF change1dPct, symbols = 분석할 종목. 돌려준 종목은 Claude 를 부르지 않고 이 예측을 쓴다(아침 작업
+   * · replay.py). 빈 목록이면 전부 Claude 가 분석한다.
+   */
+  @GetMapping("/rule-predictions")
+  public List<StockAnalysisService.PredictionInput> rulePredictions(
+      @RequestParam(required = false) java.math.BigDecimal night,
+      @RequestParam List<String> symbols) {
+    return StockAnalysisService.rulePredictions(night, symbols);
+  }
+
+  /** 최근 lookback 거래일 중 예측이 없는 기준일(아침 작업이 채운다). */
+  @GetMapping("/missing-dates")
+  public List<LocalDate> missingDates(
+      @RequestParam List<String> symbols, @RequestParam(defaultValue = "5") int lookback) {
+    return stockAnalysisService.missingDates(symbols, Math.clamp(lookback, 1, 20));
+  }
+
   /** replay · asOf 를 주면 리플레이 회차로 저장하고 바로 채점한다(replay.py --save). */
   @PostMapping("/predictions")
   public StockAnalysisService.SubmitResult submit(

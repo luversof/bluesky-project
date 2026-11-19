@@ -58,11 +58,21 @@ function Wait-Api {
 }
 
 # Same job as the admin screen's "price history update". If one is already running it is reused.
+# IDLE while polling means api-stock restarted mid-job (the status lives in memory, e.g. a deploy):
+# start it again, up to twice (2026-11-18 evening failed with "price history update IDLE").
 function Update-PriceHistory {
     $status = Invoke-Api POST "/api/stock/admin/price-histories?userId=$UserId"
     $deadline = (Get-Date).AddMinutes(20)
-    while ($status.status -eq 'RUNNING') {
+    $restarts = 0
+    while ($status.status -eq 'RUNNING' -or ($status.status -eq 'IDLE' -and $restarts -lt 2)) {
         if ((Get-Date) -gt $deadline) { throw 'price history update did not finish in 20 minutes' }
+        if ($status.status -eq 'IDLE') {
+            $restarts++
+            Write-Log 'price history job lost (api-stock restarted?) - starting it again'
+            Wait-Api
+            $status = Invoke-Api POST "/api/stock/admin/price-histories?userId=$UserId"
+            continue
+        }
         Start-Sleep -Seconds 5
         $status = Invoke-Api GET '/api/stock/admin/price-histories/status'
     }

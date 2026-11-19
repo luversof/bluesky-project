@@ -118,6 +118,74 @@ public class StockAnalysisService {
   public record PredictionInput(
       String symbol, Integer horizonDays, String direction, Integer confidence, String rationale) {}
 
+  /**
+   * 규칙 예측(사용자 결정 2026-11-19): KOSPI200 야간선물이 0.5% 이상 움직인 날, 규칙을 검증한 종목은 Claude 를 부르지 않고 야간선물 방향을
+   * 그대로 쓴다. 리플레이(삼성전자 245 일, v9)에서 그런 날 v9 의 D+1 판단은 야간선물 부호와 100% 같았고(적중 68.3), D+5 도 규칙이 55.7 로
+   * v9 55.2 와 같거나 나았다. 0.5% 미만인 날(62 일)만 Claude 가 규칙보다 나았다(38.7 대 37.1).
+   */
+  static final Set<String> RULE_SYMBOLS = Set.of("005930");
+
+  static final BigDecimal RULE_MIN_NIGHT_PCT = new BigDecimal("0.5");
+
+  /** nightChangePct: 입력의 K200NF change1dPct. 규칙을 쓰지 않는 날 · 종목이면 빈 목록 - 그 종목은 Claude 가 분석한다. */
+  public static List<PredictionInput> rulePredictions(
+      BigDecimal nightChangePct, List<String> symbols) {
+    if (nightChangePct == null || nightChangePct.abs().compareTo(RULE_MIN_NIGHT_PCT) < 0) {
+      return List.of();
+    }
+    String direction = nightChangePct.signum() > 0 ? Direction.UP.name() : Direction.DOWN.name();
+    // 확신도는 리플레이의 크기별 적중률: D+1 은 1.5% 이상 77 · 그 밑 56, D+5 는 55.
+    int d1Confidence = nightChangePct.abs().compareTo(new BigDecimal("1.5")) >= 0 ? 77 : 56;
+    String rationale =
+        "KOSPI200 야간선물 "
+            + nightChangePct.stripTrailingZeros().toPlainString()
+            + "% - 0.5% 이상 움직인 날은 야간선물 방향을 따른다(규칙).";
+    return symbols.stream()
+        .filter(RULE_SYMBOLS::contains)
+        .distinct()
+        .flatMap(symbol ->
+            java.util.stream.Stream.of(
+                new PredictionInput(symbol, 1, direction, d1Confidence, rationale),
+                new PredictionInput(symbol, 5, direction, 55, rationale)))
+        .toList();
+  }
+
+  /**
+   * 빠진 기준일(사용자 요청 2026-11-19): 종목마다 최근 lookback 거래일 중 예측(운영 · 리플레이)이 하나도 없는 날. 아침 작업이 이 날들을 그 기준일
+   * 다음 날 08:00 시점으로 분석해 채운다 - 사용량 한도 · API 장애로 빠진 날을 손으로 채우지 않게.
+   */
+  public List<LocalDate> missingDates(List<String> symbols, int lookback) {
+    java.util.TreeSet<LocalDate> out = new java.util.TreeSet<>();
+    for (String symbol : symbols) {
+      StockItem item = stockItemRepository.findBySymbol(symbol);
+      if (item == null) {
+        continue;
+      }
+      out.addAll(
+          missing(
+              stockPriceHistoryRepository
+                  .findTop70ByStockItemIdOrderByTradeDateDesc(item.getId())
+                  .stream()
+                  .limit(lookback)
+                  .map(StockPriceHistory::getTradeDate)
+                  .toList(),
+              stockPredictionRepository.findByStockItemId(item.getId()).stream()
+                  .map(StockPrediction::getBaseDate)
+                  .collect(Collectors.toSet()),
+              Instant.now()));
+    }
+    return List.copyOf(out);
+  }
+
+  /** 예측이 없고, 그 기준일의 아침 분석 시각(다음 날 08:00)이 이미 지난 날 - 장중에 쌓인 오늘 시세로 미래 시점 분석을 만들지 않는다. */
+  static List<LocalDate> missing(
+      List<LocalDate> tradeDates, Set<LocalDate> predicted, Instant now) {
+    return tradeDates.stream()
+        .filter(d -> !predicted.contains(d) && analyzedAt(d, true).isBefore(now))
+        .sorted()
+        .toList();
+  }
+
   public record SubmitRequest(
       String modelId, String promptVersion, List<PredictionInput> predictions) {}
 

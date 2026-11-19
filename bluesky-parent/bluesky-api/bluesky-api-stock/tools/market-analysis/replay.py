@@ -126,7 +126,7 @@ def cmd_run(a):
     if not USER_ID:
         raise SystemExit('BLUESKY_USER_ID is not set')
     template = open(a.prompt, encoding='utf-8').read()
-    version = prompt_version(template)
+    version = prompt_version(template) + ('+rule' if a.rule else '')
     schema = open(os.path.join(HERE, 'schema.json'), encoding='utf-8').read()
     os.makedirs(OUT_DIR, exist_ok=True)
     start, end = dt.date.fromisoformat(a.date_from), dt.date.fromisoformat(a.date_to)
@@ -161,6 +161,10 @@ def cmd_run(a):
             predictions = []
             try:
                 items = [it for it in input_json['items'] if not a.symbol_set or it['symbol'] in a.symbol_set]
+                if a.rule:  # same split as morning.ps1: rule targets on big night-futures days skip claude
+                    ruled = rule_predictions(input_json, items)
+                    predictions += ruled
+                    items = [it for it in items if it['symbol'] not in {p['symbol'] for p in ruled}]
                 for i in range(0, len(items), a.chunk):
                     part = dict(input_json, items=items[i:i + a.chunk])
                     result = run_claude(template.replace('{{INPUT_JSON}}', json.dumps(part, ensure_ascii=False)),
@@ -183,6 +187,16 @@ def cmd_run(a):
             print(day, version, 'rep', rep,
                   ' '.join('D+%d hit %s edge %s' % (h, r['hitRatePct'], r['edgePct']) for h, r in sorted(rows.items())),
                   flush=True)
+
+
+def rule_predictions(input_json, items):
+    """api-stock's rule (StockAnalysisService.rulePredictions) for this input: [] when it does not apply."""
+    night = next((l.get('change1dPct') for l in input_json['market'].get('lines', []) if l.get('key') == 'K200NF'),
+                 None)
+    if night is None or not items:
+        return []
+    return http('GET', '/api/stock/analysis/rule-predictions?' + urllib.parse.urlencode(
+        {'night': night, 'symbols': ','.join(it['symbol'] for it in items)}))
 
 
 def save_run(line, label):
@@ -279,6 +293,8 @@ def main():
     r.add_argument('--resume', action='store_true', help='skip dates already in the results (after failures)')
     r.add_argument('--morning', action='store_true',
                    help='analyze at 08:00 KST the next day (the scheduled morning job) instead of 20:00 KST')
+    r.add_argument('--rule', action='store_true',
+                   help='rule targets follow the night futures on days it moved 0.5%%+ (as morning.ps1), version +rule')
     r.add_argument('--save', metavar='LABEL',
                    help='also store each run in the DB as replay LABEL (shown on the analysis screen)')
     r.set_defaults(fn=cmd_run)
