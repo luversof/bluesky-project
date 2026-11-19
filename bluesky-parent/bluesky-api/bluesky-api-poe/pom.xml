@@ -53,12 +53,28 @@
 				<configuration>
 					<!-- base 이미지는 공유 설정(temurin-alpine) 그대로. LuaJIT 등 엔진 런타임은
 					     bluesky-argocd-applications 의 initContainer 가 pod 기동 시 준비한다(이미지 관리 없음).
-					     엔진 스크립트(tools/poe-pob)만 앱 코드의 일부로 컨테이너 cwd(/usr/local/app) 에 baking. -->
+					     엔진 스크립트(tools/poe-pob · poe2-pob)와 데이터 갱신 스크립트를 컨테이너 cwd(/usr/local/app) 에 baking. -->
 					<extraDirectories>
 						<paths>
 							<path>
 								<from>tools/poe-pob</from>
 								<into>/usr/local/app/tools/poe-pob</into>
+							</path>
+							<path>
+								<from>tools/poe2-pob</from>
+								<into>/usr/local/app/tools/poe2-pob</into>
+							</path>
+							<!-- 데이터 갱신 파이프라인 — 파드 안에서 돌린다(node · ImageMagick 등은 values.yaml 의 기동 명령이 설치).
+							     node_modules 는 git 밖이라 빼고, 파이프라인이 처음 돌 때 npm install 로 받는다. -->
+							<path>
+								<from>tools/poe-extract</from>
+								<into>/usr/local/app/tools/poe-extract</into>
+								<excludes>node_modules/**</excludes>
+							</path>
+							<path>
+								<from>tools/poe2-extract</from>
+								<into>/usr/local/app/tools/poe2-extract</into>
+								<excludes>node_modules/**</excludes>
 							</path>
 						</paths>
 					</extraDirectories>

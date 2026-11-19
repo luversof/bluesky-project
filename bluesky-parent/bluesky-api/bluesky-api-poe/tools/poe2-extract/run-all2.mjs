@@ -7,7 +7,14 @@ import fs from "node:fs";
 import os from "node:os";
 import net from "node:net";
 import path from "node:path";
-import { REPO_DIR, WORK_DIR } from "./paths.mjs";
+import { npm } from "../poe-extract/paths.mjs";
+import { DAT_LIB, POE1_TOOLS, REPO_DIR, WORK_DIR } from "./paths.mjs";
+
+// 추출 라이브러리는 PoE1 폴더 node_modules 를 같이 쓴다. k8s 파드는 이미지에 node_modules 가 없어(git 밖) PoE1 갱신 전엔 비어 있다 → 없으면 먼저 받는다
+if (!fs.existsSync(DAT_LIB)) {
+	console.log("===== bootstrap: PoE1 폴더 npm install (추출 라이브러리) =====");
+	npm("install --no-audit --no-fund", POE1_TOOLS);
+}
 
 /** 패치 서버(patch.pathofexile2.com:13060)에 [1,6] 을 보내면 CDN 주소가 UTF-16 으로 온다 → { base, version, kakao }.
  *  해외는 GGG(…/patch/4.x.y.z/), 한국 IP 는 카카오(…kakaogames.com/production/patch/0.5.5.4.2/). 응답이 없으면 null. */

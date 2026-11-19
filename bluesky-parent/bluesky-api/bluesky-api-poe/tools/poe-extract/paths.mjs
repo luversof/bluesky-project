@@ -13,6 +13,17 @@ export const TABLES_DIR = path.join(WORK_DIR, "tables");
 export const FILES_DIR = path.join(WORK_DIR, "files");
 export const POB_DIR = path.join(WORK_DIR, "pob-uniques");
 
+/** 현재 node 에 딸린 npm 으로 실행(PATH 의존 없이 — JVM 경유 실행 대비). npm-cli.js 는 Windows 면 node.exe 옆
+ *  node_modules/, Linux(k8s 파드의 apk nodejs) 면 /usr/lib/node_modules/ 에 있다. */
+export function npm(args, cwd = REPO_DIR) {
+	const bin = path.dirname(process.execPath);
+	const cli = [path.join(bin, "node_modules"), path.join(bin, "..", "lib", "node_modules")]
+		.map((dir) => path.join(dir, "npm", "bin", "npm-cli.js"))
+		.find((p) => fs.existsSync(p));
+	if (!cli) throw new Error("npm-cli.js 를 찾지 못함: " + bin);
+	execSync(`"${process.execPath}" "${cli}" ${args}`, { stdio: "inherit", cwd });
+}
+
 export const loadTable = (lang, table) =>
 	JSON.parse(fs.readFileSync(path.join(TABLES_DIR, lang, table + ".json"), "utf8"));
 
