@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -361,6 +362,22 @@ public class StockAnalysisService {
         : asOf.atTime(20, 0).atZone(PredictionMath.MARKET_ZONE_ID).toInstant();
   }
 
+  /**
+   * 입력에 넣을 뉴스: 공시(DART)는 모두, 기사는 최신 NEWS_PER_ITEM 건, 합쳐서 최신순. 공시는 날짜만 있어 그날 00:00 으로 저장되므로 최신순 상한을
+   * 같이 쓰면 하루 수십 건인 기사에 밀려 빠진다(2026-11-20).
+   */
+  static List<StockNews> pickNews(List<StockNews> news) {
+    Comparator<StockNews> newest = Comparator.comparing(StockNews::getPublishedDate).reversed();
+    return Stream.concat(
+            news.stream().filter(n -> StockNews.SOURCE_DART.equals(n.getSource())),
+            news.stream()
+                .filter(n -> !StockNews.SOURCE_DART.equals(n.getSource()))
+                .sorted(newest)
+                .limit(NEWS_PER_ITEM))
+        .sorted(newest)
+        .toList();
+  }
+
   private AnalysisItem buildItem(StockItem item, List<StockNews> news, List<String> tags) {
     return buildItem(item, news, tags, null);
   }
@@ -383,9 +400,7 @@ public class StockAnalysisService {
             .toList();
     Bar last = bars.isEmpty() ? null : bars.get(bars.size() - 1);
     List<NewsLine> newsLines =
-        news.stream()
-            .sorted(Comparator.comparing(StockNews::getPublishedDate).reversed())
-            .limit(NEWS_PER_ITEM)
+        pickNews(news).stream()
             .map(n ->
                 new NewsLine(
                     n.getSource(),
