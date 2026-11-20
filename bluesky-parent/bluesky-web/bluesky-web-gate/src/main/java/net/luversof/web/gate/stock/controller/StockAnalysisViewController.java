@@ -1,7 +1,15 @@
 package net.luversof.web.gate.stock.controller;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +31,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.common.menu.domain.Pagination;
 import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient;
+import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient.RecentPrediction;
 import net.luversof.web.gate.stock.support.StockViewSupport;
 
 /**
- * 시황 분석 화면: 예측 적중률(기준선 대비), 최근 예측과 채점, 종목별 지표 · 뉴스. 데이터는 작업 스케줄러 스크립트가 쌓는다 (api-stock
- * tools/market-analysis).
+ * 시황 분석 화면: 한 종목(기본 삼성전자)을 골라 기간 안의 일자별 예측 적중, 확신도 · 버전별 적중률, 회차 비교, 그 종목 지표 · 뉴스를 본다 (사용자 요청
+ * 2026-11-20: 삼성전자만 분석하는데 화면은 전 종목을 보여줬고, 회차별 · 기간별 적중률은 표본이 1 건 수준이라 의미가 없었다). 데이터는 작업 스케줄러 스크립트가
+ * 쌓는다(api-stock tools/market-analysis).
  */
 @Controller
 @RequestMapping(value = "/stock", produces = MediaType.TEXT_HTML_VALUE)
@@ -35,95 +45,130 @@ public class StockAnalysisViewController {
 
   private static final Logger log = LoggerFactory.getLogger(StockAnalysisViewController.class);
 
-  static final int RECENT_DAYS = 14;
-
-  /** 최근 예측 · 회차 비교 · 종목 현황 한 쪽의 줄 수(사용자 요청 2026-11-15: 표가 너무 길다). */
+  /** 회차 비교 · 일자별 적중 한 쪽의 줄 수(사용자 요청 2026-11-15: 표가 너무 길다). */
   static final int PAGE_SIZE = 20;
 
+  static final String DEFAULT_HISTORY_SYMBOL = "005930";
+
+  /** 일자별 적중의 기간 고르기: 값 -> 화면 이름 메시지 키(all = 전부). */
+  static final Map<String, String> PERIODS = new java.util.LinkedHashMap<>();
+
+  static {
+    PERIODS.put("1m", "stock.analysis.period.1m");
+    PERIODS.put("3m", "stock.analysis.period.3m");
+    PERIODS.put("6m", "stock.analysis.period.6m");
+    PERIODS.put("1y", "stock.analysis.period.1y");
+    PERIODS.put("all", "stock.analysis.period.all");
+  }
+
+  static final String DEFAULT_PERIOD = "3m";
+
+  private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
   @Autowired private StockAnalysisClient stockAnalysisClient;
+
+  /** 한 기준일의 예측: 그날 고른 회차(운영 회차 우선)의 D+1 · D+5. 없는 기간은 null. */
+  public record DailyRow(LocalDate baseDate, RecentPrediction d1, RecentPrediction d5) {
+
+    /** 회차 정보는 D+1 · D+5 가 같은 회차라 있는 쪽에서 읽는다. */
+    public RecentPrediction run() {
+      return d1 != null ? d1 : d5;
+    }
+  }
+
+  /** 일자별 적중 표의 기간별 적중 수 · 채점 수. 적중률은 채점한 것이 없으면 null. */
+  public record DailyHits(int d1Hit, int d1Graded, int d5Hit, int d5Graded) {
+
+    public BigDecimal d1RatePct() {
+      return ratePct(d1Hit, d1Graded);
+    }
+
+    public BigDecimal d5RatePct() {
+      return ratePct(d5Hit, d5Graded);
+    }
+
+    private static BigDecimal ratePct(int hit, int graded) {
+      return graded == 0
+          ? null
+          : BigDecimal.valueOf(hit * 100L)
+              .divide(BigDecimal.valueOf(graded), 1, RoundingMode.HALF_UP);
+    }
+  }
 
   @BlueskyPreAuthorize
   @GetMapping("/analysis")
   public String analysisPage(
       HttpServletRequest request,
       @RequestParam(required = false) String keyword,
+      @RequestParam(required = false) String symbol,
+      @RequestParam(required = false) String period,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate runDate,
       @RequestParam(defaultValue = "false") boolean onlyDisagree,
-      @RequestParam(defaultValue = "1") int recentPage,
       @RequestParam(defaultValue = "1") int runsPage,
-      @RequestParam(defaultValue = "1") int itemsPage,
-      @RequestParam(required = false) String historySymbol,
-      @RequestParam(defaultValue = "1") int historyPage,
+      @RequestParam(defaultValue = "1") int dailyPage,
       Model model) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
+    String p = period != null && PERIODS.containsKey(period) ? period : DEFAULT_PERIOD;
+    model.addAttribute("period", p);
+    model.addAttribute("periods", PERIODS);
+    model.addAttribute("onlyDisagree", onlyDisagree);
     try {
-      String q = keyword == null ? "" : keyword.strip();
-      model.addAttribute("keyword", q);
       StockAnalysisClient.AnalysisInput input = stockAnalysisClient.input(UserUtil.getUserId());
-      // 검색이 분석 대상 한 종목만 가리키면 적중률 · 회차 비교 통계도 그 종목 기준(사용자 요청 2026-11-15).
-      StockAnalysisClient.AnalysisItem focus = input == null ? null : focusOf(q, input.items());
-      String focusSymbol = focus == null ? null : focus.symbol();
-      model.addAttribute("focus", focus);
-      model.addAttribute("summary", stockAnalysisClient.summary(focusSymbol));
-      List<StockAnalysisClient.RecentPrediction> recent =
-          stockAnalysisClient.recent(RECENT_DAYS).stream()
-              .filter(p -> matches(q, p.name(), p.symbol()))
-              .toList();
-      Page<StockAnalysisClient.RecentPrediction> recentRows = pageOf(recent, recentPage);
-      model.addAttribute("recent", recentRows.getContent());
-      model.addAttribute("recentPagination", new Pagination(recentRows));
-      // 쪽 버튼은 이 화면을 다시 불러 그 카드만 바꾼다(htmxPagination 이 recentPage · runsPage · itemsPage 를 붙인다).
+      List<StockAnalysisClient.AnalysisItem> items = input == null ? List.of() : input.items();
+      // 종목 고르기: symbol, 없으면 검색어(예전 링크 ?keyword=)가 가리키는 한 종목, 그것도 없으면 삼성전자.
+      StockAnalysisClient.AnalysisItem byKeyword = focusOf(keyword, items);
+      String selected =
+          historySymbolOf(
+              symbol != null ? symbol : (byKeyword == null ? null : byKeyword.symbol()), items);
+      model.addAttribute("symbolOptions", items);
+      model.addAttribute("symbol", selected);
       model.addAttribute(
-          "recentPageUrl",
+          "focus",
+          items.stream().filter(i -> i.symbol().equals(selected)).findFirst().orElse(null));
+      model.addAttribute("summary", stockAnalysisClient.summary(selected));
+      // 쪽 버튼은 이 화면을 다시 불러 그 카드만 바꾼다(htmxPagination 이 runsPage · dailyPage 를 붙인다).
+      model.addAttribute(
+          "pageUrl",
           UriComponentsBuilder.fromPath("/stock/analysis")
-              .queryParam("keyword", q)
+              .queryParamIfPresent("symbol", java.util.Optional.ofNullable(selected))
+              .queryParam("period", p)
               .queryParamIfPresent("runDate", java.util.Optional.ofNullable(runDate))
               .queryParam("onlyDisagree", onlyDisagree)
-              .queryParamIfPresent("historySymbol", java.util.Optional.ofNullable(historySymbol))
               .encode()
               .toUriString());
-      // 회차 비교: 그날의 회차들을 종목 · 기간별로 나란히(사용자 요청 2026-11-10). 종목 검색 · 불일치만 보기를 함께 건다.
-      StockAnalysisClient.RunComparison runs = stockAnalysisClient.runs(runDate, focusSymbol);
-      model.addAttribute("onlyDisagree", onlyDisagree);
+
+      if (selected != null) {
+        StockAnalysisClient.SymbolHistory history = stockAnalysisClient.history(selected);
+        List<DailyRow> daily = dailyRows(history.predictions(), periodStart(p, LocalDate.now(KST)));
+        Page<DailyRow> dailyRows = pageOf(daily, dailyPage);
+        model.addAttribute("dailyHits", dailyHits(daily));
+        model.addAttribute("daily", dailyRows.getContent());
+        model.addAttribute("dailyPagination", new Pagination(dailyRows));
+      }
+
+      // 회차 비교: 그날의 회차들을 기간별로 나란히(사용자 요청 2026-11-10), 고른 종목만.
+      StockAnalysisClient.RunComparison runs = stockAnalysisClient.runs(runDate, selected);
       if (runs != null) {
         Page<StockAnalysisClient.RunRow> runRows =
             pageOf(
-                runs.rows().stream()
-                    .filter(r -> matches(q, r.name(), r.symbol()))
-                    .filter(r -> !onlyDisagree || r.disagree())
-                    .toList(),
-                runsPage);
+                runs.rows().stream().filter(r -> !onlyDisagree || r.disagree()).toList(), runsPage);
         runs =
             new StockAnalysisClient.RunComparison(
                 runs.date(), runs.dates(), runs.runs(), runRows.getContent());
         model.addAttribute("runsPagination", new Pagination(runRows));
       }
       model.addAttribute("runs", runs);
+
       if (input != null) {
-        // 종목별 예측(사용자 요청 2026-11-15): 고른 종목의 일자별 예측 · 적중률. 기본은 삼성전자, 없으면 첫 대상.
-        String symbol =
-            historySymbolOf(historySymbol != null ? historySymbol : focusSymbol, input.items());
-        model.addAttribute("historyOptions", input.items());
-        model.addAttribute("historySymbol", symbol);
-        if (symbol != null) {
-          StockAnalysisClient.SymbolHistory history = stockAnalysisClient.history(symbol);
-          Page<StockAnalysisClient.RecentPrediction> historyRows =
-              pageOf(history.predictions(), historyPage);
-          model.addAttribute("historyRates", history.byVersion());
-          model.addAttribute("history", historyRows.getContent());
-          model.addAttribute("historyPagination", new Pagination(historyRows));
-        }
-        Page<StockAnalysisClient.AnalysisItem> itemRows =
-            pageOf(
-                input.items().stream().filter(i -> matches(q, i.name(), i.symbol())).toList(),
-                itemsPage);
+        // 종목 현황도 고른 종목만(사용자 요청 2026-11-20).
         input =
             new StockAnalysisClient.AnalysisInput(
-                input.generatedAt(), input.market(), itemRows.getContent());
-        model.addAttribute("itemsPagination", new Pagination(itemRows));
+                input.generatedAt(),
+                input.market(),
+                items.stream().filter(i -> i.symbol().equals(selected)).toList());
       }
       model.addAttribute("input", input);
     } catch (RuntimeException e) {
@@ -134,7 +179,71 @@ public class StockAnalysisViewController {
     return "stock/analysis";
   }
 
-  static final String DEFAULT_HISTORY_SYMBOL = "005930";
+  /** 기간의 첫 기준일. all 이면 null(전부). */
+  static LocalDate periodStart(String period, LocalDate today) {
+    return switch (period) {
+      case "1m" -> today.minusMonths(1);
+      case "3m" -> today.minusMonths(3);
+      case "6m" -> today.minusMonths(6);
+      case "1y" -> today.minusYears(1);
+      default -> null;
+    };
+  }
+
+  /**
+   * 기준일마다 한 줄, 최근 날짜부터. 그날 회차가 여럿이면 운영 회차(리플레이 아님) 중 마지막, 운영 회차가 없으면 리플레이 중 마지막을 쓴다. 늦은 예측(장 시작 뒤)은
+   * 적중률에서 빼므로 여기서도 뺀다.
+   */
+  static List<DailyRow> dailyRows(List<RecentPrediction> predictions, LocalDate from) {
+    Map<LocalDate, List<RecentPrediction>> byDate =
+        predictions.stream()
+            .filter(p -> !Boolean.TRUE.equals(p.late()))
+            .filter(p -> from == null || !p.baseDate().isBefore(from))
+            .collect(
+                Collectors.groupingBy(
+                    RecentPrediction::baseDate, TreeMap::new, Collectors.toList()));
+    Comparator<RecentPrediction> preferred =
+        Comparator.comparing((RecentPrediction p) -> p.replay() == null)
+            .thenComparing(
+                RecentPrediction::createdDate, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .thenComparingInt(RecentPrediction::runSeq);
+    return ((TreeMap<LocalDate, List<RecentPrediction>>) byDate)
+        .descendingMap().entrySet().stream()
+            .map(e -> {
+              RecentPrediction pick = e.getValue().stream().max(preferred).orElseThrow();
+              // 회차는 만든 날(KST)과 그날의 회차 번호로 가린다 - 한 회차의 D+1 · D+5 도 createdDate 가 밀리초씩 다르다.
+              List<RecentPrediction> run =
+                  e.getValue().stream()
+                      .filter(p ->
+                          Objects.equals(runDay(p), runDay(pick)) && p.runSeq() == pick.runSeq())
+                      .toList();
+              return new DailyRow(e.getKey(), horizon(run, 1), horizon(run, 5));
+            })
+            .toList();
+  }
+
+  static DailyHits dailyHits(List<DailyRow> rows) {
+    int d1Hit = 0, d1Graded = 0, d5Hit = 0, d5Graded = 0;
+    for (DailyRow r : rows) {
+      if (r.d1() != null && r.d1().hit() != null) {
+        d1Graded++;
+        d1Hit += r.d1().hit() ? 1 : 0;
+      }
+      if (r.d5() != null && r.d5().hit() != null) {
+        d5Graded++;
+        d5Hit += r.d5().hit() ? 1 : 0;
+      }
+    }
+    return new DailyHits(d1Hit, d1Graded, d5Hit, d5Graded);
+  }
+
+  private static LocalDate runDay(RecentPrediction p) {
+    return p.createdDate() == null ? null : LocalDate.ofInstant(p.createdDate(), KST);
+  }
+
+  private static RecentPrediction horizon(List<RecentPrediction> run, int days) {
+    return run.stream().filter(p -> p.horizonDays() == days).findFirst().orElse(null);
+  }
 
   /** 검색어가 분석 대상 하나에만 맞으면 그 종목, 아니면(빈 검색 · 여러 종목) null. 코드가 정확히 같으면 그것을 고른다. */
   static StockAnalysisClient.AnalysisItem focusOf(

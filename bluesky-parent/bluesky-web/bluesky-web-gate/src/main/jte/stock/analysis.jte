@@ -1,6 +1,7 @@
 @import io.github.luversof.boot.context.support.MessageUtil
 @import java.math.BigDecimal
 @import java.util.List
+@import net.luversof.web.gate.stock.controller.StockAnalysisViewController
 @import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient
 @import net.luversof.web.gate.stock.support.StockViewSupport
 
@@ -10,21 +11,19 @@
 @param String profile = "local"
 @param boolean loadError = false
 @param StockAnalysisClient.Summary summary = null
-@param List<StockAnalysisClient.RecentPrediction> recent = null
 @param StockAnalysisClient.AnalysisInput input = null
-@param String keyword = ""
 @param StockAnalysisClient.RunComparison runs = null
 @param boolean onlyDisagree = false
-@param net.luversof.web.common.menu.domain.Pagination recentPagination = null
 @param net.luversof.web.common.menu.domain.Pagination runsPagination = null
-@param net.luversof.web.common.menu.domain.Pagination itemsPagination = null
-@param String recentPageUrl = "/stock/analysis"
-@param List<StockAnalysisClient.AnalysisItem> historyOptions = null
-@param String historySymbol = null
-@param List<StockAnalysisClient.RateRow> historyRates = null
-@param List<StockAnalysisClient.RecentPrediction> history = null
-@param net.luversof.web.common.menu.domain.Pagination historyPagination = null
+@param String pageUrl = "/stock/analysis"
+@param List<StockAnalysisClient.AnalysisItem> symbolOptions = null
+@param String symbol = null
+@param String period = "3m"
+@param java.util.Map<String, String> periods = java.util.Map.of()
 @param StockAnalysisClient.AnalysisItem focus = null
+@param List<StockAnalysisViewController.DailyRow> daily = null
+@param StockAnalysisViewController.DailyHits dailyHits = null
+@param net.luversof.web.common.menu.domain.Pagination dailyPagination = null
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
@@ -44,51 +43,93 @@
 			@if(loadError || summary == null)
 				<div role="alert" class="alert alert-warning">${MessageUtil.getMessage("stock.analysis.loadError")}</div>
 			@else
+				<%-- 종목 · 기간 고르기(사용자 요청 2026-11-20): 화면 전체가 고른 한 종목 기준이다. 기본은 삼성전자 · 3 개월. --%>
+				<form method="get" action="/stock/analysis" class="flex flex-wrap items-center gap-2">
+					<label class="text-sm" for="analysis-symbol">${MessageUtil.getMessage("stock.analysis.history.symbol")}</label>
+					<select id="analysis-symbol" name="symbol" class="select select-bordered select-sm">
+						@if(symbolOptions != null)
+							@for(var o : symbolOptions)
+								<option value="${o.symbol()}" selected="${o.symbol().equals(symbol)}">${o.name()} (${o.symbol()})</option>
+							@endfor
+						@endif
+					</select>
+					<label class="text-sm" for="analysis-period">${MessageUtil.getMessage("stock.analysis.period")}</label>
+					<select id="analysis-period" name="period" class="select select-bordered select-sm">
+						@for(var p : periods.entrySet())
+							<option value="${p.getKey()}" selected="${p.getKey().equals(period)}">${MessageUtil.getMessage(p.getValue())}</option>
+						@endfor
+					</select>
+					<button type="submit" class="btn btn-sm btn-primary">${MessageUtil.getMessage("stock.analysis.runs.show")}</button>
+				</form>
+				@if(focus != null)
+					<p class="text-sm font-semibold" role="status">${StockViewSupport.msg("stock.analysis.focus", focus.name(), focus.symbol())}</p>
+				@endif
+
 				<div class="grid stat-card-grid grid-cols-3 gap-3">
 					@template._components.ui.statCard(label = MessageUtil.getMessage("stock.analysis.card.predictions"), value = String.valueOf(summary.predictions()), amount = false)
 					@template._components.ui.statCard(label = MessageUtil.getMessage("stock.analysis.card.pending"), value = String.valueOf(summary.pending()), amount = false)
 					@template._components.ui.statCard(label = MessageUtil.getMessage("stock.analysis.card.late"), value = String.valueOf(summary.late()), amount = false)
 				</div>
 
-				<%-- 시장 상황(v2, 2026-11-10): 예측이 보는 공통 근거 - 간밤 미국 · 변동성 · 금리 · 환율 · 국내 지수. --%>
-				@if(input != null && input.market() != null && !input.market().lines().isEmpty())
-					@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.market.title"), body = @`
-						<div class="overflow-x-auto">
-							<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.market.title")}">
-								<thead><tr>
-									<th scope="col">${MessageUtil.getMessage("stock.analysis.market.col.indicator")}</th>
-									<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
-									<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.close")}</th>
-									<th scope="col" class="text-right">D-1</th>
-									<th scope="col" class="text-right">D-5</th>
-								</tr></thead>
-								<tbody>
-									@for(var line : input.market().lines())
-										<tr>
-											<th scope="row" class="font-medium">${line.name()}</th>
-											<td>${line.lastDate() != null ? line.lastDate().toString() : "-"}</td>
-											<td class="text-right">${num.apply(line.close())}</td>
-											<td class="text-right ${line.change1dPct() == null ? "" : (line.change1dPct().signum() > 0 ? "text-profit" : (line.change1dPct().signum() < 0 ? "text-loss" : ""))}">${pct.apply(line.change1dPct())}</td>
-											<td class="text-right ${line.change5dPct() == null ? "" : (line.change5dPct().signum() > 0 ? "text-profit" : (line.change5dPct().signum() < 0 ? "text-loss" : ""))}">${pct.apply(line.change5dPct())}</td>
-										</tr>
-									@endfor
-								</tbody>
-							</table>
-						</div>
-						@if(!input.market().unavailable().isEmpty())
-							<p class="mt-2 text-xs text-base-content/60">${StockViewSupport.msg("stock.analysis.market.unavailable", String.join(", ", input.market().unavailable()))}</p>
+				<%-- 일자별 적중(사용자 요청 2026-11-20): 기준일마다 그날 회차(운영 회차 우선)의 D+1 · D+5 가 맞았는지. 위에 기간 안 적중 수를 센다. --%>
+				<div id="analysis-daily">
+				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.daily.title"), body = @`
+						@if(daily == null || daily.isEmpty())
+							<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
+						@else
+							@if(dailyHits != null)
+								<p class="text-sm font-semibold mb-3">${StockViewSupport.msg("stock.analysis.daily.summary",
+										String.valueOf(dailyHits.d1Hit()), String.valueOf(dailyHits.d1Graded()), rate.apply(dailyHits.d1RatePct()),
+										String.valueOf(dailyHits.d5Hit()), String.valueOf(dailyHits.d5Graded()), rate.apply(dailyHits.d5RatePct()))}</p>
+							@endif
+							<div class="overflow-x-auto">
+								<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.daily.title")}">
+									<thead><tr>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.runTime")}</th>
+										<th scope="col">D+1</th>
+										<th scope="col">D+5</th>
+									</tr></thead>
+									<tbody>
+										@for(var row : daily)
+											!{var run = row.run();}
+											<tr>
+												<td class="whitespace-nowrap">${String.valueOf(row.baseDate())}</td>
+												<td class="whitespace-nowrap">${run.createdDate() == null ? "-" : runTime.format(run.createdDate())} <span class="opacity-60 text-xs">${run.promptVersion()}</span>
+													@if(run.replay() != null)
+														<span class="badge badge-sm badge-outline badge-info">${MessageUtil.getMessage("stock.analysis.runs.replay")} ${run.replay()}</span>
+													@endif
+												</td>
+												@for(var p : java.util.Arrays.asList(row.d1(), row.d5()))
+													<td class="whitespace-nowrap">
+														@if(p == null)
+															-
+														@else
+															@template.stock.htmx.fragments.components.predictionBadge(direction = p.direction(), confidence = p.confidence(), rationale = p.rationale(), hit = p.hit(), actualDirection = p.actualDirection(), actualChangePct = p.actualChangePct(), pct = pct)
+														@endif
+													</td>
+												@endfor
+											</tr>
+										@endfor
+									</tbody>
+								</table>
+							</div>
+							@if(dailyPagination != null && dailyPagination.getTotalPage() > 1)
+								@template._components.htmxPagination(
+									pagination = dailyPagination,
+									url = pageUrl,
+									includeSelector = "this",
+									targetSelector = "#analysis-daily",
+									pageParam = "dailyPage")
+							@endif
+							<p class="mt-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.analysis.daily.note")}</p>
 						@endif
-					`)
-				@endif
+				`)
+				</div>
 
-				@if(focus != null)
-					<%-- 한 종목을 검색하면 적중률 · 회차 비교 통계가 그 종목 기준임을 알린다. --%>
-					<p class="text-sm font-semibold" role="status">${StockViewSupport.msg("stock.analysis.focus", focus.name(), focus.symbol())}</p>
-				@endif
+				<%-- 확신도 · 프롬프트 버전별 적중률은 개선이 나아졌는지 보는 데 쓴다(사용자 결정 2026-11-20). 회차별 · 기간별은 표본이 너무 작아 뺐다. --%>
 				<div class="grid gap-6 lg:grid-cols-2">
 					@for(var section : List.of(
-							List.of("stock.analysis.rate.run", summary.byRun() == null ? List.of() : summary.byRun()),
-							List.of("stock.analysis.rate.horizon", summary.byHorizon()),
 							List.of("stock.analysis.rate.confidence", summary.byConfidence()),
 							List.of("stock.analysis.rate.version", summary.byPromptVersion())))
 						!{@SuppressWarnings("unchecked") var rows = (List<StockAnalysisClient.RateRow>) section.get(1);}
@@ -98,14 +139,17 @@
 					@endfor
 				</div>
 
-				<%-- 회차 비교(사용자 요청 2026-11-10): 그날 돌린 회차들을 열로 놓고 종목 · 기간별 방향 · 신뢰도를 나란히 본다. 방향이 갈린 행은 표시하고 그것만 볼 수 있다. 행은 쪽으로 나눈다(2026-11-15). --%>
+				<%-- 회차 비교(사용자 요청 2026-11-10): 그날 돌린 회차들을 열로 놓고 기간별 방향 · 신뢰도를 나란히 본다. 고른 종목만. 행은 쪽으로 나눈다(2026-11-15). --%>
 				<div id="analysis-runs">
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.runs.title"), body = @`
 					@if(runs == null || runs.date() == null)
 						<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
 					@else
 						<form method="get" action="/stock/analysis" class="flex flex-wrap items-center gap-2 mb-3">
-							<input type="hidden" name="keyword" value="${keyword}" />
+							@if(symbol != null)
+								<input type="hidden" name="symbol" value="${symbol}" />
+							@endif
+							<input type="hidden" name="period" value="${period}" />
 							<label class="text-sm" for="analysis-run-date">${MessageUtil.getMessage("stock.analysis.runs.date")}</label>
 							<select id="analysis-run-date" name="runDate" class="select select-bordered select-sm">
 								@for(var d : runs.dates())
@@ -149,10 +193,7 @@
 													@if(cell == null)
 														-
 													@else
-														@template._components.ui.tooltip(text = cell.rationale() == null ? cell.direction() : cell.rationale(), placement = "top", content = @`<span class="badge badge-sm badge-outline${cell.hit() == null ? "" : (cell.hit() ? " badge-success" : " badge-error")}">${cell.direction()} ${cell.confidence()}</span>`)
-														@if(cell.actualDirection() != null)
-															<span class="text-xs opacity-70">${cell.actualDirection()} ${pct.apply(cell.actualChangePct())}</span>
-														@endif
+														@template.stock.htmx.fragments.components.predictionBadge(direction = cell.direction(), confidence = cell.confidence(), rationale = cell.rationale(), hit = cell.hit(), actualDirection = cell.actualDirection(), actualChangePct = cell.actualChangePct(), pct = pct)
 													@endif
 												</td>
 											@endfor
@@ -164,7 +205,7 @@
 						@if(runsPagination != null && runsPagination.getTotalPage() > 1)
 							@template._components.htmxPagination(
 								pagination = runsPagination,
-								url = recentPageUrl,
+								url = pageUrl,
 								includeSelector = "this",
 								targetSelector = "#analysis-runs",
 								pageParam = "runsPage")
@@ -174,129 +215,7 @@
 				`)
 				</div>
 
-				<%-- 종목 검색: 아래 최근 예측 · 종목별 지표와 뉴스를 종목명 · 코드로 거른다. --%>
-				<form method="get" action="/stock/analysis" role="search" class="flex flex-wrap items-center gap-2">
-					<input name="keyword" type="search" value="${keyword}" aria-label="${MessageUtil.getMessage("stock.analysis.search.placeholder")}" placeholder="${MessageUtil.getMessage("stock.analysis.search.placeholder")}" class="input input-bordered input-sm w-full max-w-xs" />
-					<button type="submit" class="btn btn-sm btn-primary">${MessageUtil.getMessage("stock.analysis.search.submit")}</button>
-					@if(keyword != null && !keyword.isBlank())
-						<a href="/stock/analysis" class="link link-hover text-sm">${MessageUtil.getMessage("stock.analysis.search.reset")}</a>
-					@endif
-				</form>
-
-				<%-- 종목별 예측(사용자 요청 2026-11-15): 고른 종목의 일자별 예측 · 결과와 버전별 적중률. 리플레이 회차도 버전 이름으로 구분해 함께 본다. --%>
-				@if(historyOptions != null && !historyOptions.isEmpty())
-				<div id="analysis-history">
-				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.history.title"), body = @`
-						<form method="get" action="/stock/analysis" class="flex flex-wrap items-center gap-2 mb-3">
-							<input type="hidden" name="keyword" value="${keyword}" />
-							@if(runs != null && runs.date() != null)
-								<input type="hidden" name="runDate" value="${runs.date().toString()}" />
-							@endif
-							<input type="hidden" name="onlyDisagree" value="${onlyDisagree}" />
-							<label class="text-sm" for="analysis-history-symbol">${MessageUtil.getMessage("stock.analysis.history.symbol")}</label>
-							<select id="analysis-history-symbol" name="historySymbol" class="select select-bordered select-sm">
-								@for(var o : historyOptions)
-									<option value="${o.symbol()}" selected="${o.symbol().equals(historySymbol)}">${o.name()} (${o.symbol()})</option>
-								@endfor
-							</select>
-							<button type="submit" class="btn btn-sm btn-outline">${MessageUtil.getMessage("stock.analysis.runs.show")}</button>
-						</form>
-						<h3 class="text-sm font-semibold mb-2">${MessageUtil.getMessage("stock.analysis.history.rates")}</h3>
-						@template.stock.htmx.fragments.components.rateTable(rows = historyRates, label = MessageUtil.getMessage("stock.analysis.history.rates"), rate = rate)
-						@if(history == null || history.isEmpty())
-							<p class="text-sm opacity-70 mt-4">${MessageUtil.getMessage("stock.analysis.empty")}</p>
-						@else
-							<div class="overflow-x-auto mt-4">
-								<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.history.title")}">
-									<thead><tr>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.horizon")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.runTime")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.direction")}</th>
-										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.confidence")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.result")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.rationale")}</th>
-									</tr></thead>
-									<tbody>
-										@for(var p : history)
-											<tr>
-												<td class="whitespace-nowrap">${String.valueOf(p.baseDate())}</td>
-												<td>D+${p.horizonDays()}</td>
-												<td class="whitespace-nowrap">${p.createdDate() == null ? "-" : runTime.format(p.createdDate())} <span class="opacity-60 text-xs">${p.promptVersion()}</span>
-													@if(p.replay() != null)
-														<span class="badge badge-sm badge-outline badge-info">${MessageUtil.getMessage("stock.analysis.runs.replay")} ${p.replay()}</span>
-													@endif
-												</td>
-												<td>${p.direction()}</td>
-												<td class="text-right">${p.confidence()}</td>
-												<td class="whitespace-nowrap">@template.stock.htmx.fragments.components.predictionResult(p = p, pct = pct)</td>
-												<td class="text-xs min-w-64">${p.rationale()}</td>
-											</tr>
-										@endfor
-									</tbody>
-								</table>
-							</div>
-							@if(historyPagination != null && historyPagination.getTotalPage() > 1)
-								@template._components.htmxPagination(
-									pagination = historyPagination,
-									url = recentPageUrl,
-									includeSelector = "this",
-									targetSelector = "#analysis-history",
-									pageParam = "historyPage")
-							@endif
-						@endif
-				`)
-				</div>
-				@endif
-
-				<%-- 최근 예측은 쪽으로 나눈다(사용자 요청 2026-11-15). 쪽 버튼은 이 화면을 다시 받아 이 영역만 바꾼다. --%>
-				<div id="analysis-recent">
-				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.recent.title"), body = @`
-						@if(recent == null || recent.isEmpty())
-							<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
-						@else
-							<div class="overflow-x-auto">
-								<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.recent.title")}">
-									<thead><tr>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.runTime")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.stock")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.horizon")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.direction")}</th>
-										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.confidence")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.result")}</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.rationale")}</th>
-									</tr></thead>
-									<tbody>
-										@for(var p : recent)
-											<tr>
-												<td class="whitespace-nowrap">${p.createdDate() == null ? "-" : runTime.format(p.createdDate())} <span class="opacity-60 text-xs">#${p.runSeq()} ${p.promptVersion()}</span></td>
-												<td class="whitespace-nowrap">${String.valueOf(p.baseDate())}</td>
-												<td class="whitespace-nowrap">${p.name()} <span class="opacity-60 text-xs">${p.symbol()}</span></td>
-												<td>D+${p.horizonDays()}</td>
-												<td>${p.direction()}</td>
-												<td class="text-right">${p.confidence()}</td>
-												<td class="whitespace-nowrap">@template.stock.htmx.fragments.components.predictionResult(p = p, pct = pct)</td>
-												<td class="text-xs min-w-64">${p.rationale()}</td>
-											</tr>
-										@endfor
-									</tbody>
-								</table>
-							</div>
-							@if(recentPagination != null && recentPagination.getTotalPage() > 1)
-								@template._components.htmxPagination(
-									pagination = recentPagination,
-									url = recentPageUrl,
-									includeSelector = "this",
-									targetSelector = "#analysis-recent",
-									pageParam = "recentPage")
-							@endif
-						@endif
-				`)
-				</div>
-
-				<%-- 종목 현황도 쪽으로 나눈다(2026-11-15) - 종목마다 뉴스가 붙어 한 줄이 길다. --%>
-				<div id="analysis-items">
+				<%-- 종목 현황: 고른 종목의 지표 · 뉴스(사용자 요청 2026-11-20 - 전 종목을 늘어놓지 않는다). --%>
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.items.title"), body = @`
 						@if(input == null || input.items().isEmpty())
 							<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
@@ -312,7 +231,6 @@
 										<th scope="col" class="text-right">D-20 @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.analysis.term.d20"))</th>
 										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.ma20Gap")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.analysis.term.ma20Gap"))</th>
 										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.volumeRatio")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.analysis.term.volumeRatio"))</th>
-										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.news")}</th>
 									</tr></thead>
 									<tbody>
 										@for(var item : input.items())
@@ -325,36 +243,64 @@
 												<td class="text-right">${pct.apply(item.indicators().change20dPct())}</td>
 												<td class="text-right">${pct.apply(item.indicators().closeVsMa20Pct())}</td>
 												<td class="text-right">${num.apply(item.indicators().volumeRatio20())}</td>
-												<td class="text-xs min-w-64">
-													<ul class="space-y-1">
-														@for(var n : item.news().stream().limit(3).toList())
-															<li>
-																<span class="badge badge-outline badge-sm">${n.source()}</span>
-																@if(n.url() != null && n.url().startsWith("http"))
-																	<a class="link link-hover" href="${n.url()}" target="_blank" rel="noopener noreferrer">${n.title()}<span class="sr-only"> ${MessageUtil.getMessage("common.label.opens.new.window")}</span></a>
-																@else
-																	${n.title()}
-																@endif
-															</li>
-														@endfor
-													</ul>
-												</td>
 											</tr>
 										@endfor
 									</tbody>
 								</table>
 							</div>
-							@if(itemsPagination != null && itemsPagination.getTotalPage() > 1)
-								@template._components.htmxPagination(
-									pagination = itemsPagination,
-									url = recentPageUrl,
-									includeSelector = "this",
-									targetSelector = "#analysis-items",
-									pageParam = "itemsPage")
-							@endif
+							<%-- 한 종목이라 뉴스는 표 칸에 세 줄로 줄이지 않고 아래에 목록으로 다 보인다. --%>
+							@for(var item : input.items())
+								<h3 class="text-sm font-semibold mt-4 mb-2">${MessageUtil.getMessage("stock.analysis.col.news")}</h3>
+								@if(item.news().isEmpty())
+									<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
+								@else
+									<ul class="space-y-1 text-sm">
+										@for(var n : item.news())
+											<li>
+												<span class="badge badge-outline badge-sm">${n.source()}</span>
+												@if(n.url() != null && n.url().startsWith("http"))
+													<a class="link link-hover" href="${n.url()}" target="_blank" rel="noopener noreferrer">${n.title()}<span class="sr-only"> ${MessageUtil.getMessage("common.label.opens.new.window")}</span></a>
+												@else
+													${n.title()}
+												@endif
+											</li>
+										@endfor
+									</ul>
+								@endif
+							@endfor
 						@endif
 				`)
-				</div>
+
+				<%-- 시장 상황(v2, 2026-11-10): 예측이 보는 공통 근거 - 간밤 미국 · 변동성 · 금리 · 환율 · 국내 지수. --%>
+				@if(input != null && input.market() != null && !input.market().lines().isEmpty())
+					@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.market.title"), body = @`
+						<div class="overflow-x-auto">
+							<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.market.title")}">
+								<thead><tr>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.market.col.indicator")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
+									<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.close")}</th>
+									<th scope="col" class="text-right">D-1</th>
+									<th scope="col" class="text-right">D-5</th>
+								</tr></thead>
+								<tbody>
+									@for(var line : input.market().lines())
+										<tr>
+											<th scope="row" class="font-medium">${line.name()}</th>
+											<td>${line.lastDate() != null ? line.lastDate().toString() : "-"}</td>
+											<td class="text-right">${num.apply(line.close())}</td>
+											<td class="text-right ${line.change1dPct() == null ? "" : (line.change1dPct().signum() > 0 ? "text-profit" : (line.change1dPct().signum() < 0 ? "text-loss" : ""))}">${pct.apply(line.change1dPct())}</td>
+											<td class="text-right ${line.change5dPct() == null ? "" : (line.change5dPct().signum() > 0 ? "text-profit" : (line.change5dPct().signum() < 0 ? "text-loss" : ""))}">${pct.apply(line.change5dPct())}</td>
+										</tr>
+									@endfor
+								</tbody>
+							</table>
+						</div>
+						@if(!input.market().unavailable().isEmpty())
+							<p class="mt-2 text-xs text-base-content/60">${StockViewSupport.msg("stock.analysis.market.unavailable", String.join(", ", input.market().unavailable()))}</p>
+						@endif
+					`)
+				@endif
 			@endif
 		</div>
 	`

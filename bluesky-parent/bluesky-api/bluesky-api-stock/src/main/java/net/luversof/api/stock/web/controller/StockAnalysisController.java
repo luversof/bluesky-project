@@ -49,9 +49,15 @@ public class StockAnalysisController {
     return marketDailyCollectService.backfill(userId, from, to);
   }
 
+  /** symbols 를 주면 그 종목 뉴스만 모은다(2026-11-20: 삼성전자만 분석하는데 40 종목 뉴스를 계속 모았다). */
   @PostMapping("/news")
-  public StockNewsCollectService.CollectResult collectNews(@RequestParam UUID userId) {
-    return stockNewsCollectService.collect(userId, stockAnalysisService.findTargets());
+  public StockNewsCollectService.CollectResult collectNews(
+      @RequestParam UUID userId, @RequestParam(required = false) List<String> symbols) {
+    return stockNewsCollectService.collect(
+        userId,
+        stockAnalysisService.findTargets().stream()
+            .filter(i -> symbols == null || symbols.isEmpty() || symbols.contains(i.getSymbol()))
+            .toList());
   }
 
   /** 분석 대상 추가: 없는 종목은 만들고 analysis 태그를 붙인다. */

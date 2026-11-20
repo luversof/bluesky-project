@@ -80,8 +80,13 @@ function Update-PriceHistory {
     Write-Log ("prices: {0} symbols, failed [{1}]" -f $status.targetSymbolCount, ($status.failedSymbols -join ','))
 }
 
+# Only the analyzed symbols (BLUESKY_ANALYSIS_SYMBOLS, default Samsung Electronics, 'all' = every target):
+# collecting news for all ~40 targets was wasted work once only Samsung is analyzed (2026-11-20).
 function Update-News {
-    $result = Invoke-Api POST "/api/stock/analysis/news?userId=$UserId"
+    $newsSymbols = if ($env:BLUESKY_ANALYSIS_SYMBOLS) { $env:BLUESKY_ANALYSIS_SYMBOLS } else { '005930' }
+    $path = "/api/stock/analysis/news?userId=$UserId"
+    if ($newsSymbols -ne 'all') { $path += '&symbols=' + (($newsSymbols.Split(',') | ForEach-Object { $_.Trim() }) -join ',') }
+    $result = Invoke-Api POST $path
     Write-Log ("news: naver {0}, dart {1}. {2}" -f $result.naverSaved, $result.dartSaved, ($result.messages -join ' / '))
 }
 

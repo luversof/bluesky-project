@@ -2,11 +2,15 @@ package net.luversof.web.gate.stock.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
+
+import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient;
 
 /** 시황 분석 최근 예측 쪽 나누기(사용자 요청 2026-11-15). */
 class StockAnalysisRecentPageTest {
@@ -59,5 +63,74 @@ class StockAnalysisRecentPageTest {
     assertThat(StockAnalysisViewController.focusOf("005930", items).symbol()).isEqualTo("005930");
     assertThat(StockAnalysisViewController.focusOf("삼성전자", items)).isNull();
     assertThat(StockAnalysisViewController.focusOf("", items)).isNull();
+  }
+
+  private static StockAnalysisClient.RecentPrediction pred(
+      String baseDate,
+      int horizon,
+      String created,
+      int seq,
+      String replay,
+      Boolean hit,
+      Boolean late) {
+    return new StockAnalysisClient.RecentPrediction(
+        "005930",
+        "삼성전자",
+        LocalDate.parse(baseDate),
+        horizon,
+        "UP",
+        60,
+        null,
+        null,
+        "v9",
+        replay,
+        Instant.parse(created),
+        seq,
+        null,
+        null,
+        null,
+        hit,
+        late);
+  }
+
+  @Test
+  void 일자별_적중은_기준일마다_운영_회차를_먼저_고르고_늦은_예측은_뺀다() {
+    var preds =
+        List.of(
+            // 11-17: 운영 회차(실패)와 나중 리플레이(적중) - 운영 회차를 쓴다
+            pred("2026-11-17", 1, "2026-11-17T23:00:00Z", 1, null, false, false),
+            pred(
+                "2026-11-17", 5, "2026-11-17T23:00:00.022Z", 1, null, null, false), // 같은 회차, 밀리초 차이
+            pred("2026-11-17", 1, "2026-11-18T05:00:00Z", 2, "누락채움", true, false),
+            // 11-16: 리플레이만 - 같은 시각 두 회차 중 번호가 큰 것
+            pred("2026-11-16", 1, "2026-11-16T23:00:00Z", 1, "A", false, false),
+            pred("2026-11-16", 1, "2026-11-16T23:00:00Z", 2, "B", true, false),
+            // 11-13: 늦은 예측뿐 - 줄이 없다
+            pred("2026-11-13", 1, "2026-11-14T03:00:00Z", 1, null, true, true),
+            // 기간 밖
+            pred("2026-10-01", 1, "2026-10-01T23:00:00Z", 1, null, true, false));
+    var rows = StockAnalysisViewController.dailyRows(preds, LocalDate.of(2026, 11, 1));
+    assertThat(rows)
+        .extracting(StockAnalysisViewController.DailyRow::baseDate)
+        .containsExactly(LocalDate.of(2026, 11, 17), LocalDate.of(2026, 11, 16));
+    assertThat(rows.get(0).d1().replay()).isNull();
+    assertThat(rows.get(0).d5()).isNotNull();
+    assertThat(rows.get(1).d1().replay()).isEqualTo("B");
+    assertThat(rows.get(1).d5()).isNull();
+
+    var hits = StockAnalysisViewController.dailyHits(rows);
+    assertThat(hits.d1Hit()).isEqualTo(1);
+    assertThat(hits.d1Graded()).isEqualTo(2);
+    assertThat(hits.d1RatePct()).isEqualByComparingTo("50.0");
+    assertThat(hits.d5Graded()).isZero();
+    assertThat(hits.d5RatePct()).isNull();
+  }
+
+  @Test
+  void 기간은_몇_달_전부터_all_은_전부() {
+    var today = LocalDate.of(2026, 11, 20);
+    assertThat(StockAnalysisViewController.periodStart("3m", today))
+        .isEqualTo(LocalDate.of(2026, 8, 20));
+    assertThat(StockAnalysisViewController.periodStart("all", today)).isNull();
   }
 }
