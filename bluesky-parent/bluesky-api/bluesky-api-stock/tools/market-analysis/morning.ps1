@@ -9,15 +9,21 @@
 # Catch-up (2026-11-19): reference dates of the last 5 trading days with no prediction (usage limit,
 # api-stock down, a run during market hours) are analyzed as of 08:00 the next morning and stored as
 # replay runs, so missed days fill themselves on the next run.
+# Re-analysis (user request 2026-11-21): reference dates of the last 20 trading days with no prediction
+# from the current prompt version are analyzed again with it (replay "re-analysis <version>"), even when an
+# older version already analyzed them, so the analysis screen compares versions on the same dates.
+# It runs once per date per version: a new prompt version costs up to 20 extra claude calls on its first run.
 $JobName = 'morning'
 . "$PSScriptRoot\common.ps1"
 
 # replay label of catch-up runs (Korean, built from code points: this file stays ASCII-only)
 $CatchUpLabel = -join [char[]](0xB204, 0xB77D, 0xCC44, 0xC6C0)
+# "re-analysis " prefix, same as api-stock StockAnalysisService.REANALYSIS_PREFIX
+$ReanalysisPrefix = (-join [char[]](0xC7AC, 0xBD84, 0xC11D)) + ' '
 
-function Submit-Run([string]$ModelId, [string]$Version, $Predictions, [string]$AsOf) {
+function Submit-Run([string]$ModelId, [string]$Version, $Predictions, [string]$AsOf, [string]$Label) {
     $path = '/api/stock/analysis/predictions'
-    if ($AsOf) { $path += "?asOf=$AsOf&morning=true&replay=" + [uri]::EscapeDataString($CatchUpLabel) }
+    if ($AsOf) { $path += "?asOf=$AsOf&morning=true&replay=" + [uri]::EscapeDataString($Label) }
     $submit = Invoke-Api POST $path @{ modelId = $ModelId; promptVersion = $Version; predictions = @($Predictions) }
     Write-Log ("predictions{0}: run {1} saved {2}, rejected {3} [{4}] model {5} {6}" -f `
             $(if ($AsOf) { " $AsOf" } else { '' }), $submit.runId, $submit.saved, @($submit.rejected).Count,
@@ -25,7 +31,7 @@ function Submit-Run([string]$ModelId, [string]$Version, $Predictions, [string]$A
 }
 
 # One analysis: now (AsOf empty) or as of 08:00 the morning after reference date AsOf.
-function Invoke-Analysis([string]$AsOf) {
+function Invoke-Analysis([string]$AsOf, [string]$Label = $CatchUpLabel) {
     $query = "userId=$UserId"
     if ($AsOf) { $query += "&asOf=$AsOf&morning=true" }
     $analysisInput = Invoke-ApiRaw GET "/api/stock/analysis/input?$query" | ConvertFrom-Json
@@ -45,7 +51,7 @@ function Invoke-Analysis([string]$AsOf) {
                         $nightPct, (($items | ForEach-Object { $_.symbol }) -join ',')) | ForEach-Object { $_ })
         } catch { Write-Log "rule skipped: $_" }
         if ($rule.Count -gt 0) {
-            Submit-Run 'rule' 'rule' $rule $AsOf
+            Submit-Run 'rule' 'rule' $rule $AsOf $Label
             $ruled = @($rule | ForEach-Object { $_.symbol })
             $items = @($items | Where-Object { $ruled -notcontains $_.symbol })
         }
@@ -72,7 +78,7 @@ function Invoke-Analysis([string]$AsOf) {
     $modelId = @($result.modelUsage.PSObject.Properties.Name) | Select-Object -First 1
     # Invoke-Claude always runs --model opus, so a missing modelUsage still means opus.
     if (-not $modelId) { $modelId = 'opus' }
-    Submit-Run $modelId $promptVersion $predictions $AsOf
+    Submit-Run $modelId $promptVersion $predictions $AsOf $Label
 }
 
 try {
@@ -112,6 +118,18 @@ try {
         } catch { Write-Log "catch-up skipped: $_" }
         foreach ($day in $missing) {
             try { Invoke-Analysis ([string]$day) } catch { $failed = $_; Write-Log "catch-up $day failed: $_" }
+        }
+    }
+
+    if ($symbols -ne 'all') {
+        $redo = @()
+        try {
+            $redo = @(Invoke-Api GET ("/api/stock/analysis/missing-dates?symbols={0}&lookback=20&version={1}" -f `
+                        ($wanted -join ','), [uri]::EscapeDataString($promptVersion)) | ForEach-Object { $_ })
+        } catch { Write-Log "re-analysis skipped: $_" }
+        foreach ($day in $redo) {
+            # Not fatal and stop at the first failure: it is usually the usage limit, the next run continues.
+            try { Invoke-Analysis ([string]$day) ($ReanalysisPrefix + $promptVersion) } catch { Write-Log "re-analysis $day failed, stop: $_"; break }
         }
     }
     if ($failed) { throw $failed }

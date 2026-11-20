@@ -2,9 +2,11 @@ package net.luversof.web.gate.stock.controller;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -153,6 +155,9 @@ public class StockAnalysisViewController {
         model.addAttribute("dailyHits", dailyHits(daily));
         model.addAttribute("daily", dailyRows.getContent());
         model.addAttribute("dailyPagination", new Pagination(dailyRows));
+        model.addAttribute(
+            "versionCompare",
+            versionCompare(history.predictions(), periodStart(p, LocalDate.now(KST))));
       }
 
       // 회차 비교: 그날의 회차들을 기간별로 나란히(사용자 요청 2026-11-10), 고른 종목만.
@@ -239,6 +244,121 @@ public class StockAnalysisViewController {
               return new DailyRow(e.getKey(), horizon(run, 1), horizon(run, 5));
             })
             .toList();
+  }
+
+  /** 재분석 회차의 리플레이 이름 앞부분 - api-stock StockAnalysisService.REANALYSIS_PREFIX 와 같다. */
+  static final String REANALYSIS_PREFIX = "재분석 ";
+
+  /** 빠진 날 채움 회차의 리플레이 이름 - 운영 회차와 같은 버전으로 센다(morning.ps1 $CatchUpLabel). */
+  static final String CATCH_UP_LABEL = "누락채움";
+
+  /**
+   * 같은 날짜 버전 비교(사용자 요청 2026-11-21: 개선한 버전으로 예전 날짜를 다시 분석해 나아졌는지). versions 의 첫째가 비교 기준(가장 늦게 나온
+   * 프롬프트 버전). rows 는 두 버전 이상이 예측한 날만, 최근 날짜부터.
+   */
+  public record VersionCompare(
+      List<String> versions, List<CompareRow> rows, List<PairHits> vsNewest) {}
+
+  public record CompareRow(LocalDate baseDate, Map<String, DailyRow> cells) {}
+
+  /** version 과 기준 버전이 둘 다 채점된 날만 센 적중 수. */
+  public record PairHits(
+      String version,
+      int d1Days,
+      int d1Hit,
+      int d1NewestHit,
+      int d5Days,
+      int d5Hit,
+      int d5NewestHit) {}
+
+  /** 비교 열: 운영 · 빠진 날 채움은 프롬프트 버전, 재분석은 재분석한 버전, 그 밖의 리플레이(실험)는 버전 · 이름. */
+  static String compareKey(RecentPrediction p) {
+    if (p.replay() == null || CATCH_UP_LABEL.equals(p.replay())) {
+      return p.promptVersion();
+    }
+    if (p.replay().startsWith(REANALYSIS_PREFIX)) {
+      return p.replay().substring(REANALYSIS_PREFIX.length());
+    }
+    return p.promptVersion() + " · " + p.replay();
+  }
+
+  static VersionCompare versionCompare(List<RecentPrediction> predictions, LocalDate from) {
+    Map<String, List<RecentPrediction>> byKey =
+        predictions.stream()
+            .collect(Collectors.groupingBy(StockAnalysisViewController::compareKey));
+    // 프롬프트 버전 · 실험 리플레이 · 규칙 순, 그 안에서 처음 나온 때가 늦은 것이 앞 - 기준은 가장 새 프롬프트 버전.
+    Map<String, Instant> firstSeen = new LinkedHashMap<>();
+    byKey.forEach((k, v) ->
+        firstSeen.put(
+            k,
+            v.stream()
+                .map(RecentPrediction::createdDate)
+                .filter(Objects::nonNull)
+                .min(Comparator.naturalOrder())
+                .orElse(Instant.EPOCH)));
+    List<String> versions =
+        firstSeen.keySet().stream()
+            .sorted(
+                Comparator.comparingInt(
+                        (String k) -> k.equals("rule") ? 2 : k.contains(" · ") ? 1 : 0)
+                    .thenComparing(firstSeen::get, Comparator.reverseOrder()))
+            .toList();
+    Map<String, Map<LocalDate, DailyRow>> cells = new LinkedHashMap<>();
+    for (String v : versions) {
+      Map<LocalDate, DailyRow> rows = new LinkedHashMap<>();
+      dailyRows(byKey.get(v), from).forEach(r -> rows.put(r.baseDate(), r));
+      cells.put(v, rows);
+    }
+    List<CompareRow> rows =
+        cells.values().stream()
+            .flatMap(m -> m.keySet().stream())
+            .distinct()
+            .sorted(Comparator.reverseOrder())
+            .map(d -> {
+              Map<String, DailyRow> row = new LinkedHashMap<>();
+              cells.forEach((v, m) -> {
+                if (m.containsKey(d)) {
+                  row.put(v, m.get(d));
+                }
+              });
+              return new CompareRow(d, row);
+            })
+            .filter(r -> r.cells().size() >= 2)
+            .toList();
+    List<String> shown =
+        versions.stream()
+            .filter(v -> rows.stream().anyMatch(r -> r.cells().containsKey(v)))
+            .toList();
+    List<PairHits> vsNewest = new java.util.ArrayList<>();
+    if (!shown.isEmpty()) {
+      Map<LocalDate, DailyRow> newest = cells.get(shown.get(0));
+      for (String v : shown.subList(1, shown.size())) {
+        int[] c = new int[6];
+        cells
+            .get(v)
+            .forEach((d, r) -> {
+              DailyRow n = newest.get(d);
+              if (n != null) {
+                count(c, 0, r.d1(), n.d1());
+                count(c, 3, r.d5(), n.d5());
+              }
+            });
+        if (c[0] + c[3] > 0) { // 기준 버전과 같이 채점된 날이 없으면 비교할 것이 없다
+          vsNewest.add(new PairHits(v, c[0], c[1], c[2], c[3], c[4], c[5]));
+        }
+      }
+    }
+    return new VersionCompare(shown, rows, vsNewest);
+  }
+
+  /** c[at]: 둘 다 채점된 날 수, c[at+1]: 이 버전 적중, c[at+2]: 기준 버전 적중. */
+  private static void count(int[] c, int at, RecentPrediction mine, RecentPrediction newest) {
+    if (mine == null || newest == null || mine.hit() == null || newest.hit() == null) {
+      return;
+    }
+    c[at]++;
+    c[at + 1] += mine.hit() ? 1 : 0;
+    c[at + 2] += newest.hit() ? 1 : 0;
   }
 
   static DailyHits dailyHits(List<DailyRow> rows) {

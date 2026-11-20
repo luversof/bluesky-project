@@ -161,4 +161,61 @@ class StockAnalysisRecentPageTest {
                 pred("2026-11-19", 1, "2026-11-19T23:00:00Z", 1, null, null, false)))
         .isNull();
   }
+
+  private static StockAnalysisClient.RecentPrediction vpred(
+      String version, String replay, String baseDate, String created, Boolean hit) {
+    return new StockAnalysisClient.RecentPrediction(
+        "005930",
+        "삼성전자",
+        LocalDate.parse(baseDate),
+        1,
+        "UP",
+        60,
+        null,
+        null,
+        version,
+        replay,
+        Instant.parse(created),
+        1,
+        null,
+        null,
+        null,
+        hit,
+        false);
+  }
+
+  @Test
+  void 버전_비교는_새_버전을_기준으로_같은_날짜만_센다() {
+    var preds =
+        List.of(
+            // 예전 버전 v3 운영(11-10 적중, 11-11 실패), 빠진 날 채움은 v3 로 센다(11-12)
+            vpred("v3", null, "2026-11-10", "2026-11-10T23:00:00Z", true),
+            vpred("v3", null, "2026-11-11", "2026-11-11T23:00:00Z", false),
+            vpred("v3", "누락채움", "2026-11-12", "2026-11-13T05:00:00Z", false),
+            // 규칙: 나중에 나왔어도 기준이 아니다
+            vpred("rule", null, "2026-11-12", "2026-11-19T23:00:00Z", true),
+            // v9 재분석: 11-10 실패, 11-11 · 11-12 적중. 규칙 날 재분석은 promptVersion 이 rule 이어도 v9 열
+            vpred("v9", "재분석 v9", "2026-11-10", "2026-11-21T00:00:00Z", false),
+            vpred("v9", "재분석 v9", "2026-11-11", "2026-11-21T00:01:00Z", true),
+            vpred("rule", "재분석 v9", "2026-11-12", "2026-11-21T00:02:00Z", true),
+            // 한 버전만 있는 날은 줄이 없다
+            vpred("v9", null, "2026-11-18", "2026-11-18T23:00:00Z", null),
+            // 실험 리플레이는 따로, 나중에 돌렸어도 기준이 아니다
+            vpred("v9", "뉴스없음", "2026-11-10", "2026-11-20T00:00:00Z", true));
+    var c = StockAnalysisViewController.versionCompare(preds, null);
+    assertThat(c.versions()).containsExactly("v9", "v3", "v9 · 뉴스없음", "rule");
+    assertThat(c.rows())
+        .extracting(StockAnalysisViewController.CompareRow::baseDate)
+        .containsExactly(
+            LocalDate.of(2026, 11, 12), LocalDate.of(2026, 11, 11), LocalDate.of(2026, 11, 10));
+    var v3 = c.vsNewest().stream().filter(h -> h.version().equals("v3")).findFirst().orElseThrow();
+    assertThat(v3.d1Days()).isEqualTo(3);
+    assertThat(v3.d1Hit()).isEqualTo(1);
+    assertThat(v3.d1NewestHit()).isEqualTo(2);
+    assertThat(v3.d5Days()).isZero();
+    // 기준과 같이 채점된 날이 있는 버전만 비교 줄이 생긴다(뉴스없음 11-10, 규칙 11-12)
+    assertThat(c.vsNewest())
+        .extracting(StockAnalysisViewController.PairHits::version)
+        .containsExactly("v3", "v9 · 뉴스없음", "rule");
+  }
 }

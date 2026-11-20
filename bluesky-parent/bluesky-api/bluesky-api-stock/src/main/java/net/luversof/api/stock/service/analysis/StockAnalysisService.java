@@ -156,6 +156,17 @@ public class StockAnalysisService {
    * 다음 날 08:00 시점으로 분석해 채운다 - 사용량 한도 · API 장애로 빠진 날을 손으로 채우지 않게.
    */
   public List<LocalDate> missingDates(List<String> symbols, int lookback) {
+    return missingDates(symbols, lookback, null);
+  }
+
+  /** 재분석 회차의 리플레이 이름 앞부분: "재분석 v10". 아침 작업(morning.ps1) · gate 화면이 같은 이름을 쓴다. */
+  public static final String REANALYSIS_PREFIX = "재분석 ";
+
+  /**
+   * version 을 주면 재분석할 날(사용자 요청 2026-11-21: 개선한 버전이 예전 날짜에서도 나아졌는지 같은 날짜로 비교): 그 버전의
+   * 예측(promptVersion 이 같거나 리플레이 이름이 "재분석 version")이 없는 날. 다른 버전 예측이 있어도 센다.
+   */
+  public List<LocalDate> missingDates(List<String> symbols, int lookback, String version) {
     java.util.TreeSet<LocalDate> out = new java.util.TreeSet<>();
     for (String symbol : symbols) {
       StockItem item = stockItemRepository.findBySymbol(symbol);
@@ -171,11 +182,17 @@ public class StockAnalysisService {
                   .map(StockPriceHistory::getTradeDate)
                   .toList(),
               stockPredictionRepository.findByStockItemId(item.getId()).stream()
+                  .filter(p -> version == null || coversVersion(p, version))
                   .map(StockPrediction::getBaseDate)
                   .collect(Collectors.toSet()),
               Instant.now()));
     }
     return List.copyOf(out);
+  }
+
+  static boolean coversVersion(StockPrediction p, String version) {
+    return version.equals(p.getPromptVersion())
+        || (REANALYSIS_PREFIX + version).equals(p.getReplay());
   }
 
   /** 예측이 없고, 그 기준일의 아침 분석 시각(다음 날 08:00)이 이미 지난 날 - 장중에 쌓인 오늘 시세로 미래 시점 분석을 만들지 않는다. */
@@ -775,8 +792,10 @@ public class StockAnalysisService {
 
   record Graded(StockPrediction prediction, StockPredictionGrade grade) {}
 
-  /** 늦은 예측은 뺀다(장중 정보가 섞여 적중률을 부풀린다). */
-  /** symbol 을 주면 그 종목 예측만으로 센다(사용자 요청 2026-11-15: 한 종목을 검색하면 화면 통계도 그 종목 기준). */
+  /**
+   * 늦은 예측은 뺀다(장중 정보가 섞여 적중률을 부풀린다). symbol 을 주면 그 종목 예측만으로 센다(사용자 요청 2026-11-15: 한 종목을 검색하면 화면 통계도
+   * 그 종목 기준).
+   */
   public Summary summary(String symbol) {
     List<StockPrediction> all =
         StreamSupport.stream(stockPredictionRepository.findAll().spliterator(), false).toList();
@@ -1105,8 +1124,7 @@ public class StockAnalysisService {
   public record RunComparison(
       LocalDate date, List<LocalDate> dates, List<RunInfo> runs, List<RunRow> rows) {}
 
-  /** date 가 null 이면 회차가 있는 가장 최근 날짜. */
-  /** symbol 을 주면 그 종목 예측만 놓는다 - 회차별 적중률 · FLAT 비율도 그 종목 기준. */
+  /** date 가 null 이면 회차가 있는 가장 최근 날짜. symbol 을 주면 그 종목 예측만 놓는다 - 회차별 적중률 · FLAT 비율도 그 종목 기준. */
   public RunComparison runs(LocalDate date, String symbol) {
     // shortcut: 전체 예측을 읽어 날짜로 거른다(하루 수십 건 규모), 수만 건을 넘으면 날짜 조건 쿼리로 바꾼다.
     List<StockPrediction> all =

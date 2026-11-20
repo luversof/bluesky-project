@@ -47,4 +47,17 @@ class StockAnalysisRuleTest {
     assertThat(StockAnalysisService.missing(List.of(d18, d17, d16), java.util.Set.of(d16), now))
         .containsExactly(d17);
   }
+
+  @Test
+  void 재분석은_그_버전_예측이나_재분석_회차가_있는_날만_덮였다고_본다() {
+    var live = new net.luversof.api.stock.domain.StockPrediction();
+    live.setPromptVersion("v9");
+    assertThat(StockAnalysisService.coversVersion(live, "v9")).isTrue();
+    assertThat(StockAnalysisService.coversVersion(live, "v10")).isFalse();
+    // 규칙 날의 재분석은 promptVersion 이 rule 이어도 재분석 이름으로 덮인다(안 그러면 매일 다시 돈다)
+    var rule = new net.luversof.api.stock.domain.StockPrediction();
+    rule.setPromptVersion("rule");
+    rule.setReplay("재분석 v10");
+    assertThat(StockAnalysisService.coversVersion(rule, "v10")).isTrue();
+  }
 }

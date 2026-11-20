@@ -25,6 +25,7 @@
 @param StockAnalysisViewController.DailyHits dailyHits = null
 @param net.luversof.web.common.menu.domain.Pagination dailyPagination = null
 @param StockAnalysisClient.ReleaseNotes releases = null
+@param StockAnalysisViewController.VersionCompare versionCompare = null
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
@@ -134,6 +135,59 @@
 				`)
 				</div>
 
+				<%-- 같은 날짜 버전 비교(사용자 요청 2026-11-21): 새 버전으로 예전 날짜를 다시 분석한 재분석 회차와 그날의 예전 버전을 나란히 놓고, 같은 날짜끼리만 적중을 센다. 재분석은 아침 작업이 새 버전마다 지난 20 거래일을 돌린다. --%>
+				@if(versionCompare != null && !versionCompare.rows().isEmpty())
+				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.compare.title"), body = @`
+						<p class="text-xs text-base-content/60 mb-3">${MessageUtil.getMessage("stock.analysis.compare.note")}</p>
+						@if(!versionCompare.vsNewest().isEmpty())
+							<ul class="text-sm font-semibold mb-3 space-y-1">
+								@for(var h : versionCompare.vsNewest())
+									<li>${StockViewSupport.msg("stock.analysis.compare.pair", versionCompare.versions().get(0), h.version(),
+											String.valueOf(h.d1Days()), String.valueOf(h.d1NewestHit()), String.valueOf(h.d1Hit()),
+											String.valueOf(h.d5Days()), String.valueOf(h.d5NewestHit()), String.valueOf(h.d5Hit()))}</li>
+								@endfor
+							</ul>
+						@endif
+						<div class="overflow-x-auto">
+							<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.compare.title")}">
+								<thead><tr>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
+									@for(var v : versionCompare.versions())
+										<th scope="col" class="whitespace-nowrap">${v}
+											@if(v.equals(versionCompare.versions().get(0)))
+												<span class="badge badge-sm badge-outline badge-primary">${MessageUtil.getMessage("stock.analysis.compare.base")}</span>
+											@endif
+										</th>
+									@endfor
+								</tr></thead>
+								<tbody>
+									@for(var row : versionCompare.rows())
+										<tr>
+											<td class="whitespace-nowrap">${String.valueOf(row.baseDate())}</td>
+											@for(var v : versionCompare.versions())
+												!{var cell = row.cells().get(v);}
+												<td class="whitespace-nowrap">
+													@if(cell == null)
+														-
+													@else
+														@for(var p : java.util.Arrays.asList(cell.d1(), cell.d5()))
+															@if(p != null)
+																<div class="text-xs"><span class="opacity-60">D+${p.horizonDays()}</span>
+																	@template.stock.htmx.fragments.components.predictionBadge(direction = p.direction(), confidence = p.confidence(), rationale = p.rationale(), hit = p.hit(), actualDirection = p.actualDirection(), actualChangePct = p.actualChangePct(), pct = pct)
+																</div>
+															@endif
+														@endfor
+													@endif
+												</td>
+											@endfor
+										</tr>
+									@endfor
+								</tbody>
+							</table>
+						</div>
+				`)
+				@endif
+
 				<%-- 확신도 · 프롬프트 버전별 적중률은 개선이 나아졌는지 보는 데 쓴다(사용자 결정 2026-11-20). 회차별 · 기간별은 표본이 너무 작아 뺐다. --%>
 				<div class="grid gap-6 lg:grid-cols-2">
 					@for(var section : List.of(
@@ -159,7 +213,7 @@
 										<span class="opacity-60 whitespace-nowrap">${String.valueOf(r.date())}</span>
 										<span class="font-semibold">${r.version()}</span>
 										@if(r.area() != null)
-											<span class="badge badge-sm badge-ghost">${r.area()}</span>
+											<span class="badge badge-sm badge-outline">${r.area()}</span>
 										@endif
 										<span class="badge badge-sm badge-outline${verdictClass}">${MessageUtil.getMessage(verdictKey)}</span>
 									</div>

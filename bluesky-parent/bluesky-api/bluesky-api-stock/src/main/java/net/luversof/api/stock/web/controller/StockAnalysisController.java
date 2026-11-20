@@ -136,11 +136,13 @@ public class StockAnalysisController {
     return StockAnalysisService.rulePredictions(night, symbols);
   }
 
-  /** 최근 lookback 거래일 중 예측이 없는 기준일(아침 작업이 채운다). */
+  /** 최근 lookback 거래일 중 예측이 없는 기준일(아침 작업이 채운다). version 을 주면 그 버전 예측이 없는 기준일(재분석할 날). */
   @GetMapping("/missing-dates")
   public List<LocalDate> missingDates(
-      @RequestParam List<String> symbols, @RequestParam(defaultValue = "5") int lookback) {
-    return stockAnalysisService.missingDates(symbols, Math.clamp(lookback, 1, 20));
+      @RequestParam List<String> symbols,
+      @RequestParam(defaultValue = "5") int lookback,
+      @RequestParam(required = false) String version) {
+    return stockAnalysisService.missingDates(symbols, Math.clamp(lookback, 1, 20), version);
   }
 
   /** replay · asOf 를 주면 리플레이 회차로 저장하고 바로 채점한다(replay.py --save). */
