@@ -34,6 +34,17 @@ public interface StockAnalysisClient {
   record SymbolHistory(
       String symbol, String name, List<RateRow> byVersion, List<RecentPrediction> predictions) {}
 
+  /** 버전 기록: 바꾼 것 · 리플레이 결과 · 판단과 다음 개선 후보. */
+  @GetExchange("/releases")
+  ReleaseNotes releases();
+
+  record ReleaseNotes(List<Release> releases, List<NextStep> next) {}
+
+  record Release(
+      LocalDate date, String version, String area, String change, String result, String verdict) {}
+
+  record NextStep(String title, String judgment, String priority) {}
+
   @GetExchange("/runs")
   RunComparison runs(
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,

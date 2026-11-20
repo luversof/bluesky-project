@@ -24,6 +24,7 @@
 @param List<StockAnalysisViewController.DailyRow> daily = null
 @param StockAnalysisViewController.DailyHits dailyHits = null
 @param net.luversof.web.common.menu.domain.Pagination dailyPagination = null
+@param StockAnalysisClient.ReleaseNotes releases = null
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
@@ -87,6 +88,7 @@
 									<thead><tr>
 										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
 										<th scope="col">${MessageUtil.getMessage("stock.analysis.col.runTime")}</th>
+										<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.col.basePrice")}</th>
 										<th scope="col">D+1</th>
 										<th scope="col">D+5</th>
 									</tr></thead>
@@ -100,12 +102,17 @@
 														<span class="badge badge-sm badge-outline badge-info">${MessageUtil.getMessage("stock.analysis.runs.replay")} ${run.replay()}</span>
 													@endif
 												</td>
+												<td class="whitespace-nowrap text-right">${run.basePrice() == null ? "-" : String.format("%,d", run.basePrice().setScale(0, java.math.RoundingMode.HALF_UP).longValue())}</td>
 												@for(var p : java.util.Arrays.asList(row.d1(), row.d5()))
 													<td class="whitespace-nowrap">
 														@if(p == null)
 															-
 														@else
 															@template.stock.htmx.fragments.components.predictionBadge(direction = p.direction(), confidence = p.confidence(), rationale = p.rationale(), hit = p.hit(), actualDirection = p.actualDirection(), actualChangePct = p.actualChangePct(), pct = pct)
+															!{var close = StockAnalysisViewController.actualClose(p);}
+															@if(close != null)
+																<div class="text-xs opacity-70">${StockViewSupport.msg("stock.analysis.daily.price", String.format("%,d", close.longValue()), p.targetDate() == null ? "-" : p.targetDate().toString().substring(5))}</div>
+															@endif
 														@endif
 													</td>
 												@endfor
@@ -138,6 +145,47 @@
 				`)
 					@endfor
 				</div>
+
+				<%-- 버전 기록(사용자 요청 2026-11-21): 버전마다 바꾼 것 · 리플레이 결과 · 판단, 그리고 다음 개선 후보. 내용은 api-stock resources/analysis/releases.json. --%>
+				@if(releases != null && releases.releases() != null && !releases.releases().isEmpty())
+				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.release.title"), body = @`
+						<p class="text-xs text-base-content/60 mb-3">${MessageUtil.getMessage("stock.analysis.release.note")}</p>
+						<ol class="space-y-3">
+							@for(var r : releases.releases())
+								!{String verdictKey = switch (r.verdict()) { case "ADOPTED" -> "stock.analysis.release.verdict.adopted"; case "REJECTED" -> "stock.analysis.release.verdict.rejected"; case "HOLD" -> "stock.analysis.release.verdict.hold"; default -> "stock.analysis.release.verdict.baseline"; };}
+								!{String verdictClass = switch (r.verdict()) { case "ADOPTED" -> " badge-success"; case "REJECTED" -> " badge-error"; case "HOLD" -> " badge-warning"; default -> ""; };}
+								<li class="border-l-2 border-base-300 pl-3">
+									<div class="flex flex-wrap items-center gap-2 text-sm">
+										<span class="opacity-60 whitespace-nowrap">${String.valueOf(r.date())}</span>
+										<span class="font-semibold">${r.version()}</span>
+										@if(r.area() != null)
+											<span class="badge badge-sm badge-ghost">${r.area()}</span>
+										@endif
+										<span class="badge badge-sm badge-outline${verdictClass}">${MessageUtil.getMessage(verdictKey)}</span>
+									</div>
+									<p class="text-sm mt-1">${r.change()}</p>
+									@if(r.result() != null)
+										<p class="text-xs text-base-content/70 mt-0.5">${r.result()}</p>
+									@endif
+								</li>
+							@endfor
+						</ol>
+						@if(releases.next() != null && !releases.next().isEmpty())
+							<h3 class="text-sm font-semibold mt-5 mb-2">${MessageUtil.getMessage("stock.analysis.release.next")}</h3>
+							<ul class="space-y-2">
+								@for(var n : releases.next())
+									!{String priorityKey = switch (n.priority()) { case "HIGH" -> "stock.analysis.release.priority.high"; case "MEDIUM" -> "stock.analysis.release.priority.medium"; default -> "stock.analysis.release.priority.low"; };}
+									!{String priorityClass = switch (n.priority()) { case "HIGH" -> " badge-primary"; case "MEDIUM" -> " badge-info"; default -> ""; };}
+									<li class="text-sm">
+										<span class="badge badge-sm badge-outline${priorityClass}">${MessageUtil.getMessage(priorityKey)}</span>
+										<span class="font-semibold">${n.title()}</span>
+										<p class="text-xs text-base-content/70 mt-0.5">${n.judgment()}</p>
+									</li>
+								@endfor
+							</ul>
+						@endif
+				`)
+				@endif
 
 				<%-- 회차 비교(사용자 요청 2026-11-10): 그날 돌린 회차들을 열로 놓고 기간별 방향 · 신뢰도를 나란히 본다. 고른 종목만. 행은 쪽으로 나눈다(2026-11-15). --%>
 				<div id="analysis-runs">

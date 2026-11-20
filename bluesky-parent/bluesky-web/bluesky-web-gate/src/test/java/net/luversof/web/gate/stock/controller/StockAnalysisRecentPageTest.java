@@ -133,4 +133,32 @@ class StockAnalysisRecentPageTest {
         .isEqualTo(LocalDate.of(2026, 8, 20));
     assertThat(StockAnalysisViewController.periodStart("all", today)).isNull();
   }
+
+  @Test
+  void 실제_종가는_기준가에_변화율을_곱한다() {
+    var p =
+        new StockAnalysisClient.RecentPrediction(
+            "005930",
+            "삼성전자",
+            LocalDate.of(2026, 11, 19),
+            1,
+            "DOWN",
+            77,
+            null,
+            new java.math.BigDecimal("75600"),
+            "rule",
+            null,
+            null,
+            1,
+            LocalDate.of(2026, 11, 20),
+            new java.math.BigDecimal("-7.0086"),
+            "DOWN",
+            true,
+            false);
+    assertThat(StockAnalysisViewController.actualClose(p)).isEqualByComparingTo("70301");
+    assertThat(
+            StockAnalysisViewController.actualClose(
+                pred("2026-11-19", 1, "2026-11-19T23:00:00Z", 1, null, null, false)))
+        .isNull();
+  }
 }

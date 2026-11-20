@@ -1,10 +1,13 @@
 package net.luversof.api.stock.web.controller;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,9 +17,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import net.luversof.api.stock.service.analysis.MarketDailyCollectService;
 import net.luversof.api.stock.service.analysis.StockAnalysisService;
 import net.luversof.api.stock.service.analysis.StockNewsCollectService;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 시황 분석. 작업 스케줄러 스크립트(tools/market-analysis)가 아침 · 저녁에 부른다.
@@ -33,6 +39,8 @@ public class StockAnalysisController {
   @Autowired private StockNewsCollectService stockNewsCollectService;
 
   @Autowired private MarketDailyCollectService marketDailyCollectService;
+
+  @Autowired private JsonMapper jsonMapper;
 
   /** 시장 일별 시세 최근분(KOSPI200 선물 주간 · 야간 종가, 지난 2 주). 아침 · 저녁 작업이 부른다. */
   @PostMapping("/market-daily")
@@ -181,4 +189,20 @@ public class StockAnalysisController {
   public StockAnalysisService.Summary summary(@RequestParam(required = false) String symbol) {
     return stockAnalysisService.summary(symbol);
   }
+
+  /** 버전 기록: 바꾼 것 · 리플레이 결과 · 판단과 다음 개선 후보(resources/analysis/releases.json). */
+  @GetMapping("/releases")
+  public ReleaseNotes releases() throws IOException {
+    try (InputStream in = new ClassPathResource("analysis/releases.json").getInputStream()) {
+      return jsonMapper.readValue(in, ReleaseNotes.class);
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record ReleaseNotes(List<Release> releases, List<NextStep> next) {}
+
+  public record Release(
+      LocalDate date, String version, String area, String change, String result, String verdict) {}
+
+  public record NextStep(String title, String judgment, String priority) {}
 }

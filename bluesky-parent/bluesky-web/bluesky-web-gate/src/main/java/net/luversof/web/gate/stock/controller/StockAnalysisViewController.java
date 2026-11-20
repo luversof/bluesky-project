@@ -116,6 +116,12 @@ public class StockAnalysisViewController {
     model.addAttribute("periods", PERIODS);
     model.addAttribute("onlyDisagree", onlyDisagree);
     try {
+      // 버전 기록(사용자 요청 2026-11-21): 따로 받는다 - 못 받아도 나머지 화면은 그린다.
+      model.addAttribute("releases", stockAnalysisClient.releases());
+    } catch (RuntimeException e) {
+      log.warn("market analysis releases load failed", e);
+    }
+    try {
       StockAnalysisClient.AnalysisInput input = stockAnalysisClient.input(UserUtil.getUserId());
       List<StockAnalysisClient.AnalysisItem> items = input == null ? List.of() : input.items();
       // 종목 고르기: symbol, 없으면 검색어(예전 링크 ?keyword=)가 가리키는 한 종목, 그것도 없으면 삼성전자.
@@ -177,6 +183,19 @@ public class StockAnalysisViewController {
       model.addAttribute("loadError", true);
     }
     return "stock/analysis";
+  }
+
+  /**
+   * 채점된 예측의 실제 종가(사용자 요청 2026-11-21: 적중 표시만 말고 주가가 실제로 어떻게 움직였는지): 기준가 x (1 + 변화율). 기준가나 변화율이
+   * 없으면(채점 전) null.
+   */
+  public static BigDecimal actualClose(StockAnalysisClient.RecentPrediction p) {
+    if (p == null || p.basePrice() == null || p.actualChangePct() == null) {
+      return null;
+    }
+    return p.basePrice()
+        .multiply(BigDecimal.ONE.add(p.actualChangePct().movePointLeft(2)))
+        .setScale(0, RoundingMode.HALF_UP);
   }
 
   /** 기간의 첫 기준일. all 이면 null(전부). */
