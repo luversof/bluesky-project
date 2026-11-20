@@ -9,10 +9,11 @@
 # Catch-up (2026-11-19): reference dates of the last 5 trading days with no prediction (usage limit,
 # api-stock down, a run during market hours) are analyzed as of 08:00 the next morning and stored as
 # replay runs, so missed days fill themselves on the next run.
-# Re-analysis (user request 2026-11-21): reference dates of the last 20 trading days with no prediction
+# Re-analysis (user request 2026-11-21): reference dates of the last 60 trading days with no prediction
 # from the current prompt version are analyzed again with it (replay "re-analysis <version>"), even when an
-# older version already analyzed them, so the analysis screen compares versions on the same dates.
-# It runs once per date per version: a new prompt version costs up to 20 extra claude calls on its first run.
+# older version already analyzed them, so a new version gathers graded results on past dates quickly.
+# Only the current version runs (older versions are not re-run). At most 10 dates per run, newest first,
+# to spread the claude usage: a new version fills its 60 dates over about 6 runs.
 $JobName = 'morning'
 . "$PSScriptRoot\common.ps1"
 
@@ -124,8 +125,10 @@ try {
     if ($symbols -ne 'all') {
         $redo = @()
         try {
-            $redo = @(Invoke-Api GET ("/api/stock/analysis/missing-dates?symbols={0}&lookback=20&version={1}" -f `
+            $redo = @(Invoke-Api GET ("/api/stock/analysis/missing-dates?symbols={0}&lookback=60&version={1}" -f `
                         ($wanted -join ','), [uri]::EscapeDataString($promptVersion)) | ForEach-Object { $_ })
+            [array]::Reverse($redo)
+            $redo = @($redo | Select-Object -First 10)
         } catch { Write-Log "re-analysis skipped: $_" }
         foreach ($day in $redo) {
             # Not fatal and stop at the first failure: it is usually the usage limit, the next run continues.

@@ -3,6 +3,7 @@
 @import java.util.List
 @import java.util.function.Function
 @import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient
+@import net.luversof.web.gate.stock.support.StockViewSupport
 
 <%-- 시황 분석 적중률 표(묶음 · 기간 · 채점 수 · 적중률 · 기준선 · edge). 분석 화면의 적중률 카드들과 종목별 예측 카드가 같이 쓴다. --%>
 @param List<StockAnalysisClient.RateRow> rows
@@ -30,7 +31,11 @@
 					<tr class="${r.graded() < 20 ? "opacity-60" : null}">
 						<td>${r.group()}</td>
 						<td>D+${r.horizonDays()}</td>
-						<td class="text-right">${r.graded()}</td>
+						<td class="text-right whitespace-nowrap">${r.graded()}
+							@if(r.reanalysisGraded() != null && r.reanalysisGraded() > 0)
+								<span class="text-xs opacity-60">${StockViewSupport.msg("stock.analysis.rate.reanalysis", String.valueOf(r.reanalysisGraded()))}</span>
+							@endif
+						</td>
 						<td class="text-right font-semibold">${rate.apply(r.hitRatePct())}</td>
 						<td class="text-right">${rate.apply(r.alwaysUpRatePct())}</td>
 						<td class="text-right">${rate.apply(r.trendRatePct())}</td>

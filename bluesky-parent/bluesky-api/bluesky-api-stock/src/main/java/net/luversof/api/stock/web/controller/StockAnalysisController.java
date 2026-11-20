@@ -142,7 +142,7 @@ public class StockAnalysisController {
       @RequestParam List<String> symbols,
       @RequestParam(defaultValue = "5") int lookback,
       @RequestParam(required = false) String version) {
-    return stockAnalysisService.missingDates(symbols, Math.clamp(lookback, 1, 20), version);
+    return stockAnalysisService.missingDates(symbols, Math.clamp(lookback, 1, 60), version);
   }
 
   /** replay · asOf 를 주면 리플레이 회차로 저장하고 바로 채점한다(replay.py --save). */

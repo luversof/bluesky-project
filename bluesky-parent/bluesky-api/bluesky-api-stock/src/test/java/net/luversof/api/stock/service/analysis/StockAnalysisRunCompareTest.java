@@ -47,6 +47,15 @@ class StockAnalysisRunCompareTest {
   }
 
   @Test
+  void 재분석은_그_버전의_운영_결과와_같은_줄로_센다() {
+    StockPrediction p = prediction(RUN1, "2026-11-21T23:00:00Z", 1, "UP");
+    p.setPromptVersion("rule"); // 규칙 날의 재분석도 재분석한 버전으로
+    p.setReplay("재분석 v10");
+    assertThat(StockAnalysisService.versionLabel(p)).isEqualTo("v10@am");
+    assertThat(StockAnalysisService.isReanalysis(p)).isTrue();
+  }
+
+  @Test
   void 리플레이_회차는_버전과_회차_이름에_실험_이름을_붙여_운영과_따로_센다() {
     StockPrediction p = prediction(RUN1, "2026-11-10T23:00:00Z", 1, "UP");
     p.setReplay("gnews");

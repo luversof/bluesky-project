@@ -132,7 +132,9 @@ public interface StockAnalysisClient {
       BigDecimal alwaysUpRatePct,
       BigDecimal trendRatePct,
       BigDecimal majorityRatePct,
-      BigDecimal edgePct) {}
+      BigDecimal edgePct,
+      // Integer: 이 필드가 없는 예전 api-stock 응답도 읽는다(Jackson 3 은 없는 int 를 실패로 본다)
+      Integer reanalysisGraded) {}
 
   record Summary(
       int predictions,

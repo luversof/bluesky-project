@@ -135,7 +135,7 @@
 				`)
 				</div>
 
-				<%-- 같은 날짜 버전 비교(사용자 요청 2026-11-21): 새 버전으로 예전 날짜를 다시 분석한 재분석 회차와 그날의 예전 버전을 나란히 놓고, 같은 날짜끼리만 적중을 센다. 재분석은 아침 작업이 새 버전마다 지난 20 거래일을 돌린다. --%>
+				<%-- 같은 날짜 버전 비교(사용자 요청 2026-11-21): 새 버전으로 예전 날짜를 다시 분석한 재분석 회차와 그날의 예전 버전을 나란히 놓고, 같은 날짜끼리만 적중을 센다. 재분석은 아침 작업이 새 버전마다 지난 60 거래일을 하루 10일씩 돌린다. --%>
 				@if(versionCompare != null && !versionCompare.rows().isEmpty())
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.compare.title"), body = @`
 						<p class="text-xs text-base-content/60 mb-3">${MessageUtil.getMessage("stock.analysis.compare.note")}</p>

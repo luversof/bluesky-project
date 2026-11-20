@@ -760,7 +760,8 @@ public class StockAnalysisService {
       BigDecimal alwaysUpRatePct,
       BigDecimal trendRatePct,
       BigDecimal majorityRatePct,
-      BigDecimal edgePct) {}
+      BigDecimal edgePct,
+      int reanalysisGraded) {}
 
   public record Summary(
       int predictions,
@@ -840,7 +841,15 @@ public class StockAnalysisService {
             && p.getBaseDate() != null
             && LocalDate.ofInstant(p.getCreatedDate(), PredictionMath.MARKET_ZONE_ID)
                 .isAfter(p.getBaseDate());
+    // 재분석은 그 버전의 운영 결과와 합쳐 센다(사용자 결정 2026-11-21) - 규칙 날의 재분석(promptVersion rule)도 그 버전으로.
+    if (isReanalysis(p)) {
+      return p.getReplay().substring(REANALYSIS_PREFIX.length()) + (morning ? "@am" : "");
+    }
     return p.getPromptVersion() + (morning ? "@am" : "") + replaySuffix(p);
+  }
+
+  static boolean isReanalysis(StockPrediction p) {
+    return p.getReplay() != null && p.getReplay().startsWith(REANALYSIS_PREFIX);
   }
 
   /** 리플레이 회차 표시(운영 회차와 섞이지 않게 버전 · 회차 이름 뒤에 붙인다). */
@@ -959,7 +968,8 @@ public class StockAnalysisService {
                   alwaysUp,
                   trend,
                   majority,
-                  hit == null || best == null ? null : hit.subtract(best)));
+                  hit == null || best == null ? null : hit.subtract(best),
+                  (int) list.stream().filter(g -> isReanalysis(g.prediction())).count()));
         }));
     return rows;
   }
