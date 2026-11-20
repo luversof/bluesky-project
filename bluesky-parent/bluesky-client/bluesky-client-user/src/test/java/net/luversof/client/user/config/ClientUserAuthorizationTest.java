@@ -3,13 +3,13 @@ package net.luversof.client.user.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
-import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
+
+import net.luversof.client.user.domain.LoginUser;
+import net.luversof.client.user.security.LoginUserAuthenticationToken;
 
 /**
  * 게이트의 {@code @BlueskyPreAuthorize}(hasRole('USER'))를 켠 뒤(2026-11-13): 로그인 사용자는 ROLE_USER 를 갖고,
@@ -18,33 +18,28 @@ import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
 class ClientUserAuthorizationTest {
 
   @Test
-  void GitHub_로그인_사용자는_ROLE_USER_를_갖는다() {
-    var github =
-        new DefaultOAuth2User(
-            List.of(new OAuth2UserAuthority(Map.of("login", "octo"))),
-            Map.of("login", "octo"),
-            "login");
+  void 로그인_사용자는_ROLE_USER_를_갖는다() {
+    var token = new LoginUserAuthenticationToken(loginUser(null));
 
-    assertThat(CustomOAuth2UserService.withUserRole(github))
+    assertThat(token.getAuthorities())
         .extracting(GrantedAuthority::getAuthority)
-        .contains("ROLE_USER", "OAUTH2_USER");
+        .containsExactly("ROLE_USER");
+    assertThat(token.isAuthenticated()).isTrue();
+    assertThat(token.getName()).isEqualTo("octo");
   }
 
   @Test
   void user_API_가_돌려준_역할을_더한다() {
-    var github =
-        new DefaultOAuth2User(
-            List.of(new OAuth2UserAuthority(Map.of("login", "octo"))),
-            Map.of("login", "octo"),
-            "login");
+    var token = new LoginUserAuthenticationToken(loginUser(List.of("ROLE_ADMIN", " ")));
 
-    assertThat(CustomOAuth2UserService.withUserRole(github, List.of("ROLE_ADMIN", " ")))
+    assertThat(token.getAuthorities())
         .extracting(GrantedAuthority::getAuthority)
-        .containsExactlyInAnyOrder("OAUTH2_USER", "ROLE_USER", "ROLE_ADMIN");
-    // user API 호출이 실패하면(null) ROLE_USER 만
-    assertThat(CustomOAuth2UserService.withUserRole(github, null))
-        .extracting(GrantedAuthority::getAuthority)
-        .containsExactlyInAnyOrder("OAUTH2_USER", "ROLE_USER");
+        .containsExactlyInAnyOrder("ROLE_USER", "ROLE_ADMIN");
+  }
+
+  private static LoginUser loginUser(List<String> authorities) {
+    return new LoginUser(
+        "00000000-0000-0000-0000-000000000001", "octo", "github", null, null, authorities);
   }
 
   @Test

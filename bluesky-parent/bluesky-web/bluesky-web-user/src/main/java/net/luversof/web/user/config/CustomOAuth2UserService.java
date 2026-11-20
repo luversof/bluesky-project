@@ -1,26 +1,28 @@
-package net.luversof.client.user.config;
+package net.luversof.web.user.config;
 
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import net.luversof.client.user.domain.LoginUser;
 import net.luversof.client.user.httpexchange.UserInfoApiClient;
 
 @Service
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
+
+  /** 로그인 요청 안에서 {@link OAuth2LoginSuccessHandler} 에 넘기는 속성 이름 */
+  static final String LOGIN_USER_ATTRIBUTE = "loginUser";
 
   private static final Logger log = LoggerFactory.getLogger(CustomOAuth2UserService.class);
 
@@ -52,7 +54,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     String email = oauth2User.getAttribute("email");
     String avatarUrl = oauth2User.getAttribute("avatar_url");
 
-    UserInfoApiClient.UserInfoResponse userInfo = null;
+    UserInfoApiClient.UserInfoResponse userInfo;
     try {
       // Save or Update user info
       var request =
@@ -61,14 +63,25 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
       userInfo = userInfoApiClient.saveOAuth2User(request);
     } catch (Exception e) {
-      // Log error but allow login to proceed
       log.warn("saveOAuth2User failed. provider: {}", provider, e);
+      userInfo = null;
+    }
+    // 사용자 id 없이 로그인시키면 앞단 서버가 모두 401 을 낸다(예전엔 ROLE_USER 만 달고 로그인됐다).
+    if (userInfo == null || userInfo.id() == null) {
+      throw new OAuth2AuthenticationException(
+          new OAuth2Error("user_save_failed"), "user API 에 사용자를 저장하지 못했다");
     }
 
     Map<String, Object> attributes = new HashMap<>(oauth2User.getAttributes());
-    if (userInfo != null) {
-      attributes.put("userInfo", userInfo);
-    }
+    attributes.put(
+        LOGIN_USER_ATTRIBUTE,
+        new LoginUser(
+            userInfo.id(),
+            userInfo.username(),
+            userInfo.provider(),
+            userInfo.email(),
+            userInfo.avatarUrl(),
+            userInfo.authorities() == null ? List.of() : List.copyOf(userInfo.authorities())));
 
     String userNameAttributeName =
         userRequest
@@ -77,34 +90,8 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             .getUserInfoEndpoint()
             .getUserNameAttributeName();
 
-    return new DefaultOAuth2User(
-        withUserRole(oauth2User, userInfo == null ? null : userInfo.authorities()),
-        attributes,
-        userNameAttributeName);
-  }
-
-  /**
-   * GitHub 가 주는 권한(OAUTH2_USER, SCOPE_*)에 ROLE_USER 를 더한다. 게이트의 {@code @BlueskyPreAuthorize} 가
-   * {@code hasRole('USER')} 라, 이게 없으면 로그인한 사용자도 막힌다.
-   */
-  static Set<GrantedAuthority> withUserRole(OAuth2User oauth2User) {
-    return withUserRole(oauth2User, null);
-  }
-
-  /**
-   * 위에 더해 user API 가 돌려준 역할("UserAuthority" 테이블, 예: ROLE_ADMIN)도 더한다. user API 호출이 실패하면 ROLE_USER 만
-   * 갖고 로그인은 그대로 진행된다.
-   */
-  static Set<GrantedAuthority> withUserRole(
-      OAuth2User oauth2User, java.util.Collection<String> userAuthorities) {
-    Set<GrantedAuthority> authorities = new LinkedHashSet<>(oauth2User.getAuthorities());
-    authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-    if (userAuthorities != null) {
-      userAuthorities.stream()
-          .filter(a -> a != null && !a.isBlank())
-          .forEach(a -> authorities.add(new SimpleGrantedAuthority(a.strip())));
-    }
-    return authorities;
+    // 이 인증 객체는 로그인 요청 안에서만 쓰인다. 세션에는 OAuth2LoginSuccessHandler 가 LoginUser 만 남긴다.
+    return new DefaultOAuth2User(oauth2User.getAuthorities(), attributes, userNameAttributeName);
   }
 
   private String normalizeProvider(String provider) {

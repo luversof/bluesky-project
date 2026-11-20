@@ -5,16 +5,19 @@ import java.util.Locale;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import net.luversof.client.user.security.LoginUserSecurityContextRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -25,11 +28,23 @@ public class ClientUserSecurityConfig {
     return new ClientUserProperties();
   }
 
+  /** 앞단 서버의 보안 체인은 모두 이것을 써야 공유 세션의 로그인을 읽는다(web-user 포함). */
+  @Bean
+  SecurityContextRepository loginUserSecurityContextRepository() {
+    return new DelegatingSecurityContextRepository(
+        new RequestAttributeSecurityContextRepository(), new LoginUserSecurityContextRepository());
+  }
+
   @Bean
   @ConditionalOnMissingBean(SecurityFilterChain.class)
   SecurityFilterChain clientUserSecurityFilterChain(
-      HttpSecurity http, ClientUserProperties clientUserProperties) throws Exception {
+      HttpSecurity http,
+      ClientUserProperties clientUserProperties,
+      SecurityContextRepository loginUserSecurityContextRepository)
+      throws Exception {
     return http.csrf(CsrfConfigurer::disable)
+        .securityContext(
+            context -> context.securityContextRepository(loginUserSecurityContextRepository))
         .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
         .exceptionHandling(exception ->
             exception.authenticationEntryPoint((request, response, authException) -> {
@@ -48,7 +63,6 @@ public class ClientUserSecurityConfig {
                       .toUriString();
               response.sendRedirect(url);
             }))
-        .oauth2Client(Customizer.withDefaults())
         .logout(logout ->
             logout
                 .logoutUrl("/logout")

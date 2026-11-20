@@ -1,18 +1,15 @@
 package net.luversof.web.user.config;
 
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.security.web.context.SecurityContextRepository;
 
-import net.luversof.client.user.config.CustomOAuth2UserService;
-import net.luversof.client.user.config.OAuth2LoginSuccessHandler;
-
+/** 앞단 서버 중 로그인을 하는 곳은 여기뿐이다. 결과는 client-user 의 공유 세션(LoginUser)으로 다른 앞단 서버가 읽는다. */
 @Configuration
 @EnableWebSecurity
 public class WebUserSecurityConfig {
@@ -20,14 +17,17 @@ public class WebUserSecurityConfig {
   @Bean
   SecurityFilterChain securityFilterChain(
       HttpSecurity http,
-      ObjectProvider<OAuth2LoginSuccessHandler> successHandlerProvider,
-      ObjectProvider<CustomOAuth2UserService> customOAuth2UserServiceProvider)
+      OAuth2LoginSuccessHandler successHandler,
+      CustomOAuth2UserService customOAuth2UserService,
+      SecurityContextRepository loginUserSecurityContextRepository)
       throws Exception {
     return http.csrf(CsrfConfigurer::disable)
+        .securityContext(
+            context -> context.securityContextRepository(loginUserSecurityContextRepository))
         .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
         .oauth2Login(oauth2 ->
             oauth2
-                .successHandler(successHandlerProvider.getObject())
+                .successHandler(successHandler)
                 .failureHandler(
                     new SimpleUrlAuthenticationFailureHandler() {
                       @Override
@@ -40,9 +40,7 @@ public class WebUserSecurityConfig {
                         super.onAuthenticationFailure(request, response, exception);
                       }
                     })
-                .userInfoEndpoint(
-                    userInfo -> userInfo.userService(customOAuth2UserServiceProvider.getObject())))
-        .oauth2Client(Customizer.withDefaults())
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService)))
         .logout(logout ->
             logout
                 .logoutUrl("/logout")

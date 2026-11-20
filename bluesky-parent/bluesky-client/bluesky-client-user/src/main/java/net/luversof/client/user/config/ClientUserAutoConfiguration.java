@@ -1,22 +1,20 @@
 package net.luversof.client.user.config;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.Ordered;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 
+/** 앞단 서버 공통: 공유 세션에서 로그인 여부를 읽는다. 로그인 자체는 web-user 만 한다. */
 @AutoConfiguration
-@ConditionalOnClass(
-    name = "org.springframework.security.oauth2.client.registration.ClientRegistrationRepository")
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @Import({
   ClientUserHttpExchangeConfig.class,
-  CustomOAuth2UserService.class,
   ClientUserSecurityConfig.class,
   ApiSessionConfig.class
 })
@@ -30,13 +28,5 @@ public class ClientUserAutoConfiguration {
         new FilterRegistrationBean<>(new ForwardedHeaderFilter());
     bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
     return bean;
-  }
-
-  @Bean
-  OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler(
-      OAuth2AuthorizedClientRepository authorizedClientRepository) {
-    OAuth2LoginSuccessHandler handler = new OAuth2LoginSuccessHandler();
-    handler.setAuthorizedClientRepository(authorizedClientRepository);
-    return handler;
   }
 }

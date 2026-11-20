@@ -32,13 +32,6 @@
 		</dependency>
 		<!-- (e) spring-session -->
 
-		<!-- (s) spring-security -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-oauth2-client</artifactId>
-		</dependency>
-		<!-- (e) spring-security -->
-
 		<!-- (s) spring-cloud -->
 		<!-- (e) spring-cloud -->
 

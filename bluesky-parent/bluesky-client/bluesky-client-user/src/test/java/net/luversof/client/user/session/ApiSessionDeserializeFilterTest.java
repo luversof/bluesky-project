@@ -7,17 +7,13 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 
 import javax.management.BadAttributeValueExpException;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextImpl;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
-import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
 
+import net.luversof.client.user.domain.LoginUser;
+import net.luversof.client.user.security.LoginUserSecurityContextRepository;
 import net.luversof.client.user.session.ApiSessionRemoveAttributeTest.FakeSessionServer;
 
 /**
@@ -50,17 +46,24 @@ class ApiSessionDeserializeFilterTest {
   }
 
   @Test
-  void 로그인_보안_컨텍스트는_그대로_읽힌다() throws IOException {
-    var authority = new OAuth2UserAuthority(Map.of("id", 1, "login", "octo"));
-    var user = new DefaultOAuth2User(List.of(authority), Map.of("id", 1, "login", "octo"), "login");
-    SecurityContext context =
-        new SecurityContextImpl(new OAuth2AuthenticationToken(user, List.of(authority), "github"));
+  void 로그인_사용자는_그대로_읽힌다() throws IOException {
+    var loginUser =
+        new LoginUser(
+            "00000000-0000-0000-0000-000000000001",
+            "octo",
+            "github",
+            null,
+            null,
+            List.of("ROLE_ADMIN"));
     String id = server.createNewSession();
-    server.sessions.get(id).put("SPRING_SECURITY_CONTEXT", serialize(context));
+    server
+        .sessions
+        .get(id)
+        .put(LoginUserSecurityContextRepository.LOGIN_USER_ATTRIBUTE, serialize(loginUser));
 
     ApiSession session = repository.findById(id);
 
-    SecurityContext read = session.getAttribute("SPRING_SECURITY_CONTEXT");
-    assertThat(read.getAuthentication().getName()).isEqualTo("octo");
+    LoginUser read = session.getAttribute(LoginUserSecurityContextRepository.LOGIN_USER_ATTRIBUTE);
+    assertThat(read).isEqualTo(loginUser);
   }
 }

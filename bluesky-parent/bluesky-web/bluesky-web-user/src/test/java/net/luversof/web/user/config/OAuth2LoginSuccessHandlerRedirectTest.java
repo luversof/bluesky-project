@@ -1,4 +1,4 @@
-package net.luversof.client.user.config;
+package net.luversof.web.user.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

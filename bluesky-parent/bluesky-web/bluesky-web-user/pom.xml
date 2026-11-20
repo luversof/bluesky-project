@@ -40,6 +40,14 @@
 			<artifactId>bluesky-web-common</artifactId>
 		</dependency>
 		<!-- (e) bluesky -->
+
+		<!-- (s) test -->
+		<dependency>
+			<groupId>net.luversof</groupId>
+			<artifactId>bluesky-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- (e) test -->
 	</dependencies>
 	<build>
 		<plugins>

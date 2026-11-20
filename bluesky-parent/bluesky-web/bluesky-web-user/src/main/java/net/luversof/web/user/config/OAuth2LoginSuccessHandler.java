@@ -1,4 +1,4 @@
-package net.luversof.client.user.config;
+package net.luversof.web.user.config;
 
 import java.io.IOException;
 import java.net.URI;
@@ -10,15 +10,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.stereotype.Component;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import net.luversof.client.user.security.LoginUserSecurityContextRepository;
 
 /**
- * Common OAuth2 Login Success Handler for all bluesky-web modules Saves user information to
- * bluesky-api-user after successful OAuth2 login
+ * web-user 의 OAuth2 로그인 성공 처리. {@link CustomOAuth2UserService} 가 user API 에 저장한 사용자를 공유 세션에 남기고 돌아갈
+ * 주소로 보낸다.
  */
+@Component
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
   private OAuth2AuthorizedClientRepository authorizedClientRepository;
@@ -48,9 +51,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
       throws IOException, ServletException {
 
     if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
-      String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-
-      authorizedClientRepository.loadAuthorizedClient(registrationId, authentication, request);
+      // 공유 세션에는 LoginUser 만 남긴다. GitHub access token 은 로그인 뒤 쓰지 않으니 세션에서 지운다.
+      LoginUserSecurityContextRepository.saveLoginUser(
+          request,
+          oauthToken.getPrincipal().getAttribute(CustomOAuth2UserService.LOGIN_USER_ATTRIBUTE));
+      authorizedClientRepository.removeAuthorizedClient(
+          oauthToken.getAuthorizedClientRegistrationId(), authentication, request, response);
     }
 
     if (request.getSession() != null) {

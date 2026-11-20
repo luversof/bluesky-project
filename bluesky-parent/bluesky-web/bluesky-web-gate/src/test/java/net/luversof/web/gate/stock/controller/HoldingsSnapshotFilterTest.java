@@ -18,12 +18,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.support.StaticMessageSource;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.util.MultiValueMap;
 
-import net.luversof.client.user.httpexchange.UserInfoApiClient.UserInfoResponse;
+import net.luversof.client.user.domain.LoginUser;
+import net.luversof.client.user.security.LoginUserAuthenticationToken;
 import net.luversof.web.gate.stock.domain.StockItem;
 import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
 import net.luversof.web.gate.stock.httpexchange.StockItemClient;
@@ -64,13 +63,10 @@ class HoldingsSnapshotFilterTest {
     controller =
         new StockAssetGrowthHtmxController(
             tradeProfitClient, null, null, stockItemClient, null, null, null, null, messages);
-    var userInfo =
-        new UserInfoResponse(
-            USER_ID.toString(), "tester", "google", "1", null, null, List.of(), Map.of());
-    var principal =
-        new DefaultOAuth2User(List.of(), Map.of("sub", "1", "userInfo", userInfo), "sub");
     SecurityContextHolder.getContext()
-        .setAuthentication(new OAuth2AuthenticationToken(principal, List.of(), "google"));
+        .setAuthentication(
+            new LoginUserAuthenticationToken(
+                new LoginUser(USER_ID.toString(), "tester", "google", null, null, List.of())));
     when(tradeProfitClient.holdingsSnapshot(any())).thenReturn(List.of(item(CORE), item(OTHER)));
     when(tradeProfitClient.holdingsSnapshotBatch(any()))
         .thenReturn(Map.of("2026-10-28", List.of(item(OTHER))));
