@@ -1662,7 +1662,7 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 			const ctx = chart.ctx;
 			const xAxis = chart.scales["x"];
 			const yAxis = chart.scales["y"];
-			if (!xAxis || !yAxis) return;
+			if (!xAxis || !yAxis || !chart.isDatasetVisible(1)) return;
 			const size = 5;
 			const area = chart.chartArea;
 			candles.forEach((c: any, i: number) => {
@@ -1720,6 +1720,8 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 		id: "candleAvgEdgeLabel",
 		afterDatasetsDraw: function (chart: any) {
 			if (!yRange || yRange.lastAvg === null || yRange.lastAvg === undefined) return;
+			// 주가를 끄면 축이 평단에 맞춰져 선이 제자리에 있다 - 축 끝 글자가 필요 없다. 평단을 끄면 글자도 끈다.
+			if (!chart.isDatasetVisible(1) || !chart.isDatasetVisible(2)) return;
 			const area = chart.chartArea;
 			const yAxis = chart.scales["y"];
 			if (!area || !yAxis) return;
@@ -1744,7 +1746,7 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 			if (!t.maxLabel || !t.minLabel || candles.length < 2) return;
 			const xAxis = chart.scales["x"];
 			const yAxis = chart.scales["y"];
-			if (!xAxis || !yAxis) return;
+			if (!xAxis || !yAxis || !chart.isDatasetVisible(1)) return;
 			let maxIdx = -1;
 			let minIdx = -1;
 			let maxV = -Infinity;
@@ -1806,6 +1808,7 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 		(yRange
 			? " (" + (yRange.side === "above" ? t.avgAboveLabel || "above the axis" : t.avgBelowLabel || "below the axis") + " " + fmt(yRange.lastAvg) + ")"
 			: "");
+	const avgPinned = candles.map((c: any) => (c.avg === null || c.avg === undefined ? null : pinToAxis(c.avg)));
 	const datasets: any[] = [
 		{
 			type: "bar",
@@ -1842,7 +1845,7 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 			label: avgLegend,
 			// 축이 캔들에 맞춰져 평단이 축 밖이면(사용자 요청 2026-10-02) 선을 축 끝에 붙여 그린다(2026-10-07: "평균 단가가 짧은 기간엔 안 보인다" -
 			// 잘려서 아예 없었다). 실제 값은 툴팁 · 범례 · 끝 글자(avgEdgeLabel)가 말한다.
-			data: candles.map((c: any) => (c.avg === null || c.avg === undefined ? null : pinToAxis(c.avg))),
+			data: avgPinned,
 			// 그린 값은 축 끝에 붙인 값일 수 있다 - 실제 평단은 따로 둔다(탐침 · 시험이 이걸 읽는다, 2026-10-08).
 			avgActual: candles.map((c: any) => (c.avg === null || c.avg === undefined ? null : c.avg)),
 			borderColor: "rgba(120,120,120,0.9)",
@@ -1877,7 +1880,39 @@ StockCharts.candleChartConfig = function (series: any, texts: any) {
 							{ label: t.distLabel || "Ex-distribution", count: candles.filter((c: any) => c.dist > 0).length },
 						],
 					},
-					legend: { display: hasAvg, labels: { filter: (item: any) => item.datasetIndex === 2, boxWidth: 14, font: { size: 10 } } },
+					// 범례는 주가 · 평균 단가 - 눌러서 끌 수 있다(사용자 요청 2026-11-20: 평단처럼 주가도). 주가는 몸통 · 꼬리 두 데이터셋을 함께 끈다.
+					legend: {
+						labels: {
+							filter: (item: any) => item.datasetIndex >= 1,
+							sort: (a: any, b: any) => a.datasetIndex - b.datasetIndex,
+							generateLabels: (chart: any) =>
+								Chart.defaults.plugins.legend.labels.generateLabels(chart).map((item: any) =>
+									item.datasetIndex === 1
+										? Object.assign(item, { text: t.priceLabel || "Price", fillStyle: colors[colors.length - 1], strokeStyle: colors[colors.length - 1] })
+										: item,
+								),
+							boxWidth: 14,
+							font: { size: 10 },
+						},
+						onClick: (_e: any, item: any, legend: any) => {
+							const chart = legend.chart;
+							const i = item.datasetIndex;
+							if (i !== 1) {
+								chart.setDatasetVisibility(i, !chart.isDatasetVisible(i));
+								chart.update();
+								return;
+							}
+							const show = !chart.isDatasetVisible(1);
+							chart.setDatasetVisibility(0, show);
+							chart.setDatasetVisibility(1, show);
+							// 주가를 끄면 축을 평단에 맞춘다 - 캔들에 맞춘 축에서는 평단이 축 끝에 붙어 있다(pinToAxis).
+							const y = chart.config.options.scales.y;
+							y.min = show && yRange ? yRange.min : undefined;
+							y.max = show && yRange ? yRange.max : undefined;
+							if (hasAvg) chart.data.datasets[2].data = show ? avgPinned : chart.data.datasets[2].avgActual;
+							chart.update();
+						},
+					},
 					tooltip: {
 						// 금액 자리수를 맞춰 세운다(사용자 요청 2026-10-07) - 캔버스 툴팁은 줄 단위로만 정렬돼 열을 못 맞춘다. 글자는 아래 콜백이 그대로 만들고
 						// (탐침 · 시험이 콜백을 읽는다), 그리기만 HTML 표로 한다(candleTooltipHandler).

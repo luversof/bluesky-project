@@ -305,6 +305,7 @@
 					lowLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.low")}',
 					rangeLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.high")} - ${MessageUtil.getMessage("stock.item.detail.price.chart.low")}',
 					closeLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.close")}',
+					priceLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.price")}',
 					avgLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.average.at")}',
 					avgBelowLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.average.below")}',
 					avgAboveLabel: '${MessageUtil.getMessage("stock.item.detail.price.chart.average.above")}',
