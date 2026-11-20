@@ -1290,11 +1290,50 @@ function tooltipBounds(el: Element, viewportWidth: number): { left: number; widt
 	const right = Math.min(viewportWidth, r.right);
 	return right > left ? { left, width: right - left } : { left: 0, width: viewportWidth };
 }
+// 위/아래: 가로 스크롤 표(overflow-x-auto)는 세로로도 잘라서, 위로 펴는 말풍선이 첫 줄에서 표 상자 위로 잘렸다(사용자 보고 2026-11-21,
+// 시황 분석 일자별 적중). 펴려는 쪽에 말풍선 높이만큼 자리가 없고 반대쪽이 더 넓으면 뒤집는다. 순수 함수라 검사에서 그대로 돌린다.
+function tooltipFlipToBottom(top: number, bottom: number, bubbleHeight: number, clipTop: number, clipBottom: number, wantBottom: boolean, gap = 8): boolean {
+	if (!(bubbleHeight > 0)) return wantBottom;
+	const above = top - clipTop;
+	const below = clipBottom - bottom;
+	const need = bubbleHeight + gap;
+	if (wantBottom) return below >= need || below >= above;
+	return !(above >= need || above >= below);
+}
+// 말풍선을 자르는 상자: overflow 가 visible 이 아닌 가장 가까운 조상과 화면이 겹치는 세로 범위.
+function tooltipClipBox(el: Element): { top: number; bottom: number } {
+	let top = 0;
+	let bottom = window.innerHeight || 0;
+	for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+		const s = getComputedStyle(p);
+		if (s.overflowX !== "visible" || s.overflowY !== "visible") {
+			const r = p.getBoundingClientRect();
+			top = Math.max(top, r.top);
+			bottom = Math.min(bottom, r.bottom);
+			break;
+		}
+	}
+	return { top, bottom };
+}
+function tooltipBubbleHeight(el: Element): number {
+	const content = el.querySelector(".tooltip-content");
+	if (content && content.parentElement === el) return content.getBoundingClientRect().height;
+	const h = parseFloat(getComputedStyle(el, "::before").height || "0");
+	return Number.isFinite(h) ? h : 0;
+}
 function alignTooltip(el: Element, viewportWidth: number): string {
 	if (!tooltipAlignable(el)) return "skip";
 	el.classList.remove(TOOLTIP_ALIGN_START, TOOLTIP_ALIGN_END);
 	const rect = el.getBoundingClientRect();
 	if (!(rect.width > 0)) return "hidden";
+	// 마크업이 고른 방향은 처음 잴 때 적어 두고, 뒤집기는 그 방향을 기준으로 다시 판단한다.
+	const data = (el as HTMLElement).dataset;
+	if (data && !data.tooltipPlacement) data.tooltipPlacement = el.classList.contains("tooltip-bottom") ? "bottom" : "top";
+	if (data) {
+		const clip = tooltipClipBox(el);
+		el.classList.toggle("tooltip-bottom",
+			tooltipFlipToBottom(rect.top, rect.bottom, tooltipBubbleHeight(el), clip.top, clip.bottom, data.tooltipPlacement === "bottom"));
+	}
 	const bounds = tooltipBounds(el, viewportWidth);
 	const align = tooltipAlign(rect.left - bounds.left, rect.right - bounds.left, tooltipBubbleWidth(el), bounds.width);
 	if (align === "start") el.classList.add(TOOLTIP_ALIGN_START);
@@ -1330,7 +1369,7 @@ document.addEventListener("focusin", (event) => {
 		alignTooltip(target, document.documentElement.clientWidth);
 	}
 });
-(globalThis as any).__tooltipAlignInternals = { tooltipAlign, tooltipAlignable, tooltipBounds, alignTooltip, alignTooltips, TOOLTIP_ALIGN_START, TOOLTIP_ALIGN_END };
+(globalThis as any).__tooltipAlignInternals = { tooltipAlign, tooltipFlipToBottom, tooltipAlignable, tooltipBounds, alignTooltip, alignTooltips, TOOLTIP_ALIGN_START, TOOLTIP_ALIGN_END };
 
 
 // htmx 가 걷어내는 요소 안의 canvas 에 붙은 Chart.js 인스턴스를 파괴한다. 실측 2026-09-09: 자산성장·배당 화면에서 기간 프리셋을

@@ -92,3 +92,21 @@ test("세로 변형과 마크업이 고른 끝 맞춤은 건너뛴다", () => {
 	assert.equal(mod.tooltipAlignable(el(["tooltip", "tooltip-bottom-end"])), false);
 	assert.equal(mod.tooltipAlignable(el(["tooltip", "tooltip-bottom-start"])), false);
 });
+
+// 사용자 보고 2026-11-21(시황 분석 일자별 적중): 가로 스크롤 표의 첫 줄에서 위로 펴는 근거 말풍선이 표 상자 위로 잘렸다.
+test("위로 펼 자리가 없고 아래가 더 넓으면 아래로 뒤집는다", () => {
+	// 표 상자 [100,600], 첫 줄 트리거 [140,160], 말풍선 높이 90 -> 위 40 < 98, 아래 440
+	assert.equal(mod.tooltipFlipToBottom(140, 160, 90, 100, 600, false), true);
+	// 둘째 줄부터는 위로 자리가 있어 그대로
+	assert.equal(mod.tooltipFlipToBottom(260, 280, 90, 100, 600, false), false);
+});
+
+test("아래로 펴는 말풍선은 마지막 줄에서 위로 뒤집는다", () => {
+	assert.equal(mod.tooltipFlipToBottom(560, 580, 90, 100, 600, true), false);
+	assert.equal(mod.tooltipFlipToBottom(140, 160, 90, 100, 600, true), true);
+});
+
+test("양쪽 다 모자라면 넓은 쪽, 높이를 모르면 원래 방향", () => {
+	assert.equal(mod.tooltipFlipToBottom(130, 150, 300, 100, 260, false), true);
+	assert.equal(mod.tooltipFlipToBottom(140, 160, 0, 100, 600, false), false);
+});
