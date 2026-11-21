@@ -20,8 +20,8 @@ const problems = [];
 const notes = [];
 
 // 앱이 쓰는 트리 버전 — Java 기본값(poe.sim.tree-version)과 같아야 한다.
-// 서비스마다 기본값이 달라(최적화기 3_29 / 시뮬 3_28) **둘 다** 있어야 한다.
-const TREE_VERSIONS = ["3_28", "3_29"];
+// 최적화기(PoeOptimizeService)와 시뮬(PoeSimService)이 같은 기본값을 쓴다.
+const TREE_VERSIONS = ["3_30"];
 
 if (!fs.existsSync(POB)) {
 	console.log("PoB 소스 없음 — 빌드 재계산/시뮬레이터 비활성(데이터 갱신 자체는 정상)");
@@ -148,7 +148,11 @@ if (!engineVersion) {
 } else if (fs.existsSync(appTreeFile) && fs.existsSync(engineTreeFile)) {
 	const pobNames = (lua) => {
 		const names = new Map();
-		for (const m of lua.matchAll(/\["skill"\]= (\d+),\s*\["name"\]= "((?:[^"\\]|\\.)*)"/g)) names.set(m[1], m[2].replace(/\\"/g, '"'));
+		const unquote = (s) => s.replace(/\\"/g, '"');
+		for (const m of lua.matchAll(/\["skill"\]\s*=\s*(\d+),\s*\["name"\]\s*=\s*"((?:[^"\\]|\\.)*)"/g)) names.set(m[1], unquote(m[2]));
+		// 3_30 부터 PoB 가 필드를 알파벳순으로 써서 name 이 skill 보다 앞에 온다(같은 노드 안에서만 — 다음 name 을 넘지 않는다)
+		for (const m of lua.matchAll(/\["name"\]\s*=\s*"((?:[^"\\]|\\.)*)",(?:(?!\["name"\])[\s\S])*?\["skill"\]\s*=\s*(\d+)/g))
+			if (!names.has(m[2])) names.set(m[2], unquote(m[1]));
 		return names;
 	};
 	const tree = JSON.parse(fs.readFileSync(appTreeFile, "utf8"));

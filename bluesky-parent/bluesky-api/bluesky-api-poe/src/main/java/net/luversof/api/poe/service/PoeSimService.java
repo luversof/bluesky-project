@@ -63,7 +63,7 @@ public class PoeSimService {
       PoeGemDataService poeGemDataService,
       PoePobEngineService poePobEngineService,
       @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir,
-      @Value("${poe.sim.tree-version:3_28}") String treeVersion,
+      @Value("${poe.sim.tree-version:3_30}") String treeVersion,
       @Value("${poe.sim.parallelism:6}") int parallelism) {
     this.poeGemDataService = poeGemDataService;
     this.poePobEngineService = poePobEngineService;

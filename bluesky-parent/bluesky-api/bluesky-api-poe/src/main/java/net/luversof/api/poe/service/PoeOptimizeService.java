@@ -448,7 +448,7 @@ public class PoeOptimizeService {
       PoeMercenaryService poeMercenaryService,
       PoeOptimizeHistoryService historyService,
       @Value("${poe.data-dir:${user.home}/.poe-gamedata/poe1}") String dataDir,
-      @Value("${poe.sim.tree-version:3_29}") String treeVersion,
+      @Value("${poe.sim.tree-version:3_30}") String treeVersion,
       @Value("${poe.sim.parallelism:0}") int parallelism,
       @Value("${poe.pob.src-dir:${user.home}/.poe-gamedata/poe1/work/pob-src}")
           String pobSourceDir) {
