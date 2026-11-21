@@ -67,6 +67,8 @@
 				@endif
 				@if("SUCCESS".equals(status) && !running)
 					<span class="badge badge-success badge-outline">${statusSuccessLabel}</span>
+				@elseif("PARTIAL".equals(status) && !running)
+					<span class="badge badge-warning badge-outline">${MessageUtil.getMessage("poe.admin.extract.status.partial")}</span>
 				@elseif("FAILED".equals(status) && !running)
 					<span class="badge badge-error badge-outline">${statusFailedLabel}</span>
 				@endif

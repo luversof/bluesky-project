@@ -47,6 +47,8 @@ public class PoeExtractService {
     IDLE,
     RUNNING,
     SUCCESS,
+    /** 데이터는 반영됐지만 엔진 점검(verify-engine)이 실패 — 시뮬레이터가 못 돌 수 있다 */
+    PARTIAL,
     FAILED
   }
 
@@ -321,8 +323,8 @@ public class PoeExtractService {
                     // 데이터는 반영됐다. 다만 시뮬레이터가 못 돌 상태라 **성공으로 덮으면 안 된다** —
                     // 이걸 숨기면 사용자는 나중에 시뮬을 돌리다 "스펙 임포트 실패"로 처음 알게 된다(타 PC 사고).
                     appendLog("데이터는 반영됐습니다. 다만 엔진 점검에 실패해 시뮬레이션은 동작하지 않을 수 있습니다.");
-                    appendLog("네트워크를 확인한 뒤 데이터 갱신을 한 번 더 실행하면 엔진 소스까지 복구됩니다.");
-                    lastStatus = Status.FAILED;
+                    appendLog("원인은 위 엔진 점검 진단을 확인하세요(PoB 미출시 트리면 PoB 갱신 뒤, 네트워크 문제면 바로 다시 실행).");
+                    lastStatus = Status.PARTIAL;
                   } else {
                     appendLog("완료 — 화면을 새로고침하면 반영됩니다.");
                     lastStatus = Status.SUCCESS;
