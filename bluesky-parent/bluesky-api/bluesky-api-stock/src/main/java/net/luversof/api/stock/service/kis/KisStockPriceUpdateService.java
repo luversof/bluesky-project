@@ -320,6 +320,7 @@ public class KisStockPriceUpdateService {
         if (maxDate.isAfter(dbMax)) {
           fetchRanges.add(new DateRange(dbMax.plusDays(1), maxDate));
         }
+        recentRefreshRange(today, dbMin, dbMax, maxDate).ifPresent(fetchRanges::add);
         for (DateRange range : mergeAdjacentRanges(fetchRanges)) {
           if (!fetchRangesInBlocks(
               config, stockItemId, stockItem.getSymbol(), range.start(), range.end())) {
@@ -399,6 +400,24 @@ public class KisStockPriceUpdateService {
             ? today
             : (ledgerMaxDate != null ? ledgerMaxDate : today);
     return new DateRange(start, end);
+  }
+
+  /**
+   * 최근 며칠은 매번 다시 받는다. KIS J 일봉은 장 마감 뒤(NXT 거래 시간)에 NXT 가 섞인 종가를 주고 며칠 뒤에야 KRX 종가로 바꾼다 - 그 값이 다음 날
+   * 갱신에서 "확정" 으로 굳어, 삼성전자 421 일 중 9 일이 NXT 종가였다(실측 2026-11-21, 11-18 196,400 대 KRX 194,700). 바뀐 값만
+   * 저장하니(hasMeaningfulHistoryChange) 호출은 전진 갱신과 합쳐 그대로 한 번이다.
+   */
+  public static final int RECENT_REFRESH_DAYS = 7;
+
+  /** [today - RECENT_REFRESH_DAYS, dbMax] 를 받을 구간(dbMin · maxDate 안쪽). 겹치는 날이 없으면 빈 값. */
+  static Optional<DateRange> recentRefreshRange(
+      LocalDate today, LocalDate dbMin, LocalDate dbMax, LocalDate maxDate) {
+    LocalDate start = today.minusDays(RECENT_REFRESH_DAYS);
+    if (start.isBefore(dbMin)) {
+      start = dbMin;
+    }
+    LocalDate end = dbMax.isAfter(maxDate) ? maxDate : dbMax;
+    return start.isAfter(end) ? Optional.empty() : Optional.of(new DateRange(start, end));
   }
 
   /** 정렬된 날짜 목록을 연속 구간으로 묶는다. 주말/휴장일 간격(1~3일)은 같은 조회 구간으로 묶어 API 호출 수를 줄인다. */

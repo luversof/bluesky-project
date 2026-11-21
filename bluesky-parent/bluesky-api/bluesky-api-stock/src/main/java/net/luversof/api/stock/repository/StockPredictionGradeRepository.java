@@ -11,4 +11,6 @@ import net.luversof.api.stock.domain.StockPredictionGrade;
 public interface StockPredictionGradeRepository extends CrudRepository<StockPredictionGrade, UUID> {
 
   List<StockPredictionGrade> findByPredictionIdIn(Collection<UUID> predictionIds);
+
+  List<StockPredictionGrade> findByTargetDateGreaterThanEqual(java.time.LocalDate targetDate);
 }

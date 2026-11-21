@@ -123,7 +123,16 @@ class KisBackfillSkipTest {
     service.updatePriceHistory(UUID.randomUUID());
 
     assertThat(firstRun).as("처음에는 2 년 전 ~ 상장 전을 100 일씩 확인한다").isGreaterThanOrEqualTo(6);
-    assertThat(calledUrls).as("두 번째부터는 같은 빈 구간을 다시 부르지 않는다").isEmpty();
+    // 최근 7 일 재조회(NXT 가 섞인 종가 고치기, 2026-11-21) 한 번만 남는다.
+    String recentFrom =
+        TODAY
+            .minusDays(KisStockPriceUpdateService.RECENT_REFRESH_DAYS)
+            .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
+    assertThat(calledUrls)
+        .as("두 번째부터는 같은 빈 구간을 다시 부르지 않는다")
+        .singleElement()
+        .asString()
+        .contains("FID_INPUT_DATE_1=" + recentFrom);
   }
 
   @Test

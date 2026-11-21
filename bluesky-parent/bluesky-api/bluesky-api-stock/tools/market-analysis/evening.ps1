@@ -10,7 +10,7 @@ try {
     Update-News
     Update-MarketDaily
     $grade = Invoke-Api POST '/api/stock/analysis/grades'
-    Write-Log ("grades: graded {0}, pending {1}" -f $grade.graded, $grade.pending)
+    Write-Log ("grades: graded {0}, pending {1}, regraded {2}" -f $grade.graded, $grade.pending, $grade.regraded)
     exit 0
 } catch {
     Write-Log "FAILED: $_"

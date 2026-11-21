@@ -76,4 +76,31 @@ class KisStockPriceWindowTest {
 
     assertThat(window.end()).isEqualTo(TODAY);
   }
+
+  @Test
+  void 최근_7일은_매번_다시_받는다_NXT_가_섞인_종가를_고치려고() {
+    // dbMax 11-20, 오늘 11-21: 11-14 ~ 11-20 을 다시 받는다(전진 갱신 11-21 과 합쳐 한 번 호출)
+    LocalDate today = LocalDate.of(2026, 11, 21);
+    assertThat(
+            KisStockPriceUpdateService.recentRefreshRange(
+                today, LocalDate.of(2025, 1, 2), LocalDate.of(2026, 11, 20), today))
+        .contains(new DateRange(LocalDate.of(2026, 11, 14), LocalDate.of(2026, 11, 20)));
+    // 이력이 사흘치뿐이면 첫날부터
+    assertThat(
+            KisStockPriceUpdateService.recentRefreshRange(
+                today, LocalDate.of(2026, 11, 18), LocalDate.of(2026, 11, 20), today))
+        .contains(new DateRange(LocalDate.of(2026, 11, 18), LocalDate.of(2026, 11, 20)));
+    // 원장이 끝난 미보유 종목(창 끝이 오래전)이나 이력이 오래전에 끝난 종목은 다시 받지 않는다
+    assertThat(
+            KisStockPriceUpdateService.recentRefreshRange(
+                today,
+                LocalDate.of(2025, 1, 2),
+                LocalDate.of(2026, 11, 20),
+                LocalDate.of(2026, 3, 2)))
+        .isEmpty();
+    assertThat(
+            KisStockPriceUpdateService.recentRefreshRange(
+                today, LocalDate.of(2025, 1, 2), LocalDate.of(2026, 10, 1), today))
+        .isEmpty();
+  }
 }

@@ -169,9 +169,11 @@ public class StockAnalysisController {
     return stockAnalysisService.deleteUngraded(baseDate);
   }
 
+  /** regradeDays: 만기일이 최근 이 일수 안인 채점은 종가가 바뀌었으면 다시 매긴다(기본 10, 지난 시세를 바로잡은 뒤 한 번 크게). */
   @PostMapping("/grades")
-  public StockAnalysisService.GradeResult grade() {
-    return stockAnalysisService.grade();
+  public StockAnalysisService.GradeResult grade(
+      @RequestParam(defaultValue = "" + StockAnalysisService.REGRADE_DAYS) int regradeDays) {
+    return stockAnalysisService.grade(Math.clamp(regradeDays, 0, 800));
   }
 
   /** 분석 날짜(KST) 하루의 회차들을 종목 · 기간별로 나란히. date 를 빼면 가장 최근 날짜. */

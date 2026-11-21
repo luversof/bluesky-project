@@ -47,6 +47,7 @@ import net.luversof.api.stock.service.analysis.PredictionMath.Bar;
 import net.luversof.api.stock.service.analysis.PredictionMath.Direction;
 import net.luversof.api.stock.service.analysis.PredictionMath.Indicators;
 import net.luversof.api.stock.service.kis.KisAuthService;
+import net.luversof.api.stock.service.kis.KisStockPriceUpdateService;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -248,7 +249,8 @@ public class StockAnalysisService {
   /** runId: 이번 제출로 저장한 예측 묶음(분석 회차). */
   public record SubmitResult(UUID runId, int saved, List<String> rejected) {}
 
-  public record GradeResult(int graded, int pending) {}
+  /** regraded: 종가가 고쳐져 다시 매긴 채점 수. */
+  public record GradeResult(int graded, int pending, int regraded) {}
 
   public record DeleteResult(int deleted, int keptGraded) {}
 
@@ -722,6 +724,72 @@ public class StockAnalysisService {
     return new DeleteResult(stockPredictionRepository.deleteUngradedByBaseDate(baseDate), kept);
   }
 
+  /** 다시 매기는 기간(만기일 기준 최근 일수): 시세 갱신이 다시 받는 최근 7 일(KisStockPriceUpdateService) 보다 조금 길게. */
+  public static final int REGRADE_DAYS = KisStockPriceUpdateService.RECENT_REFRESH_DAYS + 3;
+
+  /** 만기 종가가 들어온 예측을 채점하고, 최근 regradeDays 일 안의 채점은 종가가 바뀌었으면 다시 매긴다. */
+  public GradeResult grade(int regradeDays) {
+    GradeResult result = grade();
+    int regraded = 0;
+    LocalDate since = LocalDate.now(PredictionMath.MARKET_ZONE_ID).minusDays(regradeDays);
+    List<StockPredictionGrade> recent =
+        stockPredictionGradeRepository.findByTargetDateGreaterThanEqual(since);
+    Map<UUID, StockPrediction> byId = new HashMap<>();
+    stockPredictionRepository
+        .findAllById(recent.stream().map(StockPredictionGrade::getPredictionId).toList())
+        .forEach(p -> byId.put(p.getId(), p));
+    for (StockPredictionGrade g : recent) {
+      StockPrediction p = byId.get(g.getPredictionId());
+      if (p != null && regrade(g, p)) {
+        regraded++;
+      }
+    }
+    return new GradeResult(result.graded(), result.pending(), regraded);
+  }
+
+  /**
+   * 저녁 채점은 NXT 가 섞인 종가(KIS J 일봉이 장 마감 뒤 주는 값)로 매겨졌을 수 있다 - 시세가 KRX 종가로 고쳐지면 기준가 · 결과를 다시
+   * 매긴다(2026-11-21, 11-20 을 183,100 으로 채점했는데 KRX 종가는 180,900). 늦은 예측 여부는 그대로 둔다.
+   */
+  private boolean regrade(StockPredictionGrade g, StockPrediction p) {
+    StockPriceHistory target =
+        stockPriceHistoryRepository
+            .findTop2ByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+                p.getStockItemId(), g.getTargetDate())
+            .stream()
+            .findFirst()
+            .filter(h -> h.getTradeDate().equals(g.getTargetDate()))
+            .orElse(null);
+    List<StockPriceHistory> baseAndPrev =
+        stockPriceHistoryRepository
+            .findTop2ByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+                p.getStockItemId(), p.getBaseDate());
+    if (target == null || baseAndPrev.isEmpty()) {
+      return false;
+    }
+    BigDecimal baseClose =
+        baseAndPrev.get(0).getTradeDate().equals(p.getBaseDate())
+            ? baseAndPrev.get(0).getClosePrice()
+            : p.getBasePrice();
+    if (target.getClosePrice().compareTo(g.getActualClose()) == 0
+        && baseClose.compareTo(p.getBasePrice()) == 0) {
+      return false;
+    }
+    if (baseClose.compareTo(p.getBasePrice()) != 0) {
+      p.setBasePrice(baseClose);
+      stockPredictionRepository.save(p);
+    }
+    StockPredictionGrade fresh = gradeOf(p, target, g.getTargetDate(), baseAndPrev);
+    g.setActualClose(fresh.getActualClose());
+    g.setActualChangePct(fresh.getActualChangePct());
+    g.setActualDirection(fresh.getActualDirection());
+    g.setHit(fresh.isHit());
+    g.setAlwaysUpHit(fresh.isAlwaysUpHit());
+    g.setPrevDirectionHit(fresh.getPrevDirectionHit());
+    stockPredictionGradeRepository.save(g);
+    return true;
+  }
+
   /** 만기 종가가 들어온 예측을 채점한다. 이미 채점한 것은 건드리지 않는다. */
   public GradeResult grade() {
     int graded = 0;
@@ -744,7 +812,7 @@ public class StockAnalysisService {
           gradeOf(p, target, after.get(0).getTradeDate(), baseAndPrev));
       graded++;
     }
-    return new GradeResult(graded, pending);
+    return new GradeResult(graded, pending, 0);
   }
 
   // shortcut: 기준가는 예측 때의 수정 종가다 - 그 사이 분할 · 병합으로 수정 종가가 다시 매겨지면 변화율이 틀린다. 드물어서 그대로 둔다.
