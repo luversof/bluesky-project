@@ -130,6 +130,13 @@ try {
     } elseif ($marketHours) {
         Write-Log 'market hours - skip the run for now, catch-up only'
     } else {
+        # Rule v10 reads the NXT premarket price before 08:30: a weekday run started between 08:00 and 08:30
+        # (task still registered at 08:00, PC woke up) waits for it instead of judging on a few minutes of trading.
+        $premarketCut = $now.Date.AddHours(8).AddMinutes(30)
+        if ($now.DayOfWeek -ne 'Saturday' -and $now.DayOfWeek -ne 'Sunday' -and $now.Hour -eq 8 -and $now -lt $premarketCut) {
+            Write-Log 'waiting for 08:30 (NXT premarket, rule v10)'
+            Start-Sleep -Seconds ([Math]::Max(0, [int][Math]::Ceiling(($premarketCut - (Get-Date)).TotalSeconds)) + 5)
+        }
         try { Invoke-Analysis '' } catch { $failed = $_; Write-Log "analysis failed: $_" }
     }
 
