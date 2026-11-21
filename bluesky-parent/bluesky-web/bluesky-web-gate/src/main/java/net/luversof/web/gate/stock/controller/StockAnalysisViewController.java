@@ -104,6 +104,7 @@ public class StockAnalysisViewController {
       @RequestParam(required = false) String keyword,
       @RequestParam(required = false) String symbol,
       @RequestParam(required = false) String period,
+      @RequestParam(required = false) String version,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate runDate,
       @RequestParam(defaultValue = "false") boolean onlyDisagree,
@@ -117,9 +118,11 @@ public class StockAnalysisViewController {
     model.addAttribute("period", p);
     model.addAttribute("periods", PERIODS);
     model.addAttribute("onlyDisagree", onlyDisagree);
+    StockAnalysisClient.ReleaseNotes releases = null;
     try {
       // 버전 기록(사용자 요청 2026-11-21): 따로 받는다 - 못 받아도 나머지 화면은 그린다.
-      model.addAttribute("releases", stockAnalysisClient.releases());
+      releases = stockAnalysisClient.releases();
+      model.addAttribute("releases", releases);
     } catch (RuntimeException e) {
       log.warn("market analysis releases load failed", e);
     }
@@ -137,20 +140,33 @@ public class StockAnalysisViewController {
           "focus",
           items.stream().filter(i -> i.symbol().equals(selected)).findFirst().orElse(null));
       model.addAttribute("summary", stockAnalysisClient.summary(selected));
+      StockAnalysisClient.SymbolHistory history =
+          selected == null ? null : stockAnalysisClient.history(selected);
+      // 일자별 표 버전(사용자 요청 2026-11-22): 기본은 가장 최근 채택 버전 - 재분석으로 모든 날짜에 있다. 운영 우선은 고를 때만.
+      List<String> versions = history == null ? List.of() : versionKeys(history.predictions());
+      String adopted = latestAdopted(releases, versions);
+      String dailyVersion =
+          version != null && (versions.contains(version) || LIVE_FIRST.equals(version))
+              ? version
+              : adopted != null ? adopted : LIVE_FIRST;
+      model.addAttribute("dailyVersions", versions);
+      model.addAttribute("adoptedVersion", adopted);
+      model.addAttribute("dailyVersion", dailyVersion);
       // 쪽 버튼은 이 화면을 다시 불러 그 카드만 바꾼다(htmxPagination 이 runsPage · dailyPage 를 붙인다).
       model.addAttribute(
           "pageUrl",
           UriComponentsBuilder.fromPath("/stock/analysis")
               .queryParamIfPresent("symbol", java.util.Optional.ofNullable(selected))
               .queryParam("period", p)
+              .queryParam("version", dailyVersion)
               .queryParamIfPresent("runDate", java.util.Optional.ofNullable(runDate))
               .queryParam("onlyDisagree", onlyDisagree)
               .encode()
               .toUriString());
 
-      if (selected != null) {
-        StockAnalysisClient.SymbolHistory history = stockAnalysisClient.history(selected);
-        List<DailyRow> daily = dailyRows(history.predictions(), periodStart(p, LocalDate.now(KST)));
+      if (history != null) {
+        List<DailyRow> daily =
+            dailyRows(history.predictions(), dailyVersion, periodStart(p, LocalDate.now(KST)));
         Page<DailyRow> dailyRows = pageOf(daily, dailyPage);
         model.addAttribute("dailyHits", dailyHits(daily));
         model.addAttribute("daily", dailyRows.getContent());
@@ -282,11 +298,40 @@ public class StockAnalysisViewController {
     return p.promptVersion() + " · " + p.replay();
   }
 
-  static VersionCompare versionCompare(List<RecentPrediction> predictions, LocalDate from) {
-    Map<String, List<RecentPrediction>> byKey =
+  /** 일자별 표 버전 고르기에서 예전 동작(그날 운영 회차 우선, 버전 섞임)을 뜻하는 값. */
+  static final String LIVE_FIRST = "live";
+
+  /** 버전 기록(최신순)에서 가장 최근 채택된 버전 - 이름의 첫 낱말이 예측에 있는 버전 키인 것(예: "v10 확신도 보정" 은 v10). 없으면 null. */
+  static String latestAdopted(StockAnalysisClient.ReleaseNotes notes, List<String> versions) {
+    if (notes == null || notes.releases() == null) {
+      return null;
+    }
+    return notes.releases().stream()
+        .filter(r -> "ADOPTED".equals(r.verdict()) && r.version() != null)
+        .map(r -> r.version().split(" ")[0])
+        .filter(versions::contains)
+        .findFirst()
+        .orElse(null);
+  }
+
+  /** 일자별 표: version 이 LIVE_FIRST 면 모든 회차에서 운영 우선, 아니면 그 버전(compareKey) 회차만. */
+  static List<DailyRow> dailyRows(
+      List<RecentPrediction> predictions, String version, LocalDate from) {
+    return dailyRows(
+        LIVE_FIRST.equals(version)
+            ? predictions
+            : predictions.stream().filter(p -> compareKey(p).equals(version)).toList(),
+        from);
+  }
+
+  /** 버전 키: 프롬프트 버전 · 실험 리플레이 · 규칙 순, 그 안에서 처음 나온 때가 늦은 것이 앞. */
+  static List<String> versionKeys(List<RecentPrediction> predictions) {
+    return versionKeys(
         predictions.stream()
-            .collect(Collectors.groupingBy(StockAnalysisViewController::compareKey));
-    // 프롬프트 버전 · 실험 리플레이 · 규칙 순, 그 안에서 처음 나온 때가 늦은 것이 앞 - 기준은 가장 새 프롬프트 버전.
+            .collect(Collectors.groupingBy(StockAnalysisViewController::compareKey)));
+  }
+
+  private static List<String> versionKeys(Map<String, List<RecentPrediction>> byKey) {
     Map<String, Instant> firstSeen = new LinkedHashMap<>();
     byKey.forEach((k, v) ->
         firstSeen.put(
@@ -296,13 +341,27 @@ public class StockAnalysisViewController {
                 .filter(Objects::nonNull)
                 .min(Comparator.naturalOrder())
                 .orElse(Instant.EPOCH)));
-    List<String> versions =
-        firstSeen.keySet().stream()
-            .sorted(
-                Comparator.comparingInt(
-                        (String k) -> k.equals("rule") ? 2 : k.contains(" · ") ? 1 : 0)
-                    .thenComparing(firstSeen::get, Comparator.reverseOrder()))
-            .toList();
+    return firstSeen.keySet().stream()
+        .sorted(
+            Comparator.comparingInt((String k) -> k.equals("rule") ? 2 : k.contains(" · ") ? 1 : 0)
+                .thenComparing(
+                    StockAnalysisViewController::versionNumber, Comparator.reverseOrder())
+                .thenComparing(firstSeen::get, Comparator.reverseOrder()))
+        .toList();
+  }
+
+  /** "v10" · "v9 · 뉴스없음" 의 번호, 없으면 -1. 재분석 회차는 만든 시각이 예전 날짜로 찍혀서 처음 나온 때만으로는 새 버전을 못 가린다. */
+  private static int versionNumber(String key) {
+    var m = java.util.regex.Pattern.compile("^v(\\d+)").matcher(key);
+    return m.find() ? Integer.parseInt(m.group(1)) : -1;
+  }
+
+  static VersionCompare versionCompare(List<RecentPrediction> predictions, LocalDate from) {
+    Map<String, List<RecentPrediction>> byKey =
+        predictions.stream()
+            .collect(Collectors.groupingBy(StockAnalysisViewController::compareKey));
+    // 기준은 가장 새 프롬프트 버전(versionKeys 의 첫째).
+    List<String> versions = versionKeys(byKey);
     Map<String, Map<LocalDate, DailyRow>> cells = new LinkedHashMap<>();
     for (String v : versions) {
       Map<LocalDate, DailyRow> rows = new LinkedHashMap<>();

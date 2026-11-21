@@ -26,6 +26,9 @@
 @param net.luversof.web.common.menu.domain.Pagination dailyPagination = null
 @param StockAnalysisClient.ReleaseNotes releases = null
 @param StockAnalysisViewController.VersionCompare versionCompare = null
+@param List<String> dailyVersions = List.of()
+@param String adoptedVersion = null
+@param String dailyVersion = "live"
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
@@ -61,10 +64,21 @@
 							<option value="${p.getKey()}" selected="${p.getKey().equals(period)}">${MessageUtil.getMessage(p.getValue())}</option>
 						@endfor
 					</select>
+					<%-- 일자별 적중 버전(사용자 요청 2026-11-22): 기본은 가장 최근 채택 버전. "운영 회차 우선"은 그날 실제로 돈 회차(버전 섞임). --%>
+					<label class="text-sm" for="analysis-version">${MessageUtil.getMessage("stock.analysis.version")}</label>
+					<select id="analysis-version" name="version" class="select select-bordered select-sm">
+						@for(var v : dailyVersions)
+							<option value="${v}" selected="${v.equals(dailyVersion)}">${v.equals(adoptedVersion) ? StockViewSupport.msg("stock.analysis.version.adopted", v) : v}</option>
+						@endfor
+						<option value="live" selected="${"live".equals(dailyVersion)}">${MessageUtil.getMessage("stock.analysis.version.live")}</option>
+					</select>
 					<button type="submit" class="btn btn-sm btn-primary">${MessageUtil.getMessage("stock.analysis.runs.show")}</button>
 				</form>
 				@if(focus != null)
 					<p class="text-sm font-semibold" role="status">${StockViewSupport.msg("stock.analysis.focus", focus.name(), focus.symbol())}</p>
+				@endif
+				@if(adoptedVersion != null)
+					<p class="text-sm" role="status"><span class="badge badge-primary">${MessageUtil.getMessage("stock.analysis.adopted.badge")}</span> ${StockViewSupport.msg("stock.analysis.adopted.now", adoptedVersion)}</p>
 				@endif
 
 				<div class="grid stat-card-grid grid-cols-3 gap-3">
@@ -75,7 +89,7 @@
 
 				<%-- 일자별 적중(사용자 요청 2026-11-20): 기준일마다 그날 회차(운영 회차 우선)의 D+1 · D+5 가 맞았는지. 위에 기간 안 적중 수를 센다. --%>
 				<div id="analysis-daily">
-				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.daily.title"), body = @`
+				@template._components.ui.card(title = "live".equals(dailyVersion) ? MessageUtil.getMessage("stock.analysis.daily.title.live") : StockViewSupport.msg("stock.analysis.daily.title.version", dailyVersion), body = @`
 						@if(daily == null || daily.isEmpty())
 							<p class="text-sm opacity-70">${MessageUtil.getMessage("stock.analysis.empty")}</p>
 						@else
@@ -112,7 +126,7 @@
 															@template.stock.htmx.fragments.components.predictionBadge(direction = p.direction(), confidence = p.confidence(), rationale = p.rationale(), hit = p.hit(), actualDirection = p.actualDirection(), actualChangePct = p.actualChangePct(), pct = pct)
 															!{var close = StockAnalysisViewController.actualClose(p);}
 															@if(close != null)
-																<div class="text-xs opacity-70">${StockViewSupport.msg("stock.analysis.daily.price", String.format("%,d", close.longValue()), p.targetDate() == null ? "-" : p.targetDate().toString().substring(5))}</div>
+																<div class="text-xs opacity-70">${StockViewSupport.msg("stock.analysis.daily.price", String.format("%,d", net.luversof.web.gate.stock.util.StockFormatUtil.displayWon(close)), p.targetDate() == null ? "-" : p.targetDate().toString().substring(5))}</div>
 															@endif
 														@endif
 													</td>
@@ -154,6 +168,9 @@
 									<th scope="col">${MessageUtil.getMessage("stock.analysis.col.baseDate")}</th>
 									@for(var v : versionCompare.versions())
 										<th scope="col" class="whitespace-nowrap">${v}
+											@if(v.equals(adoptedVersion))
+												<span class="badge badge-sm badge-primary">${MessageUtil.getMessage("stock.analysis.adopted.badge")}</span>
+											@endif
 											@if(v.equals(versionCompare.versions().get(0)))
 												<span class="badge badge-sm badge-outline badge-primary">${MessageUtil.getMessage("stock.analysis.compare.base")}</span>
 											@endif
@@ -247,12 +264,18 @@
 										<th scope="col">${MessageUtil.getMessage("stock.analysis.release.col.result")}</th>
 									</tr></thead>
 									<tbody>
+										<%-- 가장 위(최신)의 채택 줄이 지금 쓰는 버전(사용자 요청 2026-11-22: 어떤 게 최근 채택인지 보기 편하게). --%>
+										!{var current = releases.releases().stream().filter(x -> "ADOPTED".equals(x.verdict())).findFirst().orElse(null);}
 										@for(var r : releases.releases())
 											!{String verdictKey = switch (r.verdict()) { case "ADOPTED" -> "stock.analysis.release.verdict.adopted"; case "REJECTED" -> "stock.analysis.release.verdict.rejected"; case "HOLD" -> "stock.analysis.release.verdict.hold"; default -> "stock.analysis.release.verdict.baseline"; };}
 											!{String verdictClass = switch (r.verdict()) { case "ADOPTED" -> " badge-success"; case "REJECTED" -> " badge-error"; case "HOLD" -> " badge-warning"; default -> ""; };}
-											<tr>
+											<tr class="${r == current ? "bg-primary/10" : null}">
 												<td class="whitespace-nowrap">${String.valueOf(r.date())}</td>
-												<td class="whitespace-nowrap font-semibold">${r.version()}</td>
+												<td class="whitespace-nowrap font-semibold">${r.version()}
+													@if(r == current)
+														<span class="badge badge-sm badge-primary">${MessageUtil.getMessage("stock.analysis.adopted.badge")}</span>
+													@endif
+												</td>
 												<td class="whitespace-nowrap">${r.area() == null ? "-" : r.area()}</td>
 												<td class="whitespace-nowrap"><span class="badge badge-sm badge-outline${verdictClass}">${MessageUtil.getMessage(verdictKey)}</span></td>
 												<td class="min-w-64 text-sm">${r.change()}</td>
