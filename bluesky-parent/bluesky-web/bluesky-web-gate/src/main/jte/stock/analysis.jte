@@ -206,39 +206,54 @@
 				@if(releases != null && releases.releases() != null && !releases.releases().isEmpty())
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.release.title"), body = @`
 						<p class="text-xs text-base-content/60 mb-3">${MessageUtil.getMessage("stock.analysis.release.note")}</p>
-						<ol class="space-y-3">
-							@for(var r : releases.releases())
-								!{String verdictKey = switch (r.verdict()) { case "ADOPTED" -> "stock.analysis.release.verdict.adopted"; case "REJECTED" -> "stock.analysis.release.verdict.rejected"; case "HOLD" -> "stock.analysis.release.verdict.hold"; default -> "stock.analysis.release.verdict.baseline"; };}
-								!{String verdictClass = switch (r.verdict()) { case "ADOPTED" -> " badge-success"; case "REJECTED" -> " badge-error"; case "HOLD" -> " badge-warning"; default -> ""; };}
-								<li class="border-l-2 border-base-300 pl-3">
-									<div class="flex flex-wrap items-center gap-2 text-sm">
-										<span class="opacity-60 whitespace-nowrap">${String.valueOf(r.date())}</span>
-										<span class="font-semibold">${r.version()}</span>
-										@if(r.area() != null)
-											<span class="badge badge-sm badge-outline">${r.area()}</span>
-										@endif
-										<span class="badge badge-sm badge-outline${verdictClass}">${MessageUtil.getMessage(verdictKey)}</span>
-									</div>
-									<p class="text-sm mt-1">${r.change()}</p>
-									@if(r.result() != null)
-										<p class="text-xs text-base-content/70 mt-0.5">${r.result()}</p>
-									@endif
-								</li>
-							@endfor
-						</ol>
-						@if(releases.next() != null && !releases.next().isEmpty())
-							<h3 class="text-sm font-semibold mt-5 mb-2">${MessageUtil.getMessage("stock.analysis.release.next")}</h3>
-							<ul class="space-y-2">
-								@for(var n : releases.next())
-									!{String priorityKey = switch (n.priority()) { case "HIGH" -> "stock.analysis.release.priority.high"; case "MEDIUM" -> "stock.analysis.release.priority.medium"; default -> "stock.analysis.release.priority.low"; };}
-									!{String priorityClass = switch (n.priority()) { case "HIGH" -> " badge-primary"; case "MEDIUM" -> " badge-info"; default -> ""; };}
-									<li class="text-sm">
-										<span class="badge badge-sm badge-outline${priorityClass}">${MessageUtil.getMessage(priorityKey)}</span>
-										<span class="font-semibold">${n.title()}</span>
-										<p class="text-xs text-base-content/70 mt-0.5">${n.judgment()}</p>
-									</li>
-								@endfor
-							</ul>
+							<div class="overflow-x-auto">
+								<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.release.title")}">
+									<thead><tr>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.release.col.date")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.release.col.version")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.release.col.area")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.release.col.verdict")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.release.col.change")}</th>
+										<th scope="col">${MessageUtil.getMessage("stock.analysis.release.col.result")}</th>
+									</tr></thead>
+									<tbody>
+										@for(var r : releases.releases())
+											!{String verdictKey = switch (r.verdict()) { case "ADOPTED" -> "stock.analysis.release.verdict.adopted"; case "REJECTED" -> "stock.analysis.release.verdict.rejected"; case "HOLD" -> "stock.analysis.release.verdict.hold"; default -> "stock.analysis.release.verdict.baseline"; };}
+											!{String verdictClass = switch (r.verdict()) { case "ADOPTED" -> " badge-success"; case "REJECTED" -> " badge-error"; case "HOLD" -> " badge-warning"; default -> ""; };}
+											<tr>
+												<td class="whitespace-nowrap">${String.valueOf(r.date())}</td>
+												<td class="whitespace-nowrap font-semibold">${r.version()}</td>
+												<td class="whitespace-nowrap">${r.area() == null ? "-" : r.area()}</td>
+												<td class="whitespace-nowrap"><span class="badge badge-sm badge-outline${verdictClass}">${MessageUtil.getMessage(verdictKey)}</span></td>
+												<td class="min-w-64 text-sm">${r.change()}</td>
+												<td class="min-w-64 text-xs text-base-content/70">${r.result() == null ? "-" : r.result()}</td>
+											</tr>
+										@endfor
+									</tbody>
+								</table>
+							</div>
+							@if(releases.next() != null && !releases.next().isEmpty())
+								<h3 class="text-sm font-semibold mt-5 mb-2">${MessageUtil.getMessage("stock.analysis.release.next")}</h3>
+								<div class="overflow-x-auto">
+									<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.release.next")}">
+										<thead><tr>
+											<th scope="col">${MessageUtil.getMessage("stock.analysis.release.col.priority")}</th>
+											<th scope="col">${MessageUtil.getMessage("stock.analysis.release.col.candidate")}</th>
+											<th scope="col">${MessageUtil.getMessage("stock.analysis.release.col.judgment")}</th>
+										</tr></thead>
+										<tbody>
+											@for(var n : releases.next())
+												!{String priorityKey = switch (n.priority()) { case "HIGH" -> "stock.analysis.release.priority.high"; case "MEDIUM" -> "stock.analysis.release.priority.medium"; default -> "stock.analysis.release.priority.low"; };}
+												!{String priorityClass = switch (n.priority()) { case "HIGH" -> " badge-primary"; case "MEDIUM" -> " badge-info"; default -> ""; };}
+												<tr>
+													<td class="whitespace-nowrap"><span class="badge badge-sm badge-outline${priorityClass}">${MessageUtil.getMessage(priorityKey)}</span></td>
+													<td class="min-w-48 font-semibold">${n.title()}</td>
+													<td class="min-w-64 text-xs text-base-content/70">${n.judgment()}</td>
+												</tr>
+											@endfor
+										</tbody>
+									</table>
+								</div>
 						@endif
 				`)
 				@endif
