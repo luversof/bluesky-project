@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Function;
@@ -53,7 +54,18 @@ public class MarketDailyCollectService {
   /** 주간 종가는 장 마감(15:45) 뒤에 확정 - 그 전 당일 행은 넣지 않는다. */
   static final LocalTime DAY_SETTLED_AT = LocalTime.of(16, 0);
 
-  public record CollectResult(int contracts, int saved, LocalDate from, LocalDate to) {}
+  /**
+   * NXT 장전 가격을 모으는 종목(그림자 집계, 사용자 요청 2026-11-21): 규칙 대상과 같은 삼성전자. 08:49 가격의 방향이 D+1 을 리플레이 구간에서
+   * 66.7 맞혔다(현행 60.8) - 표본 밖(2026-11-24 이후)에서도 그런지 운영 예측과 나란히 센다. KIS 분봉은 약 1 년치만 남아 있다.
+   */
+  static final List<String> PREMARKET_SYMBOLS = List.of("005930");
+
+  /** NXT 장전 거래는 08:00 ~ 08:50. 이 시각 전 당일 값은 아직 없다. */
+  static final LocalTime PREMARKET_CLOSED_AT = LocalTime.of(8, 50);
+
+  /** saved 는 선물 · 장전 가격 행을 합친 수, premarket 은 그중 장전 가격 행 수. */
+  public record CollectResult(
+      int contracts, int saved, LocalDate from, LocalDate to, int premarket) {}
 
   /** 선물 한 종목의 주간 · 야간 종가. */
   record Contract(
@@ -97,7 +109,109 @@ public class MarketDailyCollectService {
     }
     List<StockMarketDaily> rows = rowsOf(contracts, from, to, now());
     upsert(rows);
-    return new CollectResult(contracts.size(), rows.size(), from, to);
+    int premarket = collectPremarket(config, from, to);
+    return new CollectResult(contracts.size(), rows.size() + premarket, from, to, premarket);
+  }
+
+  /** 없는 날만 받는다(휴장일은 매번 다시 묻지만 2 주 창이라 몇 번뿐). */
+  private int collectPremarket(OpenApiConfig config, LocalDate from, LocalDate to) {
+    List<StockMarketDaily> rows = new ArrayList<>();
+    for (String symbol : PREMARKET_SYMBOLS) {
+      String code = StockMarketDaily.premarketCode(symbol);
+      Set<LocalDate> have =
+          stockMarketDailyRepository
+              .findByCodeAndTradeDateBetweenOrderByTradeDate(code, from, to)
+              .stream()
+              .map(StockMarketDaily::getTradeDate)
+              .collect(Collectors.toSet());
+      for (LocalDate d : premarketDates(from, to, now())) {
+        if (have.contains(d)) {
+          continue;
+        }
+        BigDecimal price = premarketPrice(fetchPremarketBars(config, symbol, d), d);
+        if (price != null) {
+          rows.add(row(code, d, price, symbol));
+        }
+      }
+    }
+    upsert(rows);
+    return rows.size();
+  }
+
+  /** from ~ to 의 평일 중 장전 거래가 끝난 날. */
+  static List<LocalDate> premarketDates(LocalDate from, LocalDate to, ZonedDateTime now) {
+    LocalDate last =
+        now.toLocalTime().isBefore(PREMARKET_CLOSED_AT)
+            ? now.toLocalDate().minusDays(1)
+            : now.toLocalDate();
+    List<LocalDate> out = new ArrayList<>();
+    for (LocalDate d = from; !d.isAfter(to) && !d.isAfter(last); d = d.plusDays(1)) {
+      if (d.getDayOfWeek() != DayOfWeek.SATURDAY && d.getDayOfWeek() != DayOfWeek.SUNDAY) {
+        out.add(d);
+      }
+    }
+    return out;
+  }
+
+  /** 그날 08:50 전 마지막 1 분봉의 종가. 그날 봉이 없으면(휴장 · NXT 거래 없음) null. */
+  static BigDecimal premarketPrice(List<Map<String, Object>> bars, LocalDate d) {
+    String day = d.format(KIS_DATE);
+    return bars.stream()
+        .filter(b -> day.equals(String.valueOf(b.get("stck_bsop_date"))))
+        .filter(b -> String.valueOf(b.get("stck_cntg_hour")).compareTo("085000") < 0)
+        .max(Comparator.comparing(b -> String.valueOf(b.get("stck_cntg_hour"))))
+        .map(b -> new BigDecimal(String.valueOf(b.get("stck_prpr"))))
+        .orElse(null);
+  }
+
+  /** KIS 주식일별분봉조회(FHKST03010230, 시장 NX): 그날 08:50 까지의 1 분봉. */
+  @SuppressWarnings("unchecked")
+  private List<Map<String, Object>> fetchPremarketBars(
+      OpenApiConfig config, String symbol, LocalDate d) {
+    String url =
+        UriComponentsBuilder.fromUriString(
+                baseUrl + "/uapi/domestic-stock/v1/quotations/inquire-time-dailychartprice")
+            .queryParam("FID_COND_MRKT_DIV_CODE", "NX")
+            .queryParam("FID_INPUT_ISCD", symbol)
+            .queryParam("FID_INPUT_HOUR_1", "085000")
+            .queryParam("FID_INPUT_DATE_1", d.format(KIS_DATE))
+            .queryParam("FID_PW_DATA_INCU_YN", "N")
+            .queryParam("FID_FAKE_TICK_INCU_YN", "")
+            .build()
+            .toUriString();
+    Map<String, Object> body = get(config, "FHKST03010230", url);
+    return body != null && body.get("output2") instanceof List<?> list
+        ? (List<Map<String, Object>>) list
+        : List.of();
+  }
+
+  /** KIS GET: 초당 한도(EGW00201)면 쉬었다 다시. 실패하면 null. */
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> get(OpenApiConfig config, String trId, String url) {
+    HttpHeaders headers = new HttpHeaders();
+    headers.set("authorization", "Bearer " + config.getAccessToken());
+    headers.set("appkey", config.getAppKey());
+    headers.set("appsecret", config.getAppSecret());
+    headers.set("custtype", "P");
+    headers.set("tr_id", trId);
+    for (int attempt = 1; ; attempt++) {
+      Map<String, Object> body;
+      try {
+        body =
+            kisRestTemplate
+                .exchange(url, HttpMethod.GET, new HttpEntity<>(headers), Map.class)
+                .getBody();
+      } catch (RestClientException e) {
+        log.warn("market daily {} failed: {}", trId, e.getMessage());
+        return null;
+      }
+      sleep(150);
+      if (body != null && "EGW00201".equals(body.get("msg_cd")) && attempt < 5) {
+        sleep(1000);
+        continue;
+      }
+      return body;
+    }
   }
 
   private static ZonedDateTime now() {
@@ -172,12 +286,6 @@ public class MarketDailyCollectService {
   @SuppressWarnings("unchecked")
   private Map<LocalDate, BigDecimal> fetch(
       OpenApiConfig config, String market, String code, LocalDate from, LocalDate to) {
-    HttpHeaders headers = new HttpHeaders();
-    headers.set("authorization", "Bearer " + config.getAccessToken());
-    headers.set("appkey", config.getAppKey());
-    headers.set("appsecret", config.getAppSecret());
-    headers.set("custtype", "P");
-    headers.set("tr_id", "FHKIF03020100");
     String url =
         UriComponentsBuilder.fromUriString(
                 baseUrl + "/uapi/domestic-futureoption/v1/quotations/inquire-daily-fuopchartprice")
@@ -188,36 +296,19 @@ public class MarketDailyCollectService {
             .queryParam("FID_PERIOD_DIV_CODE", "D")
             .build()
             .toUriString();
-    for (int attempt = 1; ; attempt++) {
-      Map<String, Object> body;
-      try {
-        body =
-            kisRestTemplate
-                .exchange(url, HttpMethod.GET, new HttpEntity<>(headers), Map.class)
-                .getBody();
-      } catch (RestClientException e) {
-        log.warn("market daily {} {} failed: {}", market, code, e.getMessage());
-        return Map.of();
-      }
-      sleep(150);
-      if (body != null && "EGW00201".equals(body.get("msg_cd")) && attempt < 5) {
-        sleep(1000);
-        continue;
-      }
-      Map<LocalDate, BigDecimal> result = new HashMap<>();
-      if (body != null && body.get("output2") instanceof List<?> list) {
-        for (Object o : list) {
-          Map<String, Object> row = (Map<String, Object>) o;
-          Object date = row.get("stck_bsop_date");
-          Object close = row.get("futs_prpr");
-          if (date != null && close != null && !close.toString().isBlank()) {
-            result.put(
-                LocalDate.parse(date.toString(), KIS_DATE), new BigDecimal(close.toString()));
-          }
+    Map<String, Object> body = get(config, "FHKIF03020100", url);
+    Map<LocalDate, BigDecimal> result = new HashMap<>();
+    if (body != null && body.get("output2") instanceof List<?> list) {
+      for (Object o : list) {
+        Map<String, Object> row = (Map<String, Object>) o;
+        Object date = row.get("stck_bsop_date");
+        Object close = row.get("futs_prpr");
+        if (date != null && close != null && !close.toString().isBlank()) {
+          result.put(LocalDate.parse(date.toString(), KIS_DATE), new BigDecimal(close.toString()));
         }
       }
-      return result;
     }
+    return result;
   }
 
   private void upsert(List<StockMarketDaily> rows) {
@@ -229,7 +320,7 @@ public class MarketDailyCollectService {
     LocalDate max =
         rows.stream().map(StockMarketDaily::getTradeDate).max(Comparator.naturalOrder()).get();
     Map<String, Map<LocalDate, StockMarketDaily>> existing = new HashMap<>();
-    for (String code : List.of(StockMarketDaily.K200F_DAY, StockMarketDaily.K200F_NIGHT)) {
+    for (String code : rows.stream().map(StockMarketDaily::getCode).distinct().toList()) {
       existing.put(
           code,
           stockMarketDailyRepository

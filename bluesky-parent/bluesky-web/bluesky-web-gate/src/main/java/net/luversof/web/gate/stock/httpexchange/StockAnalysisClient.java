@@ -144,7 +144,18 @@ public interface StockAnalysisClient {
       List<RateRow> byConfidence,
       List<RateRow> byPromptVersion,
       List<RateRow> byRun,
-      List<RateRow> byNightMove) {}
+      List<RateRow> byNightMove,
+      List<ShadowRow> premarketShadow) {}
+
+  /** 장전가 그림자 집계 한 줄 - api-stock StockAnalysisService.ShadowRow 와 같다. */
+  record ShadowRow(
+      String period,
+      String band,
+      int days,
+      int hit,
+      int pairedDays,
+      int pairedHit,
+      int pairedSystemHit) {}
 
   record RecentPrediction(
       String symbol,

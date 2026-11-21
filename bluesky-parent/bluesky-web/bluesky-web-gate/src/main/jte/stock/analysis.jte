@@ -202,6 +202,36 @@
 					@endfor
 				</div>
 
+				<%-- 장전가 그림자 집계(사용자 요청 2026-11-21): NXT 08:49 가격 방향으로 D+1 을 예측한 셈 치고 채점한다. 표본 밖(2026-11-24 ~)에서도 운영보다 나은지 본다. 예측을 저장하지 않는다. --%>
+				@if(summary.premarketShadow() != null && !summary.premarketShadow().isEmpty())
+				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.shadow.title"), body = @`
+						<p class="text-xs text-base-content/60 mb-3">${MessageUtil.getMessage("stock.analysis.shadow.note")}</p>
+						<div class="overflow-x-auto">
+							<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.shadow.title")}">
+								<thead><tr>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.shadow.col.period")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.shadow.col.band")}</th>
+									<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.shadow.col.days")}</th>
+									<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.shadow.col.hit")}</th>
+									<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.shadow.col.paired")}</th>
+								</tr></thead>
+								<tbody>
+									@for(var s : summary.premarketShadow())
+										!{String periodKey = "OOS".equals(s.period()) ? "stock.analysis.shadow.period.oos" : "stock.analysis.shadow.period.in";}
+										<tr class="${"all".equals(s.band()) ? "font-semibold" : null}">
+											<td class="whitespace-nowrap">${MessageUtil.getMessage(periodKey)}</td>
+											<td class="whitespace-nowrap">${"all".equals(s.band()) ? MessageUtil.getMessage("stock.analysis.shadow.band.all") : s.band()}</td>
+											<td class="text-right">${s.days()}</td>
+											<td class="text-right">${StockViewSupport.msg("stock.analysis.shadow.rate", String.valueOf(s.hit()), String.valueOf(s.days()), rate.apply(s.days() == 0 ? null : BigDecimal.valueOf(s.hit() * 100.0 / s.days()).setScale(1, java.math.RoundingMode.HALF_UP)))}</td>
+											<td class="text-right whitespace-nowrap">${s.pairedDays() == 0 ? "-" : StockViewSupport.msg("stock.analysis.shadow.pairedValue", String.valueOf(s.pairedDays()), String.valueOf(s.pairedHit()), String.valueOf(s.pairedSystemHit()))}</td>
+										</tr>
+									@endfor
+								</tbody>
+							</table>
+						</div>
+				`)
+				@endif
+
 				<%-- 버전 기록(사용자 요청 2026-11-21): 버전마다 바꾼 것 · 리플레이 결과 · 판단, 그리고 다음 개선 후보. 내용은 api-stock resources/analysis/releases.json. --%>
 				@if(releases != null && releases.releases() != null && !releases.releases().isEmpty())
 				@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.release.title"), body = @`

@@ -778,7 +778,28 @@ public class StockAnalysisService {
       List<RateRow> byConfidence,
       List<RateRow> byPromptVersion,
       List<RateRow> byRun,
-      List<RateRow> byNightMove) {}
+      List<RateRow> byNightMove,
+      List<ShadowRow> premarketShadow) {}
+
+  /**
+   * 장전가 그림자 집계 한 줄(사용자 요청 2026-11-21). period: OOS(PREMARKET_SHADOW_FROM 부터, 규칙을 정한 뒤의 새 날짜) · IN(그
+   * 전, 리플레이에서 본 구간). band: all 또는 nightBand. days · hit: 장전가 방향 예측이 채점된 날과 적중. paired*: 그중 운영 D+1
+   * 예측도 있는 날만 나란히 센 장전가 · 운영 적중.
+   */
+  public record ShadowRow(
+      String period,
+      String band,
+      int days,
+      int hit,
+      int pairedDays,
+      int pairedHit,
+      int pairedSystemHit) {}
+
+  /** 그림자 집계의 표본 밖 시작일: 장전가 결과를 기록한 2026-11-21 뒤 첫 거래일. */
+  static final LocalDate PREMARKET_SHADOW_FROM = LocalDate.of(2026, 11, 24);
+
+  /** 빠진 날 채움 회차의 리플레이 이름(morning.ps1 $CatchUpLabel) - 운영 회차로 센다. */
+  static final String CATCH_UP_LABEL = "누락채움";
 
   public record RecentPrediction(
       String symbol,
@@ -832,7 +853,98 @@ public class StockAnalysisService {
                 .map(p -> new Graded(p, grades.get(p.getId())))
                 .toList(),
             g -> runLabel(g, runSeqs.getOrDefault(runKey(g.prediction()), 0))),
-        byNightMove(onTime));
+        byNightMove(onTime),
+        premarketShadow(symbol, onTime));
+  }
+
+  /**
+   * 장전가 그림자 집계: NXT 08:49 가격(StockMarketDaily NXT_PRE_종목)이 기준일 종가보다 높으면 UP, 낮으면 DOWN 으로 D+1 을 예측한 셈
+   * 치고 운영과 같은 규칙(±0.5% 보합)으로 채점한다. 예측을 저장하지 않으니 운영 · 프롬프트 버전에 영향이 없다.
+   */
+  private List<ShadowRow> premarketShadow(String symbol, List<Graded> onTime) {
+    StockItem item = symbol == null ? null : stockItemRepository.findBySymbol(symbol);
+    if (item == null) {
+      return List.of();
+    }
+    LocalDate to = LocalDate.now(PredictionMath.MARKET_ZONE_ID);
+    Map<LocalDate, BigDecimal> premarket = new java.util.HashMap<>();
+    stockMarketDailyRepository
+        .findByCodeAndTradeDateBetweenOrderByTradeDate(
+            net.luversof.api.stock.domain.StockMarketDaily.premarketCode(symbol),
+            LocalDate.of(2025, 1, 1),
+            to)
+        .forEach(r -> premarket.put(r.getTradeDate(), r.getClosePrice()));
+    if (premarket.isEmpty()) {
+      return List.of();
+    }
+    LocalDate from = premarket.keySet().stream().min(Comparator.naturalOrder()).get().minusDays(14);
+    java.util.TreeMap<LocalDate, BigDecimal> closes = new java.util.TreeMap<>();
+    stockPriceHistoryRepository
+        .findByStockItemIdAndTradeDateBetween(item.getId(), from, to)
+        .forEach(h -> closes.put(h.getTradeDate(), h.getClosePrice()));
+    // 기준일마다 운영 D+1 예측 하나: 운영 회차 우선, 같으면 나중 것(일자별 적중 표와 같은 고르기).
+    Map<LocalDate, Boolean> systemHits = new java.util.HashMap<>();
+    onTime.stream()
+        .filter(g -> g.prediction().getHorizonDays() == 1)
+        .filter(g -> isOperational(g.prediction()))
+        .sorted(
+            Comparator.comparing((Graded g) -> g.prediction().getReplay() == null)
+                .thenComparing(
+                    g -> g.prediction().getCreatedDate(),
+                    Comparator.nullsFirst(Comparator.naturalOrder())))
+        .forEach(g -> systemHits.put(g.prediction().getBaseDate(), g.grade().isHit()));
+    return shadowRows(closes, premarket, nightMoves(from, to), systemHits);
+  }
+
+  /** 운영 회차: 리플레이 아님, 빠진 날 채움, 재분석. 실험 리플레이는 뺀다. */
+  static boolean isOperational(StockPrediction p) {
+    return p.getReplay() == null || CATCH_UP_LABEL.equals(p.getReplay()) || isReanalysis(p);
+  }
+
+  /**
+   * closes: 거래일 종가, premarket: 거래일 T 의 장전 가격, moves: 기준일의 야간선물 변동, systemHits: 기준일의 운영 D+1 적중. T 의
+   * 기준일은 그 앞 거래일이고, T 종가가 아직 없으면 채점하지 않는다.
+   */
+  static List<ShadowRow> shadowRows(
+      java.util.NavigableMap<LocalDate, BigDecimal> closes,
+      Map<LocalDate, BigDecimal> premarket,
+      Map<LocalDate, BigDecimal> moves,
+      Map<LocalDate, Boolean> systemHits) {
+    Map<List<String>, int[]> counts =
+        new java.util.TreeMap<>(
+            Comparator.comparing((List<String> k) -> k.get(0).equals("OOS") ? 0 : 1)
+                .thenComparing(k -> k.get(1).equals("all") ? "" : k.get(1)));
+    premarket.forEach((t, price) -> {
+      LocalDate base = closes.lowerKey(t);
+      if (base == null || !closes.containsKey(t)) {
+        return;
+      }
+      BigDecimal baseClose = closes.get(base);
+      BigDecimal gap = PredictionMath.changePct(baseClose, price);
+      BigDecimal actual = PredictionMath.changePct(baseClose, closes.get(t));
+      if (gap == null || actual == null) {
+        return;
+      }
+      String predicted = gap.signum() > 0 ? "UP" : gap.signum() < 0 ? "DOWN" : "FLAT";
+      boolean hit =
+          predicted.equals(PredictionMath.classify(actual, PredictionMath.flatBandPct(1)).name());
+      Boolean system = systemHits.get(base);
+      String period = t.isBefore(PREMARKET_SHADOW_FROM) ? "IN" : "OOS";
+      for (String band : List.of("all", nightBand(moves.get(base)))) {
+        int[] c = counts.computeIfAbsent(List.of(period, band), k -> new int[5]);
+        c[0]++;
+        c[1] += hit ? 1 : 0;
+        if (system != null) {
+          c[2]++;
+          c[3] += hit ? 1 : 0;
+          c[4] += system ? 1 : 0;
+        }
+      }
+    });
+    List<ShadowRow> rows = new ArrayList<>();
+    counts.forEach(
+        (k, c) -> rows.add(new ShadowRow(k.get(0), k.get(1), c[0], c[1], c[2], c[3], c[4])));
+    return rows;
   }
 
   /**
@@ -847,6 +959,12 @@ public class StockAnalysisService {
         graded.stream().map(g -> g.prediction().getBaseDate()).min(Comparator.naturalOrder()).get();
     LocalDate to =
         graded.stream().map(g -> g.prediction().getBaseDate()).max(Comparator.naturalOrder()).get();
+    Map<LocalDate, BigDecimal> moves = nightMoves(from, to);
+    return rates(graded, g -> nightBand(moves.get(g.prediction().getBaseDate())));
+  }
+
+  /** 날짜별 야간선물 변동(%) = 그날 야간 종가 / 같은 날 주간 종가. */
+  private Map<LocalDate, BigDecimal> nightMoves(LocalDate from, LocalDate to) {
     Map<LocalDate, BigDecimal> days = new java.util.HashMap<>();
     stockMarketDailyRepository
         .findByCodeAndTradeDateBetweenOrderByTradeDate(
@@ -862,7 +980,7 @@ public class StockAnalysisService {
             moves.put(n.getTradeDate(), PredictionMath.changePct(day, n.getClosePrice()));
           }
         });
-    return rates(graded, g -> nightBand(moves.get(g.prediction().getBaseDate())));
+    return moves;
   }
 
   /** 구간 이름은 글자 순으로 정렬돼도 작은 변동부터 오게 짓는다. 야간 종가가 없는 날은 n/a. */
