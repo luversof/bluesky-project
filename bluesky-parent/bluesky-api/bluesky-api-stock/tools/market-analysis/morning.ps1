@@ -1,13 +1,16 @@
 # Analysis run: prices -> grade earlier runs -> news -> analysis input -> claude -p -> predictions.
 # Run it any time, as often as needed: every run is stored as its own run (runId) and graded later,
 # so runs can be compared to see whether a prompt/input change improved the analysis.
-# register-tasks.ps1 also schedules it (weekdays 08:00, runs late if the PC was asleep or off).
+# register-tasks.ps1 also schedules it (weekdays 08:30, runs late if the PC was asleep or off).
 #
 # Rule (user decision 2026-11-19): when the KOSPI200 night futures moved 0.5% or more, the rule targets
 # (api-stock StockAnalysisService.RULE_SYMBOLS) follow the night futures direction without claude -
 # in the replay v9 made the same call on all such days. Only the other targets / days go to claude.
+# Rule v10 (2026-11-21): D+1 follows the NXT premarket price (input line NXT_<symbol>, before 08:30) on
+# every day; D+5 stays the night futures rule on big days. On small night days the rule gives D+1 only:
+# claude still runs for D+5 and its D+1 is replaced by the rule D+1. Run at 08:30 (register-tasks.ps1).
 # Catch-up (2026-11-19): reference dates of the last 5 trading days with no prediction (usage limit,
-# api-stock down, a run during market hours) are analyzed as of 08:00 the next morning and stored as
+# api-stock down, a run during market hours) are analyzed as of 08:30 the next morning and stored as
 # replay runs, so missed days fill themselves on the next run.
 # Re-analysis (user request 2026-11-21): reference dates of the last 60 trading days with no prediction
 # from the current prompt version are analyzed again with it (replay "re-analysis <version>"), even when an
@@ -31,7 +34,7 @@ function Submit-Run([string]$ModelId, [string]$Version, $Predictions, [string]$A
             ($submit.rejected -join ' / '), $ModelId, $Version)
 }
 
-# One analysis: now (AsOf empty) or as of 08:00 the morning after reference date AsOf.
+# One analysis: now (AsOf empty) or as of 08:30 the morning after reference date AsOf.
 function Invoke-Analysis([string]$AsOf, [string]$Label = $CatchUpLabel) {
     $query = "userId=$UserId"
     if ($AsOf) { $query += "&asOf=$AsOf&morning=true" }
@@ -41,20 +44,29 @@ function Invoke-Analysis([string]$AsOf, [string]$Label = $CatchUpLabel) {
     Write-Log ("targets{0}: {1} [{2}]" -f $(if ($AsOf) { " $AsOf" } else { '' }), $items.Count, $symbols)
     if ($items.Count -eq 0) { return }
 
+    $inv = [Globalization.CultureInfo]::InvariantCulture
     $night = @($analysisInput.market.lines | Where-Object { $_.key -eq 'K200NF' }) | Select-Object -First 1
-    if ($night -and $null -ne $night.change1dPct) {
-        $nightPct = ([decimal]$night.change1dPct).ToString([Globalization.CultureInfo]::InvariantCulture)
+    # shortcut: one premarket value for all targets - only Samsung Electronics has it (and the rule), add
+    # a per-symbol parameter when another rule target gets one.
+    $pre = @($analysisInput.market.lines | Where-Object { $_.key -like 'NXT_*' }) | Select-Object -First 1
+    $d1Only = @()
+    if (($night -and $null -ne $night.change1dPct) -or ($pre -and $null -ne $pre.change1dPct)) {
+        $query = "symbols=" + (($items | ForEach-Object { $_.symbol }) -join ',')
+        if ($night -and $null -ne $night.change1dPct) { $query += "&night=" + ([decimal]$night.change1dPct).ToString($inv) }
+        if ($pre -and $null -ne $pre.change1dPct) { $query += "&premarket=" + ([decimal]$pre.change1dPct).ToString($inv) }
         # Non-fatal: an api-stock deployed before 2026-11-19 has no /rule-predictions - claude does all.
         $rule = @()
         try {
             # ForEach-Object unrolls: PowerShell 5.1 ConvertFrom-Json returns a JSON array as one object
-            $rule = @(Invoke-Api GET ("/api/stock/analysis/rule-predictions?night={0}&symbols={1}" -f `
-                        $nightPct, (($items | ForEach-Object { $_.symbol }) -join ',')) | ForEach-Object { $_ })
+            $rule = @(Invoke-Api GET "/api/stock/analysis/rule-predictions?$query" | ForEach-Object { $_ })
         } catch { Write-Log "rule skipped: $_" }
-        if ($rule.Count -gt 0) {
-            Submit-Run 'rule' 'rule' $rule $AsOf $Label
-            $ruled = @($rule | ForEach-Object { $_.symbol })
-            $items = @($items | Where-Object { $ruled -notcontains $_.symbol })
+        # Targets the rule covers for both horizons skip claude; D+1-only targets still go to claude for D+5.
+        $full = @($rule | Where-Object { $_.horizonDays -eq 5 } | ForEach-Object { $_.symbol })
+        $fullRule = @($rule | Where-Object { $full -contains $_.symbol })
+        $d1Only = @($rule | Where-Object { $full -notcontains $_.symbol })
+        if ($fullRule.Count -gt 0) {
+            Submit-Run 'rule' $promptVersion $fullRule $AsOf $Label
+            $items = @($items | Where-Object { $full -notcontains $_.symbol })
         }
     }
 
@@ -76,6 +88,10 @@ function Invoke-Analysis([string]$AsOf, [string]$Label = $CatchUpLabel) {
         $predictions += @($result.structured_output.predictions)
     }
     if ($predictions.Count -eq 0) { return }
+    if ($d1Only.Count -gt 0) {
+        $ruledD1 = @($d1Only | ForEach-Object { $_.symbol })
+        $predictions = @($predictions | Where-Object { -not ($_.horizonDays -eq 1 -and $ruledD1 -contains $_.symbol) }) + $d1Only
+    }
     $modelId = @($result.modelUsage.PSObject.Properties.Name) | Select-Object -First 1
     # Invoke-Claude always runs --model opus, so a missing modelUsage still means opus.
     if (-not $modelId) { $modelId = 'opus' }
@@ -102,7 +118,7 @@ try {
     $wanted = @($symbols.Split(',') | ForEach-Object { $_.Trim() })
 
     # During market hours a run would see part of the day and be graded as late - leave that reference
-    # date to the catch-up below, which analyzes it as of 08:00.
+    # date to the catch-up below, which analyzes it as of 08:30.
     $now = Get-Date
     $marketHours = $now.DayOfWeek -ne 'Saturday' -and $now.DayOfWeek -ne 'Sunday' -and $now.Hour -ge 9 -and $now.Hour -lt 16
     $failed = $null

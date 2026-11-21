@@ -86,6 +86,22 @@ public class MarketContextService {
    */
   static final String NIGHT_FUTURES_KEY = "K200NF";
 
+  /** NXT 장전가 줄의 key 앞부분(NXT_005930). 규칙 대상 종목의 다음 거래일 장전 가격 · 기준일 종가 대비 변화율(prompt v10). */
+  static final String PREMARKET_KEY_PREFIX = "NXT_";
+
+  /**
+   * 아침 분석이 보는 장전 가격: 이 시각(HHmmss) 전 마지막 1 분봉. 아침 작업 시각(08:30)과 같다. 리플레이(삼성전자 247 일)에서 08:05 ~ 08:49
+   * 어느 시각이든 D+1 64 ~ 66.5 로 같았다.
+   */
+  static final String PREMARKET_INPUT_CUTOFF = "083000";
+
+  @Autowired private MarketDailyCollectService marketDailyCollectService;
+
+  @Autowired private net.luversof.api.stock.repository.StockItemRepository stockItemRepository;
+
+  @Autowired
+  private net.luversof.api.stock.repository.StockPriceHistoryRepository stockPriceHistoryRepository;
+
   @Value("${kis.api.base-url:https://openapi.koreainvestment.com:9443}")
   private String baseUrl;
 
@@ -114,6 +130,92 @@ public class MarketContextService {
    * 한국 시간으로 다음 날 새벽에 끝난다. morning(다음 거래일 08:00 KST, 아침 작업 시각)이면 asOf 날짜의 미국 장까지 들어간다. null 이면 지금.
    */
   public MarketContext fetch(UUID userId, LocalDate asOf, boolean morning) {
+    MarketContext base = fetchCached(userId, asOf, morning);
+    // 장전가는 분 단위로 바뀌어 캐시에 두지 않는다. 저녁 분석에는 없다(다음 날 아침 값이다).
+    return asOf == null || morning ? withPremarket(base, userId, asOf) : base;
+  }
+
+  private MarketContext withPremarket(MarketContext base, UUID userId, LocalDate asOf) {
+    if (userId == null) {
+      return base;
+    }
+    List<MarketLine> lines = new ArrayList<>(base.lines());
+    List<String> unavailable = new ArrayList<>(base.unavailable());
+    for (String symbol : MarketDailyCollectService.PREMARKET_SYMBOLS) {
+      MarketLine line = null;
+      try {
+        line = premarketLine(userId, symbol, asOf);
+      } catch (RuntimeException e) {
+        log.warn("market context: premarket {} failed: {}", symbol, e.getMessage());
+      }
+      if (line == null) {
+        unavailable.add(PREMARKET_KEY_PREFIX + symbol);
+      } else {
+        lines.add(line);
+      }
+    }
+    return new MarketContext(base.fetchedAt(), lines, unavailable);
+  }
+
+  /**
+   * 기준일 다음 거래일 T 의 장전 가격(PREMARKET_INPUT_CUTOFF 전)과 기준일 종가 대비 변화율. asOf 가 null 이면 T = 오늘, 기준일 = 오늘
+   * 앞의 마지막 거래일. T 의 장전 거래가 아직 없으면(08:00 전 · 휴장) null.
+   */
+  private MarketLine premarketLine(UUID userId, String symbol, LocalDate asOf) {
+    net.luversof.api.stock.domain.StockItem item = stockItemRepository.findBySymbol(symbol);
+    if (item == null) {
+      return null;
+    }
+    LocalDate today = LocalDate.now(PredictionMath.MARKET_ZONE_ID);
+    LocalDate base = asOf != null ? asOf : today.minusDays(1);
+    var baseRow =
+        stockPriceHistoryRepository
+            .findTop2ByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(item.getId(), base)
+            .stream()
+            .findFirst()
+            .orElse(null);
+    if (baseRow == null) {
+      return null;
+    }
+    LocalDate t =
+        asOf == null
+            ? today
+            : stockPriceHistoryRepository
+                .findTop10ByStockItemIdAndTradeDateGreaterThanOrderByTradeDateAsc(
+                    item.getId(), asOf)
+                .stream()
+                .map(net.luversof.api.stock.domain.StockPriceHistory::getTradeDate)
+                .findFirst()
+                .orElse(nextWeekday(asOf));
+    OpenApiConfig config = kisAuthService.getValidConfig(userId);
+    BigDecimal price =
+        MarketDailyCollectService.premarketPriceBefore(
+            marketDailyCollectService.fetchPremarketBars(config, symbol, t),
+            t,
+            PREMARKET_INPUT_CUTOFF);
+    if (price == null) {
+      return null;
+    }
+    return new MarketLine(
+        PREMARKET_KEY_PREFIX + symbol,
+        item.getName() + " NXT 장전가",
+        t,
+        price,
+        PredictionMath.changePct(baseRow.getClosePrice(), price),
+        null);
+  }
+
+  /** 시세가 아직 없는 다음 거래일(오늘 아침의 빠진 날 채움)은 다음 평일로 친다. 휴장이면 장전 봉이 없어 null 이 된다. */
+  static LocalDate nextWeekday(LocalDate d) {
+    LocalDate next = d.plusDays(1);
+    while (next.getDayOfWeek() == java.time.DayOfWeek.SATURDAY
+        || next.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
+      next = next.plusDays(1);
+    }
+    return next;
+  }
+
+  private MarketContext fetchCached(UUID userId, LocalDate asOf, boolean morning) {
     if (asOf != null) {
       String key = asOf + (morning ? "@morning" : "@evening");
       MarketContext past = pastCache.get(key);
@@ -156,7 +258,8 @@ public class MarketContextService {
       try {
         LocalDate end =
             asOf != null && !morning && def.kind() == Kind.OVERSEAS ? today.minusDays(1) : today;
-        MarketLine line = lineOf(def, fetchRows(config, def, end.minusDays(LOOKBACK_DAYS), end));
+        MarketLine line =
+            lineOf(def, fetchRowsRetrying(config, def, end.minusDays(LOOKBACK_DAYS), end));
         if (line == null) {
           unavailable.add(def.key());
         } else {
@@ -223,6 +326,23 @@ public class MarketContextService {
         .subtract(BigDecimal.ONE)
         .movePointRight(2)
         .setScale(4, java.math.RoundingMode.HALF_UP);
+  }
+
+  /**
+   * 초당 한도(KIS 가 HTTP 500 + EGW00201 로 돌려준다)면 1 초 쉬고 두 번 더 - 리플레이 입력에서 US10Y 가 자주 빠졌다(2026-11-21).
+   */
+  private List<Map<String, Object>> fetchRowsRetrying(
+      OpenApiConfig config, Def def, LocalDate start, LocalDate end) throws InterruptedException {
+    for (int attempt = 1; ; attempt++) {
+      try {
+        return fetchRows(config, def, start, end);
+      } catch (RuntimeException e) {
+        if (attempt >= 3 || !String.valueOf(e.getMessage()).contains("EGW00201")) {
+          throw e;
+        }
+        Thread.sleep(1000);
+      }
+    }
   }
 
   @SuppressWarnings("unchecked")

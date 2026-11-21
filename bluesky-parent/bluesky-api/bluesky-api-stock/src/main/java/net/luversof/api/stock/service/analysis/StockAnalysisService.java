@@ -135,6 +135,37 @@ public class StockAnalysisService {
   /** 야간선물이 이만큼 넘게 움직이면 규칙 확신도를 올린다. 구간별 적중률의 경계로도 쓴다. */
   static final BigDecimal NIGHT_BIG_PCT = new BigDecimal("1.5");
 
+  /**
+   * 규칙 v10(2026-11-21): D+1 은 NXT 장전가(입력의 NXT_종목 change1dPct, 기준일 종가 대비) 방향을 따른다 - 리플레이 구간 247 일에서
+   * 66.8 (현행 규칙 + v9 61.0), 야간선물과 엇갈린 날 13/19 대 4/19. 확신도는 장전가 크기별 적중: 1.5% 이상 80 · 0.5 ~ 1.5% 57 ·
+   * 그 밑 40(동전 던지기). 장전가가 없으면(08:00 전 · 휴장 · 실패) 야간선물 규칙. D+5 는 야간선물이 0.5% 이상일 때만 규칙이고, 아니면 Claude 가
+   * 낸다 - 이때 Claude 의 D+1 은 버리고 규칙 D+1 을 쓴다(아침 작업 · replay.py).
+   */
+  public static List<PredictionInput> rulePredictions(
+      BigDecimal nightChangePct, BigDecimal premarketPct, List<String> symbols) {
+    if (premarketPct == null || premarketPct.signum() == 0) {
+      return rulePredictions(nightChangePct, symbols);
+    }
+    BigDecimal abs = premarketPct.abs();
+    int d1Confidence =
+        abs.compareTo(NIGHT_BIG_PCT) >= 0 ? 80 : abs.compareTo(RULE_MIN_NIGHT_PCT) >= 0 ? 57 : 40;
+    String d1Direction = premarketPct.signum() > 0 ? Direction.UP.name() : Direction.DOWN.name();
+    String rationale =
+        "NXT 장전가가 기준일 종가 대비 "
+            + premarketPct.stripTrailingZeros().toPlainString()
+            + "% - 다음 날은 장전가 방향을 따른다(규칙 v10).";
+    List<PredictionInput> night = rulePredictions(nightChangePct, symbols);
+    return symbols.stream()
+        .filter(RULE_SYMBOLS::contains)
+        .distinct()
+        .flatMap(symbol ->
+            java.util.stream.Stream.concat(
+                java.util.stream.Stream.of(
+                    new PredictionInput(symbol, 1, d1Direction, d1Confidence, rationale)),
+                night.stream().filter(p -> p.symbol().equals(symbol) && p.horizonDays() == 5)))
+        .toList();
+  }
+
   /** nightChangePct: 입력의 K200NF change1dPct. 규칙을 쓰지 않는 날 · 종목이면 빈 목록 - 그 종목은 Claude 가 분석한다. */
   public static List<PredictionInput> rulePredictions(
       BigDecimal nightChangePct, List<String> symbols) {
@@ -379,10 +410,13 @@ public class StockAnalysisService {
         .collect(Collectors.groupingBy(StockNews::getStockItemId));
   }
 
-  /** 리플레이의 분석 시각: 기준일 20:00 KST(장 마감 · 시세 갱신 뒤), morning 이면 기준일 다음 날 08:00 KST(장 전). */
+  /**
+   * 리플레이의 분석 시각: 기준일 20:00 KST(장 마감 · 시세 갱신 뒤), morning 이면 기준일 다음 날 08:30 KST(장 전, NXT 장전가를 본 뒤 -
+   * v10 부터. 그 전은 08:00).
+   */
   static Instant analyzedAt(LocalDate asOf, boolean morning) {
     return morning
-        ? asOf.plusDays(1).atTime(8, 0).atZone(PredictionMath.MARKET_ZONE_ID).toInstant()
+        ? asOf.plusDays(1).atTime(8, 30).atZone(PredictionMath.MARKET_ZONE_ID).toInstant()
         : asOf.atTime(20, 0).atZone(PredictionMath.MARKET_ZONE_ID).toInstant();
   }
 

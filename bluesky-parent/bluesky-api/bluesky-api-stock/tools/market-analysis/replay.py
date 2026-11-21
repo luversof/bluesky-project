@@ -161,15 +161,22 @@ def cmd_run(a):
             predictions = []
             try:
                 items = [it for it in input_json['items'] if not a.symbol_set or it['symbol'] in a.symbol_set]
-                if a.rule:  # same split as morning.ps1: rule targets on big night-futures days skip claude
+                d1_only = []
+                if a.rule:  # same split as morning.ps1: targets the rule covers for D+1 and D+5 skip claude
                     ruled = rule_predictions(input_json, items)
-                    predictions += ruled
-                    items = [it for it in items if it['symbol'] not in {p['symbol'] for p in ruled}]
+                    full = {p['symbol'] for p in ruled if p['horizonDays'] == 5}
+                    predictions += [p for p in ruled if p['symbol'] in full]
+                    d1_only = [p for p in ruled if p['symbol'] not in full]  # v10: claude still gives D+5
+                    items = [it for it in items if it['symbol'] not in full]
                 for i in range(0, len(items), a.chunk):
                     part = dict(input_json, items=items[i:i + a.chunk])
                     result = run_claude(template.replace('{{INPUT_JSON}}', json.dumps(part, ensure_ascii=False)),
                                         schema, a.model)
                     predictions += result['structured_output']['predictions']
+                if d1_only:
+                    ruled_d1 = {p['symbol'] for p in d1_only}
+                    predictions = [p for p in predictions
+                                   if not (p['horizonDays'] == 1 and p['symbol'] in ruled_d1)] + d1_only
             except Exception as e:  # one bad day must not stop a long replay
                 print(day, 'rep', rep, 'FAILED', e, flush=True)
                 continue
@@ -190,13 +197,21 @@ def cmd_run(a):
 
 
 def rule_predictions(input_json, items):
-    """api-stock's rule (StockAnalysisService.rulePredictions) for this input: [] when it does not apply."""
-    night = next((l.get('change1dPct') for l in input_json['market'].get('lines', []) if l.get('key') == 'K200NF'),
-                 None)
-    if night is None or not items:
+    """api-stock's rule (StockAnalysisService.rulePredictions) for this input: [] when it does not apply.
+
+    v10: D+1 from the NXT premarket line (NXT_<symbol>) when the input has it - old cached inputs do not.
+    """
+    lines = input_json['market'].get('lines', [])
+    night = next((l.get('change1dPct') for l in lines if l.get('key') == 'K200NF'), None)
+    pre = next((l.get('change1dPct') for l in lines if str(l.get('key', '')).startswith('NXT_')), None)
+    if (night is None and pre is None) or not items:
         return []
-    return http('GET', '/api/stock/analysis/rule-predictions?' + urllib.parse.urlencode(
-        {'night': night, 'symbols': ','.join(it['symbol'] for it in items)}))
+    query = {'symbols': ','.join(it['symbol'] for it in items)}
+    if night is not None:
+        query['night'] = night
+    if pre is not None:
+        query['premarket'] = pre
+    return http('GET', '/api/stock/analysis/rule-predictions?' + urllib.parse.urlencode(query))
 
 
 def save_run(line, label):
@@ -294,7 +309,8 @@ def main():
     r.add_argument('--morning', action='store_true',
                    help='analyze at 08:00 KST the next day (the scheduled morning job) instead of 20:00 KST')
     r.add_argument('--rule', action='store_true',
-                   help='rule targets follow the night futures on days it moved 0.5%%+ (as morning.ps1), version +rule')
+                   help='rule targets as morning.ps1 (v10: D+1 from the NXT premarket line, D+5 from the night futures '
+                        'on 0.5%%+ days), version +rule')
     r.add_argument('--save', metavar='LABEL',
                    help='also store each run in the DB as replay LABEL (shown on the analysis screen)')
     r.set_defaults(fn=cmd_run)

@@ -155,10 +155,16 @@ public class MarketDailyCollectService {
 
   /** 그날 08:50 전 마지막 1 분봉의 종가. 그날 봉이 없으면(휴장 · NXT 거래 없음) null. */
   static BigDecimal premarketPrice(List<Map<String, Object>> bars, LocalDate d) {
+    return premarketPriceBefore(bars, d, "085000");
+  }
+
+  /** 그날 cutoff(HHmmss) 전 마지막 1 분봉의 종가. 없으면 null. */
+  static BigDecimal premarketPriceBefore(
+      List<Map<String, Object>> bars, LocalDate d, String cutoff) {
     String day = d.format(KIS_DATE);
     return bars.stream()
         .filter(b -> day.equals(String.valueOf(b.get("stck_bsop_date"))))
-        .filter(b -> String.valueOf(b.get("stck_cntg_hour")).compareTo("085000") < 0)
+        .filter(b -> String.valueOf(b.get("stck_cntg_hour")).compareTo(cutoff) < 0)
         .max(Comparator.comparing(b -> String.valueOf(b.get("stck_cntg_hour"))))
         .map(b -> new BigDecimal(String.valueOf(b.get("stck_prpr"))))
         .orElse(null);
@@ -166,8 +172,7 @@ public class MarketDailyCollectService {
 
   /** KIS 주식일별분봉조회(FHKST03010230, 시장 NX): 그날 08:50 까지의 1 분봉. */
   @SuppressWarnings("unchecked")
-  private List<Map<String, Object>> fetchPremarketBars(
-      OpenApiConfig config, String symbol, LocalDate d) {
+  List<Map<String, Object>> fetchPremarketBars(OpenApiConfig config, String symbol, LocalDate d) {
     String url =
         UriComponentsBuilder.fromUriString(
                 baseUrl + "/uapi/domestic-stock/v1/quotations/inquire-time-dailychartprice")
@@ -202,6 +207,11 @@ public class MarketDailyCollectService {
                 .exchange(url, HttpMethod.GET, new HttpEntity<>(headers), Map.class)
                 .getBody();
       } catch (RestClientException e) {
+        // KIS 는 초당 한도를 HTTP 500 + EGW00201 로도 돌려준다(2026-11-21 리플레이 입력에서 장전가가 빠졌다).
+        if (String.valueOf(e.getMessage()).contains("EGW00201") && attempt < 5) {
+          sleep(1000);
+          continue;
+        }
         log.warn("market daily {} failed: {}", trId, e.getMessage());
         return null;
       }

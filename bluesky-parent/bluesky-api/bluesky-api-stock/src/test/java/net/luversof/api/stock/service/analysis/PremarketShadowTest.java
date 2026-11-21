@@ -36,6 +36,10 @@ class PremarketShadowTest {
     assertThat(MarketDailyCollectService.premarketPrice(bars, d("2026-11-20")))
         .isEqualByComparingTo("188100");
     assertThat(MarketDailyCollectService.premarketPrice(bars, d("2026-11-18"))).isNull();
+    // 아침 분석(v10)은 08:30 전 마지막 봉
+    assertThat(MarketDailyCollectService.premarketPriceBefore(bars, d("2026-11-20"), "083000"))
+        .isEqualByComparingTo("190800");
+    assertThat(MarketContextService.nextWeekday(d("2026-11-20"))).isEqualTo(d("2026-11-23"));
   }
 
   @Test

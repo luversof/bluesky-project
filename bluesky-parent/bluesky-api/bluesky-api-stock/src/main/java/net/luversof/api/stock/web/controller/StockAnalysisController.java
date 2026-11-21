@@ -126,14 +126,15 @@ public class StockAnalysisController {
   }
 
   /**
-   * 규칙 예측: night = 입력의 K200NF change1dPct, symbols = 분석할 종목. 돌려준 종목은 Claude 를 부르지 않고 이 예측을 쓴다(아침 작업
-   * · replay.py). 빈 목록이면 전부 Claude 가 분석한다.
+   * 규칙 예측: night = 입력의 K200NF change1dPct, premarket = 입력의 NXT_종목 change1dPct(v10), symbols = 분석할
+   * 종목. 돌려준 종목은 Claude 를 부르지 않고 이 예측을 쓴다(아침 작업 · replay.py). 빈 목록이면 전부 Claude 가 분석한다.
    */
   @GetMapping("/rule-predictions")
   public List<StockAnalysisService.PredictionInput> rulePredictions(
       @RequestParam(required = false) java.math.BigDecimal night,
+      @RequestParam(required = false) java.math.BigDecimal premarket,
       @RequestParam List<String> symbols) {
-    return StockAnalysisService.rulePredictions(night, symbols);
+    return StockAnalysisService.rulePredictions(night, premarket, symbols);
   }
 
   /** 최근 lookback 거래일 중 예측이 없는 기준일(아침 작업이 채운다). version 을 주면 그 버전 예측이 없는 기준일(재분석할 날). */

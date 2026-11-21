@@ -9,7 +9,8 @@
 param(
     [Parameter(Mandatory = $true)][string]$UserId,
     [string]$Api = 'http://localhost:30134',
-    [string]$MorningAt = '08:00',
+    # 08:30: after the NXT premarket has traded for 30 minutes (rule v10), before the 09:00 open.
+    [string]$MorningAt = '08:30',
     [string]$EveningAt = '18:00'
 )
 $ErrorActionPreference = 'Stop'

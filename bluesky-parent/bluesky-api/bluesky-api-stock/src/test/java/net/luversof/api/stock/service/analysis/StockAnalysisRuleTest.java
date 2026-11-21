@@ -68,4 +68,38 @@ class StockAnalysisRuleTest {
     assertThat(StockAnalysisService.nightBand(new BigDecimal("-1.5"))).isEqualTo("1.5%~");
     assertThat(StockAnalysisService.nightBand(null)).isEqualTo("n/a");
   }
+
+  @Test
+  void v10_D1_은_장전가_방향_D5_는_야간선물이_클_때만() {
+    // 장전가 -0.8%, 야간선물 +1.2%: D+1 은 장전가(DOWN 57), D+5 는 야간선물 규칙(UP 55)
+    List<PredictionInput> p =
+        StockAnalysisService.rulePredictions(
+            new BigDecimal("1.2"), new BigDecimal("-0.8"), SYMBOLS);
+    assertThat(p).extracting(PredictionInput::symbol).containsOnly("005930");
+    assertThat(p).extracting(PredictionInput::horizonDays).containsExactly(1, 5);
+    assertThat(p).extracting(PredictionInput::direction).containsExactly("DOWN", "UP");
+    assertThat(p).extracting(PredictionInput::confidence).containsExactly(57, 55);
+  }
+
+  @Test
+  void v10_야간선물이_작으면_D1_만_내고_D5_는_Claude_에_맡긴다() {
+    List<PredictionInput> p =
+        StockAnalysisService.rulePredictions(new BigDecimal("0.2"), new BigDecimal("1.6"), SYMBOLS);
+    assertThat(p).extracting(PredictionInput::horizonDays).containsExactly(1);
+    assertThat(p.get(0).confidence()).isEqualTo(80);
+    assertThat(
+            StockAnalysisService.rulePredictions(
+                    new BigDecimal("0.2"), new BigDecimal("0.1"), SYMBOLS)
+                .get(0)
+                .confidence())
+        .isEqualTo(40);
+  }
+
+  @Test
+  void v10_장전가가_없으면_야간선물_규칙() {
+    assertThat(StockAnalysisService.rulePredictions(new BigDecimal("1.82"), null, SYMBOLS))
+        .isEqualTo(StockAnalysisService.rulePredictions(new BigDecimal("1.82"), SYMBOLS));
+    assertThat(StockAnalysisService.rulePredictions(new BigDecimal("0.3"), null, SYMBOLS))
+        .isEmpty();
+  }
 }
