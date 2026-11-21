@@ -78,7 +78,7 @@ class StockAnalysisRuleTest {
     assertThat(p).extracting(PredictionInput::symbol).containsOnly("005930");
     assertThat(p).extracting(PredictionInput::horizonDays).containsExactly(1, 5);
     assertThat(p).extracting(PredictionInput::direction).containsExactly("DOWN", "UP");
-    assertThat(p).extracting(PredictionInput::confidence).containsExactly(57, 55);
+    assertThat(p).extracting(PredictionInput::confidence).containsExactly(58, 55);
   }
 
   @Test
@@ -86,13 +86,13 @@ class StockAnalysisRuleTest {
     List<PredictionInput> p =
         StockAnalysisService.rulePredictions(new BigDecimal("0.2"), new BigDecimal("1.6"), SYMBOLS);
     assertThat(p).extracting(PredictionInput::horizonDays).containsExactly(1);
-    assertThat(p.get(0).confidence()).isEqualTo(80);
+    assertThat(p.get(0).confidence()).isEqualTo(58);
     assertThat(
             StockAnalysisService.rulePredictions(
                     new BigDecimal("0.2"), new BigDecimal("0.1"), SYMBOLS)
                 .get(0)
                 .confidence())
-        .isEqualTo(40);
+        .isEqualTo(45);
   }
 
   @Test
@@ -101,5 +101,19 @@ class StockAnalysisRuleTest {
         .isEqualTo(StockAnalysisService.rulePredictions(new BigDecimal("1.82"), SYMBOLS));
     assertThat(StockAnalysisService.rulePredictions(new BigDecimal("0.3"), null, SYMBOLS))
         .isEmpty();
+  }
+
+  @Test
+  void v10_확신도는_장전가_갭_크기별_적중에_맞춘다() {
+    assertThat(
+            StockAnalysisService.rulePredictions(null, new BigDecimal("-2.5"), SYMBOLS)
+                .get(0)
+                .confidence())
+        .isEqualTo(88);
+    assertThat(
+            StockAnalysisService.rulePredictions(null, new BigDecimal("2.49"), SYMBOLS)
+                .get(0)
+                .confidence())
+        .isEqualTo(58);
   }
 }

@@ -137,10 +137,16 @@ public class StockAnalysisService {
   static final BigDecimal NIGHT_BIG_PCT = new BigDecimal("1.5");
 
   /**
+   * 장전가 갭이 이만큼(%) 넘으면 D+1 확신도 88: 247 일 갭 크기별 적중 2.5% 이상 87.9 (94/107) · 1.5 ~ 2.5% 59.5 · 0.5 ~
+   * 1.5% 57.1 · 그 밑 44.7 (2026-11-22 확률 보정 - 처음엔 1.5% 이상을 80 하나로 묶었다).
+   */
+  static final BigDecimal PREMARKET_SURE_PCT = new BigDecimal("2.5");
+
+  /**
    * 규칙 v10(2026-11-21): D+1 은 NXT 장전가(입력의 NXT_종목 change1dPct, 기준일 종가 대비) 방향을 따른다 - 리플레이 구간 247 일에서
-   * 66.8 (현행 규칙 + v9 61.0), 야간선물과 엇갈린 날 13/19 대 4/19. 확신도는 장전가 크기별 적중: 1.5% 이상 80 · 0.5 ~ 1.5% 57 ·
-   * 그 밑 40(동전 던지기). 장전가가 없으면(08:00 전 · 휴장 · 실패) 야간선물 규칙. D+5 는 야간선물이 0.5% 이상일 때만 규칙이고, 아니면 Claude 가
-   * 낸다 - 이때 Claude 의 D+1 은 버리고 규칙 D+1 을 쓴다(아침 작업 · replay.py).
+   * 66.8 (현행 규칙 + v9 61.0), 야간선물과 엇갈린 날 13/19 대 4/19. 확신도는 장전가 크기별 적중: 2.5% 이상 88 · 0.5 ~ 2.5% 58 ·
+   * 그 밑 45(동전 던지기, PREMARKET_SURE_PCT). 장전가가 없으면(08:00 전 · 휴장 · 실패) 야간선물 규칙. D+5 는 야간선물이 0.5% 이상일
+   * 때만 규칙이고, 아니면 Claude 가 낸다 - 이때 Claude 의 D+1 은 버리고 규칙 D+1 을 쓴다(아침 작업 · replay.py).
    */
   public static List<PredictionInput> rulePredictions(
       BigDecimal nightChangePct, BigDecimal premarketPct, List<String> symbols) {
@@ -149,7 +155,9 @@ public class StockAnalysisService {
     }
     BigDecimal abs = premarketPct.abs();
     int d1Confidence =
-        abs.compareTo(NIGHT_BIG_PCT) >= 0 ? 80 : abs.compareTo(RULE_MIN_NIGHT_PCT) >= 0 ? 57 : 40;
+        abs.compareTo(PREMARKET_SURE_PCT) >= 0
+            ? 88
+            : abs.compareTo(RULE_MIN_NIGHT_PCT) >= 0 ? 58 : 45;
     String d1Direction = premarketPct.signum() > 0 ? Direction.UP.name() : Direction.DOWN.name();
     String rationale =
         "NXT 장전가가 기준일 종가 대비 "
