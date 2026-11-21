@@ -188,11 +188,13 @@
 				`)
 				@endif
 
-				<%-- 확신도 · 프롬프트 버전별 적중률은 개선이 나아졌는지 보는 데 쓴다(사용자 결정 2026-11-20). 회차별 · 기간별은 표본이 너무 작아 뺐다. --%>
+				<%-- 확신도 · 프롬프트 버전별 적중률은 개선이 나아졌는지 보는 데 쓴다(사용자 결정 2026-11-20). 회차별 · 기간별은 표본이 너무 작아 뺐다.
+				     야간선물 변동 구간별(사용자 요청 2026-11-21): 리플레이에서 0.5% 미만인 날만 50% 아래였던 것이 운영 · 재분석에서도 그런지. --%>
 				<div class="grid gap-6 lg:grid-cols-2">
 					@for(var section : List.of(
 							List.of("stock.analysis.rate.confidence", summary.byConfidence()),
-							List.of("stock.analysis.rate.version", summary.byPromptVersion())))
+							List.of("stock.analysis.rate.version", summary.byPromptVersion()),
+						List.of("stock.analysis.rate.night", summary.byNightMove() == null ? List.of() : summary.byNightMove())))
 						!{@SuppressWarnings("unchecked") var rows = (List<StockAnalysisClient.RateRow>) section.get(1);}
 						@template._components.ui.card(title = MessageUtil.getMessage((String) section.get(0)), body = @`
 								@template.stock.htmx.fragments.components.rateTable(rows = rows, label = MessageUtil.getMessage((String) section.get(0)), rate = rate)

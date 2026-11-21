@@ -60,4 +60,12 @@ class StockAnalysisRuleTest {
     rule.setReplay("재분석 v10");
     assertThat(StockAnalysisService.coversVersion(rule, "v10")).isTrue();
   }
+
+  @Test
+  void 야간선물_변동_구간은_규칙_경계와_같다() {
+    assertThat(StockAnalysisService.nightBand(new BigDecimal("-0.49"))).isEqualTo("0.0~0.5%");
+    assertThat(StockAnalysisService.nightBand(new BigDecimal("0.5"))).isEqualTo("0.5~1.5%");
+    assertThat(StockAnalysisService.nightBand(new BigDecimal("-1.5"))).isEqualTo("1.5%~");
+    assertThat(StockAnalysisService.nightBand(null)).isEqualTo("n/a");
+  }
 }

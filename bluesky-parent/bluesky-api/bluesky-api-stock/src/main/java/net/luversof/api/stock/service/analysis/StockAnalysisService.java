@@ -76,6 +76,10 @@ public class StockAnalysisService {
   @Autowired private JsonMapper jsonMapper;
   @Autowired private MarketContextService marketContextService;
   @Autowired private InvestorFlowService investorFlowService;
+
+  @Autowired
+  private net.luversof.api.stock.repository.StockMarketDailyRepository stockMarketDailyRepository;
+
   @Autowired private KisAuthService kisAuthService;
   @Autowired private MonthlyDividendPayoutRepository monthlyDividendPayoutRepository;
 
@@ -128,6 +132,9 @@ public class StockAnalysisService {
 
   static final BigDecimal RULE_MIN_NIGHT_PCT = new BigDecimal("0.5");
 
+  /** 야간선물이 이만큼 넘게 움직이면 규칙 확신도를 올린다. 구간별 적중률의 경계로도 쓴다. */
+  static final BigDecimal NIGHT_BIG_PCT = new BigDecimal("1.5");
+
   /** nightChangePct: 입력의 K200NF change1dPct. 규칙을 쓰지 않는 날 · 종목이면 빈 목록 - 그 종목은 Claude 가 분석한다. */
   public static List<PredictionInput> rulePredictions(
       BigDecimal nightChangePct, List<String> symbols) {
@@ -136,7 +143,7 @@ public class StockAnalysisService {
     }
     String direction = nightChangePct.signum() > 0 ? Direction.UP.name() : Direction.DOWN.name();
     // 확신도는 리플레이의 크기별 적중률: D+1 은 1.5% 이상 77 · 그 밑 56, D+5 는 55.
-    int d1Confidence = nightChangePct.abs().compareTo(new BigDecimal("1.5")) >= 0 ? 77 : 56;
+    int d1Confidence = nightChangePct.abs().compareTo(NIGHT_BIG_PCT) >= 0 ? 77 : 56;
     String rationale =
         "KOSPI200 야간선물 "
             + nightChangePct.stripTrailingZeros().toPlainString()
@@ -770,7 +777,8 @@ public class StockAnalysisService {
       List<RateRow> byHorizon,
       List<RateRow> byConfidence,
       List<RateRow> byPromptVersion,
-      List<RateRow> byRun) {}
+      List<RateRow> byRun,
+      List<RateRow> byNightMove) {}
 
   public record RecentPrediction(
       String symbol,
@@ -823,7 +831,50 @@ public class StockAnalysisService {
                 .filter(p -> grades.containsKey(p.getId()))
                 .map(p -> new Graded(p, grades.get(p.getId())))
                 .toList(),
-            g -> runLabel(g, runSeqs.getOrDefault(runKey(g.prediction()), 0))));
+            g -> runLabel(g, runSeqs.getOrDefault(runKey(g.prediction()), 0))),
+        byNightMove(onTime));
+  }
+
+  /**
+   * 야간선물 변동 구간별 적중률(사용자 요청 2026-11-21): 리플레이에서 0.5% 미만인 날만 적중률이 50% 아래였다(v9 245 일, 38.7%). 운영 ·
+   * 재분석에서도 그런지 본다. 변동 = 기준일 야간 종가 / 같은 날 주간 종가 - 아침 분석 입력의 K200NF change1dPct 와 같다.
+   */
+  private List<RateRow> byNightMove(List<Graded> graded) {
+    if (graded.isEmpty()) {
+      return List.of();
+    }
+    LocalDate from =
+        graded.stream().map(g -> g.prediction().getBaseDate()).min(Comparator.naturalOrder()).get();
+    LocalDate to =
+        graded.stream().map(g -> g.prediction().getBaseDate()).max(Comparator.naturalOrder()).get();
+    Map<LocalDate, BigDecimal> days = new java.util.HashMap<>();
+    stockMarketDailyRepository
+        .findByCodeAndTradeDateBetweenOrderByTradeDate(
+            net.luversof.api.stock.domain.StockMarketDaily.K200F_DAY, from, to)
+        .forEach(d -> days.put(d.getTradeDate(), d.getClosePrice()));
+    Map<LocalDate, BigDecimal> moves = new java.util.HashMap<>();
+    stockMarketDailyRepository
+        .findByCodeAndTradeDateBetweenOrderByTradeDate(
+            net.luversof.api.stock.domain.StockMarketDaily.K200F_NIGHT, from, to)
+        .forEach(n -> {
+          BigDecimal day = days.get(n.getTradeDate());
+          if (day != null) {
+            moves.put(n.getTradeDate(), PredictionMath.changePct(day, n.getClosePrice()));
+          }
+        });
+    return rates(graded, g -> nightBand(moves.get(g.prediction().getBaseDate())));
+  }
+
+  /** 구간 이름은 글자 순으로 정렬돼도 작은 변동부터 오게 짓는다. 야간 종가가 없는 날은 n/a. */
+  static String nightBand(BigDecimal changePct) {
+    if (changePct == null) {
+      return "n/a";
+    }
+    BigDecimal abs = changePct.abs();
+    if (abs.compareTo(RULE_MIN_NIGHT_PCT) < 0) {
+      return "0.0~0.5%";
+    }
+    return abs.compareTo(NIGHT_BIG_PCT) < 0 ? "0.5~1.5%" : "1.5%~";
   }
 
   private static final java.time.format.DateTimeFormatter RUN_DATE =

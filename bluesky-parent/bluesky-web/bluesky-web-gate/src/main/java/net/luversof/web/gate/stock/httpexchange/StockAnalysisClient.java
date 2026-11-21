@@ -143,7 +143,8 @@ public interface StockAnalysisClient {
       List<RateRow> byHorizon,
       List<RateRow> byConfidence,
       List<RateRow> byPromptVersion,
-      List<RateRow> byRun) {}
+      List<RateRow> byRun,
+      List<RateRow> byNightMove) {}
 
   record RecentPrediction(
       String symbol,
