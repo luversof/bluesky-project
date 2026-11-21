@@ -122,13 +122,18 @@ try {
     $now = Get-Date
     $marketHours = $now.DayOfWeek -ne 'Saturday' -and $now.DayOfWeek -ne 'Sunday' -and $now.Hour -ge 9 -and $now.Hour -lt 16
     $failed = $null
-    if ($marketHours) {
+    # BLUESKY_REANALYSIS_ONLY=<n>: run only the re-analysis, up to n dates - to fill a new version's 60
+    # dates right after a deploy instead of 10 per morning (user request 2026-11-21).
+    $reanalysisOnly = [int]$env:BLUESKY_REANALYSIS_ONLY
+    if ($reanalysisOnly -gt 0) {
+        Write-Log "re-analysis only, up to $reanalysisOnly dates"
+    } elseif ($marketHours) {
         Write-Log 'market hours - skip the run for now, catch-up only'
     } else {
         try { Invoke-Analysis '' } catch { $failed = $_; Write-Log "analysis failed: $_" }
     }
 
-    if ($symbols -ne 'all') {
+    if ($symbols -ne 'all' -and $reanalysisOnly -eq 0) {
         $missing = @()
         try {
             $missing = @(Invoke-Api GET ("/api/stock/analysis/missing-dates?symbols={0}" -f ($wanted -join ',')) | ForEach-Object { $_ })
@@ -144,7 +149,7 @@ try {
             $redo = @(Invoke-Api GET ("/api/stock/analysis/missing-dates?symbols={0}&lookback=60&version={1}" -f `
                         ($wanted -join ','), [uri]::EscapeDataString($promptVersion)) | ForEach-Object { $_ })
             [array]::Reverse($redo)
-            $redo = @($redo | Select-Object -First 10)
+            $redo = @($redo | Select-Object -First $(if ($reanalysisOnly -gt 0) { $reanalysisOnly } else { 10 }))
         } catch { Write-Log "re-analysis skipped: $_" }
         foreach ($day in $redo) {
             # Not fatal and stop at the first failure: it is usually the usage limit, the next run continues.
