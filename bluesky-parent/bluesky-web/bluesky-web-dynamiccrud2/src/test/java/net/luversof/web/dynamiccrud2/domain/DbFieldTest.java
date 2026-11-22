@@ -9,9 +9,9 @@ class DbFieldTest {
   @Test
   void valueOptionsKeepOrderAndAllowValueOnlyLines() {
     var field = new DbField();
-    assertThat(field.options()).isEmpty();
+    assertThat(field.valueOptionMap()).isEmpty();
     field.setValueOptions(" 1 = 사용 \r\n\r\n0=중지\nREADY\n1=중복은 앞 줄\na=b=c");
-    assertThat(field.options())
+    assertThat(field.valueOptionMap())
         .containsExactly(
             java.util.Map.entry("1", "사용"),
             java.util.Map.entry("0", "중지"),
@@ -20,19 +20,19 @@ class DbFieldTest {
   }
 
   @Test
-  void displayOptionsKeepUnknownKeysAndBecomeNullWhenEmpty() {
+  void optionsKeepUnknownKeysAndBecomeNullWhenEmpty() {
     var field = new DbField();
-    field.setDisplayOptions(java.util.Map.of("future", "x"));
+    field.setOptions(java.util.Map.of("future", "x"));
     field.setDateFormat(" ");
     field.setValueOptions("1=사용");
     field.setDateFormat("yyyy.MM.dd");
-    assertThat(field.getDisplayOptions())
+    assertThat(field.getOptions())
         .containsEntry("future", "x")
         .containsEntry("valueOptions", "1=사용")
         .containsEntry("dateFormat", "yyyy.MM.dd");
-    field.setDisplayOptions(null);
+    field.setOptions(null);
     field.setValueOptions("1=사용");
     field.setValueOptions(null);
-    assertThat(field.getDisplayOptions()).isNull();
+    assertThat(field.getOptions()).isNull();
   }
 }

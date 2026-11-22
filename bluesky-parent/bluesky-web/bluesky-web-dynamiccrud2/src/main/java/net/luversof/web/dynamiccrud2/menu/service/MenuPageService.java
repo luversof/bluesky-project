@@ -141,7 +141,7 @@ public class MenuPageService {
 
   /**
    * @param inputType 필드 입력 형식 - 목록 칸 표시 형식(_components/cellValue)에 쓴다
-   * @param options 필드 값 목록(저장값 → 표시, {@link DbField#options()}). 비면 원래 값 그대로
+   * @param options 필드 값 목록(저장값 → 표시, {@link DbField#valueOptionMap()}). 비면 원래 값 그대로
    * @param dateFormat 날짜 · 일시 표시 형식({@link DbField#getDateFormat()}). null 이면 기본 모양
    */
   public record Column(
@@ -217,7 +217,7 @@ public class MenuPageService {
       Map<String, String> options) {}
 
   private static Map<String, String> optionsOf(DbField field) {
-    return field == null ? Map.of() : field.options();
+    return field == null ? Map.of() : field.valueOptionMap();
   }
 
   public record ActionForm(Menu menu, MenuQuery query, List<FormField> fields, List<String> rows) {}

@@ -115,29 +115,30 @@ CREATE INDEX IF NOT EXISTS idx_settingLog_targetId_createdDate ON "SettingLog" (
 -- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 설정 변경 이력이 사라진다)
 -- DROP TABLE IF EXISTS "SettingLog";
 
--- 2026-11-22 필드 값 목록(DbField.valueOptions)
--- 까닭: enum · 코드 숫자처럼 저장값을 화면에서는 다른 글자로 보이고, 검색 · 입력은 셀렉트로 고르게 한다(사용자 요청). 기존 행은 NULL(지금처럼 원래 값).
--- 이 열이 없으면 앱이 필드를 못 읽으므로 앱 배포 전에 적용할 것.
-ALTER TABLE "DbField" ADD COLUMN IF NOT EXISTS "valueOptions" TEXT;
+-- 2026-11-22 필드 선택 설정(DbField.options, JSONB) - 값 목록(valueOptions 키) · 날짜 표시 형식(dateFormat 키)
+-- 까닭: enum · 코드 숫자를 화면에서 다른 글자로 보이고(검색 · 입력은 셀렉트), 날짜 · 일시를 정한 형식으로 보인다(사용자 요청).
+--      새 설정마다 열 · DDL 을 늘리지 않으려고 JSONB 하나에 키로 둔다(2026-11-23 사용자 결정, 기존 열은 그대로).
+-- 그사이 잠시 배포했던 모양("valueOptions" TEXT 열 → "displayOptions" JSONB 열)을 적용한 DB 는 값을 옮기고 그 열을 지운다.
+-- 처음 적용하는 DB 는 열 추가만 한다. 앱 배포 전에 적용할 것(이 열이 없으면 앱이 필드를 못 읽는다).
+DO $$
+BEGIN
+	IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'DbField' AND column_name = 'displayOptions')
+		AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'DbField' AND column_name = 'options') THEN
+		ALTER TABLE "DbField" RENAME COLUMN "displayOptions" TO "options";
+	END IF;
+END $$;
+ALTER TABLE "DbField" ADD COLUMN IF NOT EXISTS "options" JSONB;
+DO $$
+BEGIN
+	IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'DbField' AND column_name = 'valueOptions') THEN
+		UPDATE "DbField" SET "options" = coalesce("options", '{}'::jsonb) || jsonb_build_object('valueOptions', "valueOptions")
+		WHERE "valueOptions" IS NOT NULL AND NOT coalesce("options" ? 'valueOptions', false);
+		ALTER TABLE "DbField" DROP COLUMN "valueOptions";
+	END IF;
+END $$;
 
--- 확인(열 1 개)
--- SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'DbField' AND column_name = 'valueOptions';
+-- 확인(options 하나만)
+-- SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'DbField' AND column_name IN ('valueOptions', 'displayOptions', 'options');
 
--- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 값 목록 설정이 사라진다)
--- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "valueOptions";
-
--- 2026-11-22 필드 표시 설정을 JSONB 하나로(DbField.displayOptions) + 날짜 표시 형식(dateFormat 키)
--- 까닭: 보이기만 바꾸는 설정(값 목록 · 날짜 형식 · 앞으로 더할 것)마다 열 · DDL 을 늘리지 않으려고(사용자 결정). 위 valueOptions 열을 옮긴다.
--- 1) 앱 배포 전에 적용할 것(새 판은 displayOptions 만 읽는다).
-ALTER TABLE "DbField" ADD COLUMN IF NOT EXISTS "displayOptions" JSONB;
-UPDATE "DbField" SET "displayOptions" = jsonb_build_object('valueOptions', "valueOptions")
-WHERE "valueOptions" IS NOT NULL AND "displayOptions" IS NULL;
-
--- 확인(옮긴 수 = 원래 수)
--- SELECT count(*) FILTER (WHERE "valueOptions" IS NOT NULL), count(*) FILTER (WHERE "displayOptions" ? 'valueOptions') FROM "DbField";
-
--- 2) 새 판이 잘 도는 것을 본 뒤에(그 전에는 이전 판으로 돌릴 수 있게 남겨 둔다)
--- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "valueOptions";
-
--- 되돌리기(2 를 하기 전에만: 이전 판으로 돌리고, 그동안 바꾼 값 목록 · 날짜 형식은 잃는다)
--- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "displayOptions";
+-- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 값 목록 · 날짜 형식 설정이 사라진다)
+-- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "options";
