@@ -25,7 +25,7 @@
 		<%-- 복사: 같은 메인 메뉴에 쿼리 · 검색 설정까지 그대로, 숨김으로 만든다(MenuService.copyMenu) --%>
 		<span class="inline-flex items-center gap-1">
 			<button type="button" class="btn btn-sm" data-toggle="copy-menu" aria-controls="copy-menu" aria-expanded="false">${t("admin.menu.copy")}</button>
-			@template._components.help(text = t("admin.menu.copy.hint"), label = t("admin.menu.copy.helpLabel"))
+			@template._components.help(text = t("admin.menu.copy.hint"), label = t("admin.menu.copy.helpLabel"), alignEnd = true)
 		</span>
 		<form method="post" action="/admin/menu/${menuId}/delete">
 			<button class="btn btn-sm btn-error" data-confirm="${t("admin.menu.deleteConfirm")}">${t("admin.menu.delete")}</button>
@@ -80,9 +80,10 @@
 	`)
 
 	@template._components.card(title = t("admin.menu.queries"), help = t("admin.menu.queries.help"), actions = @`
-		<a class="btn btn-sm" href="/admin/menu/${menuId}/query/new?kind=INSERT">${t("admin.query.addInsert")}</a>
-		<a class="btn btn-sm" href="/admin/menu/${menuId}/query/new?kind=UPDATE">${t("admin.query.addUpdate")}</a>
-		<a class="btn btn-sm" href="/admin/menu/${menuId}/query/new?kind=DELETE">${t("admin.query.addDelete")}</a>
+		<%-- 쿼리 입력 · 수정은 이 화면의 레이어(queryDialog)로 연다. href 는 새 탭으로 열 때(단독 화면) --%>
+		<a class="btn btn-sm" href="/admin/menu/${menuId}/query/new?kind=INSERT" hx-get="/admin/menu/${menuId}/query/new?kind=INSERT" hx-target="#queryPanel">${t("admin.query.addInsert")}</a>
+		<a class="btn btn-sm" href="/admin/menu/${menuId}/query/new?kind=UPDATE" hx-get="/admin/menu/${menuId}/query/new?kind=UPDATE" hx-target="#queryPanel">${t("admin.query.addUpdate")}</a>
+		<a class="btn btn-sm" href="/admin/menu/${menuId}/query/new?kind=DELETE" hx-get="/admin/menu/${menuId}/query/new?kind=DELETE" hx-target="#queryPanel">${t("admin.query.addDelete")}</a>
 	`, body = @`
 		<table class="table" aria-label="${t("admin.menu.queries")}">
 			<thead><tr><th>${t("index.col.kind")}</th><th>${t("field.name")}</th><th>${t("field.authority")}</th><th>${t("admin.query.col.query")}</th><th></th></tr></thead>
@@ -91,12 +92,12 @@
 					<tr>
 						<td class="w-px"><span class="badge ${query.getKind() == QueryKind.READ ? "badge-primary" : ""}">${query.getKind().name()}</span></td>
 						!{var editUrl = "/admin/menu/" + menuId + "/query/" + query.getId();}
-						<td class="whitespace-nowrap"><a class="link" href="${editUrl}">${query.getName()}</a></td>
+						<td class="whitespace-nowrap"><a class="link" href="${editUrl}" hx-get="${editUrl}" hx-target="#queryPanel">${query.getName()}</a></td>
 						<td class="whitespace-nowrap">${query.getAuthority() == null ? t("admin.query.menuAuthority") : query.getAuthority()}</td>
 						<td class="font-mono text-xs max-w-0 w-full truncate" title="${query.getQueryText()}">${query.getQueryText()}</td>
 						<td class="w-px">
 							<div class="flex items-center justify-end gap-1">
-								<a class="btn btn-sm" href="${editUrl}" aria-label="${t("admin.query.editItem", query.getName())}">✎ ${t("common.edit")}</a>
+								<a class="btn btn-sm" href="${editUrl}" hx-get="${editUrl}" hx-target="#queryPanel" aria-label="${t("admin.query.editItem", query.getName())}">✎ ${t("common.edit")}</a>
 								@if(query.getKind() != QueryKind.READ)
 									<form method="post" action="${editUrl}/delete">
 										<button class="btn btn-sm btn-ghost text-error" data-confirm="${t("admin.query.deleteConfirm")}" aria-label="${t("admin.deleteItem", query.getName())}">${t("common.delete")}</button>
@@ -108,6 +109,7 @@
 				@endfor
 			</tbody>
 		</table>
+		@template._components.modal(id = "queryDialog", panelId = "queryPanel", label = t("admin.menu.queries"), wide = true)
 	`)
 
 	@template._components.card(title = t("index.tableLabel", targetNoun), help = t("admin.menu.index.help"), body = @`

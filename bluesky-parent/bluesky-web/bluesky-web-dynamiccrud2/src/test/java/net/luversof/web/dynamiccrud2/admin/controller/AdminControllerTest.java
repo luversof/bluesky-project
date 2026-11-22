@@ -7,6 +7,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
@@ -338,6 +339,16 @@ class AdminControllerTest implements GeneralWebTest {
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("UPDATE public.\"MainMenu\" SET")))
           .andExpect(content().string(Matchers.containsString("name=\"p.id.role\"")));
+      // 메뉴 관리 화면의 레이어(htmx): 화면 틀 없이 폼 조각만, 취소는 레이어 닫기
+      mvc.perform(
+              get("/admin/menu/" + menuId + "/query/new")
+                  .param("kind", "UPDATE")
+                  .header("HX-Request", "true")
+                  .with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("hx-target=\"#queryPanel\"")))
+          .andExpect(content().string(Matchers.containsString("data-modal-close")))
+          .andExpect(content().string(Matchers.not(Matchers.containsString("<html"))));
       mvc.perform(
               post("/admin/menu/" + menuId + "/query/inspect")
                   .param("kind", "READ")
@@ -347,7 +358,17 @@ class AdminControllerTest implements GeneralWebTest {
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("name=\"p.name.required\"")));
 
-      // 저장 오류는 편집기를 다시 그리며 문구를 보인다
+      // 저장 오류는 편집기를 다시 그리며 문구를 보인다(레이어면 레이어 안에)
+      mvc.perform(
+              post("/admin/menu/" + menuId + "/query")
+                  .param("kind", "DELETE")
+                  .param("queryText", "DELETE FROM \"MainMenu\"")
+                  .header("HX-Request", "true")
+                  .with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(header().doesNotExist("HX-Refresh"))
+          .andExpect(content().string(Matchers.containsString("전체 행을 바꿀 수 있어")))
+          .andExpect(content().string(Matchers.not(Matchers.containsString("<html"))));
       mvc.perform(
               post("/admin/menu/" + menuId + "/query")
                   .param("kind", "DELETE")
@@ -378,8 +399,10 @@ class AdminControllerTest implements GeneralWebTest {
                   .param("queryText", "DELETE FROM \"MainMenu\" WHERE id = :id")
                   .param("p.id.role", "ROW_KEY")
                   .param("p.id.required", "true")
+                  .header("HX-Request", "true")
                   .with(admin()))
-          .andExpect(status().is3xxRedirection());
+          .andExpect(status().isOk())
+          .andExpect(header().string("HX-Refresh", "true"));
       assertThat(menuService.getMenu(menuId).getQueries())
           .anyMatch(q -> q.getKind() == QueryKind.DELETE);
 

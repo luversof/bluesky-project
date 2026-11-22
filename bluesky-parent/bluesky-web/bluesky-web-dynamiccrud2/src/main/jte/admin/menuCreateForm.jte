@@ -16,12 +16,12 @@
 	`)
 	@template._components.field(label = "connection", forId = prefix + "-conn-input", content = @`
 		@template._components.combobox(id = prefix + "-conn", name = "connectionName", placeholder = t("admin.menuCreate.connPlaceholder"),
-			searchUrl = "/admin/connection/search", emptyText = t("admin.menuCreate.connEmpty"))
+			searchUrl = "/admin/connection/search", small = true, emptyText = t("admin.menuCreate.connEmpty"))
 	`)
 	@template._components.field(label = t("target.table"), forId = prefix + "-table-input", content = @`
 		@template._components.combobox(id = prefix + "-table", name = "table", placeholder = t("admin.menuCreate.tablePlaceholder"),
 			loadUrl = "/admin/connection/tables", loadTrigger = "change from:#" + prefix + "-conn", loadInclude = "#" + prefix + "-conn",
-			emptyText = t("admin.menuCreate.tableEmpty"))
+			emptyText = t("admin.menuCreate.tableEmpty"), small = true)
 	`)
 	<%-- 안내는 단추와 한 줄(왼쪽 안내 · 오른쪽 단추, 좁으면 줄바꿈) --%>
 	@template._components.formActions(cssClass = "sm:col-span-2 xl:col-span-4", content = @`

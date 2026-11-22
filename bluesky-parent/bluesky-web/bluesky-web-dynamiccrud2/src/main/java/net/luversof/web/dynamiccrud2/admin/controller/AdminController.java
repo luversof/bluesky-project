@@ -16,6 +16,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -45,6 +46,8 @@ import net.luversof.web.dynamiccrud2.domain.SearchOperator;
 @Controller
 @RequestMapping("/admin")
 public class AdminController {
+
+  private static final String HX_REQUEST = "HX-Request";
 
   private static final String REDIRECT_INDEX = "redirect:/admin";
 
@@ -434,19 +437,29 @@ public class AdminController {
   // ---- 작업 쿼리 ----
 
   @GetMapping("/menu/{menuId}/query/new")
-  public String newQuery(@PathVariable UUID menuId, @RequestParam QueryKind kind, Model model) {
+  public String newQuery(
+      @PathVariable UUID menuId,
+      @RequestParam QueryKind kind,
+      @RequestHeader(value = HX_REQUEST, required = false) String htmx,
+      Model model) {
     var menu = menuService.getMenu(menuId);
     var draft = queryService.draft(menu, kind);
-    return editor(model, menu, null, kind, null, draft.queryText(), null, null, draft.error());
+    return editor(
+        model, htmx != null, menu, null, kind, null, draft.queryText(), null, null, draft.error());
   }
 
   @GetMapping("/menu/{menuId}/query/{queryId}")
-  public String editQuery(@PathVariable UUID menuId, @PathVariable UUID queryId, Model model) {
+  public String editQuery(
+      @PathVariable UUID menuId,
+      @PathVariable UUID queryId,
+      @RequestHeader(value = HX_REQUEST, required = false) String htmx,
+      Model model) {
     var menu = menuService.getMenu(menuId);
     var query =
         menu.getQueries().stream().filter(q -> q.getId().equals(queryId)).findFirst().orElseThrow();
     return editor(
         model,
+        htmx != null,
         menu,
         queryId,
         query.getKind(),
@@ -481,15 +494,26 @@ public class AdminController {
       @RequestParam String queryText,
       @RequestParam(required = false) String authority,
       @RequestParam MultiValueMap<String, String> form,
+      @RequestHeader(value = HX_REQUEST, required = false) String htmx,
       Model model) {
     var settings = params(form);
+    var layer = htmx != null;
     try {
       queryService.save(menuId, queryId, kind, name, queryText, settings, authority);
     } catch (BlueskyException e) {
       var menu = menuService.getMenu(menuId);
-      return editor(model, menu, queryId, kind, name, queryText, authority, settings, messageOf(e));
+      return editor(
+          model, layer, menu, queryId, kind, name, queryText, authority, settings, messageOf(e));
     }
-    return "redirect:/admin/menu/" + menuId;
+    if (!layer) {
+      return "redirect:/admin/menu/" + menuId;
+    }
+    // 레이어에서 저장: 메뉴 관리 화면을 새로 고쳐 쿼리 목록 · 검색 설정을 다시 그린다(스크롤 위치는 지킨다)
+    ((org.springframework.web.context.request.ServletRequestAttributes)
+            org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes())
+        .getResponse()
+        .setHeader("HX-Refresh", "true");
+    return "menu/empty";
   }
 
   @PostMapping("/menu/{menuId}/query/{queryId}/delete")
@@ -589,8 +613,10 @@ public class AdminController {
 
   // ---- 공통 ----
 
+  /** layer = 메뉴 관리 화면의 레이어로 뜨는 조각(htmx 요청), 아니면 단독 화면 */
   private String editor(
       Model model,
+      boolean layer,
       Menu menu,
       UUID queryId,
       QueryKind kind,
@@ -618,7 +644,8 @@ public class AdminController {
         queryText == null || queryText.isBlank()
             ? QueryService.QueryInspection.EMPTY
             : queryService.inspect(menu, kind, queryText, settings));
-    return "admin/query";
+    model.addAttribute("layer", layer);
+    return layer ? "admin/queryEditor" : "admin/query";
   }
 
   /** 폼의 p.{이름}.role · p.{이름}.required · p.{이름}.defaultValue 를 모은다. required 가 없으면 선택. */

@@ -157,6 +157,7 @@
 		margin: auto; padding: 0; background: transparent; color: inherit;
 		width: min(42rem, calc(100vw - 2rem)); max-height: 90vh; overflow: auto;
 	}
+	.modal-wide { width: min(72rem, calc(100vw - 2rem)); }
 	.modal::backdrop { background-color: rgb(0 0 0 / 0.45); }
 
 	/* 테마 전환 단추(_components/themeToggle): 지금 테마의 반대를 보여 준다 */
@@ -247,7 +248,7 @@
 		background-color: var(--color-base-content); color: var(--color-base-100); box-shadow: var(--shadow-card);
 	}
 	.help:hover .help-tip, .help:focus-within .help-tip { display: block; }
-	.help-end .help-tip { left: auto; right: -0.5rem; }
+	.help-end .help-tip, .help-flip .help-tip { left: auto; right: -0.5rem; }
 	/* 필드 관리 정렬 칸: 정렬을 켰을 때만 인덱스 사용 여부를 보인다 */
 	.sort-index { display: none; }
 	.sort-cell:has(input:checked) .sort-index { display: inline; }

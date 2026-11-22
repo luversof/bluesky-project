@@ -324,3 +324,17 @@ document.addEventListener('click', (event) => {
   syncThemeButtons();
 });
 syncThemeButtons();
+
+// 도움말(_components/help): 설명이 뜰 때 오른쪽(화면 · 가로 스크롤 상자)으로 넘치면 왼쪽으로 펼친다(.help-end 와 같은 모양).
+// 자리가 화면 폭 · 배치에 따라 달라져(오른쪽 끝 버튼, 줄의 마지막 입력칸) 화면마다 alignEnd 를 정할 수 없어서 뜰 때마다 잰다.
+const placeHelp = (event) => {
+  const help = event.target.closest?.('.help');
+  if (!help || help.classList.contains('help-end')) return;
+  const tip = help.querySelector('.help-tip');
+  help.classList.remove('help-flip');
+  const box = help.closest('.overflow-x-auto');
+  const right = box ? box.getBoundingClientRect().right : document.documentElement.clientWidth;
+  if (tip.getBoundingClientRect().right > right) help.classList.add('help-flip');
+};
+document.addEventListener('mouseover', placeHelp);
+document.addEventListener('focusin', placeHelp);

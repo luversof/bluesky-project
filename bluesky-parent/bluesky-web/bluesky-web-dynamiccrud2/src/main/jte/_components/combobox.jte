@@ -5,7 +5,8 @@
      - loadUrl + loadTrigger: 다른 값이 정해질 때 한 번 받아 오고, 입력은 받아 온 목록 안에서 거른다
      - options: 화면을 그릴 때 넣어 두고 입력으로 거른다(검색 설정의 "+ 추가" 처럼 고르면 바로 무언가 하는 칸)
      name 이 없으면 값은 폼으로 가지 않고, required=false 면 비워 둬도 제출된다.
-     mustPick: 비워 둬도 되지만 글자를 쳤으면 목록에서 골라야 제출된다(찾기 조건 칸). value · label 은 처음 고른 값 --%>
+     mustPick: 비워 둬도 되지만 글자를 쳤으면 목록에서 골라야 제출된다(찾기 조건 칸). value · label 은 처음 고른 값.
+     small: 같은 줄의 input-sm 칸(codeInput small 등)과 높이 · 글자 크기를 맞춘다 --%>
 @import static net.luversof.web.dynamiccrud2.config.Msg.t
 @param String id
 @param String name = null
@@ -22,9 +23,10 @@
 @param boolean mustPick = false
 @param String value = null
 @param String label = null
+@param boolean small = false
 
 <div class="combobox ${cssClass}" data-combobox data-local="${loadUrl != null || options != null}" data-empty-text="${emptyText}">
-	<input id="${id}-input" class="input w-full" type="text" role="combobox" autocomplete="off" required="${required}" data-must-pick="${mustPick}" value="${label}"
+	<input id="${id}-input" class="input ${small ? "input-sm" : ""} w-full" type="text" role="combobox" autocomplete="off" required="${required}" data-must-pick="${mustPick}" value="${label}"
 		aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-list" placeholder="${placeholder}" aria-label="${ariaLabel}" data-combobox-input
 		hx-get="${searchUrl}" hx-trigger="${searchUrl == null ? null : "input changed delay:250ms, focus once"}"
 		hx-target="${searchUrl == null ? null : "#" + id + "-list"}" hx-vals="${searchUrl == null ? null : "js:{keyword: document.getElementById('" + id + "-input').value}"}" />
