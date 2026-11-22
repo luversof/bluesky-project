@@ -28,11 +28,9 @@ public class DatabaseAdapterResolver {
   }
 
   public DatabaseAdapter resolve(String connectionName) {
-    // getConnection(이름, DataSource.class) 는 레지스트리 빈이 제네릭 변수로 등록돼 못 찾는다(실측 2026-11-17), 종류는
-    // instanceof 로 가른다
-    Object connection = ConnectionInfoUtil.getConnection(connectionName);
+    DataSource dataSource = ConnectionInfoUtil.getConnection(connectionName, DataSource.class);
     // 2차: MongoClient 연결이면 Mongo 어댑터를 돌려준다
-    if (!(connection instanceof DataSource dataSource)) {
+    if (dataSource == null) {
       throw new BlueskyException(QueryErrorCode.CONNECTION_NOT_FOUND, connectionName);
     }
     var dialect =

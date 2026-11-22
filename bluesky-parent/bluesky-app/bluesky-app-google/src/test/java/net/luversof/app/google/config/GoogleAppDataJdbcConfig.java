@@ -32,7 +32,7 @@ public class GoogleAppDataJdbcConfig {
   private String connectionKey;
 
   private DataSource getDataSource() {
-    return ConnectionInfoUtil.getConnection(connectionKey);
+    return ConnectionInfoUtil.getConnection(connectionKey, DataSource.class);
   }
 
   @Bean

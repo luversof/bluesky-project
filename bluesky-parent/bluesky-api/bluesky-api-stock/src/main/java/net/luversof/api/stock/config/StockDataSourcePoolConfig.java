@@ -57,7 +57,7 @@ public class StockDataSourcePoolConfig implements InitializingBean {
 
   @Override
   public void afterPropertiesSet() {
-    DataSource dataSource = ConnectionInfoUtil.getConnection("stock_postgresql");
+    DataSource dataSource = ConnectionInfoUtil.getConnection("stock_postgresql", DataSource.class);
     if (dataSource instanceof HikariDataSource hikari) {
       hikari.setMaximumPoolSize(MAXIMUM_POOL_SIZE);
       hikari.setMinimumIdle(MINIMUM_IDLE);

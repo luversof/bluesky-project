@@ -31,7 +31,7 @@ public class Dynamiccrud2DataJdbcConfig {
   public static final String CONNECTION_NAME = "dynamiccrud2";
 
   private DataSource getDataSource() {
-    return ConnectionInfoUtil.getConnection(CONNECTION_NAME);
+    return ConnectionInfoUtil.getConnection(CONNECTION_NAME, DataSource.class);
   }
 
   @Bean
