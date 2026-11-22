@@ -2,6 +2,14 @@
   "_comment": "시황 분석 버전 기록(화면의 버전 기록 카드). 새 버전 · 후보를 판단하면 맨 앞에 한 줄 더한다. 자세한 수치 · 구간은 tools/market-analysis/EXPERIMENTS.md. verdict: BASELINE(기준) · ADOPTED(채택) · REJECTED(기각) · HOLD(판단 못 함). priority: HIGH · MEDIUM · LOW.",
   "releases": [
     {
+      "date": "2026-11-23",
+      "version": "D+5 변동폭 (오프라인)",
+      "area": "목표",
+      "change": "D+5 를 방향 대신 '5 일 뒤 종가가 기준가에서 얼마나 멀어지나'로 바꿔 맞히는지 시험. 변동성 규칙(vol20 · EWMA) · 회귀 · 로지스틱 · LightGBM, 691 일 워크포워드.",
+      "result": "예측 변동성과 실제 변동폭의 순위 상관 0.3. ±3% 넘음 판정 기본 60.2 대 규칙 61.6 · 회귀 58.5, ±1.5% 밖 기본 79.2 대 모든 방법 77.6 ~ 79.2. 항상 '크게'와 차이가 없다. 삼성전자는 5 일에 1.5% 넘게 움직이는 날이 79% (최근 1 년 87%).",
+      "verdict": "REJECTED"
+    },
+    {
       "date": "2026-11-22",
       "version": "여러 LLM 앙상블 (리플레이)",
       "area": "모델",
