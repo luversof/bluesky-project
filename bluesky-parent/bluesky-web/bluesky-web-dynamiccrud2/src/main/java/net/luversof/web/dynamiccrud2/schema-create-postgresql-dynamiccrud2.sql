@@ -69,6 +69,8 @@ CREATE TABLE "DbField" (
 	-- 다시 읽었을 때 DB 에서 사라진 컬럼(지우지 않고 표시)
 	"missingInDb" BOOLEAN NOT NULL DEFAULT FALSE,
 	"displayOrder" INTEGER NOT NULL DEFAULT 0,
+	-- 값 목록: 한 줄에 "저장값=표시". 목록 칸은 표시 글자로, 검색칸 · 작업 입력칸은 셀렉트로 보인다
+	"valueOptions" TEXT,
 	PRIMARY KEY ("dbTable_id", "columnName")
 );
 

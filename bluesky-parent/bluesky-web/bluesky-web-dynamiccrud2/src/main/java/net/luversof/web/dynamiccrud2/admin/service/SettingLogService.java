@@ -218,6 +218,7 @@ public class SettingLogService {
         "maxLength", field.getMaxLength() == null ? null : String.valueOf(field.getMaxLength()));
     map.put("sortable", String.valueOf(field.isSortable()));
     map.put("updatable", String.valueOf(field.isUpdatable()));
+    map.put("valueOptions", field.getValueOptions());
     return map;
   }
 

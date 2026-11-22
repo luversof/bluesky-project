@@ -1,5 +1,7 @@
 <%-- 필드 입력 형식(InputType)에 맞는 입력칸 하나: 여러 줄 · 참/거짓 · 숫자 · 날짜 · 날짜시간 · 글자.
-     검색칸(사용 화면)과 작업 폼(입력 · 수정)이 같이 쓴다 --%>
+     검색칸(사용 화면)과 작업 폼(입력 · 수정)이 같이 쓴다. 필드 값 목록(options)이 있으면 형식과 상관없이 그 목록의 셀렉트 -
+     지금 값이 목록에 없으면(목록을 나중에 적은 옛 값) 그 값도 그대로 고를 수 있게 둔다 --%>
+@import java.util.Map
 @import net.luversof.web.dynamiccrud2.domain.InputType
 
 @param String id
@@ -10,8 +12,19 @@
 @param Integer maxLength = null
 @param boolean small = false
 @param boolean readonly = false
+@param Map<String, String> options = java.util.Map.of()
 
-@if(inputType == InputType.TEXTAREA)
+@if(options != null && !options.isEmpty())
+	<select id="${id}" class="select ${small ? "select-sm" : "w-full"}" name="${name}" required="${required && !readonly}" disabled="${readonly}">
+		<option value="">-</option>
+		@for(var option : options.entrySet())
+			<option value="${option.getKey()}" selected="${option.getKey().equals(value)}">${option.getValue()}</option>
+		@endfor
+		@if(value != null && !value.isEmpty() && !options.containsKey(value))
+			<option value="${value}" selected>${value}</option>
+		@endif
+	</select>
+@elseif(inputType == InputType.TEXTAREA)
 	<textarea id="${id}" class="textarea w-full" name="${name}" rows="4" maxlength="${maxLength}" required="${required && !readonly}" readonly="${readonly}">${value}</textarea>
 @elseif(inputType == InputType.BOOLEAN)
 	<select id="${id}" class="select ${small ? "select-sm" : "w-full"}" name="${name}" required="${required && !readonly}" disabled="${readonly}">

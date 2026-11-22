@@ -126,7 +126,8 @@ public class FieldService {
       InputType inputType,
       Integer maxLength,
       boolean sortable,
-      boolean updatable) {
+      boolean updatable,
+      String valueOptions) {
     var dbTable = get(dbTableId);
     var field =
         dbTable.getFields().stream()
@@ -137,6 +138,8 @@ public class FieldService {
     field.setLabel(label == null || label.isBlank() ? null : label.strip());
     field.setInputType(inputType);
     field.setMaxLength(maxLength);
+    field.setValueOptions(
+        valueOptions == null || valueOptions.isBlank() ? null : valueOptions.strip());
     if (field.isSortable() != sortable) {
       field.setSortable(sortable && !field.isVirtual());
       field.setSortableUserSet(true);

@@ -46,7 +46,7 @@
 			@endfor
 			@for(var field : usePage.searchFields())
 				@template._components.field(label = field.header(), forId = "s-" + field.name(), required = field.required(), content = @`
-					@template._components.typedInput(id = "s-" + field.name(), name = "s." + field.name(), value = field.value(), inputType = field.inputType(), small = true)
+					@template._components.typedInput(id = "s-" + field.name(), name = "s." + field.name(), value = field.value(), inputType = field.inputType(), small = true, options = field.options())
 				`)
 			@endfor
 			<div class="flex gap-2">
@@ -107,7 +107,8 @@
 						@endif
 						@for(var i = 0; i < row.values().size(); i++)
 							@template._components.cellValue(value = row.values().get(i),
-								inputType = i < usePage.columns().size() ? usePage.columns().get(i).inputType() : null)
+								inputType = i < usePage.columns().size() ? usePage.columns().get(i).inputType() : null,
+								options = i < usePage.columns().size() ? usePage.columns().get(i).options() : java.util.Map.of())
 						@endfor
 						@if(!usePage.updateActions().isEmpty())
 							<td class="whitespace-nowrap text-right">

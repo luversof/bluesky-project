@@ -23,6 +23,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import net.luversof.GeneralWebTest;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
+import net.luversof.web.dynamiccrud2.admin.service.FieldService;
 import net.luversof.web.dynamiccrud2.admin.service.MenuService;
 import net.luversof.web.dynamiccrud2.admin.service.QueryService;
 import net.luversof.web.dynamiccrud2.admin.service.SearchService;
@@ -50,6 +51,7 @@ class MenuPageControllerTest implements GeneralWebTest {
   @Autowired ProjectRepository projectRepository;
   @Autowired ChangeLogRepository changeLogRepository;
   @Autowired RowSigner rowSigner;
+  @Autowired FieldService fieldService;
 
   MockMvc mvc;
 
@@ -80,6 +82,8 @@ class MenuPageControllerTest implements GeneralWebTest {
     var rowId = UUID.randomUUID();
     var name = "row-" + rowId;
     UUID menuId = null;
+    String originalOptions = null;
+    var optionsChanged = false;
     try {
       var menu = menuService.createMenu(mainMenu.getId(), "list", "프로젝트 관리", "dynamiccrud2", ref);
       menuId = menu.getId();
@@ -168,6 +172,14 @@ class MenuPageControllerTest implements GeneralWebTest {
           .andExpect(content().string(Matchers.containsString("전체 1건")))
           .andExpect(content().string(Matchers.containsString("이름")))
           .andExpect(content().string(Matchers.containsString("2026-11-17T10:00")));
+
+      // 값 목록: 목록 칸은 표시 글자(원래 값은 title), 입력 폼은 그 목록의 셀렉트
+      originalOptions = setValueOptions(menuId, "3=셋째\n5=다섯째");
+      optionsChanged = true;
+      mvc.perform(get(base).param("s.name", name).with(normalUser()))
+          .andExpect(content().string(Matchers.containsString("title=\"3\">셋째</td>")));
+      mvc.perform(post(base + "/action/" + insert + "/form").with(normalUser()))
+          .andExpect(content().string(Matchers.containsString("<option value=\"5\">다섯째</option>")));
 
       // 메뉴 검색 설정: "이름" 포함 검색칸 + 통합 검색(대소문자 무시). 쿼리를 고치지 않고 WHERE 에 붙는다
       searchService.save(
@@ -337,6 +349,10 @@ class MenuPageControllerTest implements GeneralWebTest {
     } finally {
       projectRepository.deleteById(rowId);
       if (menuId != null) {
+        // Project 테이블 필드는 다른 메뉴와 같이 쓸 수 있어 값 목록을 원래대로 돌린다
+        if (optionsChanged) {
+          setValueOptions(menuId, originalOptions);
+        }
         changeLogRepository.deleteAll(
             changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId));
         var dbTableId = menuService.getMenu(menuId).getDbTableId();
@@ -348,6 +364,27 @@ class MenuPageControllerTest implements GeneralWebTest {
       menuService.deleteMainMenu(mainMenu.getId());
       menuService.deleteProject(owner.getId());
     }
+  }
+
+  /** displayOrder 필드의 값 목록만 바꾼다(다른 설정은 그대로), 바꾸기 전 값을 돌려준다 */
+  private String setValueOptions(UUID menuId, String valueOptions) {
+    var dbTableId = menuService.getMenu(menuId).getDbTableId();
+    var field =
+        fieldService.get(dbTableId).getFields().stream()
+            .filter(f -> f.getColumnName().equals("displayOrder"))
+            .findFirst()
+            .orElseThrow();
+    var before = field.getValueOptions();
+    fieldService.updateField(
+        dbTableId,
+        field.getColumnName(),
+        field.getLabel(),
+        field.getInputType(),
+        field.getMaxLength(),
+        field.isSortable(),
+        field.isUpdatable(),
+        valueOptions);
+    return before;
   }
 
   private static UUID idOf(net.luversof.web.dynamiccrud2.domain.Menu menu, QueryKind kind) {

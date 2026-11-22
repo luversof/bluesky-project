@@ -141,11 +141,22 @@ public class MenuPageService {
 
   /**
    * @param inputType 필드 입력 형식 - 목록 칸 표시 형식(_components/cellValue)에 쓴다
+   * @param options 필드 값 목록(저장값 → 표시, {@link DbField#options()}). 비면 원래 값 그대로
    */
-  public record Column(String label, String header, boolean sortable, InputType inputType) {}
+  public record Column(
+      String label,
+      String header,
+      boolean sortable,
+      InputType inputType,
+      Map<String, String> options) {}
 
   public record SearchField(
-      String name, String header, InputType inputType, boolean required, String value) {}
+      String name,
+      String header,
+      InputType inputType,
+      boolean required,
+      String value,
+      Map<String, String> options) {}
 
   /**
    * 사용 화면 검색 입력.
@@ -167,7 +178,8 @@ public class MenuPageService {
       InputType inputType,
       SearchOperator operator,
       String value,
-      String valueTo) {}
+      String valueTo,
+      Map<String, String> options) {}
 
   /** 통합 검색칸. headers 는 함께 찾는 컬럼 제목(안내용) */
   public record KeywordBox(List<String> headers, String value) {}
@@ -199,7 +211,12 @@ public class MenuPageService {
       boolean required,
       Integer maxLength,
       String value,
-      boolean readonly) {}
+      boolean readonly,
+      Map<String, String> options) {}
+
+  private static Map<String, String> optionsOf(DbField field) {
+    return field == null ? Map.of() : field.options();
+  }
 
   public record ActionForm(Menu menu, MenuQuery query, List<FormField> fields, List<String> rows) {}
 
@@ -356,7 +373,8 @@ public class MenuPageService {
               setting.required(),
               field == null ? null : field.getMaxLength(),
               readonly && rows.size() > 1 ? null : value,
-              readonly));
+              readonly,
+              optionsOf(field)));
     }
     return new ActionForm(ctx.menu(), query, fields, rows);
   }
@@ -606,7 +624,8 @@ public class MenuPageService {
               header,
               field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType(),
               setting.required(),
-              raw == null ? "" : raw));
+              raw == null ? "" : raw,
+              optionsOf(field)));
       if ((raw == null || raw.isEmpty()) && setting.defaultValue() != null) {
         raw = setting.defaultValue();
       }
@@ -658,6 +677,11 @@ public class MenuPageService {
           field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType();
       var allowed = SearchOperator.allowedFor(inputType);
       var operator = allowed.contains(item.operator()) ? item.operator() : allowed.get(0);
+      var options = optionsOf(field);
+      if (!options.isEmpty() && operator != SearchOperator.RANGE) {
+        // 값 목록에서 고른 저장값은 일부가 아닌 그 값 자체로 찾는다(1 을 고르면 10 · 21 이 나오지 않게)
+        operator = SearchOperator.EQUALS;
+      }
       var value = blankToNull(search.filters().get(item.label()));
       var valueTo =
           operator == SearchOperator.RANGE
@@ -670,7 +694,8 @@ public class MenuPageService {
               inputType,
               operator,
               value,
-              valueTo));
+              valueTo,
+              options));
       var param = "_f" + index;
       var paramTo = "_f" + index + "_to";
       index++;
@@ -809,9 +834,8 @@ public class MenuPageService {
               label,
               header,
               sortable,
-              field == null || field.getInputType() == null
-                  ? InputType.TEXT
-                  : field.getInputType()));
+              field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType(),
+              optionsOf(field)));
     }
     return columns;
   }

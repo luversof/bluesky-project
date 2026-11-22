@@ -1,0 +1,21 @@
+package net.luversof.web.dynamiccrud2.domain;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
+
+class DbFieldTest {
+
+  @Test
+  void valueOptionsKeepOrderAndAllowValueOnlyLines() {
+    var field = new DbField();
+    assertThat(field.options()).isEmpty();
+    field.setValueOptions(" 1 = 사용 \r\n\r\n0=중지\nREADY\n1=중복은 앞 줄\na=b=c");
+    assertThat(field.options())
+        .containsExactly(
+            java.util.Map.entry("1", "사용"),
+            java.util.Map.entry("0", "중지"),
+            java.util.Map.entry("READY", "READY"),
+            java.util.Map.entry("a", "b=c"));
+  }
+}

@@ -64,6 +64,38 @@ public class DbField {
   @Column("displayOrder")
   private int displayOrder;
 
+  /**
+   * 값 목록: 한 줄에 "저장값=표시" (= 가 없으면 저장값을 그대로 보인다). 있으면 목록 칸은 표시 글자로 보이고, 검색칸 · 작업 입력칸은 이 목록의 셀렉트가 된다.
+   * 행 JSON · 엑셀 · 이력은 저장값 그대로
+   */
+  @Column("valueOptions")
+  private String valueOptions;
+
+  public String getValueOptions() {
+    return valueOptions;
+  }
+
+  public void setValueOptions(String valueOptions) {
+    this.valueOptions = valueOptions;
+  }
+
+  /** 값 목록을 저장값 → 표시(적은 순서)로. 없으면 빈 맵 */
+  public java.util.Map<String, String> options() {
+    var options = new java.util.LinkedHashMap<String, String>();
+    if (valueOptions == null) {
+      return options;
+    }
+    for (var line : valueOptions.split("\\R")) {
+      if (line.isBlank()) {
+        continue;
+      }
+      var eq = line.indexOf('=');
+      var value = (eq < 0 ? line : line.substring(0, eq)).strip();
+      options.putIfAbsent(value, eq < 0 ? value : line.substring(eq + 1).strip());
+    }
+    return options;
+  }
+
   public String getColumnName() {
     return columnName;
   }

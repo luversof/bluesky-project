@@ -114,3 +114,14 @@ CREATE INDEX IF NOT EXISTS idx_settingLog_targetId_createdDate ON "SettingLog" (
 
 -- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 설정 변경 이력이 사라진다)
 -- DROP TABLE IF EXISTS "SettingLog";
+
+-- 2026-11-22 필드 값 목록(DbField.valueOptions)
+-- 까닭: enum · 코드 숫자처럼 저장값을 화면에서는 다른 글자로 보이고, 검색 · 입력은 셀렉트로 고르게 한다(사용자 요청). 기존 행은 NULL(지금처럼 원래 값).
+-- 이 열이 없으면 앱이 필드를 못 읽으므로 앱 배포 전에 적용할 것.
+ALTER TABLE "DbField" ADD COLUMN IF NOT EXISTS "valueOptions" TEXT;
+
+-- 확인(열 1 개)
+-- SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'DbField' AND column_name = 'valueOptions';
+
+-- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 값 목록 설정이 사라진다)
+-- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "valueOptions";

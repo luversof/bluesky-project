@@ -555,8 +555,10 @@ public class AdminController {
       @RequestParam(required = false) Integer maxLength,
       @RequestParam(defaultValue = "false") boolean sortable,
       @RequestParam(defaultValue = "false") boolean updatable,
+      @RequestParam(required = false) String valueOptions,
       @RequestParam(required = false) UUID menu) {
-    fieldService.updateField(id, columnName, label, inputType, maxLength, sortable, updatable);
+    fieldService.updateField(
+        id, columnName, label, inputType, maxLength, sortable, updatable, valueOptions);
     return redirectToTable(id, menu);
   }
 

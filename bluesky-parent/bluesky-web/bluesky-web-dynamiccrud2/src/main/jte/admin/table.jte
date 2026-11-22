@@ -36,7 +36,7 @@
 			<thead>
 				<tr>
 					<th>${t("admin.table.col.column")}</th><th>${t("admin.table.col.dbType")}</th>
-					@for(var col : java.util.List.of("label", "inputType", "maxLength", "sort", "update"))
+					@for(var col : java.util.List.of("label", "inputType", "maxLength", "options", "sort", "update"))
 						<th class="whitespace-nowrap">${t("admin.table.col." + col)}
 							@template._components.help(text = t("admin.table.col." + col + ".help"), label = t("admin.table.col.helpLabel", t("admin.table.col." + col)),
 								alignEnd = col.equals("sort") || col.equals("update"))</th>
@@ -67,6 +67,7 @@
 							</select>
 						</td>
 						<td><input class="input input-sm w-24" type="number" min="1" form="${formId}" name="maxLength" value="${field.getMaxLength()}" aria-label="${t("admin.table.aria.maxLength", field.getColumnName())}" /></td>
+						<td><textarea class="textarea textarea-sm w-48 font-mono" rows="2" form="${formId}" name="valueOptions" placeholder="1=…&#10;0=…" aria-label="${t("admin.table.aria.options", field.getColumnName())}">${field.getValueOptions()}</textarea></td>
 						<td>
 							<%-- 체크하면(정렬 허용) 인덱스를 쓰는지 보인다(.sort-cell:has(:checked), CSS 만) --%>
 							<div class="sort-cell flex items-center gap-1">
