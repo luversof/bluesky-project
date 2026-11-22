@@ -18,4 +18,21 @@ class DbFieldTest {
             java.util.Map.entry("READY", "READY"),
             java.util.Map.entry("a", "b=c"));
   }
+
+  @Test
+  void displayOptionsKeepUnknownKeysAndBecomeNullWhenEmpty() {
+    var field = new DbField();
+    field.setDisplayOptions(java.util.Map.of("future", "x"));
+    field.setDateFormat(" ");
+    field.setValueOptions("1=사용");
+    field.setDateFormat("yyyy.MM.dd");
+    assertThat(field.getDisplayOptions())
+        .containsEntry("future", "x")
+        .containsEntry("valueOptions", "1=사용")
+        .containsEntry("dateFormat", "yyyy.MM.dd");
+    field.setDisplayOptions(null);
+    field.setValueOptions("1=사용");
+    field.setValueOptions(null);
+    assertThat(field.getDisplayOptions()).isNull();
+  }
 }

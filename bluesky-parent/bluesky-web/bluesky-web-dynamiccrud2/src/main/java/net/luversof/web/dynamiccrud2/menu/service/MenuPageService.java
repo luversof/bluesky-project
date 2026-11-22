@@ -142,13 +142,15 @@ public class MenuPageService {
   /**
    * @param inputType 필드 입력 형식 - 목록 칸 표시 형식(_components/cellValue)에 쓴다
    * @param options 필드 값 목록(저장값 → 표시, {@link DbField#options()}). 비면 원래 값 그대로
+   * @param dateFormat 날짜 · 일시 표시 형식({@link DbField#getDateFormat()}). null 이면 기본 모양
    */
   public record Column(
       String label,
       String header,
       boolean sortable,
       InputType inputType,
-      Map<String, String> options) {}
+      Map<String, String> options,
+      String dateFormat) {}
 
   public record SearchField(
       String name,
@@ -835,7 +837,8 @@ public class MenuPageService {
               header,
               sortable,
               field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType(),
-              optionsOf(field)));
+              optionsOf(field),
+              field == null ? null : field.getDateFormat()));
     }
     return columns;
   }

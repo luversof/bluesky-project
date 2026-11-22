@@ -13,11 +13,13 @@
 @param String databaseType
 @param String targetNoun = net.luversof.web.dynamiccrud2.config.Msg.t("target.table")
 @param java.util.List<net.luversof.web.dynamiccrud2.admin.controller.Crumb> breadcrumb = null
+@param String error = null
 
 !{var tableId = dbTable.getId().toString();}
 !{var menuQuery = menuId == null ? "" : "?menu=" + menuId;}
 
 @template._layout.layout(title = t("admin.table.title", targetNoun, dbTable.getTableName()), breadcrumb = breadcrumb, content = @`
+	@template._components.alert(message = error)
 	<%-- 정렬 허용을 정할 때 보도록 필드 표 위에 둔다(메뉴 관리 화면과 같은 표) --%>
 	@template._components.card(title = t("index.tableLabel", targetNoun), help = t("admin.table.index.help"), body = @`
 		@template._components.indexTable(table = indexes)
@@ -36,7 +38,7 @@
 			<thead>
 				<tr>
 					<th>${t("admin.table.col.column")}</th><th>${t("admin.table.col.dbType")}</th>
-					@for(var col : java.util.List.of("label", "inputType", "maxLength", "options", "sort", "update"))
+					@for(var col : java.util.List.of("label", "inputType", "maxLength", "options", "dateFormat", "sort", "update"))
 						<th class="whitespace-nowrap">${t("admin.table.col." + col)}
 							@template._components.help(text = t("admin.table.col." + col + ".help"), label = t("admin.table.col.helpLabel", t("admin.table.col." + col)),
 								alignEnd = col.equals("sort") || col.equals("update"))</th>
@@ -68,6 +70,7 @@
 						</td>
 						<td><input class="input input-sm w-24" type="number" min="1" form="${formId}" name="maxLength" value="${field.getMaxLength()}" aria-label="${t("admin.table.aria.maxLength", field.getColumnName())}" /></td>
 						<td><textarea class="textarea textarea-sm w-48 font-mono" rows="2" form="${formId}" name="valueOptions" placeholder="1=…&#10;0=…" aria-label="${t("admin.table.aria.options", field.getColumnName())}">${field.getValueOptions()}</textarea></td>
+						<td><input class="input input-sm w-36 font-mono" form="${formId}" name="dateFormat" value="${field.getDateFormat()}" placeholder="yyyy-MM-dd" aria-label="${t("admin.table.aria.dateFormat", field.getColumnName())}" /></td>
 						<td>
 							<%-- 체크하면(정렬 허용) 인덱스를 쓰는지 보인다(.sort-cell:has(:checked), CSS 만) --%>
 							<div class="sort-cell flex items-center gap-1">

@@ -12,11 +12,13 @@ import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis.ResultColumn;
 import net.luversof.web.dynamiccrud2.adapter.TableMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
+import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.domain.DbField;
 import net.luversof.web.dynamiccrud2.domain.DbTable;
 import net.luversof.web.dynamiccrud2.domain.InputType;
 import net.luversof.web.dynamiccrud2.domain.SettingLog.Action;
 import net.luversof.web.dynamiccrud2.domain.SettingLog.Target;
+import net.luversof.web.dynamiccrud2.menu.service.ValueConverter;
 import net.luversof.web.dynamiccrud2.repository.DbTableRepository;
 
 /**
@@ -127,7 +129,11 @@ public class FieldService {
       Integer maxLength,
       boolean sortable,
       boolean updatable,
-      String valueOptions) {
+      String valueOptions,
+      String dateFormat) {
+    if (!ValueConverter.isDateFormat(dateFormat)) {
+      throw new IllegalArgumentException(Msg.t("admin.table.dateFormat.invalid", dateFormat));
+    }
     var dbTable = get(dbTableId);
     var field =
         dbTable.getFields().stream()
@@ -138,8 +144,8 @@ public class FieldService {
     field.setLabel(label == null || label.isBlank() ? null : label.strip());
     field.setInputType(inputType);
     field.setMaxLength(maxLength);
-    field.setValueOptions(
-        valueOptions == null || valueOptions.isBlank() ? null : valueOptions.strip());
+    field.setValueOptions(valueOptions == null ? null : valueOptions.strip());
+    field.setDateFormat(dateFormat == null ? null : dateFormat.strip());
     if (field.isSortable() != sortable) {
       field.setSortable(sortable && !field.isVirtual());
       field.setSortableUserSet(true);

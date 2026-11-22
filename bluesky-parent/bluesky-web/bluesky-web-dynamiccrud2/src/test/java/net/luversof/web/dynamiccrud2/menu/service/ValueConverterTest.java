@@ -16,4 +16,20 @@ class ValueConverterTest {
     assertThat(ValueConverter.fitsExcelNumber(new BigDecimal("0.1234567890123456"))).isFalse();
     assertThat(ValueConverter.fitsExcelNumber(1.5d)).isTrue();
   }
+
+  @Test
+  void dateFormatAppliesOrKeepsRaw() {
+    assertThat(ValueConverter.formatDate("2026-11-22T13:05:09", "yyyy.MM.dd HH:mm"))
+        .isEqualTo("2026.11.22 13:05");
+    assertThat(ValueConverter.formatDate("2026-11-22", "MM/dd")).isEqualTo("11/22");
+    assertThat(ValueConverter.formatDate("2026-11-22", "yyyy-MM-dd HH:mm"))
+        .as("날짜에 시각 패턴은 0시")
+        .isEqualTo("2026-11-22 00:00");
+    assertThat(ValueConverter.formatDate("어제", "yyyy.MM.dd")).as("읽을 수 없으면 원래 값").isEqualTo("어제");
+    assertThat(ValueConverter.formatDate("2026-11-22", null)).isEqualTo("2026-11-22");
+    assertThat(ValueConverter.isDateFormat("yyyy.MM.dd")).isTrue();
+    assertThat(ValueConverter.isDateFormat(" ")).isTrue();
+    assertThat(ValueConverter.isDateFormat("yyyy-bb")).isFalse();
+    assertThat(ValueConverter.isDateFormat("yyyy-MM-dd VV")).as("시간대 없는 값에 못 씀").isFalse();
+  }
 }

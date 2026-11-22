@@ -108,7 +108,8 @@
 						@for(var i = 0; i < row.values().size(); i++)
 							@template._components.cellValue(value = row.values().get(i),
 								inputType = i < usePage.columns().size() ? usePage.columns().get(i).inputType() : null,
-								options = i < usePage.columns().size() ? usePage.columns().get(i).options() : java.util.Map.of())
+								options = i < usePage.columns().size() ? usePage.columns().get(i).options() : java.util.Map.of(),
+								dateFormat = i < usePage.columns().size() ? usePage.columns().get(i).dateFormat() : null)
 						@endfor
 						@if(!usePage.updateActions().isEmpty())
 							<td class="whitespace-nowrap text-right">

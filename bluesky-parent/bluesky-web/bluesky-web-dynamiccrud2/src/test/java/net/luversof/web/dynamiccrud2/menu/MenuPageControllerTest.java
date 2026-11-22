@@ -383,7 +383,8 @@ class MenuPageControllerTest implements GeneralWebTest {
         field.getMaxLength(),
         field.isSortable(),
         field.isUpdatable(),
-        valueOptions);
+        valueOptions,
+        field.getDateFormat());
     return before;
   }
 

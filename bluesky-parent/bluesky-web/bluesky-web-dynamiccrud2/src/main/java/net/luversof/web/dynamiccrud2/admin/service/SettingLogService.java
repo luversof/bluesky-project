@@ -219,6 +219,7 @@ public class SettingLogService {
     map.put("sortable", String.valueOf(field.isSortable()));
     map.put("updatable", String.valueOf(field.isUpdatable()));
     map.put("valueOptions", field.getValueOptions());
+    map.put("dateFormat", field.getDateFormat());
     return map;
   }
 

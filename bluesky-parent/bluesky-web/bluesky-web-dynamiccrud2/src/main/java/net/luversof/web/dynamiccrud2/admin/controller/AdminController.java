@@ -556,9 +556,23 @@ public class AdminController {
       @RequestParam(defaultValue = "false") boolean sortable,
       @RequestParam(defaultValue = "false") boolean updatable,
       @RequestParam(required = false) String valueOptions,
-      @RequestParam(required = false) UUID menu) {
-    fieldService.updateField(
-        id, columnName, label, inputType, maxLength, sortable, updatable, valueOptions);
+      @RequestParam(required = false) String dateFormat,
+      @RequestParam(required = false) UUID menu,
+      RedirectAttributes redirect) {
+    try {
+      fieldService.updateField(
+          id,
+          columnName,
+          label,
+          inputType,
+          maxLength,
+          sortable,
+          updatable,
+          valueOptions,
+          dateFormat);
+    } catch (IllegalArgumentException e) {
+      redirect.addFlashAttribute("error", e.getMessage());
+    }
     return redirectToTable(id, menu);
   }
 

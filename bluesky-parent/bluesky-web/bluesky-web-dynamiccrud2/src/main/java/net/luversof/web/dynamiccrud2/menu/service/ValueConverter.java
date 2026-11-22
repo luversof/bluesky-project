@@ -2,10 +2,12 @@ package net.luversof.web.dynamiccrud2.menu.service;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.util.UUID;
@@ -70,6 +72,34 @@ public final class ValueConverter {
       return value.toString();
     }
     return String.valueOf(value);
+  }
+
+  /**
+   * 목록 칸 날짜 · 일시 글자({@link #toText} 결과)를 필드 표시 형식으로. 읽을 수 없거나 형식이 맞지 않으면(날짜에 시각 패턴 등은 0시로 본다) 원래 글자
+   * 그대로
+   */
+  public static String formatDate(String raw, String pattern) {
+    if (raw == null || raw.isEmpty() || pattern == null || pattern.isBlank()) {
+      return raw;
+    }
+    try {
+      return DateTimeFormatter.ofPattern(pattern).format(toLocalDateTime(raw.strip()));
+    } catch (DateTimeException | IllegalArgumentException e) {
+      return raw;
+    }
+  }
+
+  /** 표시 형식 패턴이 맞는가(빈 값은 형식 없음이라 맞다) */
+  public static boolean isDateFormat(String pattern) {
+    if (pattern == null || pattern.isBlank()) {
+      return true;
+    }
+    try {
+      DateTimeFormatter.ofPattern(pattern).format(LocalDateTime.of(2000, 1, 2, 3, 4, 5));
+      return true;
+    } catch (DateTimeException | IllegalArgumentException e) {
+      return false;
+    }
   }
 
   /** 엑셀 수(double)로 넣어도 자릿수가 그대로인가. 엑셀은 15자리까지만 지켜 큰 ID · 정밀한 numeric 은 글자로 넣어야 한다 */

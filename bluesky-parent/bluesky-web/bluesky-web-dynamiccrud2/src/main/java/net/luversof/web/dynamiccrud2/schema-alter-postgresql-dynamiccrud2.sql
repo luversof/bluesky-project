@@ -125,3 +125,19 @@ ALTER TABLE "DbField" ADD COLUMN IF NOT EXISTS "valueOptions" TEXT;
 
 -- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 값 목록 설정이 사라진다)
 -- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "valueOptions";
+
+-- 2026-11-22 필드 표시 설정을 JSONB 하나로(DbField.displayOptions) + 날짜 표시 형식(dateFormat 키)
+-- 까닭: 보이기만 바꾸는 설정(값 목록 · 날짜 형식 · 앞으로 더할 것)마다 열 · DDL 을 늘리지 않으려고(사용자 결정). 위 valueOptions 열을 옮긴다.
+-- 1) 앱 배포 전에 적용할 것(새 판은 displayOptions 만 읽는다).
+ALTER TABLE "DbField" ADD COLUMN IF NOT EXISTS "displayOptions" JSONB;
+UPDATE "DbField" SET "displayOptions" = jsonb_build_object('valueOptions', "valueOptions")
+WHERE "valueOptions" IS NOT NULL AND "displayOptions" IS NULL;
+
+-- 확인(옮긴 수 = 원래 수)
+-- SELECT count(*) FILTER (WHERE "valueOptions" IS NOT NULL), count(*) FILTER (WHERE "displayOptions" ? 'valueOptions') FROM "DbField";
+
+-- 2) 새 판이 잘 도는 것을 본 뒤에(그 전에는 이전 판으로 돌릴 수 있게 남겨 둔다)
+-- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "valueOptions";
+
+-- 되돌리기(2 를 하기 전에만: 이전 판으로 돌리고, 그동안 바꾼 값 목록 · 날짜 형식은 잃는다)
+-- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "displayOptions";

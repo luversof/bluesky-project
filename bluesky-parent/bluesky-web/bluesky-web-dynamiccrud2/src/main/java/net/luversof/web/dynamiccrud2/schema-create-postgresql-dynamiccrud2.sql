@@ -69,8 +69,9 @@ CREATE TABLE "DbField" (
 	-- 다시 읽었을 때 DB 에서 사라진 컬럼(지우지 않고 표시)
 	"missingInDb" BOOLEAN NOT NULL DEFAULT FALSE,
 	"displayOrder" INTEGER NOT NULL DEFAULT 0,
-	-- 값 목록: 한 줄에 "저장값=표시". 목록 칸은 표시 글자로, 검색칸 · 작업 입력칸은 셀렉트로 보인다
-	"valueOptions" TEXT,
+	-- 화면 표시 설정(보이기만 바꾸는 것). 키: valueOptions(한 줄에 "저장값=표시" - 목록은 표시 글자, 검색 · 입력은 셀렉트),
+	-- dateFormat(날짜 · 일시 목록 표시 형식, DateTimeFormatter 패턴)
+	"displayOptions" JSONB,
 	PRIMARY KEY ("dbTable_id", "columnName")
 );
 
