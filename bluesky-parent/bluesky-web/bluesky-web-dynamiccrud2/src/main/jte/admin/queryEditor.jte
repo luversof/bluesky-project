@@ -14,6 +14,7 @@
 @param String error
 @param QueryInspection inspection
 @param boolean layer = false
+@param java.util.List<net.luversof.web.dynamiccrud2.admin.service.SearchService.TableIndexes> indexTables = java.util.List.of()
 
 !{var menuId = menu.getId().toString();}
 
@@ -42,12 +43,16 @@
 		@endif
 	</div>
 	`)
+	<%-- 테이블 정보: 쿼리를 쓰기 바로 전에 본다 - 컬럼(입력 · 수정 쿼리에 넣을 값 · NOT NULL · 기본값 · 자동 증가)과
+	     인덱스(WHERE · ORDER BY 가 인덱스를 타는지). 인덱스는 메뉴 관리 화면에서 옮겨 왔다(2026-11-23 사용자 결정) --%>
+	@template._components.tableInfo(tables = indexTables, rememberKey = "tableInfo")
 	@template._components.card(title = t("admin.query.col.query"), actions = @`
 		<span class="hint">${t("admin.query.test.hint")}</span>
 		<button type="button" class="btn btn-sm" hx-post="/admin/menu/${menuId}/query/inspect" hx-include="closest form" hx-target="#q-inspection" hx-swap="innerHTML">${t("admin.query.test")}</button>
 	`, body = @`
 	<div>
-		<textarea aria-label="${t("admin.query.col.query")}" id="q-queryText" class="textarea code w-full" name="queryText" rows="12" spellcheck="false" required>${queryText}</textarea>
+		<%-- 처음엔 작게(두세 줄), 줄이 늘면 내용만큼 커진다(.textarea-autogrow: CSS field-sizing, 안 되는 브라우저는 js/ui.js) --%>
+		<textarea aria-label="${t("admin.query.col.query")}" id="q-queryText" class="textarea textarea-autogrow code w-full" name="queryText" rows="3" spellcheck="false" required>${queryText}</textarea>
 		<p class="hint mt-1">
 			$unsafe{t("admin.query.paramHint")}
 			@if(kind == QueryKind.READ)

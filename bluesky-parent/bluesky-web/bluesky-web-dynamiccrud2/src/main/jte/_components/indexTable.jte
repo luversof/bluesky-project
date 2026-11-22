@@ -3,9 +3,10 @@
 @import net.luversof.web.dynamiccrud2.admin.service.SearchService.TableIndexes
 
 @param TableIndexes table
+@param String heading = null
 
 <div>
-	<h3 class="text-sm font-semibold mb-1">${table.title()}</h3>
+	<h3 class="text-sm font-semibold mb-1">${heading == null ? table.title() : heading}</h3>
 	@if(table.error() != null)
 		@template._components.emptyState(message = table.error())
 	@elseif(table.indexes().isEmpty())

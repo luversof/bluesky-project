@@ -559,10 +559,10 @@ public class AdminController {
     java.util.Set<String> leading;
     try {
       var meta = fieldService.readMeta(dbTable);
-      indexes = new SearchService.TableIndexes(title, meta.indexes(), null);
+      indexes = new SearchService.TableIndexes(title, meta.indexes(), null, meta);
       leading = meta.indexLeadingColumns();
     } catch (RuntimeException e) {
-      indexes = new SearchService.TableIndexes(title, List.of(), Msg.t("index.readFailed"));
+      indexes = new SearchService.TableIndexes(title, List.of(), Msg.t("index.readFailed"), null);
       leading = null;
     }
     model.addAttribute("indexes", indexes);
@@ -645,6 +645,8 @@ public class AdminController {
             ? QueryService.QueryInspection.EMPTY
             : queryService.inspect(menu, kind, queryText, settings));
     model.addAttribute("layer", layer);
+    // 쿼리를 쓸 때 보도록 조회 쿼리가 쓰는 테이블들의 인덱스(예전엔 메뉴 관리 화면에 있었다 - 사용자 결정 2026-11-23)
+    model.addAttribute("indexTables", searchService.setup(menu).tables());
     return layer ? "admin/queryEditor" : "admin/query";
   }
 

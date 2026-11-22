@@ -80,8 +80,10 @@ public class SearchService {
    * @param title 스키마.테이블
    * @param indexes 인덱스(읽지 못했으면 빈 목록)
    * @param error 읽지 못한 까닭(읽었으면 null)
+   * @param meta 읽은 테이블 정보(컬럼 · PK 등, 쿼리 작성 화면 컬럼 표용. 읽지 못했으면 null)
    */
-  public record TableIndexes(String title, List<TableMeta.IndexInfo> indexes, String error) {}
+  public record TableIndexes(
+      String title, List<TableMeta.IndexInfo> indexes, String error, TableMeta meta) {}
 
   /**
    * @param parsed 조회 쿼리 구조를 해석했는지(못 했으면 결과 컬럼을 몰라 고를 수 없다)
@@ -187,10 +189,10 @@ public class SearchService {
     try {
       var meta = adapter.readTable(new TableRef(base.getCatalogName(), schema, table));
       metas.put(key, meta);
-      tables.put(key, new TableIndexes(title, meta.indexes(), null));
+      tables.put(key, new TableIndexes(title, meta.indexes(), null, meta));
       return meta;
     } catch (RuntimeException e) {
-      tables.put(key, new TableIndexes(title, List.of(), Msg.t("index.readFailed")));
+      tables.put(key, new TableIndexes(title, List.of(), Msg.t("index.readFailed"), null));
       return null;
     }
   }

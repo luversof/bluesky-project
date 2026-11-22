@@ -43,6 +43,56 @@ document.addEventListener('click', (event) => {
   document.addEventListener('htmx:afterRequest', (event) => busy(requester(event.detail), false));
 })();
 
+// .textarea-autogrow: CSS field-sizing 을 모르는 브라우저(Firefox · Safari)만 입력할 때 높이를 내용에 맞춘다(최대 높이는 CSS)
+if (!CSS.supports('field-sizing', 'content')) {
+  const fit = (area) => {
+    area.style.height = 'auto';
+    area.style.height = area.scrollHeight + 2 + 'px';
+  };
+  document.addEventListener('input', (event) => {
+    if (event.target.matches?.('.textarea-autogrow')) fit(event.target);
+  });
+  const fitAll = () => document.querySelectorAll('.textarea-autogrow').forEach(fit);
+  fitAll();
+  document.addEventListener('htmx:afterSwap', fitAll);
+}
+
+// 접히는 카드 제목 줄의 ⓘ 를 눌러도 카드가 접히지 않게(설명은 초점으로 뜬다)
+document.addEventListener('click', (event) => {
+  if (event.target.closest('summary .help-btn')) event.preventDefault();
+});
+
+// 접히는 카드의 접힘 상태 기억([data-remember-open="키"], _components/card rememberKey): 이 브라우저에만(localStorage).
+// 저장소를 못 쓰면(사생활 모드 등) 처음 상태 그대로. 레이어로 들어온 조각(htmx)에도 적용한다
+(() => {
+  const storeKey = (details) => 'card-open:' + details.dataset.rememberOpen;
+  const restore = (root) =>
+    root.querySelectorAll?.('details[data-remember-open]').forEach((details) => {
+      try {
+        const saved = localStorage.getItem(storeKey(details));
+        if (saved !== null) details.open = saved === 'true';
+      } catch (e) {
+        /* 저장소를 못 쓰면 처음 상태 */
+      }
+    });
+  restore(document);
+  document.addEventListener('htmx:afterSwap', (event) => restore(event.detail.target));
+  // toggle 은 올라가지 않으므로 잡는 단계에서 듣는다
+  document.addEventListener(
+    'toggle',
+    (event) => {
+      const details = event.target;
+      if (!details.matches?.('details[data-remember-open]')) return;
+      try {
+        localStorage.setItem(storeKey(details), String(details.open));
+      } catch (e) {
+        /* 기억만 못 할 뿐 */
+      }
+    },
+    true,
+  );
+})();
+
 // [data-modal] 레이어(_components/modal): 안의 [data-modal-panel] 에 htmx 조각이 들어오면 열고, 닫으면 비운다.
 // 실패해 사유와 함께 다시 그려도 열린 채로 둔다. 바깥(배경)을 누르거나 [data-modal-close] 를 누르면 닫는다.
 document.addEventListener('htmx:afterSwap', (event) => {

@@ -17,7 +17,7 @@
 
 !{var menuId = menu.getId().toString();}
 
-<%-- 순서: 기본 정보 → 쿼리 설정 → 테이블 인덱스 → 검색 설정(쿼리를 먼저 정하고 검색은 그 뒤에 다듬는다). 메뉴 삭제는 맨 위 오른쪽 --%>
+<%-- 순서: 기본 정보 → 쿼리 설정 → 테이블 정보(접힘) → 검색 설정(쿼리를 먼저 정하고 검색은 그 뒤에 다듬는다). 테이블 정보는 쿼리 작성 화면에도(펼침). 메뉴 삭제는 맨 위 오른쪽 --%>
 @template._layout.layout(title = t("admin.menu.title", menu.getName()), breadcrumb = breadcrumb, content = @`
 	<%-- 메뉴 삭제는 이 화면의 주요 동작이라 스크롤 없이 보이게 맨 위 오른쪽(돌아가기는 위 위치 표시) --%>
 	<div class="flex items-center gap-2 mb-4">
@@ -112,14 +112,8 @@
 		@template._components.modal(id = "queryDialog", panelId = "queryPanel", label = t("admin.menu.queries"), wide = true)
 	`)
 
-	@template._components.card(title = t("index.tableLabel", targetNoun), help = t("admin.menu.index.help"), body = @`
-		<div class="grid gap-4 xl:grid-cols-2">
-			@for(var table : search.tables())
-				@template._components.indexTable(table = table)
-			@endfor
-		</div>
-	`)
-
+	<%-- 검색 설정 위 테이블 정보(접힘): 검색칸마다 인덱스 사용 여부가 이미 보여, 전체 구조가 필요할 때만 펼친다(2026-11-23 사용자 결정) --%>
+	@template._components.tableInfo(tables = search.tables(), open = false, targetNoun = targetNoun, rememberKey = "tableInfo")
 	@template._components.card(title = t("admin.menu.search"), help = t("admin.menu.search.help"), body = @`
 		@if(!search.parsed())
 			@template._components.alert(message = t("admin.menu.search.unparsed"), tone = "info", cssClass = "")

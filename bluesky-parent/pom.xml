@@ -160,7 +160,7 @@
 		</repository>
 		<repository>
 			<id>reposilite-snapshots</id>
-			<url>http://reposilite.bluesky.local/snapshots/</url>
+			<url>https://reposilite.bluesky.local/snapshots/</url>
 			<snapshots>
 				<enabled>true</enabled>
 				<updatePolicy>always</updatePolicy>

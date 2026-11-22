@@ -234,6 +234,11 @@
 	.guide { border: 1px solid var(--color-surface-line); border-radius: var(--radius-box); background-color: var(--color-base-200); padding: 0.75rem 1rem; font-size: 0.875rem; }
 	.guide-title { cursor: pointer; font-weight: 600; }
 	.guide-body { margin-top: 0.5rem; }
+	/* 접히는 카드(_components/card collapsible): 제목 줄 앞 ▸ 가 펼치면 ▾ 로 돈다 */
+	.card-summary { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; list-style: none; }
+	.card-summary::-webkit-details-marker { display: none; }
+	.card-summary::before { content: "▸"; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); transition: transform .15s; }
+	.card-collapsible[open] > .card-summary::before { transform: rotate(90deg); }
 	.guide-body ol { list-style: decimal; padding-left: 1.25rem; display: grid; gap: 0.25rem; }
 	/* 도움말(_components/help): ⓘ 에 마우스를 올리거나 초점을 주면 설명이 뜬다 */
 	.help { position: relative; display: inline-flex; vertical-align: middle; }
@@ -249,6 +254,8 @@
 	}
 	.help:hover .help-tip, .help:focus-within .help-tip { display: block; }
 	.help-end .help-tip, .help-flip .help-tip { left: auto; right: -0.5rem; }
+	/* 내용만큼 커지는 입력칸(쿼리 원문): 처음엔 세 줄, 길어지면 화면 높이 70% 까지 늘고 그 뒤로는 스크롤 */
+	.textarea-autogrow { field-sizing: content; min-height: 4.5rem; max-height: 70vh; resize: vertical; }
 	/* 필드 관리 정렬 칸: 정렬을 켰을 때만 인덱스 사용 여부를 보인다 */
 	.sort-index { display: none; }
 	.sort-cell:has(input:checked) .sort-index { display: inline; }

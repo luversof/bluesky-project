@@ -13,8 +13,9 @@
 @param String error
 @param QueryInspection inspection
 @param java.util.List<net.luversof.web.dynamiccrud2.admin.controller.Crumb> breadcrumb = null
+@param java.util.List<net.luversof.web.dynamiccrud2.admin.service.SearchService.TableIndexes> indexTables = java.util.List.of()
 
 @template._layout.layout(title = t(queryId == null ? "admin.query.title.add" : "admin.query.title.edit", kind.name()), breadcrumb = breadcrumb, content = @`
 	@template.admin.queryEditor(menu = menu, queryId = queryId, kind = kind, name = name, queryText = queryText, authority = authority,
-		error = error, inspection = inspection)
+		error = error, inspection = inspection, indexTables = indexTables)
 `)
