@@ -56,6 +56,50 @@ class StockAnalysisDailyVersionTest {
     assertThat(live.get(1).d1().promptVersion()).isEqualTo("v3");
   }
 
+  private static StockAnalysisClient.RecentPrediction conf(int confidence, boolean hit) {
+    return new StockAnalysisClient.RecentPrediction(
+        "005930",
+        "삼성전자",
+        LocalDate.of(2026, 11, 10),
+        1,
+        "UP",
+        confidence,
+        null,
+        null,
+        "v10",
+        null,
+        Instant.EPOCH,
+        1,
+        null,
+        null,
+        null,
+        hit,
+        false);
+  }
+
+  @Test
+  void 확신도_기준_이상인_날만_세고_그런_날이_없는_기준은_뺀다() {
+    var rows =
+        List.of(
+            new StockAnalysisViewController.DailyRow(
+                LocalDate.of(2026, 11, 12), conf(80, true), null),
+            new StockAnalysisViewController.DailyRow(
+                LocalDate.of(2026, 11, 11), conf(57, false), null),
+            new StockAnalysisViewController.DailyRow(
+                LocalDate.of(2026, 11, 10), conf(40, false), null));
+    var cuts = StockAnalysisViewController.confidenceCuts(rows);
+    assertThat(cuts)
+        .extracting(StockAnalysisViewController.ConfidenceCut::min)
+        .containsExactly(0, 50, 60, 70, 80);
+    assertThat(cuts.get(0).hits().d1Graded()).isEqualTo(3);
+    assertThat(cuts.get(1).hits().d1Graded()).isEqualTo(2); // 50 이상: 80 · 57
+    assertThat(cuts.get(4).hits().d1Hit()).isEqualTo(1);
+    assertThat(cuts.get(4).hits().d1RatePct()).isEqualByComparingTo("100.0");
+
+    var low = StockAnalysisViewController.confidenceCuts(List.of(rows.get(2)));
+    assertThat(low).extracting(StockAnalysisViewController.ConfidenceCut::min).containsExactly(0);
+  }
+
   @Test
   void 최근_채택은_버전_기록에서_첫_채택_줄의_첫_낱말() {
     var notes =

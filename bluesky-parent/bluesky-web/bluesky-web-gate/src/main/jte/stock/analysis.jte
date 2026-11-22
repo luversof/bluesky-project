@@ -23,6 +23,7 @@
 @param StockAnalysisClient.AnalysisItem focus = null
 @param List<StockAnalysisViewController.DailyRow> daily = null
 @param StockAnalysisViewController.DailyHits dailyHits = null
+@param List<StockAnalysisViewController.ConfidenceCut> confidenceCuts = null
 @param net.luversof.web.common.menu.domain.Pagination dailyPagination = null
 @param StockAnalysisClient.ReleaseNotes releases = null
 @param StockAnalysisViewController.VersionCompare versionCompare = null
@@ -97,6 +98,32 @@
 								<p class="text-sm font-semibold mb-3">${StockViewSupport.msg("stock.analysis.daily.summary",
 										String.valueOf(dailyHits.d1Hit()), String.valueOf(dailyHits.d1Graded()), rate.apply(dailyHits.d1RatePct()),
 										String.valueOf(dailyHits.d5Hit()), String.valueOf(dailyHits.d5Graded()), rate.apply(dailyHits.d5RatePct()))}</p>
+							@endif
+							<%-- 확신 높은 날만(사용자 요청 2026-11-23): 확신도 기준 이상인 날만 따르면 몇 일을 따르고 얼마나 맞나. 위 표와 같은 버전 · 기간. --%>
+							@if(dailyHits != null && confidenceCuts != null && confidenceCuts.size() > 1)
+								<div class="overflow-x-auto mb-4">
+									<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.cut.title")}">
+										<caption class="text-left text-sm font-semibold">${MessageUtil.getMessage("stock.analysis.cut.title")}</caption>
+										<thead><tr>
+											<th scope="col">${MessageUtil.getMessage("stock.analysis.cut.col.min")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.cut.col.d1")}</th>
+											<th scope="col" class="text-right">${MessageUtil.getMessage("stock.analysis.cut.col.d5")}</th>
+										</tr></thead>
+										<tbody>
+											@for(var c : confidenceCuts)
+												<tr>
+													<td class="whitespace-nowrap">${c.min() == 0 ? MessageUtil.getMessage("stock.analysis.cut.all") : StockViewSupport.msg("stock.analysis.cut.min", String.valueOf(c.min()))}</td>
+													@for(var h : List.of(List.of(c.hits().d1Hit(), c.hits().d1Graded(), dailyHits.d1Graded()), List.of(c.hits().d5Hit(), c.hits().d5Graded(), dailyHits.d5Graded())))
+														<td class="whitespace-nowrap text-right">${h.get(1) == 0 ? "-" : StockViewSupport.msg("stock.analysis.cut.value",
+																rate.apply(StockAnalysisViewController.DailyHits.ratePct(h.get(0), h.get(1))), String.valueOf(h.get(0)), String.valueOf(h.get(1)),
+																rate.apply(StockAnalysisViewController.DailyHits.ratePct(h.get(1), h.get(2)).setScale(0, java.math.RoundingMode.HALF_UP)))}</td>
+													@endfor
+												</tr>
+											@endfor
+										</tbody>
+									</table>
+									<p class="mt-1 text-xs text-base-content/60">${MessageUtil.getMessage("stock.analysis.cut.note")}</p>
+								</div>
 							@endif
 							<div class="overflow-x-auto">
 								<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.daily.title")}">

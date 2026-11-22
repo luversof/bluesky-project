@@ -89,7 +89,7 @@ public class StockAnalysisViewController {
       return ratePct(d5Hit, d5Graded);
     }
 
-    private static BigDecimal ratePct(int hit, int graded) {
+    public static BigDecimal ratePct(int hit, int graded) {
       return graded == 0
           ? null
           : BigDecimal.valueOf(hit * 100L)
@@ -169,6 +169,7 @@ public class StockAnalysisViewController {
             dailyRows(history.predictions(), dailyVersion, periodStart(p, LocalDate.now(KST)));
         Page<DailyRow> dailyRows = pageOf(daily, dailyPage);
         model.addAttribute("dailyHits", dailyHits(daily));
+        model.addAttribute("confidenceCuts", confidenceCuts(daily));
         model.addAttribute("daily", dailyRows.getContent());
         model.addAttribute("dailyPagination", new Pagination(dailyRows));
         model.addAttribute(
@@ -418,6 +419,30 @@ public class StockAnalysisViewController {
     c[at]++;
     c[at + 1] += mine.hit() ? 1 : 0;
     c[at + 2] += newest.hit() ? 1 : 0;
+  }
+
+  /** 확신도 기준(사용자 요청 2026-11-23: 확신 높은 날만 따르면 얼마나 맞나). 0 은 전체. */
+  static final List<Integer> CONFIDENCE_CUTS = List.of(0, 50, 60, 70, 80);
+
+  /** 확신도 min 이상인 채점된 날만 센 적중. d1Days 를 전체 채점 날 수와 견주면 따르는 날의 비율이다. */
+  public record ConfidenceCut(int min, DailyHits hits) {}
+
+  static List<ConfidenceCut> confidenceCuts(List<DailyRow> rows) {
+    return CONFIDENCE_CUTS.stream()
+        .map(min ->
+            new ConfidenceCut(
+                min,
+                dailyHits(
+                    rows.stream()
+                        .map(r ->
+                            new DailyRow(
+                                r.baseDate(),
+                                r.d1() != null && r.d1().confidence() >= min ? r.d1() : null,
+                                r.d5() != null && r.d5().confidence() >= min ? r.d5() : null))
+                        .toList())))
+        // 그 기준 이상인 날이 하나도 없으면 줄을 뺀다(전체 줄은 남긴다)
+        .filter(c -> c.min() == 0 || c.hits().d1Graded() + c.hits().d5Graded() > 0)
+        .toList();
   }
 
   static DailyHits dailyHits(List<DailyRow> rows) {
