@@ -158,8 +158,20 @@ public class MarketContextService {
   }
 
   /**
+   * 실시간 분석의 장전가 기준 종가: 오늘 앞의 마지막 거래일 종가. 오늘 종가가 이미 있으면(장 마감 뒤에 돈 아침 작업) 분석 기준일이 오늘이라 그다음 날 장전가가 아직
+   * 없으므로 null - 2026-11-23 16:57 회차가 11-20 대비 11-23 장전 갭(-5.1%)으로 11-24 를 예측했다.
+   */
+  static net.luversof.api.stock.domain.StockPriceHistory livePremarketBase(
+      List<net.luversof.api.stock.domain.StockPriceHistory> latestFirst, LocalDate today) {
+    if (latestFirst.isEmpty() || !latestFirst.get(0).getTradeDate().isBefore(today)) {
+      return null;
+    }
+    return latestFirst.get(0);
+  }
+
+  /**
    * 기준일 다음 거래일 T 의 장전 가격(PREMARKET_INPUT_CUTOFF 전)과 기준일 종가 대비 변화율. asOf 가 null 이면 T = 오늘, 기준일 = 오늘
-   * 앞의 마지막 거래일. T 의 장전 거래가 아직 없으면(08:00 전 · 휴장) null.
+   * 앞의 마지막 거래일(오늘 종가가 이미 있으면 null, livePremarketBase). T 의 장전 거래가 아직 없으면(08:00 전 · 휴장) null.
    */
   private MarketLine premarketLine(UUID userId, String symbol, LocalDate asOf) {
     net.luversof.api.stock.domain.StockItem item = stockItemRepository.findBySymbol(symbol);
@@ -167,13 +179,12 @@ public class MarketContextService {
       return null;
     }
     LocalDate today = LocalDate.now(PredictionMath.MARKET_ZONE_ID);
-    LocalDate base = asOf != null ? asOf : today.minusDays(1);
-    var baseRow =
+    var rows =
         stockPriceHistoryRepository
-            .findTop2ByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(item.getId(), base)
-            .stream()
-            .findFirst()
-            .orElse(null);
+            .findTop2ByStockItemIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+                item.getId(), asOf != null ? asOf : today);
+    var baseRow =
+        asOf != null ? rows.stream().findFirst().orElse(null) : livePremarketBase(rows, today);
     if (baseRow == null) {
       return null;
     }
