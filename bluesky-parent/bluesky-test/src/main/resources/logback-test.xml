@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE configuration>
 <configuration>
-	<property name="CONSOLE_LOG_PATTERN" value="%clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+	<!-- 값 안에 ${이름:-기본값} 을 넣지 않는다: Boot 4.2 의 defaults.xml(${CONSOLE_LOG_PATTERN:-...})과 겹치면 Logback 1.6 이 읽지 못해 테스트 컨텍스트가 뜨지 않는다 -->
+	<property name="CONSOLE_LOG_PATTERN" value="%clr(%5p) %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"/>
 	<include resource="io/github/luversof/boot/logging/logback/base.xml"/>
 	
 	<logger name="net.luversof" level="debug" />
