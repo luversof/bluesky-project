@@ -5,13 +5,15 @@
 @param String searchQuery
 @param String menuPath
 @param net.luversof.web.dynamiccrud2.admin.service.MenuService.ProjectNode nav = null
+@param java.util.List<net.luversof.web.dynamiccrud2.domain.Project> projects = java.util.List.of()
 
 !{var menu = usePage.menu();}
 !{var base = menuPath + "?" + searchQuery;}
 !{var sortPart = usePage.sort() == null ? "" : "&sort=" + java.net.URLEncoder.encode(usePage.sort(), java.nio.charset.StandardCharsets.UTF_8) + "&desc=" + usePage.descending();}
 !{var lastPage = usePage.total() <= 0 ? 0 : (int) ((usePage.total() - 1) / usePage.pageSize());}
 
-@template._layout.layout(title = menu.getName(), brand = nav == null ? null : nav.project().getName(), brandUrl = nav == null ? "/" : "/" + nav.project().getCode(), sidebar = nav == null ? null : @`
+@template._layout.layout(title = menu.getName(), brand = nav == null ? null : nav.project().getName(), brandUrl = nav == null ? "/" : "/" + nav.project().getCode(),
+	brandMenu = nav == null || projects.size() < 2 ? null : @`@template._components.projectSwitcher(current = nav.project(), projects = projects)`, sidebar = nav == null ? null : @`
 	<nav class="grid gap-4 text-sm">
 		@for(var mainMenuNode : nav.mainMenus())
 			<div>

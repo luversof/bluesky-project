@@ -8,6 +8,8 @@
 @param java.util.List<net.luversof.web.dynamiccrud2.admin.controller.Crumb> breadcrumb = null
 @param String brand = null
 @param String brandUrl = "/"
+<%-- brandMenu: brand 자리에 대신 보일 것(사용 화면의 프로젝트 고르기, _components/projectSwitcher) --%>
+@param gg.jte.Content brandMenu = null
 @param boolean showUser = true
 
 !{var loggedIn = UserUtil.isAuthenticated();}
@@ -51,7 +53,11 @@
 			<a href="/" class="font-semibold">Dynamic CRUD 2</a>
 			@if(brand != null)
 				<span class="hint" aria-hidden="true">/</span>
-				<a href="${brandUrl}" class="font-semibold hover:underline">${brand}</a>
+				@if(brandMenu != null)
+					${brandMenu}
+				@else
+					<a href="${brandUrl}" class="font-semibold hover:underline">${brand}</a>
+				@endif
 			@endif
 			<span class="ml-auto flex items-center gap-3 text-sm">
 				@template._components.appNav(current = section, showAdmin = canManage)

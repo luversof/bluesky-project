@@ -131,6 +131,26 @@ class MenuPageControllerTest implements GeneralWebTest {
           .andExpect(content().string(Matchers.containsString("프로젝트 관리")))
           // 관리 권한이 없으면 상단 "관리" 링크도 없다
           .andExpect(content().string(Matchers.not(Matchers.containsString("href=\"/admin\""))));
+      // 상단 프로젝트 고르기: 볼 수 있는 프로젝트가 둘 이상이면 링크 목록(지금 프로젝트는 aria-current), 하나면 이름만
+      var visibleProjects =
+          org.apache.commons.lang3.StringUtils.countMatches(
+              mvc.perform(get("/").with(normalUser()))
+                  .andReturn()
+                  .getResponse()
+                  .getContentAsString(java.nio.charset.StandardCharsets.UTF_8),
+              "<section class=\"card\">");
+      var usePage =
+          mvc.perform(get(base).with(normalUser()))
+              .andReturn()
+              .getResponse()
+              .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+      if (visibleProjects > 1) {
+        assertThat(usePage)
+            .contains("data-dropdown")
+            .contains("<a href=\"/" + owner.getCode() + "\" aria-current=\"page\">");
+      } else {
+        assertThat(usePage).doesNotContain("data-dropdown");
+      }
       // 프로젝트 · 메인 메뉴 주소까지만 와도 첫 메뉴로, 없는 메인 메뉴는 404
       mvc.perform(get("/" + owner.getCode() + "/main").with(normalUser()))
           .andExpect(status().is3xxRedirection())

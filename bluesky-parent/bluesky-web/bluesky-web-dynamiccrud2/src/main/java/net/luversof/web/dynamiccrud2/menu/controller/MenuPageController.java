@@ -110,7 +110,12 @@ public class MenuPageController {
     model.addAttribute("usePage", usePage);
     model.addAttribute("searchQuery", searchQuery(query));
     model.addAttribute("menuPath", path.url());
-    model.addAttribute("nav", useService.visibleProject(project).orElse(null));
+    // 왼쪽 메뉴(지금 프로젝트)와 상단 프로젝트 고르기(볼 수 있는 프로젝트)를 한 번 읽은 목록으로
+    var tree = useService.visibleTree();
+    model.addAttribute(
+        "nav",
+        tree.stream().filter(n -> n.project().getCode().equals(project)).findFirst().orElse(null));
+    model.addAttribute("projects", tree.stream().map(n -> n.project()).toList());
     return "menu/page";
   }
 

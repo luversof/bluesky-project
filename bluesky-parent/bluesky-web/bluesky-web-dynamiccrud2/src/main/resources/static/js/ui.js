@@ -388,3 +388,17 @@ const placeHelp = (event) => {
 };
 document.addEventListener('mouseover', placeHelp);
 document.addEventListener('focusin', placeHelp);
+
+// 펼침 목록(details[data-dropdown], _components/projectSwitcher): 바깥을 누르거나 Esc 면 닫는다(Esc 는 단추로 초점을 돌린다)
+document.addEventListener('click', (event) => {
+  document.querySelectorAll('details[data-dropdown][open]').forEach((dropdown) => {
+    if (!dropdown.contains(event.target)) dropdown.open = false;
+  });
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  const dropdown = event.target.closest?.('details[data-dropdown][open]');
+  if (!dropdown) return;
+  dropdown.open = false;
+  dropdown.querySelector('summary').focus();
+});
