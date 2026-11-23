@@ -13,6 +13,7 @@ import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -48,7 +49,8 @@ public class ClientCommonAutoConfiguration {
   @Bean
   RestClientCustomizer clientCommonRestClientCustomizer(JsonMapper jsonMapper) {
     return builder -> {
-      builder.defaultStatusHandler(new BlueskyClientResponseErrorHandler(jsonMapper));
+      builder.defaultStatusHandler(
+          HttpStatusCode::isError, new BlueskyClientResponseErrorHandler(jsonMapper));
     };
   }
 
