@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @source "../jte";
 @source "../resources/static/js";
+@source "../java/net/luversof/web/dynamiccrud2/domain/InputType.java";
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* 디자인 토큰. daisyUI 를 쓰지 않는다 - gate(bluesky-web-gate main.css)의 토큰 값을 그대로 가져왔다.
