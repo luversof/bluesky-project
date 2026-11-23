@@ -171,13 +171,18 @@ class MenuPageControllerTest implements GeneralWebTest {
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("전체 1건")))
           .andExpect(content().string(Matchers.containsString("이름")))
-          .andExpect(content().string(Matchers.containsString("2026-11-17T10:00")));
+          .andExpect(content().string(Matchers.containsString("2026-11-17T10:00")))
+          // 숫자 열(displayOrder)은 제목도 칸처럼 오른쪽
+          .andExpect(content().string(Matchers.containsString("<th class=\"text-right\">")));
 
       // 값 목록: 목록 칸은 표시 글자(원래 값은 title), 입력 폼은 그 목록의 셀렉트
       originalOptions = setValueOptions(menuId, "3=셋째\n5=다섯째");
       optionsChanged = true;
       mvc.perform(get(base).param("s.name", name).with(normalUser()))
-          .andExpect(content().string(Matchers.containsString("title=\"3\">셋째</td>")));
+          .andExpect(content().string(Matchers.containsString("title=\"3\">셋째</td>")))
+          // 값 목록이 있으면 칸이 글자라 제목도 왼쪽
+          .andExpect(
+              content().string(Matchers.not(Matchers.containsString("<th class=\"text-right\">"))));
       mvc.perform(post(base + "/action/" + insert + "/form").with(normalUser()))
           .andExpect(content().string(Matchers.containsString("<option value=\"5\">다섯째</option>")));
 

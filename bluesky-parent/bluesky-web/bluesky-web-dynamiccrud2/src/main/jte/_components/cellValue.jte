@@ -23,9 +23,9 @@
 @elseif(options != null && options.containsKey(raw))
 	<td class="max-w-xs truncate" title="${raw}">${options.get(raw)}</td>
 @elseif(type == InputType.BOOLEAN && (yes || no))
-	<td class="text-center" title="${raw}"><span aria-hidden="true">${yes ? "✓" : "–"}</span><span class="sr-only">${t(yes ? "common.yes" : "common.no")}</span></td>
+	<td class="${type.align()}" title="${raw}"><span aria-hidden="true">${yes ? "✓" : "–"}</span><span class="sr-only">${t(yes ? "common.yes" : "common.no")}</span></td>
 @elseif(type == InputType.NUMBER)
-	<td class="max-w-xs truncate text-right tabular-nums" title="${raw}">${raw}</td>
+	<td class="max-w-xs truncate ${type.align()} tabular-nums" title="${raw}">${raw}</td>
 @elseif((type == InputType.DATETIME || type == InputType.DATE) && dateFormat != null)
 	<td class="whitespace-nowrap tabular-nums" title="${raw}">${net.luversof.web.dynamiccrud2.menu.service.ValueConverter.formatDate(raw, dateFormat)}</td>
 @elseif(type == InputType.DATETIME)

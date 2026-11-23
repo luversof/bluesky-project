@@ -7,5 +7,14 @@ public enum InputType {
   NUMBER,
   DATE,
   DATETIME,
-  BOOLEAN
+  BOOLEAN;
+
+  /** 목록 칸 · 열 제목의 가로 정렬(숫자 = 오른쪽, 참거짓 = 가운데). 칸(_components/cellValue)과 제목이 같이 쓴다 */
+  public String align() {
+    return switch (this) {
+      case NUMBER -> "text-right";
+      case BOOLEAN -> "text-center";
+      default -> "";
+    };
+  }
 }

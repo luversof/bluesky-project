@@ -84,7 +84,8 @@
 				<tr>
 					@if(!usePage.deleteActions().isEmpty())<th class="w-8"><input class="checkbox" type="checkbox" data-check-all="rows" aria-label="${t("menu.page.checkAll")}" /></th>@endif
 					@for(var column : usePage.columns())
-						<th>
+						<%-- 제목도 칸과 같은 쪽으로(숫자 오른쪽 · 참거짓 가운데). 값 목록이 있으면 칸이 글자로 보여 왼쪽 --%>
+						<th class="${column.options().isEmpty() ? column.inputType().align() : null}">
 							@if(column.sortable())
 								!{var active = column.label().equals(usePage.sort());}
 								!{var nextDesc = active && !usePage.descending();}

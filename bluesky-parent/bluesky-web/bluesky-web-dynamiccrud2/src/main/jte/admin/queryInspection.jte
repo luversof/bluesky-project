@@ -109,7 +109,7 @@
 		<div class="overflow-x-auto">
 			<table class="table" aria-label="${t("admin.inspect.preview")}">
 				<%-- 사용 화면과 같은 제목 · 표시 형식(_components/cellValue) --%>
-				<thead><tr>@for(var label : preview.labels())<th class="whitespace-nowrap">${inspection.viewOf(label).header()}</th>@endfor</tr></thead>
+				<thead><tr>@for(var label : preview.labels())<th class="whitespace-nowrap ${inspection.viewOf(label).inputType() == null ? "" : inspection.viewOf(label).inputType().align()}">${inspection.viewOf(label).header()}</th>@endfor</tr></thead>
 				<tbody>
 					@for(var row : preview.rows())
 						<tr>
