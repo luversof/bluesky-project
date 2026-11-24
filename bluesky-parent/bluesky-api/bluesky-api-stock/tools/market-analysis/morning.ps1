@@ -1,6 +1,6 @@
 # Analysis run: prices -> grade earlier runs -> news -> analysis input -> claude -p -> predictions.
-# Run it any time, as often as needed: every run is stored as its own run (runId) and graded later,
-# so runs can be compared to see whether a prompt/input change improved the analysis.
+# Run it any time: the live analysis runs only on weekdays 08:00 ~ 09:00 (premarket), any other run only
+# catches up missing dates as of 08:30. Every run is stored as its own run (runId) and graded later.
 # register-tasks.ps1 also schedules it (weekdays 08:30, runs late if the PC was asleep or off).
 #
 # Rule (user decision 2026-11-19): when the KOSPI200 night futures moved 0.5% or more, the rule targets
@@ -117,18 +117,21 @@ try {
     $symbols = if ($env:BLUESKY_ANALYSIS_SYMBOLS) { $env:BLUESKY_ANALYSIS_SYMBOLS } else { '005930' }
     $wanted = @($symbols.Split(',') | ForEach-Object { $_.Trim() })
 
-    # During market hours a run would see part of the day and be graded as late - leave that reference
-    # date to the catch-up below, which analyzes it as of 08:30.
+    # The live run only makes sense on a weekday between 08:00 and 09:00, while the NXT premarket price of the
+    # next trading day exists (rule v10). During market hours it would be graded as late; after the close
+    # (the PC woke up at 17:00, 2026-11-23 / 24) it judged today's close without a premarket price, and that
+    # weak prediction kept the catch-up from analyzing the date properly. Outside the window: catch-up only -
+    # the next run analyzes the date as of 08:30 of the following trading day.
     $now = Get-Date
-    $marketHours = $now.DayOfWeek -ne 'Saturday' -and $now.DayOfWeek -ne 'Sunday' -and $now.Hour -ge 9 -and $now.Hour -lt 16
+    $skipLive = $now.DayOfWeek -eq 'Saturday' -or $now.DayOfWeek -eq 'Sunday' -or $now.Hour -lt 8 -or $now.Hour -ge 9
     $failed = $null
     # BLUESKY_REANALYSIS_ONLY=<n>: run only the re-analysis, up to n dates - to fill a new version's 60
     # dates right after a deploy instead of 10 per morning (user request 2026-11-21).
     $reanalysisOnly = [int]$env:BLUESKY_REANALYSIS_ONLY
     if ($reanalysisOnly -gt 0) {
         Write-Log "re-analysis only, up to $reanalysisOnly dates"
-    } elseif ($marketHours) {
-        Write-Log 'market hours - skip the run for now, catch-up only'
+    } elseif ($skipLive) {
+        Write-Log 'outside 08:00 ~ 09:00 on a weekday - skip the live run, catch-up only'
     } else {
         # Rule v10 reads the NXT premarket price before 08:30: a weekday run started between 08:00 and 08:30
         # (task still registered at 08:00, PC woke up) waits for it instead of judging on a few minutes of trading.
