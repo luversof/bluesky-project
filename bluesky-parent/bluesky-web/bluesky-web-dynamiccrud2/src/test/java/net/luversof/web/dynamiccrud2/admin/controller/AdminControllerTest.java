@@ -389,6 +389,10 @@ class AdminControllerTest implements GeneralWebTest {
           menuRepository.findByMainMenuIdAndCode(mainMenu.getId(), "screen-copy").orElseThrow();
       created.add(copied.getId());
       assertThat(copied.isEnableDisplay()).isFalse();
+      // 숨김 안내: 프로젝트 · 메인 메뉴는 주소로도 막히고, 메뉴는 목록에서만 빠진다(MenuPageService.resolve)
+      mvc.perform(get("/admin").param("project", project.getId().toString()).with(admin()))
+          .andExpect(content().string(Matchers.containsString("주소로도 열리지 않습니다")))
+          .andExpect(content().string(Matchers.containsString("주소를 알면 그대로 열 수 있습니다")));
       mvc.perform(get("/admin/menu/" + menuId + "/query/new").param("kind", "UPDATE").with(admin()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("UPDATE public.\"MainMenu\" SET")))
