@@ -22,6 +22,9 @@ public class DataFirstDateController {
   @Autowired private DividendRepository dividendRepository;
 
   /**
+   * 사용자의 첫 매매일과 첫 배당일.
+   *
+   * @param userId 사용자 id
    * @param stockItemId 주면 그 종목만, 없으면 사용자 전체
    * @param accountId 주면 그 계좌만, 없으면 사용자 전체
    */

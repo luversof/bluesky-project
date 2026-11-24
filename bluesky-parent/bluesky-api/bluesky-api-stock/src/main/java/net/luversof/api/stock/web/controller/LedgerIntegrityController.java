@@ -23,6 +23,9 @@ public class LedgerIntegrityController {
   @Autowired private LedgerIntegrityService ledgerIntegrityService;
 
   /**
+   * 원장을 점검 규칙으로 검사해 규칙별 발견 건수와 예시 행을 돌려준다(읽기 전용).
+   *
+   * @param userId 사용자 id
    * @param maxExamples 규칙마다 담을 예시 개수(선택). 기본 3, 상한 100.
    *     <p>기본값만으로는 조치할 수 없는 발견이 생긴다 &mdash; 실측 2026-08-23: 발견 45 건 중 25 건(55%)이 예시 밖이라 화면에서 어느 행인지
    *     볼 수 없었다.

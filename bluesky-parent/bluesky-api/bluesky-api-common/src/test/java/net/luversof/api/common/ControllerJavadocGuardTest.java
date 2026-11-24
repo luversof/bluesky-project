@@ -58,7 +58,10 @@ class ControllerJavadocGuardTest {
     return missing;
   }
 
-  /** 매핑 위의 다른 어노테이션 · 빈 줄을 건너뛰고 바로 위가 Javadoc 끝({@code *}{@code /})인지 본다. */
+  /**
+   * 매핑 위의 다른 어노테이션 · 빈 줄을 건너뛰고 바로 위에 Javadoc 이 있고, 그 Javadoc 에 태그({@code @param} 등) 앞의 설명 문장이 있는지
+   * 본다. 태그만 있으면 springdoc 의 summary 가 빈다(2026-11-24 배포 확인: DataFirstDate · LedgerIntegrity).
+   */
   private static boolean hasJavadocAbove(List<String> lines, int mappingLine) {
     int j = mappingLine - 1;
     while (j >= 0) {
@@ -67,7 +70,27 @@ class ControllerJavadocGuardTest {
         j--;
         continue;
       }
-      return s.endsWith("*/");
+      if (!s.endsWith("*/")) {
+        return false;
+      }
+      int start = j;
+      while (start >= 0 && !lines.get(start).contains("/**")) {
+        start--;
+      }
+      for (int k = Math.max(start, 0); k <= j; k++) {
+        String text =
+            lines
+                .get(k)
+                .replace("/**", "")
+                .replace("*/", "")
+                .strip()
+                .replaceFirst("^\\*", "")
+                .strip();
+        if (!text.isEmpty()) {
+          return !text.startsWith("@");
+        }
+      }
+      return false;
     }
     return false;
   }
