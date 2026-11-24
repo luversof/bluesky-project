@@ -2,6 +2,14 @@
   "_comment": "시황 분석 버전 기록(화면의 버전 기록 카드). 새 버전 · 후보를 판단하면 맨 앞에 한 줄 더한다. 자세한 수치 · 구간은 tools/market-analysis/EXPERIMENTS.md. verdict: BASELINE(기준) · ADOPTED(채택) · REJECTED(기각) · HOLD(판단 못 함). priority: HIGH · MEDIUM · LOW.",
   "releases": [
     {
+      "date": "2026-11-24",
+      "version": "D+5 장전가 (오프라인, 보류 재판정)",
+      "area": "규칙",
+      "change": "야간선물이 0.5% 이상 움직인 날 D+5 를 야간선물 방향 대신 NXT 장전가 방향으로. 11-21 에 244 일로 보류했던 것을 NXT 일봉 시가(08:00 첫 체결)를 대용으로 400 일까지 늘려 다시 비교.",
+      "result": "전체 233 일 장전가 54.9 대 야간선물 54.1, 엇갈린 날 8 : 6 (p=0.79). 원래 구간에서 앞서던 것(11 : 5)이 새로 더한 2025-03 ~ 11 에서 0 : 2 로 사라졌다. 현행 유지.",
+      "verdict": "REJECTED"
+    },
+    {
       "date": "2026-11-23",
       "version": "D+5 변동폭 (오프라인)",
       "area": "목표",
