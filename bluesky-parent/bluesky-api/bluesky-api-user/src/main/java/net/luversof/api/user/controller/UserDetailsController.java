@@ -26,23 +26,46 @@ public class UserDetailsController {
     this.userDetailsManager = userDetailsManager;
   }
 
+  /**
+   * username 으로 계정(UserDetails)을 찾는다.
+   *
+   * @param username 계정 이름
+   * @return 계정(없으면 UsernameNotFoundException)
+   */
   @GetMapping("/search/loadUserByUsername")
   public UserDetails loadUserByUsername(String username) {
     return userDetailsManager.loadUserByUsername(username);
   }
 
+  /**
+   * 계정을 만든다.
+   *
+   * @param user 만들 계정
+   * @return 만든 계정
+   */
   @PostMapping
   public UserDetails createUser(@RequestBody User user) {
     userDetailsManager.createUser(user);
     return user;
   }
 
+  /**
+   * 계정을 고친다.
+   *
+   * @param user 고칠 계정
+   * @return 고친 계정
+   */
   @PutMapping
   public UserDetails updateUser(@RequestBody User user) {
     userDetailsManager.updateUser(user);
     return user;
   }
 
+  /**
+   * 계정을 지운다.
+   *
+   * @param username 지울 계정 이름
+   */
   @DeleteMapping
   public void deleteUser(String username) {
     userDetailsManager.deleteUser(username);

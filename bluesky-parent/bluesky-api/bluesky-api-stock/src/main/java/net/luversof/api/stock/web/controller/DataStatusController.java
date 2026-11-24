@@ -46,6 +46,12 @@ public class DataStatusController {
 
   @Autowired private MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
 
+  /**
+   * 원장 · 시세 · 월배당 데이터가 언제까지 들어와 있는지, 의심스러운 시세 행이 있는지.
+   *
+   * @param userId 사용자 id(원장 기준)
+   * @return 데이터 상태
+   */
   @GetMapping
   public DataStatusResponse findDataStatus(@RequestParam UUID userId) {
     var payouts = monthlyDividendPayoutQuery.findAllByOrderByPayDateDescRecordDateDesc();

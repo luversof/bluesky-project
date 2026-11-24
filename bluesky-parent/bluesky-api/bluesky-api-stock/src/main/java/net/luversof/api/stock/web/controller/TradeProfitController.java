@@ -30,11 +30,24 @@ public class TradeProfitController {
     this.stockProfitService = stockProfitService;
   }
 
+  /**
+   * 종목별 실현 손익을 계산한다.
+   *
+   * @param request 사용자 · 기간 · 계좌 · 종목 조건
+   * @return 종목별 손익
+   */
   @GetMapping("/calculateProfit")
   public List<TradeProfit> calculateProfit(TradeProfitRequest request) {
     return stockProfitService.calculateProfit(request);
   }
 
+  /**
+   * 실현 손익 시계열.
+   *
+   * @param request 사용자 · 기간 · 계좌 · 종목 조건
+   * @param granularity DAILY · WEEKLY · MONTHLY · AUTO(다른 값은 400)
+   * @return 구간별 손익
+   */
   @GetMapping("/timeSeries")
   public List<TradeProfitTimeSeriesPoint> timeSeries(
       TradeProfitRequest request, String granularity) {
@@ -69,6 +82,15 @@ public class TradeProfitController {
         List.of(), result.summary(), result.yearly(), result.breakdown());
   }
 
+  /**
+   * 그날의 보유 현황. accountId 가 있으면 그 계좌, 없으면 사용자 전체.
+   *
+   * @param userId 사용자 id
+   * @param date 기준일
+   * @param accountId 계좌 id(선택)
+   * @param timeZone 날짜를 끊을 시간대(선택)
+   * @return 종목별 보유 수량 · 금액
+   */
   @GetMapping("/holdingsSnapshot")
   public List<HoldingsSnapshotItem> holdingsSnapshot(
       @RequestParam UUID userId,

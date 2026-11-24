@@ -93,6 +93,17 @@ public class StockAnalysisController {
         Math.clamp(maxPages, 1, 2000));
   }
 
+  /**
+   * 시황 분석 입력(종목별 시세 · 지표 · 뉴스 · 시장 상황)을 만든다. 예약 작업과 리플레이 스크립트가 부른다.
+   *
+   * @param userId KIS 설정을 읽을 사용자(선택, 없으면 시장 지표를 비운다)
+   * @param asOf 리플레이 기준일(선택, 그날까지의 데이터만 쓴다). 비우면 지금
+   * @param morning true 면 기준일 다음 날 아침 분석 기준
+   * @param flows true 면 투자자 수급을 붙인다
+   * @param chunk 0 부터의 묶음 번호. 음수면 전체
+   * @param chunkSize 묶음 크기
+   * @return 분석 입력
+   */
   @GetMapping("/input")
   public StockAnalysisService.AnalysisInput input(
       @RequestParam(required = false) UUID userId,
@@ -156,6 +167,12 @@ public class StockAnalysisController {
     return stockAnalysisService.submit(request, asOf, morning, replay);
   }
 
+  /**
+   * 최근 예측 목록.
+   *
+   * @param days 최근 며칠(1~365, 기본 14)
+   * @return 예측과 채점 결과
+   */
   @GetMapping("/predictions")
   public List<StockAnalysisService.RecentPrediction> recent(
       @RequestParam(defaultValue = "14") int days) {
@@ -190,6 +207,12 @@ public class StockAnalysisController {
     return stockAnalysisService.history(symbol);
   }
 
+  /**
+   * 적중률 요약. 늦은 예측(장중 정보가 섞인 것)은 뺀다.
+   *
+   * @param symbol 종목 심볼(선택). 주면 그 종목 예측만으로 센다
+   * @return 회차 · 기준선별 적중률
+   */
   @GetMapping("/summary")
   public StockAnalysisService.Summary summary(@RequestParam(required = false) String symbol) {
     return stockAnalysisService.summary(symbol);

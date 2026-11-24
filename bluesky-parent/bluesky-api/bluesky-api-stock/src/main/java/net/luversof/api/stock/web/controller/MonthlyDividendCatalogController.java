@@ -18,6 +18,12 @@ public class MonthlyDividendCatalogController {
 
   @Autowired private MonthlyDividendCatalogService monthlyDividendCatalogService;
 
+  /**
+   * 등록된 월배당 프로필 전부(표시 순서대로)와 지급 · 수익률 지표.
+   *
+   * @param activeOnly true 면 활성 프로필만
+   * @return 종목별 카탈로그
+   */
   @GetMapping
   public List<MonthlyDividendCatalogResponse> findCatalog(
       @RequestParam(required = false) Boolean activeOnly) {

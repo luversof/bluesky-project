@@ -79,6 +79,19 @@ public class PoeOptimizeController {
       List<String> logLines,
       PoeOptimizeResult result) {}
 
+  /**
+   * 빌드 최적 조합 탐색을 시작한다. 이미 돌고 있으면 시작하지 않는다. 진행은 /status 로 본다.
+   *
+   * @param slug 주 스킬 젬 slug
+   * @param objective 목표(기본 auto)
+   * @param scenario 전투 상황(기본 Pinnacle)
+   * @param buffs 전투 버프를 켤지
+   * @param className 직업
+   * @param ascendancy 전직
+   * @param thorough true 면 더 오래 넓게 찾는다
+   * @param saveHistory 결과를 최근 결과 이력에 남길지(기본 true)
+   * @return 시작했으면 true
+   */
   @PostMapping("/start")
   public boolean start(
       @RequestParam(required = false, defaultValue = "") String slug,
@@ -137,6 +150,11 @@ public class PoeOptimizeController {
         saveHistory);
   }
 
+  /**
+   * 빌드 최적화 작업 상태 · 단계 · 로그와 마지막 결과.
+   *
+   * @return 작업 상태
+   */
   @GetMapping("/status")
   public OptimizeStatus status() {
     return new OptimizeStatus(

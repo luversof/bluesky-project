@@ -32,6 +32,11 @@ public class PoeUpgradeGuideController {
     return poeUpgradeGuideService.start(code, mercCode);
   }
 
+  /**
+   * 업그레이드 가이드 작업 상태.
+   *
+   * @return 작업 상태
+   */
   @GetMapping("/status")
   public PoeUpgradeGuideService.GuideStatus status() {
     return poeUpgradeGuideService.status();
@@ -46,6 +51,11 @@ public class PoeUpgradeGuideController {
     return poeUpgradeGuideService.startRefine(code);
   }
 
+  /**
+   * 업그레이드 가이드 다듬기 작업 상태.
+   *
+   * @return 작업 상태
+   */
   @GetMapping("/refine/status")
   public PoeUpgradeGuideService.RefineStatus refineStatus() {
     return poeUpgradeGuideService.refineStatus();

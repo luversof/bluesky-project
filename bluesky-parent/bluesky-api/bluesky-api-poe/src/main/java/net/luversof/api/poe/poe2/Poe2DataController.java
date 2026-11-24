@@ -164,6 +164,11 @@ public class Poe2DataController {
     return sim.cancel();
   }
 
+  /**
+   * PoE2 시뮬레이터 작업 상태.
+   *
+   * @return 진행 상태
+   */
   @GetMapping("/sim/status")
   public Poe2SimService.SimStatus simStatus() {
     return sim.status();
@@ -200,6 +205,11 @@ public class Poe2DataController {
     return ranking.start();
   }
 
+  /**
+   * PoE2 시뮬레이터 순위 계산 작업 상태.
+   *
+   * @return 진행 상태
+   */
   @GetMapping("/sim/ranking/status")
   public Poe2SimRankingService.RankingStatus simRankingStatus() {
     return ranking.status();
@@ -278,6 +288,11 @@ public class Poe2DataController {
     return refine.start(code);
   }
 
+  /**
+   * PoE2 빌드 다듬기 작업 상태.
+   *
+   * @return 진행 상태
+   */
   @GetMapping("/build/refine/status")
   public Poe2RefineService.Status refineStatus() {
     return refine.status();
@@ -414,12 +429,26 @@ public class Poe2DataController {
         () -> new ResponseStatusException(HttpStatus.NOT_FOUND, what + " 을(를) 찾지 못했습니다"));
   }
 
+  /**
+   * PoE2 데이터의 버전 · 개수 · 로드 시각.
+   *
+   * @return 메타 정보
+   */
   @GetMapping("/meta")
   public Poe2.Meta meta() {
     return data.meta();
   }
 
   // 젬
+  /**
+   * PoE2 젬을 찾는다.
+   *
+   * @param q 이름 검색어(선택)
+   * @param kind 젬 종류(선택)
+   * @param color 색(선택)
+   * @param tag 태그(선택)
+   * @return 젬 목록
+   */
   @GetMapping("/gems/search")
   public List<Poe2.Gem> gems(
       @RequestParam(required = false) String q,
@@ -429,27 +458,56 @@ public class Poe2DataController {
     return data.searchGems(q, kind, color, tag);
   }
 
+  /**
+   * PoE2 젬 태그 목록.
+   *
+   * @return 태그
+   */
   @GetMapping("/gems/tags")
   public List<Poe2.ModLine> gemTags() {
     return data.gemTags();
   }
 
+  /**
+   * PoE2 젬 태그 묶음(필터 칩용).
+   *
+   * @return 태그 묶음
+   */
   @GetMapping("/gems/tag-groups")
   public List<Poe2.TagGroup> gemTagGroups() {
     return data.gemTagGroups();
   }
 
+  /**
+   * PoE2 젬 한 개.
+   *
+   * @param slug 젬 slug
+   * @return 젬, 없으면 404
+   */
   @GetMapping("/gems/{slug}")
   public Poe2.Gem gem(@PathVariable String slug) {
     return found(data.gem(slug), "젬 " + slug);
   }
 
   // 베이스 아이템
+  /**
+   * PoE2 베이스 아이템 분류 목록.
+   *
+   * @return 아이템 분류
+   */
   @GetMapping("/base-items/classes")
   public List<Poe2.ItemClass> itemClasses() {
     return data.itemClasses();
   }
 
+  /**
+   * PoE2 베이스 아이템을 찾는다. 목록에는 키워드 정의를 싣지 않는다(상세에서 받는다).
+   *
+   * @param q 이름 검색어(선택)
+   * @param itemClass 아이템 분류(선택)
+   * @param category 대분류(선택)
+   * @return 베이스 아이템 목록
+   */
   @GetMapping("/base-items/search")
   public List<Poe2.BaseItem> bases(
       @RequestParam(required = false) String q,
@@ -461,6 +519,12 @@ public class Poe2DataController {
         .toList();
   }
 
+  /**
+   * PoE2 베이스 아이템 한 개. 거래소에서 찾을 수 있는 베이스인지(tradable)도 담는다.
+   *
+   * @param slug 베이스 slug
+   * @return 베이스 아이템, 없으면 404
+   */
   @GetMapping("/base-items/{slug}")
   public Poe2.BaseItem base(@PathVariable String slug) {
     // 거래소가 아는 베이스인가(10-08 C174, PoE1 짝) — 게이트 베이스 상세 "거래소에서 찾기" 단추 여부
@@ -469,22 +533,48 @@ public class Poe2DataController {
   }
 
   // 옵션
+  /**
+   * PoE2 옵션 풀 요약 목록.
+   *
+   * @param itemClass 아이템 분류(선택)
+   * @return 옵션 풀 요약
+   */
   @GetMapping("/mods/pools")
   public List<Poe2.ModPoolSummary> modPools(@RequestParam(required = false) String itemClass) {
     return data.modPools(itemClass);
   }
 
+  /**
+   * PoE2 옵션 풀 한 개.
+   *
+   * @param key 옵션 풀 키
+   * @return 옵션 풀, 없으면 404
+   */
   @GetMapping("/mods/pool")
   public Poe2.ModPool modPool(@RequestParam String key) {
     return found(data.modPool(key), "옵션 풀 " + key);
   }
 
+  /**
+   * 베이스 아이템 이름으로 PoE2 옵션 풀을 찾는다.
+   *
+   * @param name 베이스 이름
+   * @return 옵션 풀, 없으면 404
+   */
   @GetMapping("/mods/for-base")
   public Poe2.ModPool modPoolForBase(@RequestParam String name) {
     return found(data.modPoolForBase(name), "옵션 풀(베이스 " + name + ")");
   }
 
   // 증강물
+  /**
+   * PoE2 증강물(룬 · 영혼 핵 등)을 찾는다.
+   *
+   * @param q 이름 검색어(선택)
+   * @param kind 종류(선택)
+   * @param itemClass 꽂을 아이템 분류(선택)
+   * @return 증강물 목록
+   */
   @GetMapping("/augments/search")
   public List<Poe2.Augment> augments(
       @RequestParam(required = false) String q,
@@ -493,17 +583,35 @@ public class Poe2DataController {
     return data.searchAugments(q, kind, itemClass);
   }
 
+  /**
+   * PoE2 증강물 한 개.
+   *
+   * @param slug 증강물 slug
+   * @return 증강물, 없으면 404
+   */
   @GetMapping("/augments/{slug}")
   public Poe2.Augment augment(@PathVariable String slug) {
     return found(data.augment(slug), "증강물 " + slug);
   }
 
   // 고유
+  /**
+   * PoE2 고유 아이템 분류 목록.
+   *
+   * @return 아이템 분류
+   */
   @GetMapping("/uniques/classes")
   public List<Poe2.ItemClass> uniqueClasses() {
     return data.uniqueClasses();
   }
 
+  /**
+   * PoE2 고유 아이템을 찾는다. 분류를 주지 않은 전체 목록에는 키워드 정의를 싣지 않는다.
+   *
+   * @param q 이름 검색어(선택)
+   * @param itemClass 아이템 분류(선택)
+   * @return 고유 아이템 목록
+   */
   @GetMapping("/uniques/search")
   public List<Poe2.Unique> uniques(
       @RequestParam(required = false) String q, @RequestParam(required = false) String itemClass) {
@@ -513,18 +621,34 @@ public class Poe2DataController {
         .toList();
   }
 
+  /**
+   * PoE2 고유 아이템 한 개.
+   *
+   * @param slug 고유 아이템 slug
+   * @return 고유 아이템, 없으면 404
+   */
   @GetMapping("/uniques/{slug}")
   public Poe2.Unique unique(@PathVariable String slug) {
     return found(data.unique(slug), "고유 아이템 " + slug);
   }
 
   // 데이터 관리
+  /**
+   * PoE2 데이터 파일을 다시 읽는다(재시작 없이 갱신 반영).
+   *
+   * @return 다시 읽은 뒤의 메타 정보
+   */
   @PostMapping("/reload")
   public Poe2.Meta reload() {
     data.reload();
     return data.meta();
   }
 
+  /**
+   * PoE2 데이터 추출 작업 상태.
+   *
+   * @return 진행 상태 · 로그
+   */
   @GetMapping("/extract/status")
   public Poe2ExtractService.Status extractStatus() {
     return extract.status();
@@ -536,6 +660,11 @@ public class Poe2DataController {
     return extract.version();
   }
 
+  /**
+   * PoE2 데이터 추출을 시작한다. 이미 돌고 있으면 시작하지 않는다.
+   *
+   * @return started(시작했으면 true)
+   */
   @PostMapping("/extract/start")
   public Map<String, Boolean> extractStart() {
     return Map.of("started", extract.start());

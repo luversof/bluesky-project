@@ -125,6 +125,12 @@ public class PoeCraftController {
     return java.util.Map.of("id", optimizer.start(req));
   }
 
+  /**
+   * 제작 최적화 작업의 상태.
+   *
+   * @param id 작업 id(시작 응답의 id)
+   * @return 작업 상태, 모르는 id 면 404
+   */
   @GetMapping("/optimize/{id}")
   public net.luversof.api.poe.service.PoeCraftOptimizer.JobStatus optimizeStatus(
       @org.springframework.web.bind.annotation.PathVariable String id) {
@@ -178,6 +184,12 @@ public class PoeCraftController {
     }
   }
 
+  /**
+   * 아이템에 제작 행동(화폐 · 에센스 등) 하나를 적용한다. 서버는 상태를 들고 있지 않아 아이템 상태를 그대로 주고받는다.
+   *
+   * @param req 아이템 · 행동 · 인자(에센스 등) · 난수 seed
+   * @return 적용한 뒤의 아이템 화면 값
+   */
   @PostMapping(value = "/apply", consumes = MediaType.APPLICATION_JSON_VALUE)
   public PoeCraftService.View apply(@RequestBody ApplyRequest req) {
     check(req.item());
@@ -188,12 +200,24 @@ public class PoeCraftController {
         req.item(), req.action(), req.arg() != null ? req.arg() : req.essence(), req.seed());
   }
 
+  /**
+   * 아이템 상태를 화면 값(옵션 줄 · 등급 등)으로 바꾼다.
+   *
+   * @param item 아이템 상태
+   * @return 아이템 화면 값
+   */
   @PostMapping(value = "/view", consumes = MediaType.APPLICATION_JSON_VALUE)
   public PoeCraftService.View view(@RequestBody PoeCraftEngine.Item item) {
     check(item);
     return craft.view(item);
   }
 
+  /**
+   * 지금 아이템에 붙을 수 있는 옵션 표(가중치 포함).
+   *
+   * @param req 아이템과 희귀도
+   * @return 옵션 줄 목록
+   */
   @PostMapping(value = "/pool", consumes = MediaType.APPLICATION_JSON_VALUE)
   public List<PoeCraftService.PoolLine> pool(@RequestBody PoolRequest req) {
     check(req.item());
@@ -284,6 +308,12 @@ public class PoeCraftController {
     return craft.veiledLines(itemClass, variant);
   }
 
+  /**
+   * 아이템 분류에 쓸 수 있는 에센스(제작용).
+   *
+   * @param itemClass 아이템 분류
+   * @return 에센스 목록
+   */
   @GetMapping("/essences")
   public List<PoeCraftDataService.Essence> essences(@RequestParam String itemClass) {
     return craft.essences(itemClass);

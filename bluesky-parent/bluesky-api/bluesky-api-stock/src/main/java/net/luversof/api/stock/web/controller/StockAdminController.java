@@ -27,6 +27,12 @@ public class StockAdminController {
 
   @Autowired private PriceHistoryUpdateJobService priceHistoryUpdateJobService;
 
+  /**
+   * 시트의 종목을 일괄 등록한다(관리 화면).
+   *
+   * @param userId 요청한 사용자(시트 접근 설정의 주인)
+   * @return 등록한 종목 수
+   */
   @PostMapping("/stock-items")
   public int stockItemBulkInsert(@RequestParam UUID userId) {
     return stockAdminService.stockItemBulkInsert(userId);
@@ -38,6 +44,12 @@ public class StockAdminController {
     return stockAdminService.tradeBulkInsert(userId);
   }
 
+  /**
+   * 시트의 배당을 통째로 다시 넣는다(관리 화면).
+   *
+   * @param userId 요청한 사용자
+   * @return 넣은 행 수와 버려진 행 수
+   */
   @PostMapping("/dividends")
   public LedgerImportResult dividendBulkInsert(@RequestParam UUID userId) {
     return stockAdminService.dividendBulkInsert(userId);

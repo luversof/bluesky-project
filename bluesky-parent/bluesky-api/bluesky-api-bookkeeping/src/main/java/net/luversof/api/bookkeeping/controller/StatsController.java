@@ -26,6 +26,14 @@ public class StatsController {
     this.statsService = statsService;
   }
 
+  /**
+   * 한 달의 합계(통화별).
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @param month 가계부 월, 비우면 오늘이 속한 달
+   * @return 월 합계
+   */
   @GetMapping("/month")
   public MonthStats month(
       @PathVariable UUID bookId,
@@ -34,6 +42,15 @@ public class StatsController {
     return statsService.month(bookId, userId, month);
   }
 
+  /**
+   * 월별 합계 추이. 내역이 있는 통화마다 모든 달을 채운다(없는 달은 0).
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @param end 마지막 달, 비우면 오늘이 속한 달
+   * @param months 개월 수(1~36, 기본 12)
+   * @return 통화 · 월별 합계
+   */
   @GetMapping("/trend")
   public List<MonthTotal> trend(
       @PathVariable UUID bookId,

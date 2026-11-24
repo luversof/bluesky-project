@@ -22,6 +22,12 @@ public class DividendController {
 
   @Autowired private DividendService dividendService;
 
+  /**
+   * 배당 내역을 찾는다.
+   *
+   * @param request 사용자 · 기간 · 계좌 · 종목 조건
+   * @return 배당 내역
+   */
   @GetMapping
   public List<DividendResponse> findDividends(DividendSearchRequest request) {
     // Map domain Dividend to API response DTO DividendResponse

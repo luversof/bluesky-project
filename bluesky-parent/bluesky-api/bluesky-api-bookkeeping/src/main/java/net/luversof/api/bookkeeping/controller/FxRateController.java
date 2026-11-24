@@ -28,6 +28,14 @@ public class FxRateController {
     this.fxRateService = fxRateService;
   }
 
+  /**
+   * 한 달의 환율 목록.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @param month 가계부 월(예: 2026-11)
+   * @return 통화별 환율
+   */
   @GetMapping
   public List<BookFxRate> list(
       @PathVariable UUID bookId, @RequestParam UUID userId, @RequestParam YearMonth month) {

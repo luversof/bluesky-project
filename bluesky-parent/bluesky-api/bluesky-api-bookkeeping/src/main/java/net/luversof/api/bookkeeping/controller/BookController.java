@@ -30,27 +30,61 @@ public class BookController {
     this.bookService = bookService;
   }
 
+  /**
+   * 사용자가 멤버인 가계부 목록.
+   *
+   * @param userId 요청한 사용자
+   * @return 가계부 요약
+   */
   @GetMapping
   public List<BookSummary> list(@RequestParam UUID userId) {
     return bookService.list(userId);
   }
 
+  /**
+   * 가계부를 만든다. 요청한 사용자가 OWNER 가 되고, 기본 분류 12개와 "현금" 자산이 함께 생긴다.
+   *
+   * @param userId 요청한 사용자
+   * @param command 이름 · 기준통화 · 월 시작일
+   * @return 만든 가계부
+   */
   @PostMapping
   public Book create(@RequestParam UUID userId, @RequestBody BookCommand command) {
     return bookService.create(userId, command);
   }
 
+  /**
+   * 가계부 한 건.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자(멤버여야 한다)
+   * @return 가계부
+   */
   @GetMapping("/{bookId}")
   public Book get(@PathVariable UUID bookId, @RequestParam UUID userId) {
     return bookService.get(bookId, userId);
   }
 
+  /**
+   * 가계부 설정을 고친다. OWNER 만 할 수 있다.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @param command 바꿀 값
+   * @return 고친 가계부
+   */
   @PutMapping("/{bookId}")
   public Book update(
       @PathVariable UUID bookId, @RequestParam UUID userId, @RequestBody BookCommand command) {
     return bookService.update(bookId, userId, command);
   }
 
+  /**
+   * 가계부와 딸린 데이터를 모두 지운다. OWNER 만 할 수 있다.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   */
   @DeleteMapping("/{bookId}")
   public void delete(@PathVariable UUID bookId, @RequestParam UUID userId) {
     bookService.delete(bookId, userId);

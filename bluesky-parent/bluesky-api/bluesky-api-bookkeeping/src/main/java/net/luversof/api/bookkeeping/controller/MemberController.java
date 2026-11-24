@@ -26,6 +26,13 @@ public class MemberController {
     this.memberService = memberService;
   }
 
+  /**
+   * 가계부 멤버 목록. OWNER 가 먼저 온다. 이름은 게이트가 api-user 로 붙인다.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @return 멤버 목록
+   */
   @GetMapping(value = "/api/books/{bookId}/members", produces = MediaType.APPLICATION_JSON_VALUE)
   public List<BookMember> members(@PathVariable UUID bookId, @RequestParam UUID userId) {
     return memberService.members(bookId, userId);
@@ -47,6 +54,13 @@ public class MemberController {
     return memberService.transferOwner(bookId, userId, memberUserId);
   }
 
+  /**
+   * 초대 링크를 만든다. OWNER 만 할 수 있다. 한 번만 쓸 수 있고 7일 뒤 만료된다.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @return 초대(토큰 포함)
+   */
   @PostMapping(value = "/api/books/{bookId}/invites", produces = MediaType.APPLICATION_JSON_VALUE)
   public BookInvite createInvite(@PathVariable UUID bookId, @RequestParam UUID userId) {
     return memberService.createInvite(bookId, userId);
@@ -58,6 +72,13 @@ public class MemberController {
     return memberService.preview(token);
   }
 
+  /**
+   * 초대를 수락해 MEMBER 로 들어간다. 이미 멤버면 거절하고 링크도 쓰지 않는다.
+   *
+   * @param token 초대 토큰
+   * @param userId 수락하는 사용자
+   * @return 새 멤버
+   */
   @PostMapping(value = "/api/invites/{token}/accept", produces = MediaType.APPLICATION_JSON_VALUE)
   public BookMember accept(@PathVariable String token, @RequestParam UUID userId) {
     return memberService.accept(token, userId);

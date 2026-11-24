@@ -117,6 +117,12 @@ public class Poe2CraftController {
     return java.util.Map.of("id", optimizer.start(req));
   }
 
+  /**
+   * PoE2 제작 최적화 작업의 상태.
+   *
+   * @param id 작업 id
+   * @return 작업 상태, 모르는 id 면 404
+   */
   @GetMapping("/optimize/{id}")
   public Poe2CraftOptimizer.JobStatus optimizeStatus(
       @org.springframework.web.bind.annotation.PathVariable String id) {
@@ -180,6 +186,11 @@ public class Poe2CraftController {
     }
   }
 
+  /**
+   * PoE2 제작 화면의 선택지(화폐 · 징조 · 등급 등).
+   *
+   * @return 선택지
+   */
   @GetMapping("/options")
   public Poe2CraftService.Options options() {
     return craft.options();
@@ -213,6 +224,12 @@ public class Poe2CraftController {
     return craft.actionPool(req.item(), req.action(), req.arg(), req.omens());
   }
 
+  /**
+   * PoE2 아이템에 제작 행동 하나를 적용한다. 서버는 상태를 들고 있지 않는다.
+   *
+   * @param req 아이템 · 행동 · 인자 · 걸어 둔 징조
+   * @return 적용한 뒤의 아이템 화면 값
+   */
   @PostMapping(value = "/apply", consumes = MediaType.APPLICATION_JSON_VALUE)
   public Poe2CraftService.View apply(@RequestBody ApplyRequest req) {
     check(req.item());
@@ -227,6 +244,12 @@ public class Poe2CraftController {
         req.seed());
   }
 
+  /**
+   * 두 아이템을 재조합한다. 남길 옵션을 양쪽에서 고른다.
+   *
+   * @param req 왼쪽 · 오른쪽 아이템과 남길 옵션 id
+   * @return 재조합한 아이템 화면 값
+   */
   @PostMapping(value = "/recombine", consumes = MediaType.APPLICATION_JSON_VALUE)
   public Poe2CraftService.View recombine(@RequestBody RecombineRequest req) {
     check(req.left());
@@ -243,6 +266,12 @@ public class Poe2CraftController {
         req.seed());
   }
 
+  /**
+   * PoE2 아이템 상태를 화면 값으로 바꾼다.
+   *
+   * @param item 아이템 상태
+   * @return 아이템 화면 값
+   */
   @PostMapping(value = "/view", consumes = MediaType.APPLICATION_JSON_VALUE)
   public Poe2CraftService.View view(@RequestBody Poe2CraftEngine.Item item) {
     check(item);
@@ -258,6 +287,14 @@ public class Poe2CraftController {
     return craft.linesOf(in);
   }
 
+  /**
+   * 지금 PoE2 아이템에 붙을 수 있는 옵션 표.
+   *
+   * @param item 아이템 상태
+   * @param omens 걸어 둔 징조(선택, 엑잘 징조만 표에 반영)
+   * @param tier 화폐 등급(선택, greater · perfect)
+   * @return 옵션 줄 목록
+   */
   @PostMapping(value = "/pool", consumes = MediaType.APPLICATION_JSON_VALUE)
   public List<Poe2CraftService.PoolLine> pool(
       @RequestBody Poe2CraftEngine.Item item,

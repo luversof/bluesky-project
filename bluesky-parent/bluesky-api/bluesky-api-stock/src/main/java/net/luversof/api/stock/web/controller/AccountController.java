@@ -21,16 +21,34 @@ public class AccountController {
 
   @Autowired private AccountService accountService;
 
+  /**
+   * 계좌를 만든다.
+   *
+   * @param account 만들 계좌(사용자 · 이름 · 기준통화)
+   * @return 만든 계좌
+   */
   @PostMapping
   public Account createAccount(@RequestBody Account account) {
     return accountService.createAccount(account);
   }
 
+  /**
+   * 계좌 한 건.
+   *
+   * @param id 계좌 id
+   * @return 계좌, 없으면 빈 값
+   */
   @GetMapping("/{id}")
   public Optional<Account> getAccountById(@PathVariable UUID id) {
     return accountService.findById(id);
   }
 
+  /**
+   * 사용자의 계좌 목록.
+   *
+   * @param userId 사용자 id
+   * @return 계좌 목록
+   */
   @GetMapping("/search/findByUserId/{userId}")
   public List<Account> getAccountsByUserId(@PathVariable UUID userId) {
     return accountService.findByUserId(userId);

@@ -23,6 +23,17 @@ public class YearlyCostController {
 
   @Autowired private YearlyCostService yearlyCostService;
 
+  /**
+   * 연도별 세금 · 비용 요약.
+   *
+   * @param userId 사용자 id
+   * @param startDate 시작 시각(선택)
+   * @param endDate 끝 시각(선택). 뒤집혀 오면 바로잡는다
+   * @param timeZone 연도를 끊을 시간대(선택, 비우면 한국). 모르는 값이면 400
+   * @param accountIdList 계좌로 좁히기(선택)
+   * @param stockItemIdList 종목으로 좁히기(선택)
+   * @return 연도별 요약
+   */
   @GetMapping
   public List<YearlyCostSummary> findYearlyCost(
       @RequestParam UUID userId,

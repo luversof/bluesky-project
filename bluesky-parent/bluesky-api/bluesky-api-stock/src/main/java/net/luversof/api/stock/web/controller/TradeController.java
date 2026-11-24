@@ -27,6 +27,12 @@ public class TradeController {
 
   @Autowired private StockHoldingPeriodService stockHoldingPeriodService;
 
+  /**
+   * 매매 내역을 찾는다.
+   *
+   * @param request 사용자 · 기간 · 계좌 · 종목 조건
+   * @return 매매 내역
+   */
   @GetMapping
   public List<TradeResponse> findTrades(TradeSearchRequest request) {
     return tradeProfitService.getTradeHistory(request);

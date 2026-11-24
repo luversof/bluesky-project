@@ -27,21 +27,44 @@ public class StockItemController {
 
   @Autowired private StockItemService stockItemService;
 
+  /**
+   * 종목을 만든다. 심볼과 이름은 필수다.
+   *
+   * @param stockItem 만들 종목
+   * @return 만든 종목
+   */
   @PostMapping
   public StockItem createStockItem(@RequestBody StockItem stockItem) {
     return stockItemService.createStockItem(stockItem);
   }
 
+  /**
+   * 종목 한 건.
+   *
+   * @param id 종목 id
+   * @return 종목, 없으면 빈 값
+   */
   @GetMapping("/{id}")
   public Optional<StockItem> getStockItemById(@PathVariable UUID id) {
     return stockItemService.findById(id);
   }
 
+  /**
+   * 이름으로 종목을 찾는다.
+   *
+   * @param name 종목 이름
+   * @return 종목, 없으면 null
+   */
   @GetMapping("/search/findByName/{name}")
   public StockItem findByName(@PathVariable String name) {
     return stockItemService.findByName(name);
   }
 
+  /**
+   * 모든 종목.
+   *
+   * @return 종목 목록
+   */
   @GetMapping("/search/findAll")
   public List<StockItem> findAll() {
     return stockItemService.findAll();
@@ -86,6 +109,12 @@ public class StockItemController {
     return stockPriceChartService.chart(id, startDate, endDate, userId, timeZone);
   }
 
+  /**
+   * 태그가 붙은 종목(예: 월배당 · 커버드콜 · analysis).
+   *
+   * @param tag 태그
+   * @return 종목 목록
+   */
   @GetMapping("/search/findAllByTag/{tag}")
   public List<StockItem> findAllByTag(@PathVariable String tag) {
     return stockItemService.findAllByTag(tag);

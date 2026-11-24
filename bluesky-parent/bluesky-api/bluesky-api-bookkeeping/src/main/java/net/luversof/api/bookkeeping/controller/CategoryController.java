@@ -31,11 +31,26 @@ public class CategoryController {
     this.categoryService = categoryService;
   }
 
+  /**
+   * 가계부의 분류 목록. 숨긴 분류도 들어 있다(화면이 거른다).
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @return 분류 목록
+   */
   @GetMapping
   public List<Category> list(@PathVariable UUID bookId, @RequestParam UUID userId) {
     return categoryService.list(bookId, userId);
   }
 
+  /**
+   * 분류를 만든다.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @param command 이름 · 종류 · 부모 분류(소분류일 때)
+   * @return 만든 분류
+   */
   @PostMapping
   public Category create(
       @PathVariable UUID bookId, @RequestParam UUID userId, @RequestBody CategoryCommand command) {
@@ -52,12 +67,28 @@ public class CategoryController {
     return categoryService.update(bookId, userId, categoryId, command);
   }
 
+  /**
+   * 분류를 지운다. 내역이나 소분류가 있으면 지우지 않고 자신과 소분류를 숨긴다.
+   *
+   * @param bookId 가계부 id
+   * @param categoryId 분류 id
+   * @param userId 요청한 사용자
+   * @return 지웠으면 deleted=true, 숨기기만 했으면 false
+   */
   @DeleteMapping("/{categoryId}")
   public DeleteResult delete(
       @PathVariable UUID bookId, @PathVariable UUID categoryId, @RequestParam UUID userId) {
     return new DeleteResult(categoryService.delete(bookId, userId, categoryId));
   }
 
+  /**
+   * 분류 순서를 같은 부모 · 같은 종류 안에서 한 칸 옮긴다.
+   *
+   * @param bookId 가계부 id
+   * @param categoryId 분류 id
+   * @param userId 요청한 사용자
+   * @param direction up 또는 down
+   */
   @PostMapping("/{categoryId}/move")
   public void move(
       @PathVariable UUID bookId,

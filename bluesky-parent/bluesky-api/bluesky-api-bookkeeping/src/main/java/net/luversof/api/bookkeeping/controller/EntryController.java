@@ -32,6 +32,18 @@ public class EntryController {
     this.entryService = entryService;
   }
 
+  /**
+   * 기간 안의 내역을 찾는다(양 끝 포함, 최근 날짜 먼저).
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @param from 시작일
+   * @param to 종료일
+   * @param q 검색어(선택)
+   * @param categoryId 분류(선택)
+   * @param assetId 자산(선택)
+   * @return 내역 목록
+   */
   @GetMapping
   public List<Entry> search(
       @PathVariable UUID bookId,
@@ -44,6 +56,14 @@ public class EntryController {
     return entryService.search(bookId, userId, new EntrySearch(from, to, q, categoryId, assetId));
   }
 
+  /**
+   * 내역을 넣는다.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자(기록자가 된다)
+   * @param command 날짜 · 종류 · 금액 · 자산 · 분류 · 메모
+   * @return 넣은 내역
+   */
   @PostMapping
   public Entry create(
       @PathVariable UUID bookId, @RequestParam UUID userId, @RequestBody EntryCommand command) {
@@ -62,6 +82,15 @@ public class EntryController {
     return new ImportResult(entryService.importAll(bookId, userId, commands));
   }
 
+  /**
+   * 내역을 고친다. 기록자와 기록 시각은 처음 값을 유지한다.
+   *
+   * @param bookId 가계부 id
+   * @param entryId 내역 id
+   * @param userId 요청한 사용자
+   * @param command 바꿀 값
+   * @return 고친 내역
+   */
   @PutMapping("/{entryId}")
   public Entry update(
       @PathVariable UUID bookId,
@@ -71,6 +100,13 @@ public class EntryController {
     return entryService.update(bookId, userId, entryId, command);
   }
 
+  /**
+   * 내역을 지운다.
+   *
+   * @param bookId 가계부 id
+   * @param entryId 내역 id
+   * @param userId 요청한 사용자
+   */
   @DeleteMapping("/{entryId}")
   public void delete(
       @PathVariable UUID bookId, @PathVariable UUID entryId, @RequestParam UUID userId) {

@@ -34,17 +34,39 @@ public class RecurringController {
     this.recurringService = recurringService;
   }
 
+  /**
+   * 반복 내역 틀 목록.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @return 반복 내역 틀
+   */
   @GetMapping
   public List<BookRecurring> list(@PathVariable UUID bookId, @RequestParam UUID userId) {
     return recurringService.list(bookId, userId);
   }
 
+  /**
+   * 반복 내역 틀을 만든다. 내역과 같은 규칙으로 검증한다.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @param command 주기 · 시작일 · 내역 값
+   * @return 만든 틀
+   */
   @PostMapping
   public BookRecurring create(
       @PathVariable UUID bookId, @RequestParam UUID userId, @RequestBody RecurringCommand command) {
     return recurringService.create(bookId, userId, command);
   }
 
+  /**
+   * 반복 내역 틀을 지운다. 이미 넣은 내역은 남는다.
+   *
+   * @param bookId 가계부 id
+   * @param recurringId 틀 id
+   * @param userId 요청한 사용자
+   */
   @DeleteMapping("/{recurringId}")
   public void delete(
       @PathVariable UUID bookId, @PathVariable UUID recurringId, @RequestParam UUID userId) {
@@ -61,6 +83,15 @@ public class RecurringController {
     return recurringService.due(bookId, userId, from, to);
   }
 
+  /**
+   * 도래한 회차를 내역으로 넣는다. 회차가 아니면 NOT_RECURRING_OCCURRENCE, 이미 넣었으면 RECURRING_ALREADY_DONE 오류.
+   *
+   * @param bookId 가계부 id
+   * @param recurringId 틀 id
+   * @param userId 요청한 사용자
+   * @param date 회차 날짜
+   * @return 넣은 내역
+   */
   @PostMapping("/{recurringId}/confirm")
   public Entry confirm(
       @PathVariable UUID bookId,

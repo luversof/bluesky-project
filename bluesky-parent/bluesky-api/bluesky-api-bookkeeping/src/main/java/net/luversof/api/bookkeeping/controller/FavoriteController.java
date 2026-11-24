@@ -30,17 +30,39 @@ public class FavoriteController {
     this.favoriteService = favoriteService;
   }
 
+  /**
+   * 즐겨찾기(내역 틀) 목록.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @return 즐겨찾기 목록
+   */
   @GetMapping
   public List<BookFavorite> list(@PathVariable UUID bookId, @RequestParam UUID userId) {
     return favoriteService.list(bookId, userId);
   }
 
+  /**
+   * 즐겨찾기를 만든다.
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @param command 내역 틀(종류 · 금액 · 자산 · 분류 · 메모)
+   * @return 만든 즐겨찾기
+   */
   @PostMapping
   public BookFavorite create(
       @PathVariable UUID bookId, @RequestParam UUID userId, @RequestBody FavoriteCommand command) {
     return favoriteService.create(bookId, userId, command);
   }
 
+  /**
+   * 즐겨찾기를 지운다.
+   *
+   * @param bookId 가계부 id
+   * @param favoriteId 즐겨찾기 id
+   * @param userId 요청한 사용자
+   */
   @DeleteMapping("/{favoriteId}")
   public void delete(
       @PathVariable UUID bookId, @PathVariable UUID favoriteId, @RequestParam UUID userId) {

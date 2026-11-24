@@ -20,6 +20,14 @@ public class PeriodSummaryController {
 
   @Autowired private PeriodSummaryService periodSummaryService;
 
+  /**
+   * 기간의 매매 · 배당 합계 한 줄.
+   *
+   * @param userId 사용자 id
+   * @param startDate 시작 시각(선택)
+   * @param endDate 끝 시각(선택). 뒤집혀 오면 바로잡는다
+   * @return 기간 합계
+   */
   @GetMapping
   public PeriodSummary findPeriodSummary(
       @RequestParam UUID userId,

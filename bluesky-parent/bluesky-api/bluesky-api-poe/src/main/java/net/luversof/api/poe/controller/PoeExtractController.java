@@ -47,6 +47,11 @@ public class PoeExtractController {
       boolean upToDate,
       String pobVersion) {}
 
+  /**
+   * 게임 데이터 버전: 지금 데이터의 패치, 설정의 패치, 최신 패치, 최신인지, PoB 버전.
+   *
+   * @return 버전 정보
+   */
   @GetMapping("/version")
   public VersionInfo version() {
     String data = poeExtractService.dataPatch();
@@ -59,11 +64,22 @@ public class PoeExtractController {
         poePobEngineService.pobVersion());
   }
 
+  /**
+   * 게임 데이터 추출을 시작한다(관리 화면). 이미 돌고 있으면 시작하지 않는다.
+   *
+   * @param toLatest true 면 최신 패치로 바꿔 추출한다
+   * @return 시작했으면 true
+   */
   @PostMapping("/start")
   public boolean start(@RequestParam(required = false, defaultValue = "false") boolean toLatest) {
     return poeExtractService.start(toLatest);
   }
 
+  /**
+   * 게임 데이터 추출 작업 상태와 로그.
+   *
+   * @return 추출 가능 여부 · ImageMagick 설치 여부 · 진행 상태 · 로그
+   */
   @GetMapping("/status")
   public ExtractStatus status() {
     return new ExtractStatus(

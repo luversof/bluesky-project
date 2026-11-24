@@ -27,6 +27,13 @@ public class BudgetController {
     this.budgetService = budgetService;
   }
 
+  /**
+   * 가계부의 월 예산 목록(전체 · 대분류별).
+   *
+   * @param bookId 가계부 id
+   * @param userId 요청한 사용자
+   * @return 예산 목록
+   */
   @GetMapping
   public List<Budget> list(@PathVariable UUID bookId, @RequestParam UUID userId) {
     return budgetService.list(bookId, userId);

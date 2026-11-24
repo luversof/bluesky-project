@@ -27,6 +27,11 @@ public class PoeRegexPresetController {
 
   public record SaveRequest(Long id, String name, String regex, Map<String, Object> data) {}
 
+  /**
+   * PoE1 지도 정규식 프리셋 목록.
+   *
+   * @return 프리셋 요약 목록
+   */
   @GetMapping
   public List<PoeRegexPresetService.RegexPresetEntry> list() {
     return poeRegexPresetService.list();
@@ -45,6 +50,12 @@ public class PoeRegexPresetController {
         request.id(), request.name(), request.regex(), request.data());
   }
 
+  /**
+   * PoE1 지도 정규식 프리셋을 지운다.
+   *
+   * @param id 프리셋 id
+   * @return 지웠으면 true
+   */
   @DeleteMapping("/{id}")
   public boolean delete(@PathVariable long id) {
     return poeRegexPresetService.delete(id);

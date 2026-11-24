@@ -82,6 +82,16 @@ public class PoeDataController {
   }
 
   // ── 스킬젬 ──
+  /**
+   * 젬을 찾는다.
+   *
+   * @param q 이름 검색어(선택)
+   * @param type 젬 종류, 기본 all
+   * @param color 색, 기본 all
+   * @param tag 태그, 기본 all
+   * @param lite true 면 레벨별 데이터를 뺀다(고르기 목록용)
+   * @return 젬 목록
+   */
   @GetMapping("/gems/search")
   public List<PoeGem> searchGems(
       @RequestParam(required = false) String q,
@@ -100,6 +110,12 @@ public class PoeDataController {
     return poeGemDataService.tagGroups();
   }
 
+  /**
+   * 젬 한 개(레벨별 데이터 포함).
+   *
+   * @param slug 젬 slug
+   * @return 젬, 없으면 404
+   */
   @GetMapping("/gems/{slug}")
   public PoeGem gem(@PathVariable String slug) {
     return poeGemDataService.findBySlug(slug).orElseThrow(PoeDataController::notFound);
@@ -114,12 +130,25 @@ public class PoeDataController {
     return Map.of("loadedAtEpochMs", poeDataLoadStamp.loadedAt().toEpochMilli());
   }
 
+  /**
+   * 젬 데이터의 패치 버전과 개수.
+   *
+   * @return patch, totalCount
+   */
   @GetMapping("/gems/meta")
   public Map<String, Object> gemMeta() {
     return Map.of("patch", poeGemDataService.patch(), "totalCount", poeGemDataService.totalCount());
   }
 
   // ── 고유 아이템 ──
+  /**
+   * 고유 아이템을 찾는다. 대분류를 주지 않은 전체 목록에는 리마인더 문구를 싣지 않는다(상세에서 받는다).
+   *
+   * @param q 이름 검색어(선택)
+   * @param itemClass 아이템 분류, 기본 all
+   * @param category 대분류(선택, 예: jewel)
+   * @return 고유 아이템 목록
+   */
   @GetMapping("/uniques/search")
   public List<PoeUniqueItem> searchUniques(
       @RequestParam(required = false) String q,
@@ -141,11 +170,22 @@ public class PoeDataController {
         .toList();
   }
 
+  /**
+   * 고유 아이템 한 개.
+   *
+   * @param slug 고유 아이템 slug
+   * @return 고유 아이템, 없으면 404
+   */
   @GetMapping("/uniques/{slug}")
   public PoeUniqueItem unique(@PathVariable String slug) {
     return poeUniqueDataService.findBySlug(slug).orElseThrow(PoeDataController::notFound);
   }
 
+  /**
+   * 고유 아이템 대분류 목록.
+   *
+   * @return 대분류 이름
+   */
   @GetMapping("/uniques/categories")
   public List<String> uniqueCategories() {
     return poeUniqueDataService.categories();
@@ -157,12 +197,24 @@ public class PoeDataController {
     return poeUniqueDataService.categoryGroups();
   }
 
+  /**
+   * 고유 아이템 개수.
+   *
+   * @return totalCount
+   */
   @GetMapping("/uniques/meta")
   public Map<String, Object> uniqueMeta() {
     return Map.of("totalCount", poeUniqueDataService.totalCount());
   }
 
   // ── 일반(베이스) 아이템 ──
+  /**
+   * 베이스 아이템을 찾는다.
+   *
+   * @param q 이름 검색어(선택)
+   * @param itemClass 아이템 분류, 기본 all
+   * @return 베이스 아이템 목록
+   */
   @GetMapping("/base-items/search")
   public List<PoeBaseItem> searchBaseItems(
       @RequestParam(required = false) String q,
@@ -170,6 +222,12 @@ public class PoeDataController {
     return poeBaseItemDataService.search(q, itemClass);
   }
 
+  /**
+   * 베이스 아이템 한 개. 거래소에서 찾을 수 있는 베이스인지(tradable)도 담는다.
+   *
+   * @param slug 베이스 slug
+   * @return 베이스 아이템, 없으면 404
+   */
   @GetMapping("/base-items/{slug}")
   public PoeBaseItem baseItem(@PathVariable String slug) {
     // 거래소가 아는 베이스인가(10-08 C174) — 게이트 베이스 상세가 "거래소에서 찾기" 단추를 보일지 정한다
@@ -191,6 +249,11 @@ public class PoeDataController {
     return poeTreeGraphService.anointList();
   }
 
+  /**
+   * 베이스 아이템 분류(코드 → 이름).
+   *
+   * @return 분류 맵
+   */
   @GetMapping("/base-items/item-classes")
   public Map<String, String> itemClasses() {
     return poeBaseItemDataService.itemClasses();
@@ -202,12 +265,23 @@ public class PoeDataController {
     return poeBaseItemDataService.itemClassGroups();
   }
 
+  /**
+   * 베이스 아이템 개수.
+   *
+   * @return totalCount
+   */
   @GetMapping("/base-items/meta")
   public Map<String, Object> baseItemMeta() {
     return Map.of("totalCount", poeBaseItemDataService.totalCount());
   }
 
   // ── 모드 풀 (일반 아이템 등급표) ──
+  /**
+   * 아이템 분류에 붙을 수 있는 옵션 계열(제작 시뮬레이터용 옵션 풀).
+   *
+   * @param itemClass 아이템 분류
+   * @return 옵션 계열 목록
+   */
   @GetMapping("/mod-pool/for-item-class")
   public List<PoeModPoolDataService.ModFamily> modFamiliesForItemClass(
       @RequestParam String itemClass) {
@@ -215,11 +289,24 @@ public class PoeDataController {
   }
 
   // ── 전체 모드(poedb Modifiers식) ──
+  /**
+   * 옵션 표를 볼 수 있는 아이템 분류 목록.
+   *
+   * @return 아이템 분류
+   */
   @GetMapping("/mods/item-classes")
   public List<PoeModDataService.ModItemClass> modItemClasses() {
     return poeModDataService.itemClassesForList();
   }
 
+  /**
+   * 아이템 분류의 옵션 표.
+   *
+   * @param itemClass 아이템 분류
+   * @param variant 세부 종류(선택)
+   * @param influence 영향력(선택)
+   * @return 옵션 표, 없는 분류면 404
+   */
   @GetMapping("/mods/for-item-class")
   public PoeModDataService.ClassMods modsForItemClass(
       @RequestParam String itemClass,
@@ -236,6 +323,12 @@ public class PoeDataController {
   // ── 섬뜩한 고정 속성(총주교/포식자) ──
   // 엘드리치 대상이 아닌 슬롯(무기/반지/허리띠 등)은 예외 대신 null(200) — 아이템 상세는 클래스마다 이걸
   // 호출하므로, 404→500 래핑 예외가 페이지 로드마다 로그를 더럽히는 것을 피한다.
+  /**
+   * 아이템 분류의 엘드리치 암시 옵션(eldritch).
+   *
+   * @param itemClass 아이템 분류
+   * @return eldritch 옵션, 대상이 아닌 분류면 null
+   */
   @GetMapping("/eldritch/for-item-class")
   public PoeEldritchDataService.ClassEldritch eldritchForItemClass(@RequestParam String itemClass) {
     return poeEldritchDataService.forItemClass(itemClass);
@@ -243,6 +336,13 @@ public class PoeDataController {
 
   // ── 삿된(Foulborn) 모드 풀 ──
   // 유니크 이름 매핑이 게임 데이터에 없어 **토큰(Jewel85 등)** 이 곧 식별자다. 검색은 문구·토큰 양쪽을 본다.
+  /**
+   * foulborn 고유 아이템 변형을 찾는다.
+   *
+   * @param category 대분류(선택)
+   * @param q 검색어(선택)
+   * @return 고유 아이템별 변형 묶음
+   */
   @GetMapping("/foulborn")
   public List<PoeFoulbornDataService.FoulbornGroup> foulborn(
       @RequestParam(required = false, defaultValue = "") String category,
@@ -276,11 +376,21 @@ public class PoeDataController {
     return poeMetaPopularityService.order(ascendancy, skillNames);
   }
 
+  /**
+   * foulborn 변형이 있는 고유 아이템 이름.
+   *
+   * @return 이름 집합
+   */
   @GetMapping("/foulborn/names")
   public java.util.Set<String> foulbornNames() {
     return poeFoulbornDataService.uniqueNames();
   }
 
+  /**
+   * 대분류별 foulborn 변형 수.
+   *
+   * @return 대분류 → 개수
+   */
   @GetMapping("/foulborn/categories")
   public java.util.Map<String, Integer> foulbornCategories() {
     return poeFoulbornDataService.byCategory();
@@ -288,6 +398,12 @@ public class PoeDataController {
 
   // ── 에센스 제작 정보 ──
   // 엘드리치와 같은 이유로 비대상 클래스(주얼 · 플라스크 등)는 예외 대신 null(200). 화살통은 10-30 부터 대상.
+  /**
+   * 아이템 분류에 쓸 수 있는 에센스.
+   *
+   * @param itemClass 아이템 분류
+   * @return 에센스 목록, 에센스를 못 쓰는 분류면 null
+   */
   @GetMapping("/essences/for-item-class")
   public List<PoeEssenceDataService.EssenceEntry> essencesForItemClass(
       @RequestParam String itemClass) {
@@ -295,6 +411,12 @@ public class PoeDataController {
   }
 
   // ── 작업대(벤치크래프트) ──
+  /**
+   * 아이템 분류의 제작대(bench) 옵션.
+   *
+   * @param itemClass 아이템 분류
+   * @return 제작대 옵션 목록
+   */
   @GetMapping("/bench/for-item-class")
   public List<PoeBenchDataService.BenchEntry> benchForItemClass(@RequestParam String itemClass) {
     return poeBenchDataService.forItemClass(itemClass);
@@ -314,11 +436,22 @@ public class PoeDataController {
   }
 
   // ── 패시브 트리 ──
+  /**
+   * 패시브 트리의 주얼 소켓 노드 id.
+   *
+   * @return 노드 id 목록
+   */
   @GetMapping("/tree/jewel-sockets")
   public List<Integer> jewelSockets() {
     return poeTreeGraphService.jewelSockets();
   }
 
+  /**
+   * 패시브 트리 노드 한 개.
+   *
+   * @param id 노드 id
+   * @return 노드, 없으면 404
+   */
   @GetMapping("/tree/node/{id}")
   public PoeTreeGraphService.TreeNode treeNode(@PathVariable int id) {
     PoeTreeGraphService.TreeNode node = poeTreeGraphService.node(id);

@@ -24,6 +24,14 @@ public class ActivityFilterIdsController {
 
   @Autowired private DividendRepository dividendRepository;
 
+  /**
+   * 기간 안에 매매 · 배당이 있었던 계좌와 종목 id(필터 목록용).
+   *
+   * @param userId 사용자 id
+   * @param startDate 시작 시각(선택, ISO-8601)
+   * @param endDate 끝 시각(선택). 뒤집혀 오면 바로잡는다
+   * @return 매매 · 배당별 계좌 id 와 종목 id
+   */
   @GetMapping
   public ActivityFilterIdsResponse findFilterIds(
       @RequestParam UUID userId,

@@ -30,22 +30,45 @@ public class Poe2RegexPresetController {
     this.presetService = new PoeRegexPresetService(dataDir);
   }
 
+  /**
+   * PoE2 지도 정규식 프리셋 목록.
+   *
+   * @return 프리셋 요약 목록
+   */
   @GetMapping
   public List<PoeRegexPresetService.RegexPresetEntry> list() {
     return presetService.list();
   }
 
+  /**
+   * PoE2 지도 정규식 프리셋 한 개.
+   *
+   * @param id 프리셋 id
+   * @return 프리셋
+   */
   @GetMapping("/{id}")
   public PoeRegexPresetService.RegexPreset get(@PathVariable long id) {
     return presetService.get(id);
   }
 
+  /**
+   * PoE2 지도 정규식 프리셋을 저장한다. id 가 있으면 고친다.
+   *
+   * @param request id(선택) · 이름 · 정규식 · 화면 데이터
+   * @return 저장한 프리셋
+   */
   @PostMapping
   public PoeRegexPresetService.RegexPreset save(
       @RequestBody PoeRegexPresetController.SaveRequest request) {
     return presetService.save(request.id(), request.name(), request.regex(), request.data());
   }
 
+  /**
+   * PoE2 지도 정규식 프리셋을 지운다.
+   *
+   * @param id 프리셋 id
+   * @return 지웠으면 true
+   */
   @DeleteMapping("/{id}")
   public boolean delete(@PathVariable long id) {
     return presetService.delete(id);

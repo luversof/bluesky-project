@@ -32,11 +32,17 @@ public class PoeSimController {
 
   public record SimRanking(String patch, List<PoeGemRank> ranking) {}
 
+  /** 젬 DPS 랭킹 배치를 시작한다. 진행은 /status 로 본다. */
   @PostMapping("/start")
   public void start() {
     poeSimService.start();
   }
 
+  /**
+   * 젬 DPS 랭킹 배치 상태 · 진행률 · 로그.
+   *
+   * @return 작업 상태
+   */
   @GetMapping("/status")
   public SimStatus status() {
     return new SimStatus(
