@@ -2,4 +2,4 @@
 @import static net.luversof.web.dynamiccrud2.config.Msg.t
 @param String name
 
-<button type="button" class="drag-handle" aria-label="${t("component.drag", name)}">⠿</button>
+<button type="button" class="drag-handle" aria-label="${t("component.drag", name)}" data-tip="${t("component.drag", name)}">⠿</button>

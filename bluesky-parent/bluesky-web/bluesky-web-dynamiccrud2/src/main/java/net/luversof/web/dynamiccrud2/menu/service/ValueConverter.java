@@ -2,6 +2,7 @@ package net.luversof.web.dynamiccrud2.menu.service;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,6 +12,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.util.UUID;
+
+import org.springframework.jdbc.core.SqlParameterValue;
 
 import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.domain.DbField;
@@ -41,13 +44,28 @@ public final class ValueConverter {
         case DATE -> LocalDate.parse(raw.strip().substring(0, Math.min(10, raw.strip().length())));
         case DATETIME -> toLocalDateTime(raw.strip());
         case BOOLEAN -> Boolean.valueOf(raw.strip());
-        case TEXT, TEXTAREA ->
-            "uuid".equalsIgnoreCase(field.getDataType()) ? UUID.fromString(raw.strip()) : raw;
+        case TEXT, TEXTAREA -> textValue(raw, field.getDataType());
       };
     } catch (RuntimeException e) {
       throw new IllegalArgumentException(
           Msg.t("menu.action.badValue", field.getColumnName(), raw), e);
     }
+  }
+
+  /**
+   * 글자 칸 값. uuid 는 UUID 로, PostgreSQL json · jsonb 는 타입 없이(Types.OTHER) 보내 서버가 컬럼 타입으로 바꾸게 한다 -
+   * 글자(varchar)로 보내면 "column is of type jsonb but expression is of type character varying" 로 실패한다.
+   * 타입 이름은 대소문자까지 본다: PostgreSQL 은 소문자("json"), MySQL 은 대문자("JSON")라 MySQL JSON 은 글자 그대로 둔다(글자로 넣어도
+   * 된다).
+   */
+  private static Object textValue(String raw, String dataType) {
+    if ("uuid".equalsIgnoreCase(dataType)) {
+      return UUID.fromString(raw.strip());
+    }
+    if ("jsonb".equals(dataType) || "json".equals(dataType)) {
+      return new SqlParameterValue(Types.OTHER, raw);
+    }
+    return raw;
   }
 
   /** DB 값 → 화면 문자열(목록 표시 · 폼 초기값 · 행 키 전달). 날짜시간은 초 단위 로컬 시각(datetime-local 입력과 같은 모양) */

@@ -21,10 +21,11 @@
 !{var menuId = menu.getId().toString();}
 
 @template._layout.layout(title = t("admin.history.titleOf", menu.getName()), breadcrumb = breadcrumb, content = @`
-	<%-- 테이블 데이터 변경(사용 화면 실행) · 메뉴 설정 변경(관리 화면) 은 따로 저장 · 조회한다. 이름은 누가 아니라 무엇을 바꿨는지로(사용자 결정) --%>
-	@template._components.tabNav(label = t("admin.history.title"), current = settingsTab ? 1 : 0, cssClass = "mb-2", items = List.of(
-		new Crumb(t("admin.history.tab.data", targetNoun), "/admin/menu/" + menuId + "/history"),
-		new Crumb(t("admin.history.tab.settings"), "/admin/menu/" + menuId + "/history?tab=settings")))
+	<%-- 메뉴 설정 변경(관리 화면) · 테이블 데이터 변경(사용 화면 실행) 은 따로 저장 · 조회한다. 이름은 누가 아니라 무엇을 바꿨는지로(사용자 결정).
+	     메뉴 관리에서 오므로 설정 변경이 왼쪽 · 기본(tab 없음), 데이터 변경은 tab=data(사용자 결정 11-24) --%>
+	@template._components.tabNav(label = t("admin.history.title"), current = settingsTab ? 0 : 1, cssClass = "mb-2", items = List.of(
+		new Crumb(t("admin.history.tab.settings"), "/admin/menu/" + menuId + "/history"),
+		new Crumb(t("admin.history.tab.data", targetNoun), "/admin/menu/" + menuId + "/history?tab=data")))
 	<p class="hint mb-4">${settingsTab ? t("admin.history.tab.settings.desc") : t("admin.history.tab.data.desc")}</p>
 	@if(settingsTab)
 		@template.admin.settingHistory(filter = settingFilter, settings = settings, action = "/admin/menu/" + menuId + "/history", pageUrl = pageUrl, settingsTab = true)
@@ -32,6 +33,7 @@
 	@template._components.card(title = t("admin.history.filter"), help = t("admin.history.help"), body = @`
 		<form method="get" action="/admin/menu/${menuId}/history" role="search"
 			class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem_10rem_auto] items-end">
+			<input type="hidden" name="tab" value="data" />
 			@template._components.field(label = t("admin.history.user"), forId = "h-user-input", content = @`
 				@template.admin.userPicker(id = "h-user", usernames = history.usernames(), selected = filter.username())
 			`)
@@ -53,7 +55,7 @@
 			`)
 			<div class="flex gap-2">
 				<button class="btn btn-primary">${t("menu.page.search")}</button>
-				<a class="btn btn-ghost" href="/admin/menu/${menuId}/history">${t("menu.page.reset")}</a>
+				<a class="btn btn-ghost" href="/admin/menu/${menuId}/history?tab=data">${t("menu.page.reset")}</a>
 			</div>
 		</form>
 	`)
@@ -62,7 +64,7 @@
 		@if(history.rows().isEmpty())
 			@template._components.emptyState(message = t("admin.history.empty"))
 		@else
-			<div class="overflow-x-auto">
+			<div class="relative overflow-x-auto">
 				<table class="table" aria-label="${t("admin.history.title")}">
 					<thead>
 						<tr><th>${t("admin.history.col.time")}</th><th>${t("admin.history.user")}</th><th>${t("admin.history.query")}</th><th class="text-right">${t("admin.history.col.affected")}</th><th>${t("admin.history.col.values")}</th></tr>

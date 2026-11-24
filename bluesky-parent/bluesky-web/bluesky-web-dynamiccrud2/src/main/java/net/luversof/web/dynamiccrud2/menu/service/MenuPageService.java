@@ -112,12 +112,20 @@ public class MenuPageService {
     }
   }
 
-  /** 주소의 code 로 메뉴를 찾는다. 없으면 404 */
+  /**
+   * 주소의 code 로 메뉴를 찾는다. 없거나, 숨긴 프로젝트 · 메인 메뉴 아래면 404(2026-11-24 사용자 요청: 숨기면 아래 메뉴도 숨긴 것으로 본다). 메뉴
+   * 자체의 "메뉴 목록에 표시" 는 목록에서만 빼는 값이라 주소로는 열린다(복사한 메뉴는 숨김으로 만들어져 보이기 전에 주소로 확인)
+   */
   public MenuPath resolve(String projectCode, String mainMenuCode, String menuCode) {
-    var project = projectRepository.findByCode(projectCode).orElseThrow(MenuPageService::notFound);
+    var project =
+        projectRepository
+            .findByCode(projectCode)
+            .filter(Project::isEnableDisplay)
+            .orElseThrow(MenuPageService::notFound);
     var mainMenu =
         mainMenuRepository
             .findByProjectIdAndCode(project.getId(), mainMenuCode)
+            .filter(MainMenu::isEnableDisplay)
             .orElseThrow(MenuPageService::notFound);
     var menu =
         menuRepository

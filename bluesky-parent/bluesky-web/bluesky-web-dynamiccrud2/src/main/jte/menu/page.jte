@@ -31,11 +31,11 @@
 			</div>
 		@endfor
 	</nav>
-`, content = @`
-
+`, stickyHead = @`
+	<%-- 검색 폼 · 총 건수 줄은 제목과 함께 화면 위에 붙어 있다(layout stickyHead, 사용자 요청 11-24) --%>
 	<%-- 검색: 통합 검색 · 메뉴 검색 설정 칸 · 쿼리 :파라미터 칸을 한 폼으로. 페이지 · 정렬은 새 검색에서 처음으로 돌린다 --%>
 	@if(usePage.keyword() != null || !usePage.filterFields().isEmpty() || !usePage.searchFields().isEmpty())
-		<form method="get" action="${menuPath}" class="card mb-4 flex flex-wrap items-end gap-3" role="search" aria-label="${t("menu.page.searchLabel", menu.getName())}">
+		<form method="get" action="${menuPath}" class="card mb-3 flex flex-wrap items-end gap-3" role="search" aria-label="${t("menu.page.searchLabel", menu.getName())}">
 			@if(usePage.keyword() != null)
 				@template._components.field(label = t("menu.page.keyword"), forId = "q", content = @`
 					<input id="q" class="input input-sm w-64" type="search" name="q" value="${usePage.keyword().value()}"
@@ -58,11 +58,7 @@
 		</form>
 	@endif
 
-	@if(usePage.message() != null)
-		@template._components.alert(message = usePage.message(), tone = "warning")
-	@endif
-
-	<div class="flex flex-wrap items-center gap-2 mb-2">
+	<div class="flex flex-wrap items-center gap-2">
 		<span class="text-sm">${t("menu.page.total", usePage.total())}</span>
 		<span class="ml-auto flex flex-wrap gap-2">
 			@for(var action : usePage.insertActions())
@@ -76,11 +72,17 @@
 			@endif
 		</span>
 	</div>
+`, content = @`
+
+	@if(usePage.message() != null)
+		@template._components.alert(message = usePage.message(), tone = "warning")
+	@endif
 
 	<%-- 작업 폼은 목록 위 레이어로 띄워 스크롤 위치를 바꾸지 않는다 --%>
 	@template._components.modal(id = "actionDialog", panelId = "actionPanel", label = t("menu.page.actionLabel"))
 
-	<div class="overflow-x-auto">
+	<%-- .table-scroll: 가로 스크롤 상자. 화면을 내리면 표 머리(thead)가 위에 붙은 제목 · 검색 밑에 따라 붙는다(사용자 요청 11-24) --%>
+	<div class="relative table-scroll">
 		<table class="table" aria-label="${menu.getName()}">
 			<thead>
 				<tr>
@@ -99,7 +101,8 @@
 							@endif
 						</th>
 					@endfor
-					@if(!usePage.updateActions().isEmpty())<th></th>@endif
+					<%-- 수정 단추 칸은 가로 스크롤과 상관없이 오른쪽 끝에 붙어 보인다(.sticky-end, 사용자 요청 11-24) --%>
+					@if(!usePage.updateActions().isEmpty())<th class="sticky-end"></th>@endif
 				</tr>
 			</thead>
 			<tbody>
@@ -115,7 +118,7 @@
 								dateFormat = i < usePage.columns().size() ? usePage.columns().get(i).dateFormat() : null)
 						@endfor
 						@if(!usePage.updateActions().isEmpty())
-							<td class="whitespace-nowrap text-right">
+							<td class="sticky-end whitespace-nowrap text-right">
 								<input type="hidden" name="row" value="${row.json()}" />
 								@for(var action : usePage.updateActions())
 									<button class="btn btn-sm" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-include="closest td" hx-target="#actionPanel">${action.getName()}</button>

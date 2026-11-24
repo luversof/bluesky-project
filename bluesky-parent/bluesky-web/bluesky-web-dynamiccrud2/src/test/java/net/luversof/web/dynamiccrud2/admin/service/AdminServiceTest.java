@@ -32,6 +32,7 @@ class AdminServiceTest implements GeneralWebTest {
   @Autowired FieldService fieldService;
   @Autowired DatabaseAdapterResolver resolver;
   @Autowired DbTableRepository dbTableRepository;
+  @Autowired net.luversof.web.dynamiccrud2.repository.SettingLogRepository settingLogRepository;
 
   private TableRef table(String name) {
     return resolver.resolve("dynamiccrud2").listTables().stream()
@@ -87,6 +88,7 @@ class AdminServiceTest implements GeneralWebTest {
       }
       menuService.deleteMainMenu(mainMenu.getId());
       menuService.deleteProject(project.getId());
+      net.luversof.web.dynamiccrud2.TestSettingLogs.purge(settingLogRepository, project.getId());
     }
   }
 
@@ -101,6 +103,7 @@ class AdminServiceTest implements GeneralWebTest {
             "svc-test-" + UUID.randomUUID());
     var mainMenu = menuService.saveMainMenu(null, project.getId(), "main", "main");
     var menuIds = new ArrayList<UUID>();
+    var otherMainMenuIds = new ArrayList<UUID>();
     try {
       var source =
           menuService.createMenu(mainMenu.getId(), "src", "src", "dynamiccrud2", table("MainMenu"));
@@ -133,6 +136,23 @@ class AdminServiceTest implements GeneralWebTest {
       var sourceId = source.getId();
       assertThatThrownBy(() -> menuService.copyMenu(sourceId, "src", "겹침"))
           .isInstanceOf(BlueskyException.class);
+      // 이름을 묻지 않는 복사(프로젝트 관리 아이콘): src-copy 가 이미 있어 src-copy2
+      var quick = menuService.copyMenu(sourceId);
+      menuIds.add(quick.getId());
+      assertThat(quick.getCode()).isEqualTo("src-copy2");
+      assertThat(quick.getName()).contains("src");
+      assertThat(quick.isEnableDisplay()).isFalse();
+
+      // 다른 메인 메뉴로 끌어 옮기기: 순서 목록에 다른 메인 메뉴의 메뉴 id 가 오면 옮긴다. 주소 이름이 겹치면 막는다
+      var other = menuService.saveMainMenu(null, project.getId(), "other", "other");
+      otherMainMenuIds.add(other.getId());
+      menuService.reorderMenus(other.getId(), List.of(quick.getId()));
+      assertThat(menuService.getMenu(quick.getId()).getMainMenuId()).isEqualTo(other.getId());
+      var clash = menuService.copyMenu(quick.getId(), "src", "src 겹침");
+      menuIds.add(clash.getId());
+      assertThatThrownBy(() -> menuService.reorderMenus(mainMenu.getId(), List.of(clash.getId())))
+          .isInstanceOf(BlueskyException.class);
+      assertThat(menuService.getMenu(clash.getId()).getMainMenuId()).isEqualTo(other.getId());
 
       // 미리 보기: 방금 만든 메인 메뉴 행이 있어 비지 않고, 최대 PREVIEW_ROWS 행
       var read =
@@ -176,8 +196,10 @@ class AdminServiceTest implements GeneralWebTest {
       if (id != null && preexisting == null) {
         dbTableRepository.deleteById(id);
       }
+      otherMainMenuIds.forEach(menuService::deleteMainMenu);
       menuService.deleteMainMenu(mainMenu.getId());
       menuService.deleteProject(project.getId());
+      net.luversof.web.dynamiccrud2.TestSettingLogs.purge(settingLogRepository, project.getId());
     }
   }
 
@@ -329,6 +351,7 @@ class AdminServiceTest implements GeneralWebTest {
       }
       menuService.deleteMainMenu(mainMenu.getId());
       menuService.deleteProject(project.getId());
+      net.luversof.web.dynamiccrud2.TestSettingLogs.purge(settingLogRepository, project.getId());
     }
   }
 }

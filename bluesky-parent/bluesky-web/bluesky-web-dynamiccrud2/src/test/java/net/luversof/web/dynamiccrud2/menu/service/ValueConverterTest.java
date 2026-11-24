@@ -3,8 +3,13 @@ package net.luversof.web.dynamiccrud2.menu.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.sql.Types;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.SqlParameterValue;
+
+import net.luversof.web.dynamiccrud2.domain.DbField;
+import net.luversof.web.dynamiccrud2.domain.InputType;
 
 class ValueConverterTest {
 
@@ -15,6 +20,23 @@ class ValueConverterTest {
     assertThat(ValueConverter.fitsExcelNumber(new BigDecimal("12.3400"))).isTrue();
     assertThat(ValueConverter.fitsExcelNumber(new BigDecimal("0.1234567890123456"))).isFalse();
     assertThat(ValueConverter.fitsExcelNumber(1.5d)).isTrue();
+  }
+
+  @Test
+  void jsonColumnBindsUntyped() {
+    var field = new DbField();
+    field.setInputType(InputType.TEXTAREA);
+    field.setDataType("jsonb");
+    assertThat(ValueConverter.toBindValue("{\"a\":1}", field))
+        .as("PostgreSQL jsonb 는 varchar 로 보내면 거부된다")
+        .isInstanceOfSatisfying(
+            SqlParameterValue.class,
+            value -> {
+              assertThat(value.getSqlType()).isEqualTo(Types.OTHER);
+              assertThat(value.getValue()).isEqualTo("{\"a\":1}");
+            });
+    field.setDataType("JSON");
+    assertThat(ValueConverter.toBindValue("{}", field)).as("MySQL JSON 은 글자 그대로").isEqualTo("{}");
   }
 
   @Test

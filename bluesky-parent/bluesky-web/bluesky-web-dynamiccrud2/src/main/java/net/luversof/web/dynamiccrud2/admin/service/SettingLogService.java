@@ -80,7 +80,8 @@ public class SettingLogService {
       Map<String, String> before,
       Map<String, String> after) {
     var changes = diff(before, after);
-    if (changes.isEmpty() && action == Action.UPDATE) {
+    // 바뀐 게 없는 저장 · 같은 자리에 놓은 끌기는 남기지 않는다(순서는 이전 순서와 비교 - 2026-11-24 부터 이전 순서도 남긴다)
+    if (changes.isEmpty() && (action == Action.UPDATE || action == Action.REORDER)) {
       return;
     }
     try {
@@ -249,7 +250,7 @@ public class SettingLogService {
   public record HistoryPage(
       List<Row> rows, long total, int page, int lastPage, List<String> usernames) {}
 
-  /** 메뉴 범위(메뉴 · 쿼리 · 검색 + 그 메뉴 테이블의 필드) 또는 프로젝트 범위(menu 가 null) */
+  /** 메뉴 범위(메뉴 · 쿼리 · 검색 + 그 메뉴 테이블의 필드), 프로젝트 범위(menu 가 null), 전체(둘 다 null - 프로젝트 순서 등 포함) */
   public HistoryPage page(Menu menu, UUID projectId, Filter filter, int page) {
     var menuId = menu == null ? null : menu.getId();
     var tableId = menu == null ? null : menu.getDbTableId();

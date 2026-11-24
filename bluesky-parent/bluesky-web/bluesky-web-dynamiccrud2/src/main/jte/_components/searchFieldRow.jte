@@ -26,5 +26,5 @@
 		@endfor
 	</select>
 	<span class="index-badge ${use.ok() ? "index-ok" : "index-warn"} w-56 truncate" data-index-badge title="${use.text()}">${use.ok() ? "✓ " : "⚠ "}${use.text()}</span>
-	<button type="button" class="icon-btn icon-btn-danger shrink-0" data-pick-remove aria-label="${t("component.searchField.remove", candidate.header())}" title="${t("common.remove")}">×</button>
+	<button type="button" class="icon-btn icon-btn-danger shrink-0" data-pick-remove aria-label="${t("component.searchField.remove", candidate.header())}" data-tip="${t("common.remove")}">×</button>
 </li>

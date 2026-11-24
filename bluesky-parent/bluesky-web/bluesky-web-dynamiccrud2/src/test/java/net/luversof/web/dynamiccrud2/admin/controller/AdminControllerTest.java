@@ -8,9 +8,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.hamcrest.Matchers;
@@ -125,7 +127,8 @@ class AdminControllerTest implements GeneralWebTest {
           .andExpect(content().string(Matchers.containsString("set-log-b</ins>")));
       menuId = menuService.createMenu(mainMenu.getId(), "list", "m1", "dynamiccrud2", ref).getId();
       menuService.updateMenu(menuId, "list", "m1", null, 30, false, true);
-      mvc.perform(get("/admin/menu/" + menuId + "/history").param("tab", "settings").with(admin()))
+      // 메뉴 변경 이력의 기본 탭은 메뉴 설정 변경
+      mvc.perform(get("/admin/menu/" + menuId + "/history").with(admin()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("페이지 크기")))
           .andExpect(content().string(Matchers.containsString("30</ins>")));
@@ -134,6 +137,42 @@ class AdminControllerTest implements GeneralWebTest {
       menuService.updateMenu(menuId, "list", "m1", null, 30, false, true);
       assertThat(settingLogRepository.countSearch(menuId, null, null, null, null, null, null))
           .isEqualTo(before);
+
+      // 프로젝트 관리 트리의 메뉴 눈 아이콘: 숨기면 이력이 남고 프로젝트 화면으로 돌아온다
+      mvc.perform(
+              post("/admin/menu/" + menuId + "/display").param("display", "false").with(admin()))
+          .andExpect(redirectedUrl("/admin?project=" + project.getId()));
+      assertThat(menuService.getMenu(menuId).isEnableDisplay()).isFalse();
+      assertThat(settingLogRepository.countSearch(menuId, null, null, null, null, null, null))
+          .isEqualTo(before + 1);
+      // 왼쪽 프로젝트 목록의 눈 아이콘: back 이 있으면 보던 프로젝트로 돌아온다
+      var other = UUID.randomUUID();
+      mvc.perform(
+              post("/admin/project/" + project.getId() + "/display")
+                  .param("display", "false")
+                  .param("back", other.toString())
+                  .with(admin()))
+          .andExpect(redirectedUrl("/admin?project=" + other));
+      assertThat(menuService.getProject(project.getId()).isEnableDisplay()).isFalse();
+
+      // 순서 바꾸기는 이전 순서 → 새 순서로 남고, 같은 자리에 놓으면 남기지 않는다. 전체 설정 변경 이력 화면에서 보인다
+      var second = menuService.saveMainMenu(null, project.getId(), "main2", "main2");
+      try {
+        menuService.reorderMainMenus(project.getId(), List.of(second.getId(), mainMenu.getId()));
+        var count =
+            settingLogRepository.countSearch(null, null, project.getId(), null, null, null, null);
+        menuService.reorderMainMenus(project.getId(), List.of(second.getId(), mainMenu.getId()));
+        assertThat(
+                settingLogRepository.countSearch(
+                    null, null, project.getId(), null, null, null, null))
+            .isEqualTo(count);
+        mvc.perform(get("/admin/history").param("target", "MAIN_MENU").with(admin()))
+            .andExpect(status().isOk())
+            .andExpect(content().string(Matchers.containsString("main, main2</del>")))
+            .andExpect(content().string(Matchers.containsString("main2, main</ins>")));
+      } finally {
+        menuService.deleteMainMenu(second.getId());
+      }
     } finally {
       if (menuId != null) {
         var dbTableId = menuService.getMenu(menuId).getDbTableId();
@@ -156,6 +195,7 @@ class AdminControllerTest implements GeneralWebTest {
 
   @Test
   void newItemsGoLastAndReorderSaves() throws Exception {
+    var startedAt = java.time.Instant.now();
     var first =
         menuService.saveProject(
             null,
@@ -228,6 +268,11 @@ class AdminControllerTest implements GeneralWebTest {
       menuService.deleteMainMenu(m2.getId());
       menuService.deleteProject(first.getId());
       menuService.deleteProject(second.getId());
+      net.luversof.web.dynamiccrud2.TestSettingLogs.purge(settingLogRepository, first.getId());
+      net.luversof.web.dynamiccrud2.TestSettingLogs.purge(settingLogRepository, second.getId());
+      // 프로젝트 순서 변경은 어느 프로젝트에도 속하지 않는다 - 이 시험이 시작한 뒤의 것만
+      settingLogRepository.deleteAll(
+          settingLogRepository.search(null, null, null, null, "PROJECT", startedAt, null, 100, 0));
     }
   }
 
@@ -252,6 +297,7 @@ class AdminControllerTest implements GeneralWebTest {
           .isEqualTo("renamed");
     } finally {
       menuService.deleteProject(project.getId());
+      net.luversof.web.dynamiccrud2.TestSettingLogs.purge(settingLogRepository, project.getId());
     }
   }
 
@@ -421,6 +467,7 @@ class AdminControllerTest implements GeneralWebTest {
       }
       menuService.deleteMainMenu(mainMenu.getId());
       menuService.deleteProject(project.getId());
+      net.luversof.web.dynamiccrud2.TestSettingLogs.purge(settingLogRepository, project.getId());
     }
   }
 }

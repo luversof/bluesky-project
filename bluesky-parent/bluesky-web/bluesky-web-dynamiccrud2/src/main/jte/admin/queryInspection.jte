@@ -63,7 +63,7 @@
 		@endif
 	</div>
 	<p class="hint mb-2">${t("admin.inspect.columns.hint")}</p>
-	<div class="overflow-x-auto">
+	<div class="relative overflow-x-auto">
 	<table class="table" aria-label="${t("admin.inspect.columns")}">
 		<thead><tr>
 			<th>${t("admin.inspect.col.result")}</th><th>${t("admin.inspect.col.source")}</th><th>${t("index.col.kind")}</th>
@@ -106,7 +106,7 @@
 	@if(preview.rows().isEmpty())
 		@template._components.emptyState(message = t("admin.inspect.preview.empty"))
 	@else
-		<div class="overflow-x-auto">
+		<div class="relative overflow-x-auto">
 			<table class="table" aria-label="${t("admin.inspect.preview")}">
 				<%-- 사용 화면과 같은 제목 · 표시 형식(_components/cellValue) --%>
 				<thead><tr>@for(var label : preview.labels())<th class="whitespace-nowrap ${inspection.viewOf(label).inputType() == null ? "" : inspection.viewOf(label).inputType().align()}">${inspection.viewOf(label).header()}</th>@endfor</tr></thead>

@@ -124,6 +124,12 @@ public class MenuService {
 
   /** 드래그 앤 드롭 결과: 받은 순서대로 0, 1, 2 … 를 매긴다. 목록에 없는 id 는 무시 */
   public void reorderProjects(List<UUID> orderedIds) {
+    // 이력에 "이전 순서 → 새 순서" 로 보이게 바꾸기 전 순서를 떠 둔다
+    var before =
+        SettingLogService.order(
+            projectRepository.findAllByOrderByDisplayOrderAscNameAsc().stream()
+                .map(Project::getName)
+                .toList());
     var projects = projectRepository.findAllById(orderedIds);
     for (var project : projects) {
       project.setDisplayOrder(orderedIds.indexOf(project.getId()));
@@ -136,7 +142,7 @@ public class MenuService {
         null,
         null,
         null,
-        null,
+        before,
         SettingLogService.order(
             projects.stream()
                 .sorted(Comparator.comparingInt(Project::getDisplayOrder))
@@ -198,6 +204,7 @@ public class MenuService {
   /** 한 프로젝트 안 메인 메뉴 순서. 다른 프로젝트의 id 가 섞여 오면 무시한다 */
   public void reorderMainMenus(UUID projectId, List<UUID> orderedIds) {
     var mainMenus = mainMenuRepository.findByProjectIdOrderByDisplayOrderAscNameAsc(projectId);
+    var before = SettingLogService.order(mainMenus.stream().map(MainMenu::getName).toList());
     for (var mainMenu : mainMenus) {
       var index = orderedIds.indexOf(mainMenu.getId());
       if (index >= 0) {
@@ -212,7 +219,7 @@ public class MenuService {
         null,
         projectId,
         null,
-        null,
+        before,
         SettingLogService.order(
             mainMenus.stream()
                 .sorted(Comparator.comparingInt(MainMenu::getDisplayOrder))
@@ -268,6 +275,23 @@ public class MenuService {
         null,
         before,
         SettingLogService.snapshot(mainMenu));
+  }
+
+  public Menu setMenuDisplay(UUID id, boolean display) {
+    var menu = getMenu(id);
+    var before = SettingLogService.snapshot(menu);
+    menu.setEnableDisplay(display);
+    var saved = menuRepository.save(menu);
+    settingLog.record(
+        Target.MENU,
+        Action.UPDATE,
+        id,
+        saved.getName(),
+        null,
+        id,
+        before,
+        SettingLogService.snapshot(saved));
+    return saved;
   }
 
   public Project getProject(UUID id) {
@@ -328,6 +352,23 @@ public class MenuService {
    * 메뉴 복사: 같은 메인 메뉴 맨 끝에 같은 테이블 · 쿼리(조회 · 입력 · 수정 · 삭제) · 검색 설정 · 권한 · 페이지 크기 · 엑셀을 그대로 둔 새 메뉴. 다
    * 고치기 전에 사용자 화면에 나오지 않게 숨김으로 만든다. 쿼리 id 는 새로 매긴다(데이터 변경 이력은 원래 메뉴에 남는다).
    */
+  /**
+   * 이름 · 주소 이름을 묻지 않는 복사(프로젝트 관리 화면의 복사 아이콘, 사용자 결정 11-24): 이름은 "원래 이름 복사본", 주소 이름은 같은 메인 메뉴에서 겹치지
+   * 않게 원래-copy, 원래-copy2 … (50자 안으로 원래 이름을 자른다). 숨김으로 만들어지니 설정 화면에서 고친 뒤 켠다.
+   */
+  public Menu copyMenu(UUID id) {
+    var source = getMenu(id);
+    var base = source.getCode().substring(0, Math.min(source.getCode().length(), 42)) + "-copy";
+    var code = base;
+    for (int n = 2;
+        menuRepository.findByMainMenuIdAndCode(source.getMainMenuId(), code).isPresent();
+        n++) {
+      code = base + n;
+    }
+    var name = Msg.t("admin.menu.copy.name", source.getName());
+    return copyMenu(id, code, name.substring(0, Math.min(name.length(), 100)));
+  }
+
   public Menu copyMenu(UUID id, String code, String name) {
     var source = getMenu(id);
     var copy = new Menu();
@@ -427,9 +468,36 @@ public class MenuService {
     return saved;
   }
 
-  /** 메인 메뉴 안 메뉴 순서(드래그 앤 드롭). 목록에 없는 id 는 순서를 그대로 둔다 */
+  /**
+   * 메인 메뉴 안 메뉴 순서(드래그 앤 드롭). 목록에 없는 id 는 순서를 그대로 둔다. 다른 메인 메뉴의 메뉴 id 가 오면(끌어 옮김, 사용자 결정 11-24) 같은
+   * 프로젝트일 때만 이 메인 메뉴로 옮긴다 - 주소 이름은 메인 메뉴 안에서 겹치면 안 되므로 겹치면 막는다(DUPLICATE_CODE). 다른 프로젝트 메뉴는 무시(화면은
+   * 한 프로젝트만 보여 오지 않는다, 테이블 · 연결이 맞는지 모름).
+   */
   public void reorderMenus(UUID mainMenuId, List<UUID> orderedIds) {
-    var menus = menuRepository.findByMainMenuIdOrderByDisplayOrderAscNameAsc(mainMenuId);
+    var mainMenu = getMainMenu(mainMenuId);
+    var menus =
+        new java.util.ArrayList<>(
+            menuRepository.findByMainMenuIdOrderByDisplayOrderAscNameAsc(mainMenuId));
+    var before = SettingLogService.order(menus.stream().map(Menu::getName).toList());
+    var moves = new java.util.ArrayList<Menu>();
+    var movedBefore = new java.util.HashMap<UUID, java.util.Map<String, String>>();
+    for (var id : orderedIds) {
+      if (menus.stream().anyMatch(menu -> menu.getId().equals(id))) {
+        continue;
+      }
+      var menu = getMenu(id);
+      var from = getMainMenu(menu.getMainMenuId());
+      if (!from.getProjectId().equals(mainMenu.getProjectId())) {
+        continue;
+      }
+      var snapshot = SettingLogService.snapshot(menu);
+      snapshot.put("mainMenu", from.getName());
+      movedBefore.put(id, snapshot);
+      menu.setCode(checkMenuCode(mainMenuId, id, menu.getCode()));
+      menu.setMainMenuId(mainMenuId);
+      menus.add(menu);
+      moves.add(menu);
+    }
     for (var menu : menus) {
       var index = orderedIds.indexOf(menu.getId());
       if (index >= 0) {
@@ -437,7 +505,19 @@ public class MenuService {
       }
     }
     menuRepository.saveAll(menus);
-    var mainMenu = getMainMenu(mainMenuId);
+    for (var menu : moves) {
+      var after = SettingLogService.snapshot(menu);
+      after.put("mainMenu", mainMenu.getName());
+      settingLog.record(
+          Target.MENU,
+          Action.UPDATE,
+          menu.getId(),
+          menu.getName(),
+          mainMenu.getProjectId(),
+          menu.getId(),
+          movedBefore.get(menu.getId()),
+          after);
+    }
     settingLog.record(
         Target.MENU,
         Action.REORDER,
@@ -445,7 +525,7 @@ public class MenuService {
         mainMenu.getName(),
         mainMenu.getProjectId(),
         null,
-        null,
+        before,
         SettingLogService.order(
             menus.stream()
                 .sorted(Comparator.comparingInt(Menu::getDisplayOrder))

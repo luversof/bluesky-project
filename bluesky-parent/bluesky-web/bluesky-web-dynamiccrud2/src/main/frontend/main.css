@@ -24,8 +24,9 @@
 	--color-warning-content: #ffffff;
 	--color-error: #c30115;
 	--color-error-content: #ffffff;
-	--radius-box: 0.875rem;
-	--radius-field: 0.5rem;
+	/* 둥글기: 카드 · 안내 상자 8px, 단추 · 입력칸 · 툴팁 4px(2026-11-24 사용자: 덜 둥글게 - 예전 14px · 8px) */
+	--radius-box: 0.5rem;
+	--radius-field: 0.25rem;
 	--shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px -4px rgba(15, 23, 42, 0.08);
 	--color-surface-line: rgba(15, 23, 42, 0.07);
 	/* 입력칸 경계는 배경과 3:1 이상(WCAG 1.4.11) - gate 실측 값 */
@@ -66,7 +67,7 @@
 @layer components {
 	.btn {
 		display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-		height: 2.5rem; padding-inline: 1rem; font-size: 0.875rem; font-weight: 600; line-height: 1;
+		height: 2.25rem; padding-inline: 1rem; font-size: 0.875rem; font-weight: 600; line-height: 1;
 		border-radius: var(--radius-field); border: 1px solid transparent;
 		background-color: var(--color-base-200); color: var(--color-base-content);
 		cursor: pointer; user-select: none; white-space: nowrap;
@@ -121,6 +122,40 @@
 	/* 이름 옆 아이콘 묶음: 칸끼리 붙여(간격 0) 그림 사이를 칸 여백(8px)만큼만 둔다. 이름 · 주소와의 간격은 바깥 gap */
 	.icon-group { display: inline-flex; align-items: center; }
 	.icon-btn:hover, .icon-btn[aria-expanded="true"] { background-color: var(--color-base-200); color: var(--color-base-content); }
+	/* 프로젝트 관리 줄 아이콘(.reveal-row 안 .reveal-icons): 줄에 올리거나 초점이 들어올 때만 왼쪽에서 오른쪽으로 스르륵 나타나고, 벗어나면
+	   거꾸로 사라진다(아이콘마다 조금씩 늦게). 숨김 상태 빗금 눈(.is-hidden-state)은 상태 표시라 늘 보인다. 마우스가 없는 기기(터치)는
+	   올리기가 없으니 늘 보인다(@media hover). 자리는 늘 차지해 글자가 밀리지 않는다. 사용자가 원한 효과라 reduced-motion 에서도 그대로(사용자 결정 11-24) */
+	@media (hover: hover) {
+		.reveal-row .reveal-icons > * {
+			opacity: 0; transform: translateX(-0.25rem);
+			transition: opacity .18s ease, transform .18s ease;
+		}
+		.reveal-row .reveal-icons > *:nth-child(2) { transition-delay: .03s; }
+		.reveal-row .reveal-icons > *:nth-child(3) { transition-delay: .06s; }
+		.reveal-row:hover .reveal-icons > *, .reveal-row:focus-within .reveal-icons > *,
+		.reveal-row .reveal-icons > .is-hidden-state {
+			opacity: 1; transform: none;
+		}
+	}
+	/* 아이콘 단추 설명 툴팁(data-tip): 브라우저 title 대신 ⓘ 도움말(.help-tip)과 같은 모양으로 바로 뜬다. 올리거나 키보드 초점일 때, 아래 가운데.
+	   글자는 aria-label · aria-describedby 가 따로 읽으므로 그림 전용(사용자 요청 11-24) */
+	.icon-btn[data-tip], .drag-handle[data-tip] { position: relative; }
+	.icon-btn[data-tip]:hover::after, .icon-btn[data-tip]:focus-visible::after,
+	.drag-handle[data-tip]:hover::after, .drag-handle[data-tip]:focus-visible::after {
+		content: attr(data-tip); position: absolute; z-index: 30; top: calc(100% + 0.25rem); left: 50%; transform: translateX(-50%);
+		width: max-content; max-width: min(18rem, 80vw); padding: 0.375rem 0.5rem; border-radius: var(--radius-field);
+		font-size: 0.75rem; font-weight: 400; line-height: 1.4; white-space: normal; text-align: left; pointer-events: none;
+		background-color: var(--color-base-content); color: var(--color-base-100); box-shadow: var(--shadow-card); opacity: 1;
+	}
+	/* 지금은 쓸 수 없는 아이콘(하위 항목이 있는 프로젝트 · 메인 메뉴의 휴지통): 흐리게, 올려도 진해지지 않고 까닭은 툴팁으로 */
+	.icon-btn[aria-disabled="true"], .icon-btn[aria-disabled="true"]:hover {
+		cursor: not-allowed; background-color: transparent;
+		color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+	}
+	/* 순서 손잡이는 줄 맨 왼쪽이라 가운데 정렬하면 툴팁 왼쪽이 잘린다 - 왼쪽 맞춤 */
+	.drag-handle[data-tip]:hover::after, .drag-handle[data-tip]:focus-visible::after { left: 0; transform: none; }
+	/* 흐림은 그림에만(단추에 걸면 툴팁까지 흐려진다) */
+	.icon-btn[aria-disabled="true"] > svg { opacity: .4; }
 	/* 목록 쪽 번호. 너비를 고정해 쪽이 바뀌어도 단추 자리가 흔들리지 않는다 */
 	.page-btn {
 		display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; height: 2rem; padding: 0 0.5rem;
@@ -187,10 +222,11 @@
 	/* 입력칸: 평소 테두리는 배경과 3:1(--color-control-line, WCAG 1.4.11) - 더 흐리게 하지 않는다.
 	   마우스를 올리면 진하게, 입력 중이면 기본색 테두리 + 옅은 둘레 */
 	.input, .select, .textarea {
-		/* 높이 · 둥글기는 .btn 과 같게 - 한 줄에 입력칸과 단추가 나란히 놓여도 맞는다 */
+		/* 높이 · 둥글기는 .btn 과 같게 - 한 줄에 입력칸과 단추가 나란히 놓여도 맞는다.
+		   36px(2026-11-24 사용자: 40px 는 14px 글자에 비해 비어 보여 투박했다 - 테두리는 3:1 하한이라 옅게 하지 않고 높이 · 둥글기로) */
 		border: 1px solid var(--color-control-line); border-radius: var(--radius-field);
 		background-color: var(--color-base-100); color: var(--color-base-content);
-		padding: 0.375rem 0.625rem; font-size: 0.875rem; min-height: 2.5rem;
+		padding: 0.375rem 0.625rem; font-size: 0.875rem; min-height: 2.25rem;
 		transition: border-color .15s, box-shadow .15s;
 	}
 	.input:hover, .select:hover, .textarea:hover { border-color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
@@ -280,6 +316,30 @@
 	.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
 	.table :where(th, td) { padding: 0.5rem 0.75rem; vertical-align: middle; border-bottom: 1px solid var(--color-base-300); }
 	.table thead :where(th) { font-size: 0.75rem; font-weight: 600; background-color: var(--color-base-200); }
+	/* 오른쪽 끝에 붙는 칸(사용 화면 목록의 수정 단추 칸): 표가 가로로 스크롤돼도 늘 보인다. 아래 칸이 비치지 않게 배경을 깔고,
+	   왼쪽 그림자로 스크롤되는 칸과 나눈다(사용자 요청 11-24) */
+	.table :where(th, td).sticky-end { position: sticky; right: 0; z-index: 1; background-color: var(--color-base-100);
+		box-shadow: -6px 0 6px -6px color-mix(in oklab, var(--color-base-content) 35%, transparent); }
+	.table thead :where(th).sticky-end { background-color: var(--color-base-200); }
+	/* 화면 위에 붙는 머리(사용 화면의 제목 + 검색): 세로로 스크롤해도 남는다. 안 붙었을 때 자리는 그대로(음수 margin 이 padding 을 상쇄),
+	   붙으면 배경이 지나가는 목록을 가린다(사용자 요청 11-24) */
+	/* 메뉴가 없는 메인 메뉴의 메뉴 목록: 평소엔 높이 0, 메뉴를 끄는 동안만 점선 놓을 자리(js/reorder.js, 사용자 결정 11-24) */
+	.reorder-dragging [data-reorder-group]:not(:has(> [data-id])) { min-height: 2rem; border: 1px dashed var(--color-base-300); border-radius: var(--radius-field); }
+	.sticky-head { position: sticky; top: 0; z-index: 20; background-color: var(--color-base-100); padding-block: 0.75rem; margin-block: -0.75rem 0.25rem; }
+	/* 사용 화면 목록 상자(가로 스크롤): 표 머리(thead)가 붙는 머리(.sticky-head) 바로 밑에 따라 붙는다(사용자 요청 11-24).
+	   가로 스크롤 상자가 세로 스크롤 상자도 되므로 thead 에 position: sticky 는 화면 기준으로 듣지 않는다 - 대신 상자를 view timeline
+	   으로 삼아, 상자 윗변이 붙는 머리 밑을 지나간 만큼 thead 를 내린다(스크롤과 같은 프레임, 떨림 없음). 내리는 끝은 표 아래 끝까지.
+	   --sticky-head-h(붙는 머리 높이) · --thead-travel(표 높이 - thead 높이)은 js/ui.js 가 잰다. 안 되는 브라우저는 thead 가 그냥 함께 올라간다 */
+	.table-scroll { overflow-x: auto; }
+	@supports (animation-timeline: view()) {
+		.table-scroll { view-timeline: --list block; view-timeline-inset: var(--sticky-head-h, 0px) 0px; }
+		.table-scroll .table thead {
+			position: relative; z-index: 2;
+			animation: thead-follow linear both; animation-timeline: --list;
+			animation-range: exit-crossing 0px exit-crossing var(--thead-travel, 0px);
+		}
+	}
+	@keyframes thead-follow { from { transform: none; } to { transform: translateY(var(--thead-travel, 0px)); } }
 
 	.badge {
 		display: inline-flex; align-items: center; height: 1.375rem; padding-inline: 0.5rem; font-size: 0.75rem;

@@ -6,7 +6,7 @@
 @param TableMeta meta
 @param String title
 
-<div class="overflow-x-auto">
+<div class="relative overflow-x-auto">
 	<table class="table table-compact" aria-label="${t("columns.label", title)}">
 		<thead><tr>
 			<th>${t("admin.table.col.column")}</th><th>${t("columns.col.type")}</th><th>${t("columns.col.null")}</th>

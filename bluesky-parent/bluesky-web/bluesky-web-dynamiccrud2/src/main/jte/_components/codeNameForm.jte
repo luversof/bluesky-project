@@ -21,8 +21,8 @@
 		<input class="inline-edit ${nameClass}" name="name" value="${name}" required maxlength="100" aria-label="${t("component.codeName.name", noun)}" />
 		<span class="hint font-mono" aria-hidden="true">/</span>
 		@template._components.codeInput(value = code, inline = true, cssClass = "hint", ariaLabel = t("component.codeName.code", noun))
-		<button class="icon-btn" aria-label="${submitText}" title="${submitText} (Enter)">✓</button>
-		<button type="button" class="icon-btn" data-toggle="${formId}" aria-label="${t("common.cancel")}" title="${t("common.cancel")} (Esc)">×</button>
+		<button class="icon-btn" aria-label="${submitText}" data-tip="${submitText} (Enter)">✓</button>
+		<button type="button" class="icon-btn" data-toggle="${formId}" aria-label="${t("common.cancel")}" data-tip="${t("common.cancel")} (Esc)">×</button>
 	</form>
 @else
 	<form id="${formId}" method="post" action="${action}" class="${stacked ? "card grid gap-2" : "flex flex-wrap items-center gap-2"} ${cssClass}" hidden>

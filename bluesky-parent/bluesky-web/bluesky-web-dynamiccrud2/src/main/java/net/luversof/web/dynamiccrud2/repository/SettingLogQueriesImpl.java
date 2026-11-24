@@ -21,7 +21,10 @@ class SettingLogQueriesImpl implements SettingLogQueries {
     this.aggregates = aggregates;
   }
 
-  /** 범위: 메뉴면 그 메뉴 + 그 메뉴 테이블의 필드 변경, 아니면 프로젝트. 둘 다 없으면 아무것도 안 고른다 */
+  /**
+   * 범위: 메뉴면 그 메뉴 + 그 메뉴 테이블의 필드 변경, 아니면 프로젝트. 둘 다 없으면 전체(관리 화면 "전체 설정 변경 이력" - 프로젝트 순서처럼 어느 프로젝트에도
+   * 속하지 않는 변경도 여기서 본다, 2026-11-24)
+   */
   private static SqlWhere scope(UUID menuId, UUID tableId, UUID projectId) {
     var values = new HashMap<String, Object>();
     String condition;
@@ -36,7 +39,7 @@ class SettingLogQueriesImpl implements SettingLogQueries {
       values.put("projectId", projectId);
       condition = "\"project_id\" = :projectId";
     } else {
-      condition = "1 = 0";
+      return new SqlWhere();
     }
     return new SqlWhere().always(condition, values);
   }

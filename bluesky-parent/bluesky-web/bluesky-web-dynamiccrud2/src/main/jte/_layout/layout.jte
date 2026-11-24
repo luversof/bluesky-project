@@ -11,6 +11,9 @@
 <%-- brandMenu: brand 자리에 대신 보일 것(사용 화면의 프로젝트 고르기, _components/projectSwitcher) --%>
 @param gg.jte.Content brandMenu = null
 @param boolean showUser = true
+@param gg.jte.Content titleActions = null
+<%-- stickyHead: 사이드바 화면에서 제목 아래, 제목과 함께 위에 붙어 있을 것(사용 화면의 검색 폼) --%>
+@param gg.jte.Content stickyHead = null
 
 !{var loggedIn = UserUtil.isAuthenticated();}
 <%-- 관리 링크는 관리 권한이 있는 사용자에게만(메뉴 목록은 MenuPageService.visibleTree 가 메뉴 권한으로 거른다) --%>
@@ -84,14 +87,22 @@
 		<div class="grow w-full px-4 md:px-6 py-6 flex flex-col md:flex-row gap-6">
 			<aside class="md:w-56 shrink-0" aria-label="${net.luversof.web.dynamiccrud2.config.Msg.t("layout.sidebar")}">${sidebar}</aside>
 			<main class="grow min-w-0">
-				<h1 class="text-xl font-semibold mb-4">${title}</h1>
+				<%-- 제목과 stickyHead(사용 화면의 검색)는 세로 스크롤해도 위에 붙어 있다(.sticky-head) --%>
+				<div class="sticky-head">
+					<h1 class="text-xl font-semibold ${stickyHead != null ? "mb-4" : ""}">${title}</h1>
+					${stickyHead}
+				</div>
 				${content}
 			</main>
 		</div>
 	@else
 		<main class="grow w-full px-4 md:px-6 py-6">
 			@if(breadcrumb != null)@template._components.breadcrumb(items = breadcrumb)@endif
-			<h1 class="text-xl font-semibold mb-4">${title}</h1>
+			<%-- titleActions: 화면 제목 줄 오른쪽 끝 단추(화면 전체에 대한 동작 - 전체 설정 변경 이력, 메뉴의 변경 이력 · 복사 · 삭제) --%>
+			<div class="flex flex-wrap items-center gap-2 mb-4">
+				<h1 class="text-xl font-semibold">${title}</h1>
+				@if(titleActions != null)<div class="ml-auto flex flex-wrap items-center gap-2">${titleActions}</div>@endif
+			</div>
 			${content}
 		</main>
 	@endif

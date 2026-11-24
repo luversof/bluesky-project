@@ -50,6 +50,7 @@ class MenuPageControllerTest implements GeneralWebTest {
   @Autowired DbTableRepository dbTableRepository;
   @Autowired ProjectRepository projectRepository;
   @Autowired ChangeLogRepository changeLogRepository;
+  @Autowired net.luversof.web.dynamiccrud2.repository.SettingLogRepository settingLogRepository;
   @Autowired RowSigner rowSigner;
   @Autowired FieldService fieldService;
 
@@ -84,6 +85,7 @@ class MenuPageControllerTest implements GeneralWebTest {
     UUID menuId = null;
     String originalOptions = null;
     var optionsChanged = false;
+    var startedAt = java.time.Instant.now();
     try {
       var menu = menuService.createMenu(mainMenu.getId(), "list", "프로젝트 관리", "dynamiccrud2", ref);
       menuId = menu.getId();
@@ -159,16 +161,22 @@ class MenuPageControllerTest implements GeneralWebTest {
           .andExpect(header().string("Location", base));
       mvc.perform(get("/" + owner.getCode() + "/nope").with(normalUser()))
           .andExpect(status().isNotFound());
-      // 메인 메뉴 · 프로젝트를 숨기면 전체 메뉴에서 아래 메뉴까지 빠지고, 메뉴 주소로는 그대로 열린다
+      // 메인 메뉴 · 프로젝트를 숨기면 전체 메뉴에서 아래 메뉴까지 빠지고, 메뉴 주소 · 엑셀도 404(숨기면 아래도 숨긴 것)
       menuService.setMainMenuDisplay(mainMenu.getId(), false);
       mvc.perform(get("/").with(normalUser()))
           .andExpect(content().string(Matchers.not(Matchers.containsString("프로젝트 관리"))));
-      mvc.perform(get(base).with(normalUser())).andExpect(status().isOk());
+      mvc.perform(get(base).with(normalUser())).andExpect(status().isNotFound());
       menuService.setMainMenuDisplay(mainMenu.getId(), true);
       menuService.setProjectDisplay(owner.getId(), false);
       mvc.perform(get("/").with(normalUser()))
           .andExpect(content().string(Matchers.not(Matchers.containsString("프로젝트 관리"))));
+      mvc.perform(get(base).with(normalUser())).andExpect(status().isNotFound());
+      mvc.perform(get(base + "/excel").with(normalUser())).andExpect(status().isNotFound());
       menuService.setProjectDisplay(owner.getId(), true);
+      // 메뉴 자체의 "메뉴 목록에 표시" 는 목록에서만 빠지고 주소로는 열린다
+      menuService.setMenuDisplay(menuId, false);
+      mvc.perform(get(base).with(normalUser())).andExpect(status().isOk());
+      menuService.setMenuDisplay(menuId, true);
       mvc.perform(get(base).param("s.name", name).with(normalUser()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("전체 0건")));
@@ -345,7 +353,8 @@ class MenuPageControllerTest implements GeneralWebTest {
           .allSatisfy(log -> assertThat(log.getUsername()).isEqualTo("tester"));
       // 변경 이력 화면(관리): 세 건, 넣은 값이 보이고, 작업 · 사용자로 거른다
       var admin = user("admin").roles("ADMIN");
-      var history = "/admin/menu/" + menuId + "/history";
+      // 기본 탭은 메뉴 설정 변경 - 데이터 변경은 tab=data
+      var history = "/admin/menu/" + menuId + "/history?tab=data";
       mvc.perform(get(history).with(admin))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("이력 3건")))
@@ -381,6 +390,9 @@ class MenuPageControllerTest implements GeneralWebTest {
         changeLogRepository.deleteAll(
             changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId));
         var dbTableId = menuService.getMenu(menuId).getDbTableId();
+        // 값 목록을 바꿨다 되돌린 필드 이력(테이블 단위라 프로젝트 정리에 안 걸린다) - 이 시험이 시작한 뒤의 것만
+        net.luversof.web.dynamiccrud2.TestSettingLogs.purgeFields(
+            settingLogRepository, menuId, dbTableId, startedAt);
         menuService.deleteMenu(menuId);
         if (preexisting.isEmpty()) {
           dbTableRepository.deleteById(dbTableId);
@@ -388,6 +400,7 @@ class MenuPageControllerTest implements GeneralWebTest {
       }
       menuService.deleteMainMenu(mainMenu.getId());
       menuService.deleteProject(owner.getId());
+      net.luversof.web.dynamiccrud2.TestSettingLogs.purge(settingLogRepository, owner.getId());
     }
   }
 

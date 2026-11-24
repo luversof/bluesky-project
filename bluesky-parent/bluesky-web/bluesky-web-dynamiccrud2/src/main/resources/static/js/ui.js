@@ -402,3 +402,20 @@ document.addEventListener('keydown', (event) => {
   dropdown.open = false;
   dropdown.querySelector('summary').focus();
 });
+
+// 표 머리 따라 붙기(main.css .table-scroll): 위에 붙는 머리(.sticky-head, 사용 화면의 제목 · 검색 · 건수) 높이 --sticky-head-h 와
+// 표 머리가 내려갈 수 있는 거리 --thead-travel(표 높이 - thead 높이)을 잰다. 검색 칸 줄바꿈 · 창 크기에 따라 다시 잰다
+(() => {
+  const head = document.querySelector('.sticky-head');
+  const box = document.querySelector('.table-scroll');
+  if (!head || !box) return;
+  const table = box.querySelector('table');
+  const thead = table.querySelector('thead');
+  const measure = () => {
+    document.documentElement.style.setProperty('--sticky-head-h', head.offsetHeight + 'px');
+    box.style.setProperty('--thead-travel', Math.max(0, table.offsetHeight - thead.offsetHeight) + 'px');
+  };
+  const observer = new ResizeObserver(measure);
+  observer.observe(head);
+  observer.observe(table);
+})();

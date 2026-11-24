@@ -33,7 +33,7 @@
 		</form>
 	`, body = @`
 	@template._components.sourceInfo(dbTable = dbTable, databaseType = databaseType, targetNoun = targetNoun, cssClass = "mb-3 pb-3 border-b border-base-300")
-	<div class="overflow-x-auto">
+	<div class="relative overflow-x-auto">
 		<table class="table" aria-label="${t("admin.table.fields")}">
 			<thead>
 				<tr>

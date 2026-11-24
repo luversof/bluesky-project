@@ -7,8 +7,8 @@ import java.util.UUID;
 import net.luversof.web.dynamiccrud2.domain.SettingLog;
 
 /**
- * 설정 변경 이력 화면 조회. 범위는 둘 중 하나: 메뉴(menuId + 그 메뉴 테이블의 필드 변경 tableId) 또는 프로젝트(projectId). 거르기는 null 이면
- * 안 씀, 기간은 [from, to). 구현은 {@link SettingLogQueriesImpl}
+ * 설정 변경 이력 화면 조회. 범위는 셋 중 하나: 메뉴(menuId + 그 메뉴 테이블의 필드 변경 tableId), 프로젝트(projectId), 셋 다 null 이면
+ * 전체. 거르기는 null 이면 안 씀, 기간은 [from, to). 구현은 {@link SettingLogQueriesImpl}
  */
 public interface SettingLogQueries {
 

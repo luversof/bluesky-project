@@ -14,23 +14,24 @@
 @param String targetNoun = net.luversof.web.dynamiccrud2.config.Msg.t("target.table")
 @param List<net.luversof.web.dynamiccrud2.admin.controller.Crumb> breadcrumb = null
 @param String error = null
+<%-- menuPath: 제목에 보일 "프로젝트 › 메인 메뉴 › 메뉴"(없으면 메뉴 이름) --%>
+@param String menuPath = null
 
 !{var menuId = menu.getId().toString();}
 
-<%-- 순서: 기본 정보 → 쿼리 설정 → 테이블 정보(접힘) → 검색 설정(쿼리를 먼저 정하고 검색은 그 뒤에 다듬는다). 테이블 정보는 쿼리 작성 화면에도(펼침). 메뉴 삭제는 맨 위 오른쪽 --%>
-@template._layout.layout(title = t("admin.menu.title", menu.getName()), breadcrumb = breadcrumb, content = @`
-	<%-- 메뉴 삭제는 이 화면의 주요 동작이라 스크롤 없이 보이게 맨 위 오른쪽(돌아가기는 위 위치 표시) --%>
-	<div class="flex items-center gap-2 mb-4">
-		<a class="btn btn-sm ml-auto" href="/admin/menu/${menuId}/history">${t("admin.history.title")}</a>
-		<%-- 복사: 같은 메인 메뉴에 쿼리 · 검색 설정까지 그대로, 숨김으로 만든다(MenuService.copyMenu) --%>
-		<span class="inline-flex items-center gap-1">
-			<button type="button" class="btn btn-sm" data-toggle="copy-menu" aria-controls="copy-menu" aria-expanded="false">${t("admin.menu.copy")}</button>
-			@template._components.help(text = t("admin.menu.copy.hint"), label = t("admin.menu.copy.helpLabel"), alignEnd = true)
-		</span>
-		<form method="post" action="/admin/menu/${menuId}/delete">
-			<button class="btn btn-sm btn-error" data-confirm="${t("admin.menu.deleteConfirm")}">${t("admin.menu.delete")}</button>
-		</form>
-	</div>
+<%-- 순서: 기본 정보 → 쿼리 설정 → 테이블 정보(접힘) → 검색 설정(쿼리를 먼저 정하고 검색은 그 뒤에 다듬는다). 테이블 정보는 쿼리 작성 화면에도(펼침). 메뉴 삭제는 제목 줄 오른쪽 --%>
+<%-- 변경 이력 · 메뉴 복사 · 메뉴 삭제는 화면 제목(메뉴 관리) 줄 오른쪽 끝(사용자 결정 11-24 - 예전엔 제목 아래 따로 한 줄) --%>
+@template._layout.layout(title = t("admin.menu.title", menuPath == null ? menu.getName() : menuPath), breadcrumb = breadcrumb, titleActions = @`
+	<a class="btn btn-sm" href="/admin/menu/${menuId}/history">${t("admin.history.title")}</a>
+	<%-- 복사: 같은 메인 메뉴에 쿼리 · 검색 설정까지 그대로, 숨김으로 만든다(MenuService.copyMenu) --%>
+	<span class="inline-flex items-center gap-1">
+		<button type="button" class="btn btn-sm" data-toggle="copy-menu" aria-controls="copy-menu" aria-expanded="false">${t("admin.menu.copy")}</button>
+		@template._components.help(text = t("admin.menu.copy.hint"), label = t("admin.menu.copy.helpLabel"), alignEnd = true)
+	</span>
+	<form method="post" action="/admin/menu/${menuId}/delete">
+		<button class="btn btn-sm btn-error" data-confirm="${t("admin.menu.deleteConfirm")}">${t("admin.menu.delete")}</button>
+	</form>
+`, content = @`
 	@template._components.codeNameForm(formId = "copy-menu", action = "/admin/menu/" + menuId + "/copy", noun = t("admin.menu.copy.noun"),
 		name = t("admin.menu.copy.name", menu.getName()), code = menu.getCode() + "-copy", submitText = t("admin.menu.copy.submit"),
 		cssClass = "justify-end mb-4")

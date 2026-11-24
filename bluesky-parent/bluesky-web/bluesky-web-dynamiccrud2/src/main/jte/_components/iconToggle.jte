@@ -3,4 +3,4 @@
 @param String icon
 @param String label
 
-<button type="button" class="icon-btn" data-toggle="${target}" aria-controls="${target}" aria-expanded="false" aria-label="${label}" title="${label}">${icon}</button>
+<button type="button" class="icon-btn" data-toggle="${target}" aria-controls="${target}" aria-expanded="false" aria-label="${label}" data-tip="${label}">${icon}</button>

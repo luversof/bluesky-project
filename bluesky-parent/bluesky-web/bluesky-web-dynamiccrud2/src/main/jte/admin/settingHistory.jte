@@ -43,7 +43,7 @@
 	@if(settings.rows().isEmpty())
 		@template._components.emptyState(message = t("admin.history.empty"))
 	@else
-		<div class="overflow-x-auto">
+		<div class="relative overflow-x-auto">
 			<table class="table" aria-label="${t("admin.history.settingsTitle")}">
 				<thead>
 					<tr><th>${t("admin.history.col.time")}</th><th>${t("admin.history.user")}</th><th>${t("admin.history.target")}</th><th>${t("admin.history.col.action")}</th><th>${t("admin.history.col.changes")}</th></tr>

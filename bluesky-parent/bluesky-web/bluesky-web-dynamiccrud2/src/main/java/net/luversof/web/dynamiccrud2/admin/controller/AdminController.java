@@ -122,10 +122,18 @@ public class AdminController {
     menuService.reorderMainMenus(projectId, ids);
   }
 
+  /** 메뉴 순서 + 다른 메인 메뉴에서 끌어 온 메뉴 옮기기. 주소 이름이 겹치는 등 막히면 409 + 사유 글자(js/reorder.js 가 알린다) */
   @PostMapping("/mainMenu/{mainMenuId}/menu/order")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void reorderMenus(@PathVariable UUID mainMenuId, @RequestParam List<UUID> ids) {
-    menuService.reorderMenus(mainMenuId, ids);
+  public org.springframework.http.ResponseEntity<String> reorderMenus(
+      @PathVariable UUID mainMenuId, @RequestParam List<UUID> ids) {
+    try {
+      menuService.reorderMenus(mainMenuId, ids);
+      return org.springframework.http.ResponseEntity.noContent().build();
+    } catch (BlueskyException e) {
+      return org.springframework.http.ResponseEntity.status(HttpStatus.CONFLICT)
+          .contentType(org.springframework.http.MediaType.TEXT_PLAIN)
+          .body(messageOf(e));
+    }
   }
 
   @PostMapping("/project/{id}/delete")
@@ -146,16 +154,27 @@ public class AdminController {
         () -> menuService.saveMainMenu(id, projectId, code, name));
   }
 
+  /** back: 왼쪽 프로젝트 목록에서 누르면 보던 프로젝트로 돌아간다(없으면 그 프로젝트) */
   @PostMapping("/project/{id}/display")
-  public String projectDisplay(@PathVariable UUID id, @RequestParam boolean display) {
+  public String projectDisplay(
+      @PathVariable UUID id,
+      @RequestParam boolean display,
+      @RequestParam(required = false) UUID back) {
     menuService.setProjectDisplay(id, display);
-    return redirectToProject(id);
+    return redirectToProject(back == null ? id : back);
   }
 
   @PostMapping("/mainMenu/{id}/display")
   public String mainMenuDisplay(@PathVariable UUID id, @RequestParam boolean display) {
     menuService.setMainMenuDisplay(id, display);
     return redirectToProject(menuService.getMainMenu(id).getProjectId());
+  }
+
+  /** 프로젝트 관리 트리의 메뉴 줄 눈 아이콘(메뉴 설정 화면의 "메뉴 목록에 표시" 와 같은 값) */
+  @PostMapping("/menu/{id}/display")
+  public String menuDisplay(@PathVariable UUID id, @RequestParam boolean display) {
+    var menu = menuService.setMenuDisplay(id, display);
+    return redirectToProject(menuService.getMainMenu(menu.getMainMenuId()).getProjectId());
   }
 
   @PostMapping("/mainMenu/{id}/delete")
@@ -224,7 +243,16 @@ public class AdminController {
   public String menu(@PathVariable UUID id, Model model) {
     var menu = menuService.getMenu(id);
     model.addAttribute("menu", menu);
-    model.addAttribute("projectId", menuService.getMainMenu(menu.getMainMenuId()).getProjectId());
+    var mainMenu = menuService.getMainMenu(menu.getMainMenuId());
+    model.addAttribute("projectId", mainMenu.getProjectId());
+    // 화면 제목: 어느 프로젝트 · 메인 메뉴의 메뉴인지(사용자 요청 11-24 - 메뉴 이름만으로는 같은 이름 메뉴를 가리기 어렵다)
+    model.addAttribute(
+        "menuPath",
+        menuService.getProject(mainMenu.getProjectId()).getName()
+            + " › "
+            + mainMenu.getName()
+            + " › "
+            + menu.getName());
     var dbTable = fieldService.get(menu.getDbTableId());
     model.addAttribute("dbTable", dbTable);
     addSource(model, dbTable);
@@ -272,13 +300,14 @@ public class AdminController {
   }
 
   /**
-   * 메뉴 변경 이력. tab=data(기본): 사용 화면에서 실행한 입력 · 수정 · 삭제(ChangeLog, 사용자 · 쿼리 · 기간). tab=settings: 관리
-   * 화면에서 바꾼 이 메뉴의 설정(SettingLog: 메뉴 · 쿼리 · 검색 + 이 메뉴 테이블의 필드, 사용자 · 대상 · 기간)
+   * 메뉴 변경 이력. tab=settings(기본 - 메뉴 관리에서 왔으니 설정 이력이 먼저, 사용자 결정 11-24): 관리 화면에서 바꾼 이 메뉴의
+   * 설정(SettingLog: 메뉴 · 쿼리 · 검색 + 이 메뉴 테이블의 필드, 사용자 · 대상 · 기간). tab=data: 사용 화면에서 실행한 입력 · 수정 ·
+   * 삭제(ChangeLog, 사용자 · 쿼리 · 기간)
    */
   @GetMapping("/menu/{id}/history")
   public String history(
       @PathVariable UUID id,
-      @RequestParam(defaultValue = "data") String tab,
+      @RequestParam(defaultValue = "settings") String tab,
       @RequestParam(required = false) String user,
       @RequestParam(required = false) UUID query,
       @RequestParam(required = false) String target,
@@ -287,13 +316,13 @@ public class AdminController {
       @RequestParam(defaultValue = "0") int page,
       Model model) {
     var menu = menuService.getMenu(id);
-    var settingsTab = "settings".equals(tab);
+    var settingsTab = !"data".equals(tab);
     model.addAttribute("menu", menu);
     model.addAttribute("settingsTab", settingsTab);
     // 탭 이름 "테이블 데이터 변경" / "컬렉션 데이터 변경"
     addSource(model, fieldService.get(menu.getDbTableId()));
     var params = new LinkedHashMap<String, Object>();
-    params.put("tab", settingsTab ? "settings" : null);
+    params.put("tab", settingsTab ? null : "data");
     params.put("user", user);
     params.put("from", from);
     params.put("to", to);
@@ -318,6 +347,32 @@ public class AdminController {
   }
 
   /** 프로젝트 설정 변경 이력: 프로젝트 · 메인 메뉴 · 그 아래 메뉴(지운 메뉴 포함) · 쿼리 · 검색 설정 */
+  /** 전체 설정 변경 이력(프로젝트 관리 왼쪽 목록 아래 링크): 모든 프로젝트 + 어느 프로젝트에도 속하지 않는 변경(프로젝트 순서 등) */
+  @GetMapping("/history")
+  public String allHistory(
+      @RequestParam(required = false) String user,
+      @RequestParam(required = false) String target,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+      @RequestParam(defaultValue = "0") int page,
+      Model model) {
+    var filter = new SettingLogService.Filter(user, target, from, to);
+    model.addAttribute("settingFilter", filter);
+    model.addAttribute("settings", settingLogService.page(null, null, filter, page));
+    var params = new LinkedHashMap<String, Object>();
+    params.put("user", user);
+    params.put("target", target);
+    params.put("from", from);
+    params.put("to", to);
+    model.addAttribute("pageUrl", "/admin/history?" + queryString(params) + "page=");
+    model.addAttribute(
+        "breadcrumb",
+        List.of(
+            new Crumb(Msg.t("admin.index.title"), "/admin"),
+            new Crumb(Msg.t("admin.history.allTitle"), null)));
+    return "admin/allHistory";
+  }
+
   @GetMapping("/project/{id}/history")
   public String projectHistory(
       @PathVariable UUID id,
@@ -412,15 +467,22 @@ public class AdminController {
         redirect, redirectToProject(projectId), () -> menuService.renameMenu(id, code, name));
   }
 
-  /** 메뉴 복사: 성공하면 새 메뉴 설정 화면으로(숨김 상태라 고친 뒤 켠다), 주소 이름이 겹치는 등 실패하면 원래 메뉴로 사유와 함께 */
+  /**
+   * 메뉴 복사: 성공하면 새 메뉴 설정 화면으로(숨김 상태라 고친 뒤 켠다), 주소 이름이 겹치는 등 실패하면 원래 메뉴로 사유와 함께. 이름 · 주소 이름이 없으면(프로젝트
+   * 관리 화면의 복사 아이콘) 겹치지 않는 이름을 붙여 바로 만든다
+   */
   @PostMapping("/menu/{id}/copy")
   public String copyMenu(
       @PathVariable UUID id,
-      @RequestParam String code,
-      @RequestParam String name,
+      @RequestParam(required = false) String code,
+      @RequestParam(required = false) String name,
       RedirectAttributes redirect) {
     try {
-      return "redirect:/admin/menu/" + menuService.copyMenu(id, code, name).getId();
+      var copy =
+          code == null && name == null
+              ? menuService.copyMenu(id)
+              : menuService.copyMenu(id, code, name == null ? "" : name);
+      return "redirect:/admin/menu/" + copy.getId();
     } catch (BlueskyException e) {
       redirect.addFlashAttribute("error", messageOf(e));
       return "redirect:/admin/menu/" + id;

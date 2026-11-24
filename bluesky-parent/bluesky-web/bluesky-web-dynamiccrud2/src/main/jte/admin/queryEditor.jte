@@ -20,8 +20,9 @@
 
 <%-- id 는 q- 로 시작한다(레이어로 뜨면 메뉴 관리 화면의 기본 정보 칸과 같은 화면에 있다).
      layer: 메뉴 관리 화면의 레이어(_components/modal)에 htmx 로 뜬다 - 저장은 htmx(성공하면 메뉴 관리 화면을 새로 고침, 실패하면 이 조각을 사유와 함께 다시),
-     취소는 레이어 닫기. 아니면 단독 화면(주소로 바로 열었을 때) --%>
-<form method="post" action="/admin/menu/${menuId}/query" class="${layer ? "card grid gap-4" : null}"
+     취소는 레이어 닫기. 아니면 단독 화면(주소로 바로 열었을 때).
+     grid-cols-1(= minmax(0, 1fr)): 그냥 grid 면 카드가 안의 넓은 표(결과 미리 보기) 폭만큼 늘어나 레이어 전체에 가로 스크롤이 생긴다 - 표 상자만 스크롤 --%>
+<form method="post" action="/admin/menu/${menuId}/query" class="${layer ? "card grid grid-cols-1 gap-4" : null}"
 	hx-post="${layer ? "/admin/menu/" + menuId + "/query" : null}" hx-target="${layer ? "#queryPanel" : null}">
 	@if(layer)
 		<h2 class="font-semibold">${t(queryId == null ? "admin.query.title.add" : "admin.query.title.edit", kind.name())}</h2>
