@@ -102,7 +102,7 @@
 													<span class="badge">${menu.getAuthority()}</span>
 												@endif
 												<%-- 메인 메뉴와 같게 ✎ · 눈(보이기 · 숨기기) · 휴지통(삭제)(사용자 요청 11-24).
-												     복사: 이름을 묻지 않고 "이름 복사본" · code-copy 로 숨김 메뉴를 만들고 그 설정 화면으로 간다(MenuService.copyMenu(id), 사용자 결정 11-24) --%>
+												     복사: 이름을 묻지 않고 "이름 복사본" · code-copy 로 숨김 메뉴를 만들고 이 화면에 머문다(MenuService.copyMenu(id), 사용자 결정 11-24) --%>
 												<span class="icon-group reveal-icons">
 													@template._components.iconToggle(target = "rename-m-" + menuId, icon = "✎", label = t("admin.rename", menu.getName()))
 													<form method="post" action="/admin/menu/${menuId}/copy" class="inline-flex">

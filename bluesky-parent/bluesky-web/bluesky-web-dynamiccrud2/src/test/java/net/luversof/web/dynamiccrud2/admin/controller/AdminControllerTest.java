@@ -381,6 +381,14 @@ class AdminControllerTest implements GeneralWebTest {
           // 라벨을 정하는 필드 화면으로 가는 단추(들어온 메뉴로 돌아오도록 menu 를 붙인다)
           .andExpect(content().string(Matchers.containsString("필드 관리")))
           .andExpect(content().string(Matchers.containsString("?menu=" + menuId)));
+      // 프로젝트 관리 화면의 복사 아이콘(이름 없이): 숨김 복사본을 만들고 프로젝트 관리 화면에 머문다
+      mvc.perform(post("/admin/menu/" + menuId + "/copy").with(admin()))
+          .andExpect(status().is3xxRedirection())
+          .andExpect(redirectedUrl("/admin?project=" + project.getId()));
+      var copied =
+          menuRepository.findByMainMenuIdAndCode(mainMenu.getId(), "screen-copy").orElseThrow();
+      created.add(copied.getId());
+      assertThat(copied.isEnableDisplay()).isFalse();
       mvc.perform(get("/admin/menu/" + menuId + "/query/new").param("kind", "UPDATE").with(admin()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("UPDATE public.\"MainMenu\" SET")))

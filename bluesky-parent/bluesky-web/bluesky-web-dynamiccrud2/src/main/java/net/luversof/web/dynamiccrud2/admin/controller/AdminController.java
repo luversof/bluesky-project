@@ -468,8 +468,8 @@ public class AdminController {
   }
 
   /**
-   * 메뉴 복사: 성공하면 새 메뉴 설정 화면으로(숨김 상태라 고친 뒤 켠다), 주소 이름이 겹치는 등 실패하면 원래 메뉴로 사유와 함께. 이름 · 주소 이름이 없으면(프로젝트
-   * 관리 화면의 복사 아이콘) 겹치지 않는 이름을 붙여 바로 만든다
+   * 메뉴 복사. 메뉴 설정 화면(이름 · 주소 이름을 적어 복사): 성공하면 새 메뉴 설정 화면으로(숨김 상태라 고친 뒤 켠다), 주소 이름이 겹치는 등 실패하면 원래 메뉴로
+   * 사유와 함께. 프로젝트 관리 화면의 복사 아이콘(이름 · 주소 이름 없음): 겹치지 않는 이름을 붙여 만들고 프로젝트 관리 화면에 머문다(사용자 결정 11-24)
    */
   @PostMapping("/menu/{id}/copy")
   public String copyMenu(
@@ -477,11 +477,13 @@ public class AdminController {
       @RequestParam(required = false) String code,
       @RequestParam(required = false) String name,
       RedirectAttributes redirect) {
+    if (code == null && name == null) {
+      var projectId =
+          menuService.getMainMenu(menuService.getMenu(id).getMainMenuId()).getProjectId();
+      return run(redirect, redirectToProject(projectId), () -> menuService.copyMenu(id));
+    }
     try {
-      var copy =
-          code == null && name == null
-              ? menuService.copyMenu(id)
-              : menuService.copyMenu(id, code, name == null ? "" : name);
+      var copy = menuService.copyMenu(id, code, name == null ? "" : name);
       return "redirect:/admin/menu/" + copy.getId();
     } catch (BlueskyException e) {
       redirect.addFlashAttribute("error", messageOf(e));
