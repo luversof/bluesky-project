@@ -62,7 +62,7 @@ document.addEventListener('click', (event) => {
   if (event.target.closest('summary .help-btn')) event.preventDefault();
 });
 
-// 접히는 카드의 접힘 상태 기억([data-remember-open="키"], _components/card rememberKey): 이 브라우저에만(localStorage).
+// 접히는 카드 · 화면 안내의 접힘 상태 기억([data-remember-open="키"], _components/card · guide rememberKey): 이 브라우저에만(localStorage).
 // 저장소를 못 쓰면(사생활 모드 등) 처음 상태 그대로. 레이어로 들어온 조각(htmx)에도 적용한다
 (() => {
   const storeKey = (details) => 'card-open:' + details.dataset.rememberOpen;

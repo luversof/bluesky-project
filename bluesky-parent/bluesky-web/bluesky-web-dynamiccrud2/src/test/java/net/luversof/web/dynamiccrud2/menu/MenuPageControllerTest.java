@@ -480,6 +480,12 @@ class MenuPageControllerTest implements GeneralWebTest {
       mvc.perform(get("/admin/menu/" + menuId).with(admin))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("JSON 호출")))
+          // 메뉴 관리 안내: 처음엔 접혀 있고 접고 편 상태를 기억한다
+          .andExpect(
+              content()
+                  .string(
+                      Matchers.containsString(
+                          "<details class=\"guide mb-4\" data-remember-open=\"menu-guide\">")))
           // 제목 오른쪽 사용 화면 주소 링크
           .andExpect(
               content()

@@ -40,7 +40,7 @@
 		cssClass = "justify-end mb-4")
 	@template._components.alert(message = error)
 
-	@template._components.guide(title = t("admin.menu.guide.title"), content = @`
+	@template._components.guide(title = t("admin.menu.guide.title"), rememberKey = "menu-guide", content = @`
 		<p>${t("admin.menu.guide.intro")}</p>
 		<ol class="mt-1">
 			<li>$unsafe{t("admin.menu.guide.basic", targetNoun)}</li>
@@ -118,7 +118,7 @@
 
 	<%-- JSON 호출 설명: 위 쿼리 · 아래 검색 설정에서 만든다(MenuPageService.apiDoc). 처음엔 접어 둔다 --%>
 	@if(apiBase != null && !apiCalls.isEmpty())
-		@template._components.card(title = t("admin.menu.api"), help = t("admin.menu.api.help"), collapsible = true, open = false, body = @`
+		@template._components.card(title = t("admin.menu.api"), help = t("admin.menu.api.help"), collapsible = true, open = false, rememberKey = "menu-api", body = @`
 			<div class="grid gap-5">
 				@for(var call : apiCalls)
 					<section class="grid gap-2">
