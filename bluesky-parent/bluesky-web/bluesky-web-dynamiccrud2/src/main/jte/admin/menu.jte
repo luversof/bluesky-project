@@ -23,7 +23,8 @@
 
 <%-- 순서: 기본 정보 → 쿼리 설정 → 테이블 정보(접힘) → 검색 설정(쿼리를 먼저 정하고 검색은 그 뒤에 다듬는다). 테이블 정보는 쿼리 작성 화면에도(펼침). 메뉴 삭제는 제목 줄 오른쪽 --%>
 <%-- 변경 이력 · 메뉴 복사 · 메뉴 삭제는 화면 제목(메뉴 관리) 줄 오른쪽 끝(사용자 결정 11-24 - 예전엔 제목 아래 따로 한 줄) --%>
-@template._layout.layout(title = t("admin.menu.title", menuPath == null ? menu.getName() : menuPath), breadcrumb = breadcrumb, titleActions = @`
+@template._layout.layout(title = t("admin.menu.title", menuPath == null ? menu.getName() : menuPath), breadcrumb = breadcrumb,
+	titleAfter = apiBase == null ? null : @`<a class="hint font-mono hover:underline" href="${apiBase}" title="${t("admin.openUse")}">${apiBase}</a>`, titleActions = @`
 	<a class="btn btn-sm" href="/admin/menu/${menuId}/history">${t("admin.history.title")}</a>
 	<%-- 복사: 같은 메인 메뉴에 쿼리 · 검색 설정까지 그대로, 숨김으로 만든다(MenuService.copyMenu) --%>
 	<span class="inline-flex items-center gap-1">

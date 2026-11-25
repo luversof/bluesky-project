@@ -480,6 +480,12 @@ class MenuPageControllerTest implements GeneralWebTest {
       mvc.perform(get("/admin/menu/" + menuId).with(admin))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("JSON 호출")))
+          // 제목 오른쪽 사용 화면 주소 링크
+          .andExpect(
+              content()
+                  .string(
+                      Matchers.containsString(
+                          "<a class=\"hint font-mono hover:underline\" href=\"" + base + "\"")))
           .andExpect(content().string(Matchers.containsString(base + "/api")))
           .andExpect(content().string(Matchers.containsString(base + "/api/action/" + update)))
           .andExpect(content().string(Matchers.containsString(">s.name<")));

@@ -12,6 +12,8 @@
 @param gg.jte.Content brandMenu = null
 @param boolean showUser = true
 @param gg.jte.Content titleActions = null
+<%-- titleAfter: 제목 바로 오른쪽(제목에 딸린 것 - 메뉴 관리 화면의 사용 화면 주소 링크). titleActions 는 줄 오른쪽 끝 --%>
+@param gg.jte.Content titleAfter = null
 <%-- stickyHead: 사이드바 화면에서 제목 아래, 제목과 함께 위에 붙어 있을 것(사용 화면의 검색 폼) --%>
 @param gg.jte.Content stickyHead = null
 
@@ -101,6 +103,7 @@
 			<%-- titleActions: 화면 제목 줄 오른쪽 끝 단추(화면 전체에 대한 동작 - 전체 설정 변경 이력, 메뉴의 변경 이력 · 복사 · 삭제) --%>
 			<div class="flex flex-wrap items-center gap-2 mb-4">
 				<h1 class="text-xl font-semibold">${title}</h1>
+				@if(titleAfter != null)${titleAfter}@endif
 				@if(titleActions != null)<div class="ml-auto flex flex-wrap items-center gap-2">${titleActions}</div>@endif
 			</div>
 			${content}
