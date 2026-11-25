@@ -9,7 +9,7 @@
 
 !{var id = "f-" + index;}
 
-@template._components.field(label = field.header() + (field.operator() == SearchOperator.RANGE ? "" : " · " + field.operator().title()), forId = id, hint = field.tooMany() ? t("menu.search.tooMany") : null, content = @`
+@template._components.field(label = field.header() + (field.operator() == SearchOperator.RANGE ? "" : " · " + field.operator().title()), forId = id, required = field.required(), hint = field.tooMany() ? t("menu.search.tooMany") : null, content = @`
 	@if(field.operator() == SearchOperator.RANGE)
 		<div class="flex items-center gap-1">
 			@template._components.typedInput(id = id, name = "f." + field.label(), value = field.value(), inputType = field.inputType(), small = true, options = field.options())
@@ -17,6 +17,6 @@
 			@template._components.typedInput(id = id + "-to", name = "f." + field.label() + ".to", value = field.valueTo(), inputType = field.inputType(), small = true, options = field.options())
 		</div>
 	@else
-		@template._components.typedInput(id = id, name = "f." + field.label(), value = field.value(), inputType = field.inputType(), small = true, options = field.options())
+		@template._components.typedInput(id = id, name = "f." + field.label(), value = field.value(), inputType = field.inputType(), small = true, options = field.options(), required = field.required())
 	@endif
 `)

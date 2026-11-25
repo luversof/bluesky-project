@@ -19,11 +19,23 @@ public record SearchSettings(List<Item> fields, List<String> keyword) {
    * 검색칸 하나.
    *
    * @param pick 고르는 방식. null 이면 예전 저장값(필드 값 목록이 있으면 그 셀렉트, 없으면 입력)
+   * @param values 검색용 값 목록(pick 이 CUSTOM 일 때, "저장값=표시" 줄들 - 필드 값 목록과 같은 형식)
+   * @param required 이 칸을 채워야 목록을 보인다(비면 조회하지 않고 안내만)
    */
-  public record Item(String label, SearchOperator operator, Pick pick) {
+  public record Item(
+      String label, SearchOperator operator, Pick pick, String values, boolean required) {
 
     public Item(String label, SearchOperator operator) {
-      this(label, operator, null);
+      this(label, operator, null, null, false);
+    }
+
+    public Item(String label, SearchOperator operator, Pick pick) {
+      this(label, operator, pick, null, false);
+    }
+
+    /** 검색용 값 목록(저장값 → 표시). CUSTOM 이 아니면 빈 맵 */
+    public Map<String, String> customOptions() {
+      return pick == Pick.CUSTOM ? DbField.parseValueOptions(values) : Map.of();
     }
   }
 
@@ -34,7 +46,9 @@ public record SearchSettings(List<Item> fields, List<String> keyword) {
     /** 필드 값 목록(테이블 필드 관리)의 셀렉트 */
     LIST,
     /** DB 에 있는 그 컬럼의 값 전체(서로 다른 값)의 셀렉트. 값 목록이 있으면 표시 글자로 보인다 */
-    DISTINCT;
+    DISTINCT,
+    /** 검색에만 쓰는 값 목록(검색 설정에 적은 "저장값=표시") - 필드 값 목록 중 일부만 보이거나 따로 정할 때 */
+    CUSTOM;
 
     /** 실제로 쓸 방식: 안 정했으면(예전 저장값) 값 목록 유무로, 값 목록이 없는데 LIST 면 INPUT */
     public static Pick resolve(Pick pick, boolean hasValueList) {
@@ -62,7 +76,13 @@ public record SearchSettings(List<Item> fields, List<String> keyword) {
             && item.get("label") instanceof String label
             && item.get("operator") instanceof String operator) {
           try {
-            fields.add(new Item(label, SearchOperator.valueOf(operator), pickOf(item.get("pick"))));
+            fields.add(
+                new Item(
+                    label,
+                    SearchOperator.valueOf(operator),
+                    pickOf(item.get("pick")),
+                    item.get("values") instanceof String values ? values : null,
+                    Boolean.TRUE.equals(item.get("required"))));
           } catch (IllegalArgumentException e) {
             // 지금 판이 모르는 방식 - 그 칸만 뺀다
           }
@@ -103,6 +123,12 @@ public record SearchSettings(List<Item> fields, List<String> keyword) {
               field.put("operator", item.operator().name());
               if (item.pick() != null) {
                 field.put("pick", item.pick().name());
+              }
+              if (item.pick() == Pick.CUSTOM && item.values() != null) {
+                field.put("values", item.values());
+              }
+              if (item.required()) {
+                field.put("required", true);
               }
               return (Map<String, Object>) field;
             })

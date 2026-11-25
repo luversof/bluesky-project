@@ -249,10 +249,15 @@ class MenuPageControllerTest implements GeneralWebTest {
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("전체 0건")));
       // 고르기 "DB 값 전체": 검색칸이 그 컬럼에 있는 값의 셀렉트가 되고 같음으로 찾는다
-      searchService.save(
+      searchService.saveFields(
           menuId,
-          Map.of("이름", SearchOperator.CONTAINS),
-          Map.of("이름", net.luversof.web.dynamiccrud2.domain.SearchSettings.Pick.DISTINCT),
+          Map.of(
+              "이름",
+              new net.luversof.web.dynamiccrud2.admin.service.SearchService.FieldInput(
+                  SearchOperator.CONTAINS,
+                  net.luversof.web.dynamiccrud2.domain.SearchSettings.Pick.DISTINCT,
+                  null,
+                  false)),
           java.util.List.of("이름", "createdDate"));
       mvc.perform(get(base).param("f.이름", name).with(normalUser()))
           .andExpect(status().isOk())
@@ -265,6 +270,30 @@ class MenuPageControllerTest implements GeneralWebTest {
       // 일부만 넣으면 같음이라 맞는 행이 없다
       mvc.perform(get(base).param("f.이름", name.substring(0, 10)).with(normalUser()))
           .andExpect(content().string(Matchers.containsString("전체 0건")));
+      // 검색용 값 목록 + 필수: 적은 값만 고르고, 비우면 목록을 읽지 않고 안내만(화면 · JSON)
+      searchService.saveFields(
+          menuId,
+          Map.of(
+              "이름",
+              new net.luversof.web.dynamiccrud2.admin.service.SearchService.FieldInput(
+                  SearchOperator.CONTAINS,
+                  net.luversof.web.dynamiccrud2.domain.SearchSettings.Pick.CUSTOM,
+                  name + "=찾는 행",
+                  true)),
+          java.util.List.of());
+      mvc.perform(get(base).with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("필수 검색 조건을 입력하세요")))
+          .andExpect(content().string(Matchers.containsString("전체 0건")))
+          .andExpect(content().string(Matchers.containsString(">찾는 행</option>")));
+      mvc.perform(
+              get(base + "/api")
+                  .accept(org.springframework.http.MediaType.APPLICATION_JSON)
+                  .with(normalUser()))
+          .andExpect(jsonPath("$.total").value(0))
+          .andExpect(jsonPath("$.message").value(Matchers.containsString("필수 검색 조건")));
+      mvc.perform(get(base).param("f.이름", name).with(normalUser()))
+          .andExpect(content().string(Matchers.containsString("전체 1건")));
       searchService.save(
           menuId, Map.of("이름", SearchOperator.CONTAINS), java.util.List.of("이름", "createdDate"));
 

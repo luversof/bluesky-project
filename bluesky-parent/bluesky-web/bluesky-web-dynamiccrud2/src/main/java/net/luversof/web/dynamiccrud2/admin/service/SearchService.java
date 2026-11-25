@@ -61,6 +61,8 @@ public class SearchService {
    * @param indexUse 방식마다 인덱스를 쓰는지와 그 까닭(화면이 고른 방식의 것을 보인다)
    * @param hasValueList 필드에 값 목록이 있어 "값 목록" 셀렉트를 고를 수 있다
    * @param pick 검색칸을 무엇으로 채우나(저장값, 없으면 값 목록이 있을 때 LIST · 없을 때 INPUT)
+   * @param values 검색용 값 목록(pick CUSTOM 의 "저장값=표시" 줄들)
+   * @param required 이 칸을 채워야 목록을 보인다
    */
   public record Candidate(
       String label,
@@ -73,7 +75,13 @@ public class SearchService {
       boolean keywordOn,
       Map<SearchOperator, IndexUse> indexUse,
       boolean hasValueList,
-      SearchSettings.Pick pick) {}
+      SearchSettings.Pick pick,
+      String values,
+      boolean required) {}
+
+  /** 검색칸 하나의 저장 입력(화면 값 - 서비스가 고를 수 있는지 다시 본다) */
+  public record FieldInput(
+      SearchOperator operator, SearchSettings.Pick pick, String values, boolean required) {}
 
   /** 검색 방식 하나가 인덱스를 쓰는지(ok)와 화면 문구 */
   public record IndexUse(boolean ok, String text) {}
@@ -104,14 +112,12 @@ public class SearchService {
   public SearchSetup setup(Menu menu) {
     var settings = SearchSettings.of(menu.getSearchSettings());
     var chosen = new HashMap<String, SearchOperator>();
-    var picks = new HashMap<String, SearchSettings.Pick>();
+    var items = new HashMap<String, SearchSettings.Item>();
     settings
         .fields()
         .forEach(item -> {
           chosen.put(item.label(), item.operator());
-          if (item.pick() != null) {
-            picks.put(item.label(), item.pick());
-          }
+          items.put(item.label(), item);
         });
     var base = fieldService.get(menu.getDbTableId());
     var read =
@@ -156,6 +162,7 @@ public class SearchService {
       var indexUse = new LinkedHashMap<SearchOperator, IndexUse>();
       operators.forEach(o -> indexUse.put(o, indexUse(meta, column.columnName(), o)));
       var hasValueList = field != null && !field.valueOptionMap().isEmpty();
+      var saved = items.get(column.label());
       candidates.add(
           new Candidate(
               column.label(),
@@ -168,7 +175,9 @@ public class SearchService {
               keywordAllowed && settings.keyword().contains(column.label()),
               indexUse,
               hasValueList,
-              SearchSettings.Pick.resolve(picks.get(column.label()), hasValueList)));
+              SearchSettings.Pick.resolve(saved == null ? null : saved.pick(), hasValueList),
+              saved == null ? null : saved.values(),
+              saved != null && saved.required()));
     }
     // 화면 순서: 고른 검색칸은 저장한 순서로 앞에, 나머지는 결과 순서. 통합 검색 대상도 저장한 순서로 앞에
     var fieldOrder = settings.fields().stream().map(SearchSettings.Item::label).toList();
@@ -251,31 +260,44 @@ public class SearchService {
    * @param keyword 통합 검색에 넣은 결과 이름
    */
   public void save(UUID menuId, Map<String, SearchOperator> operators, List<String> keyword) {
-    save(menuId, operators, Map.of(), keyword);
+    var fields = new java.util.LinkedHashMap<String, FieldInput>();
+    operators.forEach(
+        (label, operator) -> fields.put(label, new FieldInput(operator, null, null, false)));
+    saveFields(menuId, fields, keyword);
   }
 
   /**
-   * @param picks 결과 이름 → 고르기 방식(없거나 쓸 수 없으면 기본: 값 목록이 있으면 LIST, 없으면 INPUT)
+   * @param fields 결과 이름 → 검색칸 입력(받은 순서가 검색 폼 순서). 고르기가 없거나 쓸 수 없으면 기본(값 목록이 있으면 LIST, 없으면 INPUT).
+   *     검색용 값 목록은 CUSTOM 일 때만 남기고, 값을 안 적은 CUSTOM 은 INPUT 으로
    */
-  public void save(
-      UUID menuId,
-      Map<String, SearchOperator> operators,
-      Map<String, SearchSettings.Pick> picks,
-      List<String> keyword) {
+  public void saveFields(UUID menuId, Map<String, FieldInput> fields, List<String> keyword) {
     var menu = menuRepository.findById(menuId).orElseThrow();
     var byLabel = new HashMap<String, Candidate>();
     setup(menu).candidates().forEach(c -> byLabel.put(c.label(), c));
     // 받은 순서(화면에서 끌어 정한 순서)대로 남긴다
-    var fields = new ArrayList<SearchSettings.Item>();
-    operators.forEach((label, operator) -> {
+    var items = new ArrayList<SearchSettings.Item>();
+    fields.forEach((label, input) -> {
       var candidate = byLabel.get(label);
-      if (candidate != null) {
-        fields.add(
-            new SearchSettings.Item(
-                label,
-                candidate.operators().contains(operator) ? operator : candidate.operators().get(0),
-                SearchSettings.Pick.resolve(picks.get(label), candidate.hasValueList())));
+      if (candidate == null) {
+        return;
       }
+      var pick = SearchSettings.Pick.resolve(input.pick(), candidate.hasValueList());
+      var values =
+          pick == SearchSettings.Pick.CUSTOM && input.values() != null && !input.values().isBlank()
+              ? input.values().strip()
+              : null;
+      if (pick == SearchSettings.Pick.CUSTOM && values == null) {
+        pick = SearchSettings.Pick.INPUT;
+      }
+      items.add(
+          new SearchSettings.Item(
+              label,
+              candidate.operators().contains(input.operator())
+                  ? input.operator()
+                  : candidate.operators().get(0),
+              pick,
+              values,
+              input.required()));
     });
     var keywordLabels = new ArrayList<String>();
     for (var label : keyword) {
@@ -284,7 +306,7 @@ public class SearchService {
         keywordLabels.add(label);
       }
     }
-    var settings = new SearchSettings(fields, keywordLabels);
+    var settings = new SearchSettings(items, keywordLabels);
     var before =
         SettingLogService.snapshot(
             menu.getSearchSettings() == null

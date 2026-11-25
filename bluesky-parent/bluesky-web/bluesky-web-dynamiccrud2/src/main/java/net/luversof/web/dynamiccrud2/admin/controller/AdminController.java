@@ -452,27 +452,28 @@ public class AdminController {
   @PostMapping("/menu/{id}/search")
   public String saveSearch(
       @PathVariable UUID id, @RequestParam MultiValueMap<String, String> form) {
-    var operators = new LinkedHashMap<String, SearchOperator>();
-    var picks =
-        new java.util.HashMap<String, net.luversof.web.dynamiccrud2.domain.SearchSettings.Pick>();
+    var fields = new LinkedHashMap<String, SearchService.FieldInput>();
     var on = form.get("on") == null ? List.<String>of() : form.get("on");
     for (var label : on) {
-      // 모르는 고르기 방식이면 빼 둔다 - 서비스가 기본(값 목록이 있으면 LIST, 없으면 INPUT)으로
-      var pick = form.getFirst("pick." + label);
-      java.util.Arrays.stream(net.luversof.web.dynamiccrud2.domain.SearchSettings.Pick.values())
-          .filter(p -> p.name().equals(pick))
-          .findFirst()
-          .ifPresent(p -> picks.put(label, p));
-      // 모르는 방식이면 null - 서비스가 그 컬럼의 기본 방식으로 바꾼다
+      // 모르는 방식 · 고르기면 null - 서비스가 그 컬럼의 기본으로 바꾼다
       var operator = form.getFirst("op." + label);
-      operators.put(
+      var pick = form.getFirst("pick." + label);
+      fields.put(
           label,
-          java.util.Arrays.stream(SearchOperator.values())
-              .filter(o -> o.name().equals(operator))
-              .findFirst()
-              .orElse(null));
+          new SearchService.FieldInput(
+              java.util.Arrays.stream(SearchOperator.values())
+                  .filter(o -> o.name().equals(operator))
+                  .findFirst()
+                  .orElse(null),
+              java.util.Arrays.stream(
+                      net.luversof.web.dynamiccrud2.domain.SearchSettings.Pick.values())
+                  .filter(p -> p.name().equals(pick))
+                  .findFirst()
+                  .orElse(null),
+              form.getFirst("values." + label),
+              "true".equals(form.getFirst("req." + label))));
     }
-    searchService.save(id, operators, picks, form.get("kw") == null ? List.of() : form.get("kw"));
+    searchService.saveFields(id, fields, form.get("kw") == null ? List.of() : form.get("kw"));
     return "redirect:/admin/menu/" + id;
   }
 

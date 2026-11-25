@@ -216,8 +216,13 @@ public class SettingLogService {
                                         .INPUT
                             ? ""
                             : ", " + f.pick().name())
+                        + (f.required() ? ", REQUIRED" : "")
                         + ")")
                 .toList()));
+    // 검색용 값 목록(CUSTOM)은 칸마다 한 줄 - 어떤 값을 넣고 뺐는지 전후 비교로 보인다
+    settings.fields().stream()
+        .filter(f -> f.values() != null)
+        .forEach(f -> map.put("searchValues." + f.label(), f.values()));
     map.put("keyword", String.join(", ", settings.keyword()));
     return map;
   }
@@ -324,6 +329,9 @@ public class SettingLogService {
   }
 
   private static String labelOf(String key) {
+    if (key.startsWith("searchValues.")) {
+      return Msg.t("setting.field.searchValues", key.substring("searchValues.".length()));
+    }
     try {
       return Msg.t("setting.field." + key);
     } catch (RuntimeException e) {

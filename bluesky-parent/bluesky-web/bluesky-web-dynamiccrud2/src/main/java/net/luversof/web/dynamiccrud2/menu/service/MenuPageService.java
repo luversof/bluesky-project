@@ -186,6 +186,7 @@ public class MenuPageService {
    *
    * @param options 셀렉트 목록(저장값 → 표시). 비면 입력칸
    * @param tooMany "DB 값 전체" 인데 값이 너무 많아 입력칸으로 보인다
+   * @param required 채워야 목록을 보인다(검색 설정의 필수)
    */
   public record FilterField(
       String label,
@@ -195,7 +196,8 @@ public class MenuPageService {
       String value,
       String valueTo,
       Map<String, String> options,
-      boolean tooMany) {}
+      boolean tooMany,
+      boolean required) {}
 
   /** 검색 셀렉트 "DB 값 전체" 의 최대 개수 - 넘으면 입력칸으로 */
   static final int DISTINCT_LIMIT = 200;
@@ -289,7 +291,7 @@ public class MenuPageService {
           read.add(
               new ApiParam(
                   "f." + f.label(),
-                  false,
+                  f.required(),
                   f.header() + " (" + f.operator().name() + ")" + choices));
           if (f.operator() == SearchOperator.RANGE) {
             read.add(new ApiParam("f." + f.label() + ".to", false, f.header()));
@@ -816,6 +818,7 @@ public class MenuPageService {
         .forEach(c -> byLabel.putIfAbsent(c.label(), c));
     var filters = new ArrayList<Filter>();
     var fields = new ArrayList<FilterField>();
+    var missing = new ArrayList<String>();
     String message = null;
     var index = 0;
     for (var item : settings.fields()) {
@@ -836,6 +839,7 @@ public class MenuPageService {
           switch (pick) {
             case INPUT -> Map.of();
             case LIST -> optionsOf(field);
+            case CUSTOM -> item.customOptions();
             case DISTINCT -> {
               var values = distinctValues(ctx, column);
               if (values.size() > DISTINCT_LIMIT) {
@@ -858,16 +862,21 @@ public class MenuPageService {
           operator == SearchOperator.RANGE
               ? blankToNull(search.filters().get(item.label() + ".to"))
               : null;
+      var header = FieldService.headerOf(field, column.alias(), item.label());
+      if (item.required() && value == null && valueTo == null) {
+        missing.add(header);
+      }
       fields.add(
           new FilterField(
               item.label(),
-              FieldService.headerOf(field, column.alias(), item.label()),
+              header,
               inputType,
               operator,
               value,
               valueTo,
               options,
-              tooMany));
+              tooMany,
+              item.required()));
       var param = "_f" + index;
       var paramTo = "_f" + index + "_to";
       index++;
@@ -930,6 +939,10 @@ public class MenuPageService {
         params.put("_q", "%" + Filter.escapeLike(value) + "%");
         filters.add(new Filter(keywordLabels, SearchOperator.CONTAINS, "_q", null));
       }
+    }
+    // 필수 검색칸이 비면 조회하지 않고 안내만(사용 화면 · 엑셀 · JSON 모두 - message 가 있으면 읽지 않는다)
+    if (message == null && !missing.isEmpty()) {
+      message = Msg.t("menu.page.requiredSearch", String.join(", ", missing));
     }
     return new Filtered(filters, fields, keyword, message);
   }

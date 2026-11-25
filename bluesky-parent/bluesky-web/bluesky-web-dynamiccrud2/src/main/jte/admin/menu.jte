@@ -122,9 +122,11 @@
 				@for(var call : apiCalls)
 					<section class="grid gap-2">
 						<p class="flex flex-wrap items-center gap-2">
-							<span class="badge ${call.method().equals("GET") ? "badge-primary" : ""}">${call.method()}</span>
+							<%-- 쿼리 설정 표와 같은 모양: 종류 배지 · 이름 먼저, 그 뒤 메서드 · 주소 --%>
+							<span class="badge ${call.kind() == net.luversof.web.dynamiccrud2.domain.QueryKind.READ ? "badge-primary" : ""}">${call.kind().name()}</span>
+							<span class="font-semibold">${call.name()}</span>
+							<span class="hint font-mono">${call.method()}</span>
 							<code class="code text-sm break-all">${apiBase}${call.path()}</code>
-							<span class="hint">${call.kind().name()} · ${call.name()}</span>
 						</p>
 						@if(call.rows())
 							<p class="hint">$unsafe{t("admin.menu.api.rows")}</p>

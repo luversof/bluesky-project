@@ -1,8 +1,9 @@
 <%-- 검색칸 목록의 한 줄: ⠿ 컬럼 · 검색 방식 [▾] · 고르기 [▾] · 인덱스 사용 여부 · ×.
      고르지 않은 컬럼도 숨긴 채(입력 disabled - 폼으로 안 감) 그려 두고, "+ 검색칸 추가" 로 고르면 보인다(js/ui.js picklist).
      인덱스 문구는 방식마다 서버가 정해 option 의 data-* 에 싣고, 방식을 바꾸면 바로 바뀐다.
-     고르기: 직접 입력 · 값 목록(필드에 값 목록이 있을 때만) · DB 값 전체(SearchSettings.Pick).
-     폼 값: on = 결과 이름(화면 순서가 검색 폼 순서), op.결과이름 = 방식, pick.결과이름 = 고르기 --%>
+     고르기: 직접 입력 · 값 목록(필드에 값 목록이 있을 때만) · DB 값 전체 · 검색용 값 목록(SearchSettings.Pick).
+     검색용 값 목록을 고르면 아래에 "저장값=표시" 칸이 보인다(CSS 만 - main.css .pick-values). 필수면 그 칸을 채워야 목록이 보인다.
+     폼 값: on = 결과 이름(화면 순서가 검색 폼 순서), op. = 방식, pick. = 고르기, values. = 검색용 값 목록, req. = 필수 --%>
 @import static net.luversof.web.dynamiccrud2.config.Msg.t
 @import net.luversof.web.dynamiccrud2.admin.service.SearchService.Candidate
 
@@ -11,6 +12,7 @@
 !{var use = candidate.indexUse().get(candidate.operator());}
 !{var selectId = "op-" + Integer.toHexString(candidate.label().hashCode());}
 !{var pickId = "pick-" + Integer.toHexString(candidate.label().hashCode());}
+!{var valuesId = "values-" + Integer.toHexString(candidate.label().hashCode());}
 
 <li class="pick-row" data-id="${candidate.label()}" data-pick-key="${candidate.label()}" data-pick-label="${candidate.header()}"
 	data-pick-sub="${candidate.indexUse().get(candidate.operators().get(0)).text()}" hidden="${!candidate.searchOn()}">
@@ -35,6 +37,15 @@
 			@endif
 		@endfor
 	</select>
+	<label class="flex items-center gap-1 text-xs shrink-0">
+		<input class="checkbox checkbox-sm" type="checkbox" name="req.${candidate.label()}" value="true" checked="${candidate.required()}" disabled="${!candidate.searchOn()}" />
+		${t("admin.search.required")}
+	</label>
 	<span class="index-badge ${use.ok() ? "index-ok" : "index-warn"} w-56 truncate" data-index-badge title="${use.text()}">${use.ok() ? "✓ " : "⚠ "}${use.text()}</span>
 	<button type="button" class="icon-btn icon-btn-danger shrink-0" data-pick-remove aria-label="${t("component.searchField.remove", candidate.header())}" data-tip="${t("common.remove")}">×</button>
+	<div class="pick-values basis-full">
+		<label class="hint text-xs block mb-1" for="${valuesId}">${t("admin.search.values")}</label>
+		<textarea id="${valuesId}" class="textarea textarea-sm w-full max-w-md font-mono" rows="3" name="values.${candidate.label()}"
+			placeholder="${t("admin.search.values.placeholder")}" disabled="${!candidate.searchOn()}">${candidate.values()}</textarea>
+	</div>
 </li>

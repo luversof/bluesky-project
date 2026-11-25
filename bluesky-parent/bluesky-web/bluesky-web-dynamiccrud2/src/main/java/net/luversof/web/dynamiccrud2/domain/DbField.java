@@ -122,8 +122,12 @@ public class DbField {
 
   /** 값 목록을 저장값 → 표시(적은 순서)로. 없으면 빈 맵 */
   public java.util.Map<String, String> valueOptionMap() {
+    return parseValueOptions(getValueOptions());
+  }
+
+  /** "저장값=표시" 줄들을 저장값 → 표시(적은 순서)로. = 가 없으면 저장값을 그대로 보인다. 검색 설정의 검색용 값 목록도 같은 형식 */
+  public static java.util.Map<String, String> parseValueOptions(String valueOptions) {
     var map = new java.util.LinkedHashMap<String, String>();
-    var valueOptions = getValueOptions();
     if (valueOptions == null) {
       return map;
     }
