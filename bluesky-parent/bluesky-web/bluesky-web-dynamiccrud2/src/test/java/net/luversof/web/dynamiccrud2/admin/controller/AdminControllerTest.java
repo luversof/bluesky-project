@@ -55,6 +55,23 @@ class AdminControllerTest implements GeneralWebTest {
     return user("admin").roles("ADMIN");
   }
 
+  /** PostgreSQL 은 표준 문자 타입이 아닌 컬럼(jsonb)과 글자를 비교 · 저장하지 않는다 - UntypedText 는 타입 없이 보내 서버가 맞춘다(읽기만) */
+  @Test
+  void postgresBindsUntypedTextAsColumnType() {
+    var adapter = resolver.resolve("dynamiccrud2");
+    var query = "SELECT \"id\" FROM \"Menu\" WHERE \"searchSettings\" = :v";
+    var result =
+        adapter.sample(
+            query,
+            java.util.Map.of("v", new net.luversof.web.dynamiccrud2.adapter.UntypedText("{}")),
+            java.util.Set.of(),
+            1);
+    assertThat(result.labels()).containsExactly("id");
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> adapter.sample(query, java.util.Map.of("v", "{}"), java.util.Set.of(), 1))
+        .as("글자(varchar)로는 jsonb = character varying 로 실패한다");
+  }
+
   @Test
   void accessByRole() throws Exception {
     var anonymous = mvc.perform(get("/admin")).andExpect(status().is3xxRedirection()).andReturn();

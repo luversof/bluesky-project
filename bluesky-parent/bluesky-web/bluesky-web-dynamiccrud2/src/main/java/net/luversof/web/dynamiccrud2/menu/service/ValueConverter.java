@@ -2,7 +2,6 @@ package net.luversof.web.dynamiccrud2.menu.service;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.sql.Types;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,10 +10,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
+import java.util.Set;
 import java.util.UUID;
 
-import org.springframework.jdbc.core.SqlParameterValue;
-
+import net.luversof.web.dynamiccrud2.adapter.UntypedText;
 import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.domain.DbField;
 
@@ -52,18 +51,23 @@ public final class ValueConverter {
     }
   }
 
+  /** 글자로 보내도 되는 문자 타입 이름(DB 마다 다른 이름, 소문자). 이 밖의 타입은 {@link UntypedText} 로 표시해 어댑터가 정한다 */
+  private static final Set<String> STRING_TYPES =
+      Set.of(
+          "text", "varchar", "character varying", "char", "character", "bpchar", "name",
+          "nvarchar", "nchar", "ntext", "tinytext", "mediumtext", "longtext", "string");
+
   /**
-   * 글자 칸 값. uuid 는 UUID 로, PostgreSQL json · jsonb 는 타입 없이(Types.OTHER) 보내 서버가 컬럼 타입으로 바꾸게 한다 -
-   * 글자(varchar)로 보내면 "column is of type jsonb but expression is of type character varying" 로 실패한다.
-   * 타입 이름은 대소문자까지 본다: PostgreSQL 은 소문자("json"), MySQL 은 대문자("JSON")라 MySQL JSON 은 글자 그대로 둔다(글자로 넣어도
-   * 된다).
+   * 글자 칸 값. uuid 는 UUID 로. 표준 문자 타입이 아닌 컬럼(jsonb · inet · enum · interval · 배열 등)은 {@link UntypedText} -
+   * PostgreSQL 어댑터는 타입 없이 보내 서버가 컬럼 타입으로 바꾸게 하고, 다른 DB 는 글자 그대로 보낸다(2026-11-26, 예전엔 json ·
+   * jsonb 만 대소문자로 PostgreSQL 을 짐작했다). 타입을 모르면(필드 정보 없음) 글자 그대로.
    */
   private static Object textValue(String raw, String dataType) {
     if ("uuid".equalsIgnoreCase(dataType)) {
       return UUID.fromString(raw.strip());
     }
-    if ("jsonb".equals(dataType) || "json".equals(dataType)) {
-      return new SqlParameterValue(Types.OTHER, raw);
+    if (dataType != null && !STRING_TYPES.contains(dataType.toLowerCase(java.util.Locale.ROOT))) {
+      return new UntypedText(raw);
     }
     return raw;
   }

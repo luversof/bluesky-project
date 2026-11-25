@@ -3,11 +3,10 @@ package net.luversof.web.dynamiccrud2.menu.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
-import java.sql.Types;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.SqlParameterValue;
 
+import net.luversof.web.dynamiccrud2.adapter.UntypedText;
 import net.luversof.web.dynamiccrud2.domain.DbField;
 import net.luversof.web.dynamiccrud2.domain.InputType;
 
@@ -22,21 +21,21 @@ class ValueConverterTest {
     assertThat(ValueConverter.fitsExcelNumber(1.5d)).isTrue();
   }
 
+  /** 표준 문자 타입이 아닌 컬럼(jsonb · inet · enum …)은 UntypedText - 어댑터가 DB 에 맞게 보낸다. 문자 타입은 글자 그대로 */
   @Test
-  void jsonColumnBindsUntyped() {
+  void nonStringColumnsBindUntyped() {
     var field = new DbField();
     field.setInputType(InputType.TEXTAREA);
-    field.setDataType("jsonb");
-    assertThat(ValueConverter.toBindValue("{\"a\":1}", field))
-        .as("PostgreSQL jsonb 는 varchar 로 보내면 거부된다")
-        .isInstanceOfSatisfying(
-            SqlParameterValue.class,
-            value -> {
-              assertThat(value.getSqlType()).isEqualTo(Types.OTHER);
-              assertThat(value.getValue()).isEqualTo("{\"a\":1}");
-            });
-    field.setDataType("JSON");
-    assertThat(ValueConverter.toBindValue("{}", field)).as("MySQL JSON 은 글자 그대로").isEqualTo("{}");
+    for (var type : new String[] {"jsonb", "JSON", "inet", "my_enum", "interval", "_int4"}) {
+      field.setDataType(type);
+      assertThat(ValueConverter.toBindValue("x", field)).as(type).isEqualTo(new UntypedText("x"));
+    }
+    for (var type : new String[] {"varchar", "VARCHAR", "text", "bpchar", "nvarchar", "longtext"}) {
+      field.setDataType(type);
+      assertThat(ValueConverter.toBindValue("x", field)).as(type).isEqualTo("x");
+    }
+    field.setDataType(null);
+    assertThat(ValueConverter.toBindValue("x", field)).as("타입 모름").isEqualTo("x");
   }
 
   @Test

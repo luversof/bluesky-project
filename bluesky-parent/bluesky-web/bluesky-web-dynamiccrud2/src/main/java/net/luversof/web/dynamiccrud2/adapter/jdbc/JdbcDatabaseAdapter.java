@@ -1,6 +1,7 @@
 package net.luversof.web.dynamiccrud2.adapter.jdbc;
 
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +12,7 @@ import javax.sql.DataSource;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.SqlParameterValue;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterUtils;
@@ -23,6 +25,7 @@ import net.luversof.web.dynamiccrud2.adapter.Filter;
 import net.luversof.web.dynamiccrud2.adapter.ReadAnalysis;
 import net.luversof.web.dynamiccrud2.adapter.TableMeta;
 import net.luversof.web.dynamiccrud2.adapter.TableRef;
+import net.luversof.web.dynamiccrud2.adapter.UntypedText;
 import net.luversof.web.dynamiccrud2.config.Dynamiccrud2Properties;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
@@ -139,7 +142,7 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
       int page,
       int size) {
     var limit = Math.max(1, Math.min(size, properties.pageMaxRows()));
-    var bind = new HashMap<String, Object>(params);
+    var bind = bindable(params);
     bind.put(ReadQueryRewriter.LIMIT_PARAM, limit);
     bind.put(ReadQueryRewriter.OFFSET_PARAM, Math.max(0, page) * limit);
     var template = template(limit);
@@ -164,7 +167,7 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
       Sort sort,
       RowSink sink) {
     var limit = properties.excelMaxRows();
-    var bind = new HashMap<String, Object>(params);
+    var bind = bindable(params);
     bind.put(ReadQueryRewriter.LIMIT_PARAM, limit);
     bind.put(ReadQueryRewriter.OFFSET_PARAM, 0);
     var pageQuery = ReadQueryRewriter.pageQuery(query, dialect, emptyOptionalParams, filters, sort);
@@ -219,7 +222,7 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
             + dialect.qualifiedName(table.catalog(), table.schema(), table.name())
             + " WHERE "
             + String.join(" AND ", where);
-    var rows = readOnly(() -> template(2).query(sql, bind, extractor(-1))).rows();
+    var rows = readOnly(() -> template(2).query(sql, bindable(bind), extractor(-1))).rows();
     return rows.size() == 1 ? rows.get(0) : null;
   }
 
@@ -254,7 +257,7 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
       List<Filter> filters,
       Sort sort,
       int limit) {
-    var bind = new HashMap<String, Object>(params);
+    var bind = bindable(params);
     bind.put(ReadQueryRewriter.LIMIT_PARAM, limit);
     bind.put(ReadQueryRewriter.OFFSET_PARAM, 0);
     var pageQuery = ReadQueryRewriter.pageQuery(query, dialect, emptyOptionalParams, filters, sort);
@@ -307,10 +310,25 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
         .execute(status -> {
           var counts = new int[rows.size()];
           for (int i = 0; i < rows.size(); i++) {
-            counts[i] = template.update(sql, rows.get(i));
+            counts[i] = template.update(sql, bindable(rows.get(i)));
           }
           return counts;
         });
+  }
+
+  /** 바인딩 값 복사본: {@link UntypedText} 를 이 DB 에 맞게 - PostgreSQL 은 타입 없이(서버가 컬럼 타입으로), 다른 DB 는 글자 그대로 */
+  private Map<String, Object> bindable(Map<String, ?> values) {
+    var result = new HashMap<String, Object>();
+    values.forEach(
+        (name, value) ->
+            result.put(
+                name,
+                value instanceof UntypedText text
+                    ? (dialect == SqlDialect.POSTGRESQL
+                        ? new SqlParameterValue(Types.OTHER, text.value())
+                        : text.value())
+                    : value));
+    return result;
   }
 
   /** 타임아웃 · 최대 행 수를 건 템플릿. maxRows 0 = 제한 없음 */
