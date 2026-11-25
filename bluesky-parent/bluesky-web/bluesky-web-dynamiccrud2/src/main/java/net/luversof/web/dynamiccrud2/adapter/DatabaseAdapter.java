@@ -97,6 +97,13 @@ public interface DatabaseAdapter {
    */
   List<Object> currentRow(TableRef table, List<String> columns, Map<String, Object> keys);
 
+  /**
+   * 검색 셀렉트(검색 설정 "DB 값 전체")용 컬럼의 서로 다른 값. NULL 은 빼고 정렬한다. 읽기 전용으로 읽는다.
+   *
+   * @param limit 보일 최대 개수 - 이보다 많으면 limit + 1 개를 돌려준다(부른 쪽이 넘침을 안다)
+   */
+  List<Object> distinctValues(TableRef table, String column, int limit);
+
   /** 조회 결과를 한 행씩 받는다. labels 가 먼저 한 번 온다 */
   interface RowSink {
     void labels(List<String> labels);

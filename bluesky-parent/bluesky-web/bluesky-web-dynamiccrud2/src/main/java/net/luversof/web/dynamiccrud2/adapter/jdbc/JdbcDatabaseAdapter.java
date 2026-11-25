@@ -182,6 +182,27 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
   }
 
   @Override
+  public List<Object> distinctValues(TableRef table, String column, int limit) {
+    var quoted = dialect.quote(column);
+    var sql =
+        "SELECT DISTINCT "
+            + quoted
+            + " FROM "
+            + dialect.qualifiedName(table.catalog(), table.schema(), table.name())
+            + " WHERE "
+            + quoted
+            + " IS NOT NULL ORDER BY "
+            + quoted
+            + dialect.pagingSuffix(true);
+    var bind = new HashMap<String, Object>();
+    bind.put(ReadQueryRewriter.LIMIT_PARAM, limit + 1);
+    bind.put(ReadQueryRewriter.OFFSET_PARAM, 0);
+    return readOnly(() -> template(limit + 1).query(sql, bind, extractor(-1))).rows().stream()
+        .map(row -> row.get(0))
+        .toList();
+  }
+
+  @Override
   public List<Object> currentRow(TableRef table, List<String> columns, Map<String, Object> keys) {
     var bind = new HashMap<String, Object>();
     var where = new ArrayList<String>();

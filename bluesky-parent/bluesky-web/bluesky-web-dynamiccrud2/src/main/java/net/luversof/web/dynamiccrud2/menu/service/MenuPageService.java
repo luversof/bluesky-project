@@ -181,7 +181,12 @@ public class MenuPageService {
     public static final SearchInput EMPTY = new SearchInput(Map.of(), Map.of(), null);
   }
 
-  /** 메뉴 검색 설정으로 만든 검색칸(범위면 value · valueTo 두 칸) */
+  /**
+   * 메뉴 검색 설정으로 만든 검색칸(범위면 value · valueTo 두 칸).
+   *
+   * @param options 셀렉트 목록(저장값 → 표시). 비면 입력칸
+   * @param tooMany "DB 값 전체" 인데 값이 너무 많아 입력칸으로 보인다
+   */
   public record FilterField(
       String label,
       String header,
@@ -189,7 +194,20 @@ public class MenuPageService {
       SearchOperator operator,
       String value,
       String valueTo,
-      Map<String, String> options) {}
+      Map<String, String> options,
+      boolean tooMany) {}
+
+  /** 검색 셀렉트 "DB 값 전체" 의 최대 개수 - 넘으면 입력칸으로 */
+  static final int DISTINCT_LIMIT = 200;
+
+  /** 같은 컬럼 값을 사용 화면을 열 때마다 읽지 않게(1 분) */
+  private static final long DISTINCT_TTL_MILLIS = 60_000;
+
+  private record DistinctValues(long readAt, List<String> values) {}
+
+  // shortcut: 캐시가 pod 메모리에만 있어 replica 마다 따로 읽는다(1 분), 값이 자주 바뀌는 큰 테이블이 생기면 TTL 을 설정으로 뺄 것
+  private final Map<String, DistinctValues> distinctCache =
+      new java.util.concurrent.ConcurrentHashMap<>();
 
   /** 통합 검색칸. headers 는 함께 찾는 컬럼 제목(안내용) */
   public record KeywordBox(List<String> headers, String value) {}
@@ -259,8 +277,20 @@ public class MenuPageService {
     filtered
         .fields()
         .forEach(f -> {
+          // 셀렉트 검색칸은 고를 수 있는 저장값을 앞 몇 개만 보인다
+          var choices =
+              f.options().isEmpty()
+                  ? ""
+                  : " · "
+                      + Msg.t(
+                          "menu.api.param.choices",
+                          String.join(", ", f.options().keySet().stream().limit(10).toList())
+                              + (f.options().size() > 10 ? ", …" : ""));
           read.add(
-              new ApiParam("f." + f.label(), false, f.header() + " (" + f.operator().name() + ")"));
+              new ApiParam(
+                  "f." + f.label(),
+                  false,
+                  f.header() + " (" + f.operator().name() + ")" + choices));
           if (f.operator() == SearchOperator.RANGE) {
             read.add(new ApiParam("f." + f.label() + ".to", false, f.header()));
           }
@@ -735,6 +765,42 @@ public class MenuPageService {
     return new Bound(params, empty, fields, message);
   }
 
+  /** 검색 결과 컬럼이 가리키는 테이블 컬럼의 서로 다른 값(글자로). 읽지 못하면 빈 목록 - 셀렉트 대신 입력칸이 된다 */
+  private List<String> distinctValues(Context ctx, ResultColumn column) {
+    var base = ctx.base();
+    var table =
+        new TableRef(
+            base.getCatalogName(),
+            base.schemaOf(column.tableSchema()),
+            column.tableName() == null ? base.getTableName() : column.tableName());
+    var key =
+        base.getConnectionName()
+            + "|"
+            + table.catalog()
+            + "|"
+            + table.schema()
+            + "|"
+            + table.name()
+            + "|"
+            + column.columnName();
+    var cached = distinctCache.get(key);
+    var now = System.currentTimeMillis();
+    if (cached != null && now - cached.readAt() < DISTINCT_TTL_MILLIS) {
+      return cached.values();
+    }
+    List<String> values;
+    try {
+      values =
+          ctx.adapter().distinctValues(table, column.columnName(), DISTINCT_LIMIT).stream()
+              .map(ValueConverter::toText)
+              .toList();
+    } catch (DataAccessException e) {
+      return List.of();
+    }
+    distinctCache.put(key, new DistinctValues(now, values));
+    return values;
+  }
+
   private record Filtered(
       List<Filter> filters, List<FilterField> fields, KeywordBox keyword, String message) {}
 
@@ -762,7 +828,27 @@ public class MenuPageService {
           field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType();
       var allowed = SearchOperator.allowedFor(inputType);
       var operator = allowed.contains(item.operator()) ? item.operator() : allowed.get(0);
-      var options = optionsOf(field);
+      var pick =
+          SearchSettings.Pick.resolve(
+              item.pick(), field != null && !field.valueOptionMap().isEmpty());
+      var tooMany = false;
+      Map<String, String> options =
+          switch (pick) {
+            case INPUT -> Map.of();
+            case LIST -> optionsOf(field);
+            case DISTINCT -> {
+              var values = distinctValues(ctx, column);
+              if (values.size() > DISTINCT_LIMIT) {
+                tooMany = true;
+                yield Map.of();
+              }
+              // 값 목록이 있으면 표시 글자로, 없으면 값 그대로
+              var labels = optionsOf(field);
+              var map = new java.util.LinkedHashMap<String, String>();
+              values.forEach(v -> map.put(v, labels.getOrDefault(v, v)));
+              yield map;
+            }
+          };
       if (!options.isEmpty() && operator != SearchOperator.RANGE) {
         // 값 목록에서 고른 저장값은 일부가 아닌 그 값 자체로 찾는다(1 을 고르면 10 · 21 이 나오지 않게)
         operator = SearchOperator.EQUALS;
@@ -780,7 +866,8 @@ public class MenuPageService {
               operator,
               value,
               valueTo,
-              options));
+              options,
+              tooMany));
       var param = "_f" + index;
       var paramTo = "_f" + index + "_to";
       index++;

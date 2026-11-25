@@ -205,7 +205,18 @@ public class SettingLogService {
         String.join(
             ", ",
             settings.fields().stream()
-                .map(f -> f.label() + "(" + f.operator().name() + ")")
+                // 고르기 방식은 입력(기본)이 아닐 때만 - 예전 이력과 같은 모양을 지킨다
+                .map(f ->
+                    f.label()
+                        + "("
+                        + f.operator().name()
+                        + (f.pick() == null
+                                || f.pick()
+                                    == net.luversof.web.dynamiccrud2.domain.SearchSettings.Pick
+                                        .INPUT
+                            ? ""
+                            : ", " + f.pick().name())
+                        + ")")
                 .toList()));
     map.put("keyword", String.join(", ", settings.keyword()));
     return map;

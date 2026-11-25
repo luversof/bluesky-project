@@ -146,6 +146,10 @@ class JdbcDatabaseAdapterTest implements GeneralWebTest {
                   table("Project"), List.of("name"), Map.of("id", UUID.randomUUID())))
           .isNull();
 
+      // 검색 셀렉트 "DB 값 전체": 서로 다른 값(NULL 제외), 한도를 넘으면 한도 + 1 개까지
+      assertThat(adapter.distinctValues(table("Project"), "name", 100_000)).contains(name);
+      assertThat(adapter.distinctValues(table("Project"), "name", 1)).hasSizeLessThanOrEqualTo(2);
+
       // 조회는 읽기 전용 트랜잭션 - 조회로 저장된 쓰기 CTE 는 실패하고 행은 그대로
       var writingRead =
           "WITH changed AS (UPDATE \"Project\" SET name = 'hacked' WHERE id = :id RETURNING id)"

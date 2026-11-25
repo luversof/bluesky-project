@@ -59,6 +59,8 @@ public class SearchService {
    * @param keywordAllowed 통합 검색에 넣을 수 있는 글자 컬럼
    * @param keywordOn 통합 검색에 넣음
    * @param indexUse 방식마다 인덱스를 쓰는지와 그 까닭(화면이 고른 방식의 것을 보인다)
+   * @param hasValueList 필드에 값 목록이 있어 "값 목록" 셀렉트를 고를 수 있다
+   * @param pick 검색칸을 무엇으로 채우나(저장값, 없으면 값 목록이 있을 때 LIST · 없을 때 INPUT)
    */
   public record Candidate(
       String label,
@@ -69,7 +71,9 @@ public class SearchService {
       SearchOperator operator,
       boolean keywordAllowed,
       boolean keywordOn,
-      Map<SearchOperator, IndexUse> indexUse) {}
+      Map<SearchOperator, IndexUse> indexUse,
+      boolean hasValueList,
+      SearchSettings.Pick pick) {}
 
   /** 검색 방식 하나가 인덱스를 쓰는지(ok)와 화면 문구 */
   public record IndexUse(boolean ok, String text) {}
@@ -100,7 +104,15 @@ public class SearchService {
   public SearchSetup setup(Menu menu) {
     var settings = SearchSettings.of(menu.getSearchSettings());
     var chosen = new HashMap<String, SearchOperator>();
-    settings.fields().forEach(item -> chosen.put(item.label(), item.operator()));
+    var picks = new HashMap<String, SearchSettings.Pick>();
+    settings
+        .fields()
+        .forEach(item -> {
+          chosen.put(item.label(), item.operator());
+          if (item.pick() != null) {
+            picks.put(item.label(), item.pick());
+          }
+        });
     var base = fieldService.get(menu.getDbTableId());
     var read =
         menu.getQueries().stream()
@@ -143,6 +155,7 @@ public class SearchService {
       var keywordAllowed = SearchOperator.isText(inputType);
       var indexUse = new LinkedHashMap<SearchOperator, IndexUse>();
       operators.forEach(o -> indexUse.put(o, indexUse(meta, column.columnName(), o)));
+      var hasValueList = field != null && !field.valueOptionMap().isEmpty();
       candidates.add(
           new Candidate(
               column.label(),
@@ -153,7 +166,9 @@ public class SearchService {
               operator != null && operators.contains(operator) ? operator : operators.get(0),
               keywordAllowed,
               keywordAllowed && settings.keyword().contains(column.label()),
-              indexUse));
+              indexUse,
+              hasValueList,
+              SearchSettings.Pick.resolve(picks.get(column.label()), hasValueList)));
     }
     // 화면 순서: 고른 검색칸은 저장한 순서로 앞에, 나머지는 결과 순서. 통합 검색 대상도 저장한 순서로 앞에
     var fieldOrder = settings.fields().stream().map(SearchSettings.Item::label).toList();
@@ -236,6 +251,17 @@ public class SearchService {
    * @param keyword 통합 검색에 넣은 결과 이름
    */
   public void save(UUID menuId, Map<String, SearchOperator> operators, List<String> keyword) {
+    save(menuId, operators, Map.of(), keyword);
+  }
+
+  /**
+   * @param picks 결과 이름 → 고르기 방식(없거나 쓸 수 없으면 기본: 값 목록이 있으면 LIST, 없으면 INPUT)
+   */
+  public void save(
+      UUID menuId,
+      Map<String, SearchOperator> operators,
+      Map<String, SearchSettings.Pick> picks,
+      List<String> keyword) {
     var menu = menuRepository.findById(menuId).orElseThrow();
     var byLabel = new HashMap<String, Candidate>();
     setup(menu).candidates().forEach(c -> byLabel.put(c.label(), c));
@@ -247,9 +273,8 @@ public class SearchService {
         fields.add(
             new SearchSettings.Item(
                 label,
-                candidate.operators().contains(operator)
-                    ? operator
-                    : candidate.operators().get(0)));
+                candidate.operators().contains(operator) ? operator : candidate.operators().get(0),
+                SearchSettings.Pick.resolve(picks.get(label), candidate.hasValueList())));
       }
     });
     var keywordLabels = new ArrayList<String>();

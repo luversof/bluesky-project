@@ -12,6 +12,7 @@
 		<div class="flex flex-wrap items-center gap-2">
 			<h3 class="text-sm font-semibold">${t("admin.search.fields")}</h3>
 			<span class="hint">${t("admin.search.fields.hint")}</span>
+			@template._components.help(text = t("admin.search.pick.help"), label = t("common.helpFor", t("admin.search.pick")))
 			@template._components.combobox(id = "add-search-field", placeholder = t("admin.search.fields.add"), required = false,
 				ariaLabel = t("admin.search.fields.addLabel"), emptyText = t("admin.search.fields.none"), cssClass = "ml-auto w-72", options = @`
 					@for(var candidate : search.candidates())

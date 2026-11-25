@@ -248,6 +248,25 @@ class MenuPageControllerTest implements GeneralWebTest {
       mvc.perform(get(base).param("q", "%").param("f.이름", name).with(normalUser()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("전체 0건")));
+      // 고르기 "DB 값 전체": 검색칸이 그 컬럼에 있는 값의 셀렉트가 되고 같음으로 찾는다
+      searchService.save(
+          menuId,
+          Map.of("이름", SearchOperator.CONTAINS),
+          Map.of("이름", net.luversof.web.dynamiccrud2.domain.SearchSettings.Pick.DISTINCT),
+          java.util.List.of("이름", "createdDate"));
+      mvc.perform(get(base).param("f.이름", name).with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(
+              content()
+                  .string(
+                      Matchers.containsString(
+                          "<option value=\"" + name + "\" selected>" + name + "</option>")))
+          .andExpect(content().string(Matchers.containsString("전체 1건")));
+      // 일부만 넣으면 같음이라 맞는 행이 없다
+      mvc.perform(get(base).param("f.이름", name.substring(0, 10)).with(normalUser()))
+          .andExpect(content().string(Matchers.containsString("전체 0건")));
+      searchService.save(
+          menuId, Map.of("이름", SearchOperator.CONTAINS), java.util.List.of("이름", "createdDate"));
 
       // 수정 폼: 선택한 행 값으로 채운다(별칭 "이름" → 파라미터 name). 행 JSON 은 목록이 서명해 내보낸다
       var plainRowJson = "{\"id\":\"" + rowId + "\",\"이름\":\"" + name + "\"}";
