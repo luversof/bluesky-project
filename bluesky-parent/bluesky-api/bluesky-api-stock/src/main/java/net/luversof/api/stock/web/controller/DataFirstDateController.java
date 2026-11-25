@@ -12,7 +12,11 @@ import net.luversof.api.stock.repository.DividendRepository;
 import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.web.dto.response.DataFirstDateResponse;
 
-/** 사용자의 최초 데이터 일자 조회. 집계 2건만 수행하는 경량 엔드포인트로, 게이트가 날짜 선택기 하한을 구하려고 전체 이력을 내려받던 것을 대체한다. */
+/**
+ * 최초 데이터 일자
+ *
+ * <p>집계 2건만 수행하는 경량 엔드포인트로, 게이트가 날짜 선택기 하한을 구하려고 전체 이력을 내려받던 것을 대체한다.
+ */
 @RestController
 @RequestMapping("/api/dataFirstDate")
 public class DataFirstDateController {
@@ -22,7 +26,7 @@ public class DataFirstDateController {
   @Autowired private DividendRepository dividendRepository;
 
   /**
-   * 사용자의 첫 매매일과 첫 배당일.
+   * 첫 매매일 · 첫 배당일 조회
    *
    * @param userId 사용자 id
    * @param stockItemId 주면 그 종목만, 없으면 사용자 전체

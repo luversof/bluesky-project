@@ -13,7 +13,11 @@ import net.luversof.api.stock.service.PeriodSummaryService;
 import net.luversof.api.stock.web.dto.response.PeriodSummary;
 import net.luversof.api.stock.web.support.RequestRangeUtil;
 
-/** 기간 매매·배당 합계. 대시보드가 원장을 통째로 받지 않고 한 줄로 받는다. */
+/**
+ * 기간 합계
+ *
+ * <p>대시보드가 원장을 통째로 받지 않고 한 줄로 받는다.
+ */
 @RestController
 @RequestMapping("/api/periodSummary")
 public class PeriodSummaryController {
@@ -21,7 +25,7 @@ public class PeriodSummaryController {
   @Autowired private PeriodSummaryService periodSummaryService;
 
   /**
-   * 기간의 매매 · 배당 합계 한 줄.
+   * 기간 매매 · 배당 합계 조회
    *
    * @param userId 사용자 id
    * @param startDate 시작 시각(선택)

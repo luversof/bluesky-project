@@ -48,5 +48,11 @@
 			<groupId>io.github.luversof</groupId>
 			<artifactId>bluesky-boot-autoconfigure-devcheck</artifactId>
 		</dependency>
+		<!-- Javadoc 문서 규칙 customizer(ApiCommonSpringDocAutoConfiguration). springdoc 은 각 api 모듈이 가져온다 -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<optional>true</optional>
+		</dependency>
 	</dependencies>
 </project>

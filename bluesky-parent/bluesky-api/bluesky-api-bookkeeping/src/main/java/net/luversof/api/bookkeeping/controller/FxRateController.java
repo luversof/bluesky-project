@@ -17,7 +17,11 @@ import net.luversof.api.bookkeeping.domain.BookFxRate;
 import net.luversof.api.bookkeeping.service.FxRateService;
 import net.luversof.api.bookkeeping.service.FxRateService.FxRateCommand;
 
-/** 월 환율(외화 1 단위 = 기준통화 rate). month 는 "2026-11". */
+/**
+ * 가계부 환율
+ *
+ * <p>월 환율(외화 1 단위 = 기준통화 rate). month 는 "2026-11".
+ */
 @RestController
 @RequestMapping(value = "/api/books/{bookId}/fx-rates", produces = MediaType.APPLICATION_JSON_VALUE)
 public class FxRateController {
@@ -29,7 +33,7 @@ public class FxRateController {
   }
 
   /**
-   * 한 달의 환율 목록.
+   * 월 환율 목록 조회
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -42,7 +46,11 @@ public class FxRateController {
     return fxRateService.list(bookId, userId, month);
   }
 
-  /** rate 를 비우거나 0 이면 지운다. 바뀐 뒤 그 달 목록. */
+  /**
+   * 월 환율 설정
+   *
+   * <p>rate 를 비우거나 0 이면 지운다. 바뀐 뒤 그 달 목록을 돌려준다.
+   */
   @PutMapping
   public List<BookFxRate> set(
       @PathVariable UUID bookId, @RequestParam UUID userId, @RequestBody FxRateCommand command) {

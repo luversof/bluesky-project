@@ -12,7 +12,9 @@ import net.luversof.api.stock.service.LedgerIntegrityService;
 import net.luversof.api.stock.web.dto.response.LedgerIntegrityResponse;
 
 /**
- * 원장 점검 결과 조회. 관리 화면이 "지금 원장에 이상한 값이 있는지"를 보여주는 데 쓴다.
+ * 원장 점검
+ *
+ * <p>관리 화면이 "지금 원장에 이상한 값이 있는지"를 보여주는 데 쓴다.
  *
  * <p>읽기 전용이다. 발견한 기록을 고치는 것은 사람이 원장(구글 시트)에서 해야 한다 &mdash; 앱이 임의로 고치면 무엇이 원본인지 알 수 없게 된다.
  */
@@ -23,7 +25,9 @@ public class LedgerIntegrityController {
   @Autowired private LedgerIntegrityService ledgerIntegrityService;
 
   /**
-   * 원장을 점검 규칙으로 검사해 규칙별 발견 건수와 예시 행을 돌려준다(읽기 전용).
+   * 원장 점검 결과 조회
+   *
+   * <p>점검 규칙별 발견 건수와 예시 행(읽기 전용).
    *
    * @param userId 사용자 id
    * @param maxExamples 규칙마다 담을 예시 개수(선택). 기본 3, 상한 100.

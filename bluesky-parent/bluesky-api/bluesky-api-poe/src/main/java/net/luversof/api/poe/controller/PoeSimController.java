@@ -11,7 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.poe.service.PoeGemRank;
 import net.luversof.api.poe.service.PoeSimService;
 
-/** 젬 DPS 랭킹 배치 잡 API — 시작/상태/랭킹. */
+/**
+ * PoE1 젬 DPS 랭킹
+ *
+ * <p>젬 DPS 랭킹 배치 작업(시작 / 상태 / 랭킹).
+ */
 @RestController
 @RequestMapping(value = "/api/poe/sim", produces = MediaType.APPLICATION_JSON_VALUE)
 public class PoeSimController {
@@ -32,14 +36,20 @@ public class PoeSimController {
 
   public record SimRanking(String patch, List<PoeGemRank> ranking) {}
 
-  /** 젬 DPS 랭킹 배치를 시작한다. 진행은 /status 로 본다. */
+  /**
+   * 젬 DPS 랭킹 배치 시작
+   *
+   * <p>진행은 /status 로 본다.
+   */
   @PostMapping("/start")
   public void start() {
     poeSimService.start();
   }
 
   /**
-   * 젬 DPS 랭킹 배치 상태 · 진행률 · 로그.
+   * 젬 DPS 랭킹 배치 상태 조회
+   *
+   * <p>상태 · 진행률 · 로그.
    *
    * @return 작업 상태
    */
@@ -54,7 +64,11 @@ public class PoeSimController {
         poeSimService.logTail());
   }
 
-  /** season 을 주면 그 시즌 보관본(없으면 빈 목록), 없으면 지금 랭킹 — 10-02 시즌 비교. */
+  /**
+   * 젬 DPS 랭킹 조회
+   *
+   * <p>season 을 주면 그 시즌 보관본(없으면 빈 목록), 없으면 지금 랭킹(10-02 시즌 비교).
+   */
   @GetMapping("/ranking")
   public SimRanking ranking(
       @org.springframework.web.bind.annotation.RequestParam(required = false) String season) {
@@ -67,7 +81,11 @@ public class PoeSimController {
     return new SimRanking(poeSimService.rankingPatch(), poeSimService.ranking());
   }
 
-  /** 보관된 랭킹 시즌(새 것 먼저, 예: ["3.29", "3.28"]). */
+  /**
+   * 랭킹 시즌 목록 조회
+   *
+   * <p>보관된 랭킹 시즌, 새 것 먼저(예: ["3.29", "3.28"]).
+   */
   @GetMapping("/ranking/seasons")
   public List<String> rankingSeasons() {
     return poeSimService.rankingSeasons();

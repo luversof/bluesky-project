@@ -17,6 +17,11 @@ import net.luversof.api.stock.web.dto.response.LedgerImportResult;
 import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateJobStatus;
 import net.luversof.api.stock.web.dto.response.PriceHistoryUpdateResult;
 
+/**
+ * 주식 관리
+ *
+ * <p>관리 화면용 일괄 적재 · 시세 갱신.
+ */
 @RestController
 @RequestMapping("/api/stock/admin")
 public class StockAdminController {
@@ -28,7 +33,7 @@ public class StockAdminController {
   @Autowired private PriceHistoryUpdateJobService priceHistoryUpdateJobService;
 
   /**
-   * 시트의 종목을 일괄 등록한다(관리 화면).
+   * 시트 종목 일괄 등록
    *
    * @param userId 요청한 사용자(시트 접근 설정의 주인)
    * @return 등록한 종목 수
@@ -38,14 +43,20 @@ public class StockAdminController {
     return stockAdminService.stockItemBulkInsert(userId);
   }
 
-  /** 시트 몇 행 중 몇 행이 들어갔는지 돌려준다. void 였을 때는 버려진 행이 흔적 없이 사라졌다. */
+  /**
+   * 시트 매매 일괄 등록
+   *
+   * <p>시트 몇 행 중 몇 행이 들어갔는지 돌려준다. void 였을 때는 버려진 행이 흔적 없이 사라졌다.
+   */
   @PostMapping("/trades")
   public LedgerImportResult tradeBulkInsert(@RequestParam UUID userId) {
     return stockAdminService.tradeBulkInsert(userId);
   }
 
   /**
-   * 시트의 배당을 통째로 다시 넣는다(관리 화면).
+   * 시트 배당 일괄 등록
+   *
+   * <p>시트의 배당을 통째로 다시 넣는다.
    *
    * @param userId 요청한 사용자
    * @return 넣은 행 수와 버려진 행 수
@@ -56,7 +67,9 @@ public class StockAdminController {
   }
 
   /**
-   * 전체 갱신을 <b>시작만</b> 하고 지금 상태를 바로 돌려준다(사용자 결정 2026-09-22).
+   * 전체 시세 갱신 시작
+   *
+   * <p>전체 갱신을 <b>시작만</b> 하고 지금 상태를 바로 돌려준다(사용자 결정 2026-09-22).
    *
    * <p>53 종목에 18~22 초가 걸려 게이트의 읽기 제한(10 초)을 늘 넘겨 500 이 나갔다. 정작 여기서는 끝까지 돌아 데이터는 갱신돼 있었고 화면만 실패로
    * 보였다(실측 2026-09-22).
@@ -68,14 +81,20 @@ public class StockAdminController {
     return priceHistoryUpdateJobService.start(userId);
   }
 
-  /** 전체 갱신 작업의 지금 상태. 아무 일도 일으키지 않는다. */
+  /**
+   * 전체 시세 갱신 상태 조회
+   *
+   * <p>아무 일도 일으키지 않는다.
+   */
   @GetMapping("/price-histories/status")
   public PriceHistoryUpdateJobStatus priceHistoryUpdateStatus() {
     return priceHistoryUpdateJobService.status();
   }
 
   /**
-   * 종목 하나만 갱신한다(사용자 요청 2026-09-22).
+   * 종목 시세 갱신
+   *
+   * <p>종목 하나만 갱신한다(사용자 요청 2026-09-22).
    *
    * <p>전체 갱신은 53 종목에 18~22 초라 게이트 읽기 제한(10 초)에 끕겼다. 한 종목이면 1 초 안쪽이라 그 자리에서 끝난다.
    */
@@ -87,8 +106,10 @@ public class StockAdminController {
   }
 
   /**
-   * 매매가 있던 날의 원주가(수정 전 종가)를 채운다(2026-10-02). 평가 수량의 분할 · 병합 계수 = 원주가 / 수정 종가. 이미 채운 날은 건너뛴다. 전체 시세
-   * 갱신 작업도 끝에 이것을 부른다. 원주가 열이 없는 DB 면 아무것도 안 하고 columnAvailable=false.
+   * 원주가 채우기
+   *
+   * <p>매매가 있던 날의 원주가(수정 전 종가)를 채운다(2026-10-02). 평가 수량의 분할 · 병합 계수 = 원주가 / 수정 종가. 이미 채운 날은 건너뛴다. 전체
+   * 시세 갱신 작업도 끝에 이것을 부른다. 원주가 열이 없는 DB 면 아무것도 안 하고 columnAvailable=false.
    */
   @PostMapping("/raw-close-prices")
   public KisStockPriceUpdateService.RawClosePriceFillResult rawClosePriceFill(
@@ -97,7 +118,11 @@ public class StockAdminController {
         () -> kisStockPriceUpdateService.fillRawClosePrices(userId));
   }
 
-  /** "배당주 검색" 시트의 보유/평단가를 월배당 기준 등록 종목에 한해 월배당 스냅샷에 추가/갱신한다. */
+  /**
+   * 시트에서 월배당 스냅샷 가져오기
+   *
+   * <p>"배당주 검색" 시트의 보유 · 평단가를 월배당 기준 등록 종목에 한해 월배당 스냅샷에 추가 · 갱신한다.
+   */
   @PostMapping("/monthly-dividend-snapshots/import-from-sheet")
   public int monthlyDividendSnapshotImportFromSheet(@RequestParam UUID userId) {
     return stockAdminService.importMonthlyDividendSnapshotsFromGoogleSheet(userId);

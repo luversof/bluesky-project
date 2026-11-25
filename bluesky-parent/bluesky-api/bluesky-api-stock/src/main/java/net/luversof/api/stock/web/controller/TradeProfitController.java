@@ -20,6 +20,7 @@ import net.luversof.api.stock.web.dto.response.HoldingsSnapshotItem;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesResult;
 
+/** 매매 손익 */
 @RestController
 @RequestMapping("/api/tradeProfit")
 public class TradeProfitController {
@@ -31,7 +32,7 @@ public class TradeProfitController {
   }
 
   /**
-   * 종목별 실현 손익을 계산한다.
+   * 종목별 실현 손익 조회
    *
    * @param request 사용자 · 기간 · 계좌 · 종목 조건
    * @return 종목별 손익
@@ -42,7 +43,7 @@ public class TradeProfitController {
   }
 
   /**
-   * 실현 손익 시계열.
+   * 실현 손익 시계열 조회
    *
    * @param request 사용자 · 기간 · 계좌 · 종목 조건
    * @param granularity DAILY · WEEKLY · MONTHLY · AUTO(다른 값은 400)
@@ -56,7 +57,9 @@ public class TradeProfitController {
   }
 
   /**
-   * 시리즈와 기간 요약을 한 번에 반환한다. 화면이 둘을 따로 호출하면 같은 시뮬레이션이 두 번 돌기 때문이다.
+   * 실현 손익 시계열 · 기간 요약 조회
+   *
+   * <p>시리즈와 기간 요약을 한 번에 돌려준다. 화면이 둘을 따로 호출하면 같은 시뮬레이션이 두 번 돌기 때문이다.
    *
    * <p>{@code includeSeries=false} 면 시리즈를 비우고 요약과 연도별만 돌려준다. 요약만 쓰는 호출자가 있어서다 — 게이트의 {@code
    * /stock/asset-growth/period-return} 은 이 엔드포인트를 부른 뒤 {@code summary()} 만 꺼내 쓰고 시리즈는 버린다.
@@ -83,7 +86,9 @@ public class TradeProfitController {
   }
 
   /**
-   * 그날의 보유 현황. accountId 가 있으면 그 계좌, 없으면 사용자 전체.
+   * 보유 현황 조회
+   *
+   * <p>그날의 보유 현황. accountId 가 있으면 그 계좌, 없으면 사용자 전체.
    *
    * @param userId 사용자 id
    * @param date 기준일
@@ -101,7 +106,7 @@ public class TradeProfitController {
   }
 
   /**
-   * 여러 날짜의 보유 스냅샷을 한 번에 조회한다.
+   * 여러 날짜의 보유 현황 조회
    *
    * <p>호출자가 날짜마다 /holdingsSnapshot 을 순차 호출하면 날짜 수만큼 왕복이 발생한다(배당 분석은 기준일이 수십 개라 수 초가 걸렸다). 날짜별 결과를
    * ISO 날짜 문자열을 키로 하는 맵으로 한 번에 돌려준다.

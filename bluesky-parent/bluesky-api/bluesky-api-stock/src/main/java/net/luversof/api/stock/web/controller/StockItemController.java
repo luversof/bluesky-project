@@ -19,6 +19,7 @@ import net.luversof.api.stock.service.StockPriceChartService;
 import net.luversof.api.stock.web.dto.response.StockPriceChartPoint;
 import net.luversof.api.stock.web.dto.response.StockPriceHistoryPoint;
 
+/** 종목 */
 @RestController
 @RequestMapping("/api/stockItem")
 public class StockItemController {
@@ -28,7 +29,9 @@ public class StockItemController {
   @Autowired private StockItemService stockItemService;
 
   /**
-   * 종목을 만든다. 심볼과 이름은 필수다.
+   * 종목 생성
+   *
+   * <p>심볼과 이름은 필수다.
    *
    * @param stockItem 만들 종목
    * @return 만든 종목
@@ -39,7 +42,7 @@ public class StockItemController {
   }
 
   /**
-   * 종목 한 건.
+   * 종목 조회
    *
    * @param id 종목 id
    * @return 종목, 없으면 빈 값
@@ -50,7 +53,7 @@ public class StockItemController {
   }
 
   /**
-   * 이름으로 종목을 찾는다.
+   * 이름으로 종목 조회
    *
    * @param name 종목 이름
    * @return 종목, 없으면 null
@@ -61,7 +64,7 @@ public class StockItemController {
   }
 
   /**
-   * 모든 종목.
+   * 종목 목록 조회
    *
    * @return 종목 목록
    */
@@ -71,7 +74,9 @@ public class StockItemController {
   }
 
   /**
-   * 한 종목의 일별 종가(차트용). 기간을 주지 않으면 전 구간.
+   * 종목 일별 종가 조회
+   *
+   * <p>차트용. 기간을 주지 않으면 전 구간.
    *
    * <p>거래량 0 인 날은 빠진다 - 그 행의 종가 자리에는 직전 종가가 들어 있어 거래가 없던 날에 선이 이어진다.
    */
@@ -90,8 +95,10 @@ public class StockItemController {
   }
 
   /**
-   * 종목 상세 주가 차트(2026-10-02): 날짜마다 시가 · 고가 · 저가 · 종가(원주가를 분할로만 맞춘 값)와, 사용자를 주면 그 날의 평균 단가. 캔들 차트와 "그
-   * 시점 평단" 선이 쓴다(StockPriceChartService).
+   * 종목 주가 차트 조회
+   *
+   * <p>날짜마다 시가 · 고가 · 저가 · 종가(원주가를 분할로만 맞춘 값)와, 사용자를 주면 그 날의 평균 단가. 캔들 차트와 "그 시점 평단" 선이
+   * 쓴다(StockPriceChartService, 2026-10-02).
    */
   @GetMapping("/{id}/priceChart")
   public List<StockPriceChartPoint> priceChart(
@@ -110,7 +117,9 @@ public class StockItemController {
   }
 
   /**
-   * 태그가 붙은 종목(예: 월배당 · 커버드콜 · analysis).
+   * 태그로 종목 목록 조회
+   *
+   * <p>예: 월배당 · 커버드콜 · analysis.
    *
    * @param tag 태그
    * @return 종목 목록

@@ -25,7 +25,9 @@ import net.luversof.api.stock.service.analysis.StockNewsCollectService;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 시황 분석. 작업 스케줄러 스크립트(tools/market-analysis)가 아침 · 저녁에 부른다.
+ * 시황 분석
+ *
+ * <p>작업 스케줄러 스크립트(tools/market-analysis)가 아침 · 저녁에 부른다.
  *
  * <p>아침: 시세 갱신(/api/stock/admin/price-histories) → news → input → (claude -p) → predictions. 저녁: 시세
  * 갱신 → news → grades.
@@ -42,13 +44,21 @@ public class StockAnalysisController {
 
   @Autowired private JsonMapper jsonMapper;
 
-  /** 시장 일별 시세 최근분(KOSPI200 선물 주간 · 야간 종가, 지난 2 주). 아침 · 저녁 작업이 부른다. */
+  /**
+   * 시장 일별 시세 수집
+   *
+   * <p>KOSPI200 선물 주간 · 야간 종가, 지난 2 주. 아침 · 저녁 작업이 부른다.
+   */
   @PostMapping("/market-daily")
   public MarketDailyCollectService.CollectResult collectMarketDaily(@RequestParam UUID userId) {
     return marketDailyCollectService.collectRecent(userId);
   }
 
-  /** 시장 일별 시세 되채우기(2022-06 부터 가능). */
+  /**
+   * 시장 일별 시세 되채우기
+   *
+   * <p>2022-06 부터 가능.
+   */
   @PostMapping("/market-daily/backfill")
   public MarketDailyCollectService.CollectResult backfillMarketDaily(
       @RequestParam UUID userId,
@@ -57,7 +67,11 @@ public class StockAnalysisController {
     return marketDailyCollectService.backfill(userId, from, to);
   }
 
-  /** symbols 를 주면 그 종목 뉴스만 모은다(2026-11-20: 삼성전자만 분석하는데 40 종목 뉴스를 계속 모았다). */
+  /**
+   * 뉴스 수집
+   *
+   * <p>symbols 를 주면 그 종목 뉴스만 모은다(2026-11-20: 삼성전자만 분석하는데 40 종목 뉴스를 계속 모았다).
+   */
   @PostMapping("/news")
   public StockNewsCollectService.CollectResult collectNews(
       @RequestParam UUID userId, @RequestParam(required = false) List<String> symbols) {
@@ -68,14 +82,22 @@ public class StockAnalysisController {
             .toList());
   }
 
-  /** 분석 대상 추가: 없는 종목은 만들고 analysis 태그를 붙인다. */
+  /**
+   * 분석 대상 추가
+   *
+   * <p>없는 종목은 만들고 analysis 태그를 붙인다.
+   */
   @PostMapping("/targets")
   public StockAnalysisService.TargetResult addTargets(
       @RequestBody List<StockAnalysisService.TargetInput> targets) {
     return stockAnalysisService.addTargets(targets);
   }
 
-  /** 과거 뉴스 되채우기: 종목 하나를 from 까지(쪽 수 상한 maxPages). 리플레이가 과거 기준일에도 뉴스를 보게 한다. */
+  /**
+   * 과거 뉴스 되채우기
+   *
+   * <p>종목 하나를 from 까지(쪽 수 상한 maxPages). 리플레이가 과거 기준일에도 뉴스를 보게 한다.
+   */
   @PostMapping("/news/backfill")
   public StockNewsCollectService.BackfillResult backfillNews(
       @RequestParam String symbol,
@@ -94,7 +116,9 @@ public class StockAnalysisController {
   }
 
   /**
-   * 시황 분석 입력(종목별 시세 · 지표 · 뉴스 · 시장 상황)을 만든다. 예약 작업과 리플레이 스크립트가 부른다.
+   * 분석 입력 생성
+   *
+   * <p>종목별 시세 · 지표 · 뉴스 · 시장 상황. 예약 작업과 리플레이 스크립트가 부른다.
    *
    * @param userId KIS 설정을 읽을 사용자(선택, 없으면 시장 지표를 비운다)
    * @param asOf 리플레이 기준일(선택, 그날까지의 데이터만 쓴다). 비우면 지금
@@ -128,7 +152,11 @@ public class StockAnalysisController {
         input.investorFlows());
   }
 
-  /** 리플레이: 지난 기준일 asOf 의 예측을 저장하지 않고 채점한다(tools/market-analysis/replay.py). */
+  /**
+   * 리플레이 채점
+   *
+   * <p>지난 기준일 asOf 의 예측을 저장하지 않고 채점한다(tools/market-analysis/replay.py).
+   */
   @PostMapping("/evaluate")
   public StockAnalysisService.EvalResult evaluate(
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOf,
@@ -137,8 +165,10 @@ public class StockAnalysisController {
   }
 
   /**
-   * 규칙 예측: night = 입력의 K200NF change1dPct, premarket = 입력의 NXT_종목 change1dPct(v10), symbols = 분석할
-   * 종목. 돌려준 종목은 Claude 를 부르지 않고 이 예측을 쓴다(아침 작업 · replay.py). 빈 목록이면 전부 Claude 가 분석한다.
+   * 규칙 예측 조회
+   *
+   * <p>night = 입력의 K200NF change1dPct, premarket = 입력의 NXT_종목 change1dPct(v10), symbols = 분석할 종목.
+   * 돌려준 종목은 Claude 를 부르지 않고 이 예측을 쓴다(아침 작업 · replay.py). 빈 목록이면 전부 Claude 가 분석한다.
    */
   @GetMapping("/rule-predictions")
   public List<StockAnalysisService.PredictionInput> rulePredictions(
@@ -148,7 +178,11 @@ public class StockAnalysisController {
     return StockAnalysisService.rulePredictions(night, premarket, symbols);
   }
 
-  /** 최근 lookback 거래일 중 예측이 없는 기준일(아침 작업이 채운다). version 을 주면 그 버전 예측이 없는 기준일(재분석할 날). */
+  /**
+   * 예측이 없는 기준일 조회
+   *
+   * <p>최근 lookback 거래일 중 예측이 없는 기준일(아침 작업이 채운다). version 을 주면 그 버전 예측이 없는 기준일(재분석할 날).
+   */
   @GetMapping("/missing-dates")
   public List<LocalDate> missingDates(
       @RequestParam List<String> symbols,
@@ -157,7 +191,11 @@ public class StockAnalysisController {
     return stockAnalysisService.missingDates(symbols, Math.clamp(lookback, 1, 60), version);
   }
 
-  /** replay · asOf 를 주면 리플레이 회차로 저장하고 바로 채점한다(replay.py --save). */
+  /**
+   * 예측 저장
+   *
+   * <p>replay · asOf 를 주면 리플레이 회차로 저장하고 바로 채점한다(replay.py --save).
+   */
   @PostMapping("/predictions")
   public StockAnalysisService.SubmitResult submit(
       @RequestBody StockAnalysisService.SubmitRequest request,
@@ -168,7 +206,7 @@ public class StockAnalysisController {
   }
 
   /**
-   * 최근 예측 목록.
+   * 최근 예측 목록 조회
    *
    * @param days 최근 며칠(1~365, 기본 14)
    * @return 예측과 채점 결과
@@ -179,21 +217,33 @@ public class StockAnalysisController {
     return stockAnalysisService.recent(Math.clamp(days, 1, 365));
   }
 
-  /** 관리 화면: 기준일의 채점 전 예측 삭제. */
+  /**
+   * 채점 전 예측 삭제
+   *
+   * <p>관리 화면에서 기준일의 채점 전 예측을 지운다.
+   */
   @DeleteMapping("/predictions")
   public StockAnalysisService.DeleteResult deletePredictions(
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate baseDate) {
     return stockAnalysisService.deleteUngraded(baseDate);
   }
 
-  /** regradeDays: 만기일이 최근 이 일수 안인 채점은 종가가 바뀌었으면 다시 매긴다(기본 10, 지난 시세를 바로잡은 뒤 한 번 크게). */
+  /**
+   * 예측 채점
+   *
+   * <p>regradeDays: 만기일이 최근 이 일수 안인 채점은 종가가 바뀌었으면 다시 매긴다(기본 10, 지난 시세를 바로잡은 뒤 한 번 크게).
+   */
   @PostMapping("/grades")
   public StockAnalysisService.GradeResult grade(
       @RequestParam(defaultValue = "" + StockAnalysisService.REGRADE_DAYS) int regradeDays) {
     return stockAnalysisService.grade(Math.clamp(regradeDays, 0, 800));
   }
 
-  /** 분석 날짜(KST) 하루의 회차들을 종목 · 기간별로 나란히. date 를 빼면 가장 최근 날짜. */
+  /**
+   * 하루 회차 비교 조회
+   *
+   * <p>분석 날짜(KST) 하루의 회차들을 종목 · 기간별로 나란히. date 를 빼면 가장 최근 날짜.
+   */
   @GetMapping("/runs")
   public StockAnalysisService.RunComparison runs(
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -201,14 +251,20 @@ public class StockAnalysisController {
     return stockAnalysisService.runs(date, symbol);
   }
 
-  /** 한 종목의 일자별 예측과 버전별 적중률. */
+  /**
+   * 종목 예측 이력 조회
+   *
+   * <p>한 종목의 일자별 예측과 버전별 적중률.
+   */
   @GetMapping("/history")
   public StockAnalysisService.SymbolHistory history(@RequestParam String symbol) {
     return stockAnalysisService.history(symbol);
   }
 
   /**
-   * 적중률 요약. 늦은 예측(장중 정보가 섞인 것)은 뺀다.
+   * 적중률 요약 조회
+   *
+   * <p>늦은 예측(장중 정보가 섞인 것)은 뺀다.
    *
    * @param symbol 종목 심볼(선택). 주면 그 종목 예측만으로 센다
    * @return 회차 · 기준선별 적중률
@@ -218,7 +274,11 @@ public class StockAnalysisController {
     return stockAnalysisService.summary(symbol);
   }
 
-  /** 버전 기록: 바꾼 것 · 리플레이 결과 · 판단과 다음 개선 후보(resources/analysis/releases.json). */
+  /**
+   * 버전 기록 조회
+   *
+   * <p>바꾼 것 · 리플레이 결과 · 판단과 다음 개선 후보(resources/analysis/releases.json).
+   */
   @GetMapping("/releases")
   public ReleaseNotes releases() throws IOException {
     try (InputStream in = new ClassPathResource("analysis/releases.json").getInputStream()) {

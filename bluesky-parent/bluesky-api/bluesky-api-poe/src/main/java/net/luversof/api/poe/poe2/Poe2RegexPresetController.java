@@ -16,7 +16,9 @@ import net.luversof.api.poe.controller.PoeRegexPresetController;
 import net.luversof.api.poe.service.PoeRegexPresetService;
 
 /**
- * PoE2 경로석 정규식 프리셋 CRUD — PoE1 지도 정규식 프리셋과 같은 저장 방식(파일 한 건 = 프리셋 하나)을 PoE2 데이터 폴더
+ * PoE2 경로석 정규식 프리셋
+ *
+ * <p>PoE2 경로석 정규식 프리셋 CRUD — PoE1 지도 정규식 프리셋과 같은 저장 방식(파일 한 건 = 프리셋 하나)을 PoE2 데이터 폴더
  * (poe2.data-dir/regex-presets)에 따로 둔다. 선택 키가 게임마다 달라 한 목록에 섞이면 불러올 때 엉뚱한 옵션이 켜진다.
  */
 @RestController
@@ -31,7 +33,7 @@ public class Poe2RegexPresetController {
   }
 
   /**
-   * PoE2 지도 정규식 프리셋 목록.
+   * 경로석 정규식 프리셋 목록 조회
    *
    * @return 프리셋 요약 목록
    */
@@ -41,7 +43,7 @@ public class Poe2RegexPresetController {
   }
 
   /**
-   * PoE2 지도 정규식 프리셋 한 개.
+   * 경로석 정규식 프리셋 조회
    *
    * @param id 프리셋 id
    * @return 프리셋
@@ -52,7 +54,9 @@ public class Poe2RegexPresetController {
   }
 
   /**
-   * PoE2 지도 정규식 프리셋을 저장한다. id 가 있으면 고친다.
+   * 경로석 정규식 프리셋 저장
+   *
+   * <p>id 가 있으면 고친다.
    *
    * @param request id(선택) · 이름 · 정규식 · 화면 데이터
    * @return 저장한 프리셋
@@ -64,7 +68,7 @@ public class Poe2RegexPresetController {
   }
 
   /**
-   * PoE2 지도 정규식 프리셋을 지운다.
+   * 경로석 정규식 프리셋 삭제
    *
    * @param id 프리셋 id
    * @return 지웠으면 true

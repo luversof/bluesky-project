@@ -19,6 +19,7 @@ import net.luversof.api.stock.web.dto.response.StockCashFlowResponse;
 import net.luversof.api.stock.web.dto.response.TradeResponse;
 import net.luversof.api.stock.web.support.RequestZoneUtil;
 
+/** 매매 */
 @RestController
 @RequestMapping("/api/trade")
 public class TradeController {
@@ -28,7 +29,7 @@ public class TradeController {
   @Autowired private StockHoldingPeriodService stockHoldingPeriodService;
 
   /**
-   * 매매 내역을 찾는다.
+   * 매매 내역 검색
    *
    * @param request 사용자 · 기간 · 계좌 · 종목 조건
    * @return 매매 내역
@@ -39,7 +40,9 @@ public class TradeController {
   }
 
   /**
-   * 종목별 최초 매수일. 자산 현황의 보유 기간·연평균 수익률이 쓴다.
+   * 종목별 최초 매수일 조회
+   *
+   * <p>자산 현황의 보유 기간 · 연평균 수익률이 쓴다.
    *
    * <p>날짜 몇 개 때문에 원장 목록(실측 2026-09-14: 258 행)을 다시 받지 않는다. 존은 형제 엔드포인트와 같은 규칙이다 &mdash; 안 주면 한국 기준,
    * 줬는데 모르는 값이면 400.
@@ -54,7 +57,9 @@ public class TradeController {
   }
 
   /**
-   * 종목별 하루치 순현금흐름(매수 · 매도 · 배당). 자산 현황 · 종목 상세의 연평균 수익률(XIRR)이 쓴다.
+   * 종목별 일별 순현금흐름 조회
+   *
+   * <p>매수 · 매도 · 배당. 자산 현황 · 종목 상세의 연평균 수익률(XIRR)이 쓴다.
    *
    * <p>원장 목록(매매 258 행 + 배당)을 다시 받지 않는다. 존 규칙은 최초 매수일과 같다 &mdash; 안 주면 한국 기준, 줬는데 모르는 값이면 400.
    */

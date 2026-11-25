@@ -25,6 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.user.domain.UserInfo;
 import net.luversof.api.user.service.UserInfoService;
 
+/**
+ * 사용자 · 세션
+ *
+ * <p>로그인 사용자 정보와, 게이트가 쓰는 세션 저장소(Redis) API.
+ */
 @RestController
 @RequestMapping(value = "/api/userInfo", produces = MediaType.APPLICATION_JSON_VALUE)
 public class UserInfoController {
@@ -41,8 +46,10 @@ public class UserInfoController {
   }
 
   /**
-   * 세션 속성을 저장한다(게이트의 ApiSessionRepository.save). removedAttributeNames 의 속성은 지우고 sessionAttributes
-   * 는 덮어쓴다.
+   * 세션 속성 저장
+   *
+   * <p>게이트의 ApiSessionRepository.save 가 부른다. removedAttributeNames 의 속성은 지우고 sessionAttributes 는
+   * 덮어쓴다.
    *
    * <p>없는 세션 id 는 무시한다 - create-new-session 만 id 를 만든다. 로그아웃 뒤 늦게 도착한 저장이 세션을 되살리지 않게 하려는 것이다.
    *
@@ -73,7 +80,9 @@ public class UserInfoController {
   }
 
   /**
-   * 새 세션을 만들어 바로 저장하고 id 를 돌려준다.
+   * 세션 생성
+   *
+   * <p>새 세션을 만들어 바로 저장하고 id 를 돌려준다.
    *
    * @return 새 세션 id
    */
@@ -87,7 +96,9 @@ public class UserInfoController {
   }
 
   /**
-   * 세션을 지운다(로그아웃, 로그인 때 세션 id 교체).
+   * 세션 삭제
+   *
+   * <p>로그아웃, 로그인 때 세션 id 교체에 쓴다.
    *
    * @param request 지울 세션 id
    */
@@ -112,7 +123,9 @@ public class UserInfoController {
       Map<String, Object> sessionAttributes) {}
 
   /**
-   * 세션을 읽고 마지막 접근 시각을 갱신한다(만료 연장). 게이트가 요청마다 부른다.
+   * 세션 조회
+   *
+   * <p>세션을 읽고 마지막 접근 시각을 갱신한다(만료 연장). 게이트가 요청마다 부른다.
    *
    * @param sessionId 세션 id
    * @return 세션 속성(직렬화된 값), 세션이 없으면 빈 응답
@@ -136,7 +149,7 @@ public class UserInfoController {
   }
 
   /**
-   * 사용자 한 명.
+   * 사용자 조회
    *
    * @param id 사용자 id
    * @return 사용자, 없으면 빈 값
@@ -147,7 +160,9 @@ public class UserInfoController {
   }
 
   /**
-   * 여러 사용자를 한 번에 찾는다(목록 화면의 작성자 이름 등).
+   * 여러 사용자 조회
+   *
+   * <p>목록 화면의 작성자 이름 등에 쓴다.
    *
    * @param ids 사용자 id 목록
    * @return 찾은 사용자(없는 id 는 빠진다)
@@ -158,7 +173,7 @@ public class UserInfoController {
   }
 
   /**
-   * username 으로 사용자를 찾는다.
+   * username으로 사용자 조회
    *
    * @param userName username(예: octo_github)
    * @return 사용자, 없으면 빈 값
@@ -169,7 +184,7 @@ public class UserInfoController {
   }
 
   /**
-   * 로그인 제공자 계정으로 사용자를 찾는다.
+   * 로그인 제공자 계정으로 사용자 조회
    *
    * @param provider 제공자(github, kakao)
    * @param providerId 제공자의 사용자 id
@@ -181,7 +196,11 @@ public class UserInfoController {
     return userInfoService.findByProviderAndProviderId(provider, providerId);
   }
 
-  /** 로그인 때 부른다. 응답의 authorities 를 client-user 가 ROLE_USER 에 더한다. */
+  /**
+   * OAuth2 로그인 사용자 저장
+   *
+   * <p>로그인 때 부른다. 없으면 만들고 있으면 이메일 · 아바타를 갱신한다. 응답의 authorities 를 client-user 가 ROLE_USER 에 더한다.
+   */
   @PostMapping("/oauth2")
   public OAuth2UserResponse saveOAuth2User(@RequestBody OAuth2UserRequest request) {
     var userInfo =

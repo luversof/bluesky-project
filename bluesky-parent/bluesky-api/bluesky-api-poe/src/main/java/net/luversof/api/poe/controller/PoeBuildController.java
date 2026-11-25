@@ -13,7 +13,11 @@ import net.luversof.api.poe.service.PoeOptimizeService;
 import net.luversof.api.poe.service.PoePobEngineService;
 import net.luversof.api.poe.service.PoePobImportService;
 
-/** PoB 공유 코드 임포트 + 헤드리스 엔진 재계산 API. */
+/**
+ * PoE1 빌드
+ *
+ * <p>PoB 공유 코드 임포트와 헤드리스 엔진 재계산.
+ */
 @RestController
 @RequestMapping(value = "/api/poe/build", produces = MediaType.APPLICATION_JSON_VALUE)
 public class PoeBuildController {
@@ -34,7 +38,11 @@ public class PoeBuildController {
     this.poeMercenaryService = poeMercenaryService;
   }
 
-  /** PoB 코드 → 빌드 요약. 형식 오류는 400. */
+  /**
+   * PoB 코드로 빌드 요약
+   *
+   * <p>형식 오류는 400.
+   */
   @PostMapping("/import")
   public PoeBuild importBuild(@RequestParam String code) {
     try {
@@ -45,13 +53,21 @@ public class PoeBuildController {
     }
   }
 
-  /** 헤드리스 엔진(LuaJIT+PoB) 가용 여부 — 게이트 admin/빌드 화면 표시용. */
+  /**
+   * 헤드리스 엔진 사용 가능 여부 조회
+   *
+   * <p>LuaJIT + PoB 엔진. 게이트 admin · 빌드 화면 표시용.
+   */
   @GetMapping("/available")
   public boolean available() {
     return poePobEngineService.isAvailable();
   }
 
-  /** 트리 에디터에서 찍은 노드 그대로 실계산 — 탐색 없이 엔진 1회. */
+  /**
+   * 트리 노드로 스탯 계산
+   *
+   * <p>트리 에디터에서 찍은 노드 그대로 실계산한다 - 탐색 없이 엔진 1회.
+   */
   @PostMapping("/tree-stats")
   public PoeOptimizeService.TreeEvaluation treeStats(
       @RequestParam(defaultValue = "0") int classId,
@@ -149,7 +165,9 @@ public class PoeBuildController {
   }
 
   /**
-   * PoB 코드 → 헤드리스 엔진 실계산 스탯.
+   * PoB 코드로 스탯 재계산
+   *
+   * <p>헤드리스 엔진 실계산 스탯.
    *
    * <p>PoB 코드 재계산. mercCode(루미너리 용병 빌드 PoB 코드)가 있으면 용병의 오라·저주를 파티 탭으로 넣고 계산한다(수여된 기사 작위는 사용자 트리에서
    * 자동 반영).
@@ -176,7 +194,9 @@ public class PoeBuildController {
   }
 
   /**
-   * 상주 워커·결과 캐시를 비운다. 데이터 갱신으로 PoB 소스/트리 파일이 바뀌면 이미 떠 있는 워커는 낡은 상태로 계산해 예외 없이 빈 결과를 돌려주므로, 갱신
+   * 엔진 초기화
+   *
+   * <p>상주 워커·결과 캐시를 비운다. 데이터 갱신으로 PoB 소스/트리 파일이 바뀌면 이미 떠 있는 워커는 낡은 상태로 계산해 예외 없이 빈 결과를 돌려주므로, 갱신
    * 파이프라인이 재계산을 쓰기 전에 호출한다.
    */
   @PostMapping("/engine/reset")

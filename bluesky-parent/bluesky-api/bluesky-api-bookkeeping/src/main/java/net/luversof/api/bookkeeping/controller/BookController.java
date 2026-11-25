@@ -19,7 +19,11 @@ import net.luversof.api.bookkeeping.service.BookService;
 import net.luversof.api.bookkeeping.service.BookService.BookCommand;
 import net.luversof.api.bookkeeping.service.BookService.BookSummary;
 
-/** 가계부. 모든 요청의 userId 는 게이트가 넣는 세션 사용자다. */
+/**
+ * 가계부
+ *
+ * <p>모든 요청의 userId 는 게이트가 넣는 세션 사용자다.
+ */
 @RestController
 @RequestMapping(value = "/api/books", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BookController {
@@ -31,7 +35,9 @@ public class BookController {
   }
 
   /**
-   * 사용자가 멤버인 가계부 목록.
+   * 가계부 목록 조회
+   *
+   * <p>사용자가 멤버인 가계부만.
    *
    * @param userId 요청한 사용자
    * @return 가계부 요약
@@ -42,7 +48,9 @@ public class BookController {
   }
 
   /**
-   * 가계부를 만든다. 요청한 사용자가 OWNER 가 되고, 기본 분류 12개와 "현금" 자산이 함께 생긴다.
+   * 가계부 생성
+   *
+   * <p>요청한 사용자가 OWNER 가 되고, 기본 분류 12개와 "현금" 자산이 함께 생긴다.
    *
    * @param userId 요청한 사용자
    * @param command 이름 · 기준통화 · 월 시작일
@@ -54,7 +62,7 @@ public class BookController {
   }
 
   /**
-   * 가계부 한 건.
+   * 가계부 조회
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자(멤버여야 한다)
@@ -66,7 +74,9 @@ public class BookController {
   }
 
   /**
-   * 가계부 설정을 고친다. OWNER 만 할 수 있다.
+   * 가계부 수정
+   *
+   * <p>OWNER 만 할 수 있다.
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -80,7 +90,9 @@ public class BookController {
   }
 
   /**
-   * 가계부와 딸린 데이터를 모두 지운다. OWNER 만 할 수 있다.
+   * 가계부 삭제
+   *
+   * <p>가계부와 딸린 데이터를 모두 지운다. OWNER 만 할 수 있다.
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자

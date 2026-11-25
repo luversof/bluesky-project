@@ -16,7 +16,11 @@ import net.luversof.api.stock.web.dto.response.YearlyCostSummary;
 import net.luversof.api.stock.web.support.RequestRangeUtil;
 import net.luversof.api.stock.web.support.RequestZoneUtil;
 
-/** 연도별 세금·비용 요약. 원장에는 다 있는데 합계를 내는 화면이 없던 값들이다. */
+/**
+ * 연도별 세금 · 비용
+ *
+ * <p>원장에는 다 있는데 합계를 내는 화면이 없던 값들이다.
+ */
 @RestController
 @RequestMapping("/api/yearlyCost")
 public class YearlyCostController {
@@ -24,7 +28,7 @@ public class YearlyCostController {
   @Autowired private YearlyCostService yearlyCostService;
 
   /**
-   * 연도별 세금 · 비용 요약.
+   * 연도별 세금 · 비용 요약 조회
    *
    * @param userId 사용자 id
    * @param startDate 시작 시각(선택)

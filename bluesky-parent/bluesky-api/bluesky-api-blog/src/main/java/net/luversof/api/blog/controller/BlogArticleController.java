@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.blog.domain.mariadb.BlogArticle;
 import net.luversof.api.blog.service.BlogArticleService;
 
-/** 블로그 글. */
+/** 블로그 글 */
 @RestController
 @RequestMapping(value = "/api/blogArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleController {
@@ -27,7 +27,7 @@ public class BlogArticleController {
   @Autowired private BlogArticleService blogArticleService;
 
   /**
-   * 글을 쓴다.
+   * 블로그 글 작성
    *
    * @param blogArticle 쓸 글
    * @return 쓴 글
@@ -39,7 +39,7 @@ public class BlogArticleController {
   }
 
   /**
-   * 블로그의 글 목록.
+   * 블로그의 글 목록 조회
    *
    * @param blogId 블로그 ID
    * @param pageable 페이지(page·size·sort)
@@ -51,7 +51,7 @@ public class BlogArticleController {
   }
 
   /**
-   * 글 하나를 찾는다.
+   * 블로그 글 조회
    *
    * @param blogArticleId 글 ID
    * @return 글, 없으면 빈 값
@@ -62,7 +62,9 @@ public class BlogArticleController {
   }
 
   /**
-   * 글을 고친다. 쓴 사람만 고칠 수 있다.
+   * 블로그 글 수정
+   *
+   * <p>쓴 사람만 고칠 수 있다.
    *
    * @param blogArticle 고칠 글
    * @return 고친 글
@@ -74,7 +76,9 @@ public class BlogArticleController {
   }
 
   /**
-   * 글을 지운다. 쓴 사람만 지울 수 있다.
+   * 블로그 글 삭제
+   *
+   * <p>쓴 사람만 지울 수 있다.
    *
    * @param blogArticle 지울 글
    */

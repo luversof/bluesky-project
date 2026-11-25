@@ -29,7 +29,11 @@ import net.luversof.api.stock.repository.StockPriceHistoryRepository;
 import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.web.dto.response.DataStatusResponse;
 
-/** 데이터 최신 시점 조회. 관리 화면의 "언제까지의 데이터인지" 표시에 쓰는 경량 엔드포인트다. */
+/**
+ * 데이터 상태
+ *
+ * <p>관리 화면의 "언제까지의 데이터인지" 표시에 쓰는 경량 엔드포인트다.
+ */
 @RestController
 @RequestMapping("/api/dataStatus")
 public class DataStatusController {
@@ -47,7 +51,9 @@ public class DataStatusController {
   @Autowired private MonthlyDividendPayoutQuery monthlyDividendPayoutQuery;
 
   /**
-   * 원장 · 시세 · 월배당 데이터가 언제까지 들어와 있는지, 의심스러운 시세 행이 있는지.
+   * 데이터 상태 조회
+   *
+   * <p>원장 · 시세 · 월배당 데이터가 언제까지 들어와 있는지, 의심스러운 시세 행이 있는지.
    *
    * @param userId 사용자 id(원장 기준)
    * @return 데이터 상태

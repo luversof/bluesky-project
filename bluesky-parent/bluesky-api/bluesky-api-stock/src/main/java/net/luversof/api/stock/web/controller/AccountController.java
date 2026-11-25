@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.stock.domain.Account;
 import net.luversof.api.stock.service.AccountService;
 
+/** 주식 계좌 */
 @RestController
 @RequestMapping("/api/account")
 public class AccountController {
@@ -22,7 +23,7 @@ public class AccountController {
   @Autowired private AccountService accountService;
 
   /**
-   * 계좌를 만든다.
+   * 계좌 생성
    *
    * @param account 만들 계좌(사용자 · 이름 · 기준통화)
    * @return 만든 계좌
@@ -33,7 +34,7 @@ public class AccountController {
   }
 
   /**
-   * 계좌 한 건.
+   * 계좌 조회
    *
    * @param id 계좌 id
    * @return 계좌, 없으면 빈 값
@@ -44,7 +45,7 @@ public class AccountController {
   }
 
   /**
-   * 사용자의 계좌 목록.
+   * 사용자의 계좌 목록 조회
    *
    * @param userId 사용자 id
    * @return 계좌 목록

@@ -21,7 +21,11 @@ import net.luversof.api.bookkeeping.service.RecurringService;
 import net.luversof.api.bookkeeping.service.RecurringService.Due;
 import net.luversof.api.bookkeeping.service.RecurringService.RecurringCommand;
 
-/** 반복 내역(자동으로 넣지 않는다 - 도래한 회차를 사용자가 넣는다). 날짜는 yyyy-MM-dd. */
+/**
+ * 가계부 반복 내역
+ *
+ * <p>자동으로 넣지 않는다 - 도래한 회차를 사용자가 넣는다. 날짜는 yyyy-MM-dd.
+ */
 @RestController
 @RequestMapping(
     value = "/api/books/{bookId}/recurrings",
@@ -35,7 +39,7 @@ public class RecurringController {
   }
 
   /**
-   * 반복 내역 틀 목록.
+   * 반복 내역 목록 조회
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -47,7 +51,9 @@ public class RecurringController {
   }
 
   /**
-   * 반복 내역 틀을 만든다. 내역과 같은 규칙으로 검증한다.
+   * 반복 내역 생성
+   *
+   * <p>내역과 같은 규칙으로 검증한다.
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -61,7 +67,9 @@ public class RecurringController {
   }
 
   /**
-   * 반복 내역 틀을 지운다. 이미 넣은 내역은 남는다.
+   * 반복 내역 삭제
+   *
+   * <p>이미 넣은 내역은 남는다.
    *
    * @param bookId 가계부 id
    * @param recurringId 틀 id
@@ -73,7 +81,11 @@ public class RecurringController {
     recurringService.delete(bookId, userId, recurringId);
   }
 
-  /** 기간(최대 400 일) 안의 아직 안 넣은 회차. */
+  /**
+   * 넣지 않은 회차 조회
+   *
+   * <p>기간(최대 400 일) 안에서 아직 내역으로 넣지 않은 회차.
+   */
   @GetMapping("/due")
   public List<Due> due(
       @PathVariable UUID bookId,
@@ -84,7 +96,9 @@ public class RecurringController {
   }
 
   /**
-   * 도래한 회차를 내역으로 넣는다. 회차가 아니면 NOT_RECURRING_OCCURRENCE, 이미 넣었으면 RECURRING_ALREADY_DONE 오류.
+   * 회차를 내역으로 등록
+   *
+   * <p>회차가 아니면 NOT_RECURRING_OCCURRENCE, 이미 넣었으면 RECURRING_ALREADY_DONE 오류.
    *
    * @param bookId 가계부 id
    * @param recurringId 틀 id

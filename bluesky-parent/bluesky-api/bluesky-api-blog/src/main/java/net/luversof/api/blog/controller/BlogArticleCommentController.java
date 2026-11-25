@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.blog.domain.mariadb.BlogArticleComment;
 import net.luversof.api.blog.service.BlogArticleCommentService;
 
-/** 블로그 글 댓글. */
+/** 블로그 글 댓글 */
 @RestController
 @RequestMapping(value = "/api/blogArticleComment", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleCommentController {
@@ -27,7 +27,7 @@ public class BlogArticleCommentController {
   @Autowired private BlogArticleCommentService blogArticleCommentService;
 
   /**
-   * 댓글을 단다.
+   * 블로그 글 댓글 작성
    *
    * @param blogArticleComment 달 댓글
    * @return 단 댓글
@@ -40,7 +40,7 @@ public class BlogArticleCommentController {
   }
 
   /**
-   * 글의 댓글 목록.
+   * 블로그 글의 댓글 목록 조회
    *
    * @param blogArticleId 글 ID
    * @param pageable 페이지(page·size·sort)
@@ -53,7 +53,7 @@ public class BlogArticleCommentController {
   }
 
   /**
-   * 댓글 하나를 찾는다.
+   * 블로그 글 댓글 조회
    *
    * @param blogArticleCommentId 댓글 ID
    * @return 댓글, 없으면 빈 값
@@ -65,7 +65,7 @@ public class BlogArticleCommentController {
   }
 
   /**
-   * 글의 댓글 수.
+   * 블로그 글의 댓글 수 조회
    *
    * @param blogArticleId 글 ID
    * @return 댓글 수
@@ -76,7 +76,7 @@ public class BlogArticleCommentController {
   }
 
   /**
-   * 댓글을 고친다.
+   * 블로그 글 댓글 수정
    *
    * @param blogArticleComment 고칠 댓글
    * @return 고친 댓글
@@ -89,7 +89,7 @@ public class BlogArticleCommentController {
   }
 
   /**
-   * 댓글을 지운다.
+   * 블로그 글 댓글 삭제
    *
    * @param blogArticleComment 지울 댓글
    */

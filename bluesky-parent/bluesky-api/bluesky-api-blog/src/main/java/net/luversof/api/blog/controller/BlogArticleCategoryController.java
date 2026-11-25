@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.blog.domain.mariadb.BlogArticleCategory;
 import net.luversof.api.blog.service.BlogArticleCategoryService;
 
-/** 블로그 글 분류. */
+/** 블로그 글 분류 */
 @RestController
 @RequestMapping(value = "/api/blogArticleCategory", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BlogArticleCategoryController {
@@ -25,7 +25,7 @@ public class BlogArticleCategoryController {
   @Autowired private BlogArticleCategoryService blogArticleCategoryService;
 
   /**
-   * 분류를 만든다.
+   * 블로그 글 분류 생성
    *
    * @param blogArticleCategory 만들 분류
    * @return 만든 분류
@@ -38,7 +38,7 @@ public class BlogArticleCategoryController {
   }
 
   /**
-   * 블로그의 분류 목록.
+   * 블로그의 글 분류 목록 조회
    *
    * @param blogId 블로그 ID
    * @return 분류 목록
@@ -49,7 +49,7 @@ public class BlogArticleCategoryController {
   }
 
   /**
-   * 분류를 고친다.
+   * 블로그 글 분류 수정
    *
    * @param blogArticleCategory 고칠 분류
    * @return 고친 분류
@@ -62,7 +62,7 @@ public class BlogArticleCategoryController {
   }
 
   /**
-   * 분류를 지운다.
+   * 블로그 글 분류 삭제
    *
    * @param blogArticleCategory 지울 분류
    */

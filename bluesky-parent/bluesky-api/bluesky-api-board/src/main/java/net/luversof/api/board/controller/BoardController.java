@@ -13,7 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.service.BoardService;
 
-/** 게시판. alias 로 구분한다. */
+/**
+ * 게시판
+ *
+ * <p>alias 로 구분한다.
+ */
 @RestController
 @RequestMapping(value = "/api/board", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardController {
@@ -26,7 +30,7 @@ public class BoardController {
   }
 
   /**
-   * 게시판을 만든다.
+   * 게시판 생성
    *
    * @param board 만들 게시판(alias 필수, 게시판 주소에 쓰인다)
    * @return 만든 게시판
@@ -37,7 +41,7 @@ public class BoardController {
   }
 
   /**
-   * alias 로 게시판을 찾는다.
+   * alias로 게시판 조회
    *
    * @param alias 게시판 alias
    * @return 게시판(없으면 오류)
@@ -48,7 +52,7 @@ public class BoardController {
   }
 
   /**
-   * 모든 게시판.
+   * 게시판 목록 조회
    *
    * @return 게시판 목록
    */
@@ -58,7 +62,7 @@ public class BoardController {
   }
 
   /**
-   * 게시판 설정을 고친다.
+   * 게시판 수정
    *
    * @param board 고칠 게시판
    * @return 고친 게시판

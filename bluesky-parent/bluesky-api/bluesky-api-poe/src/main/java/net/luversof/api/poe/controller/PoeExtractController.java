@@ -14,7 +14,11 @@ import net.luversof.api.poe.service.PoeExtractService;
 import net.luversof.api.poe.service.PoeNinjaSyncService;
 import net.luversof.api.poe.service.PoePobEngineService;
 
-/** 게임 데이터 추출 파이프라인(poe-extract) 잡 API — 시작/상태. 관리자 전용은 게이트가 게이팅. */
+/**
+ * PoE1 데이터 추출
+ *
+ * <p>게임 데이터 추출 파이프라인(poe-extract) 작업. 관리자 전용 여부는 게이트가 막는다.
+ */
 @RestController
 @RequestMapping(value = "/api/poe/extract", produces = MediaType.APPLICATION_JSON_VALUE)
 public class PoeExtractController {
@@ -48,7 +52,9 @@ public class PoeExtractController {
       String pobVersion) {}
 
   /**
-   * 게임 데이터 버전: 지금 데이터의 패치, 설정의 패치, 최신 패치, 최신인지, PoB 버전.
+   * 게임 데이터 버전 조회
+   *
+   * <p>지금 데이터의 패치, 설정의 패치, 최신 패치, 최신인지, PoB 버전.
    *
    * @return 버전 정보
    */
@@ -65,7 +71,9 @@ public class PoeExtractController {
   }
 
   /**
-   * 게임 데이터 추출을 시작한다(관리 화면). 이미 돌고 있으면 시작하지 않는다.
+   * 게임 데이터 추출 시작
+   *
+   * <p>관리 화면에서 부른다. 이미 돌고 있으면 시작하지 않는다.
    *
    * @param toLatest true 면 최신 패치로 바꿔 추출한다
    * @return 시작했으면 true
@@ -76,7 +84,9 @@ public class PoeExtractController {
   }
 
   /**
-   * 게임 데이터 추출 작업 상태와 로그.
+   * 게임 데이터 추출 상태 조회
+   *
+   * <p>작업 상태와 로그.
    *
    * @return 추출 가능 여부 · ImageMagick 설치 여부 · 진행 상태 · 로그
    */
@@ -90,13 +100,21 @@ public class PoeExtractController {
         poeExtractService.logTail());
   }
 
-  /** poe.ninja 스냅샷 동기 상태(저장본·현재 버전, 마지막 갱신·엔진 단계) — PoeNinjaSyncService. */
+  /**
+   * poe.ninja 동기화 상태 조회
+   *
+   * <p>저장본 · 현재 버전, 마지막 갱신 · 엔진 단계(PoeNinjaSyncService).
+   */
   @GetMapping("/ninja-sync")
   public NinjaSnapshotSync.Status ninjaSyncStatus() {
     return poeNinjaSyncService.status();
   }
 
-  /** 지금 버전 확인 → 바뀌었으면 수집(요청 안에서 돈다 — 수 분 걸릴 수 있다). 새로 받았으면 true. */
+  /**
+   * poe.ninja 동기화 실행
+   *
+   * <p>지금 버전을 확인하고 바뀌었으면 수집한다(요청 안에서 돈다 - 수 분 걸릴 수 있다). 새로 받았으면 true.
+   */
   @PostMapping("/ninja-sync")
   public boolean ninjaSyncNow() {
     return poeNinjaSyncService.syncBuilds();

@@ -18,6 +18,11 @@ import net.luversof.api.stock.web.dto.request.MonthlyDividendProfileRequest;
 import net.luversof.api.stock.web.dto.request.MonthlyDividendProfileUpsertRequest;
 import net.luversof.api.stock.web.dto.response.MonthlyDividendProfileResponse;
 
+/**
+ * 월배당 프로필
+ *
+ * <p>관심 월배당 종목.
+ */
 @RestController
 @RequestMapping("/api/monthlyDividendProfile")
 public class MonthlyDividendProfileController {
@@ -25,7 +30,7 @@ public class MonthlyDividendProfileController {
   @Autowired private MonthlyDividendProfileService monthlyDividendProfileService;
 
   /**
-   * 월배당 프로필(관심 월배당 종목)을 찾는다.
+   * 월배당 프로필 목록 조회
    *
    * @param request 조건
    * @return 프로필 목록(표시 순서대로)
@@ -36,7 +41,9 @@ public class MonthlyDividendProfileController {
   }
 
   /**
-   * 월배당 프로필을 넣는다. 같은 종목이 있으면 고친다.
+   * 월배당 프로필 저장
+   *
+   * <p>같은 종목이 있으면 고친다.
    *
    * @param request 종목 심볼과 프로필 값
    * @return 저장한 프로필
@@ -48,7 +55,7 @@ public class MonthlyDividendProfileController {
   }
 
   /**
-   * 프로필 표시 순서를 바꾼다.
+   * 월배당 프로필 순서 변경
    *
    * @param request 새 순서의 종목 목록
    */
@@ -58,7 +65,7 @@ public class MonthlyDividendProfileController {
   }
 
   /**
-   * 월배당 프로필을 지운다.
+   * 월배당 프로필 삭제
    *
    * @param symbol 종목 심볼
    */

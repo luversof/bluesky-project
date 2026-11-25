@@ -21,7 +21,11 @@ import net.luversof.api.bookkeeping.service.EntryCommand;
 import net.luversof.api.bookkeeping.service.EntryService;
 import net.luversof.api.bookkeeping.service.EntryService.EntrySearch;
 
-/** 내역. 검색은 기간(양 끝 포함) 필수, 최근 날짜 먼저. */
+/**
+ * 가계부 내역
+ *
+ * <p>검색은 기간(양 끝 포함) 필수, 최근 날짜 먼저.
+ */
 @RestController
 @RequestMapping(value = "/api/books/{bookId}/entries", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EntryController {
@@ -33,7 +37,9 @@ public class EntryController {
   }
 
   /**
-   * 기간 안의 내역을 찾는다(양 끝 포함, 최근 날짜 먼저).
+   * 내역 검색
+   *
+   * <p>기간(양 끝 포함) 안의 내역. 최근 날짜 먼저.
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -57,7 +63,7 @@ public class EntryController {
   }
 
   /**
-   * 내역을 넣는다.
+   * 내역 등록
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자(기록자가 된다)
@@ -73,7 +79,11 @@ public class EntryController {
   /** 가져오기 결과. */
   public record ImportResult(int count) {}
 
-  /** 한꺼번에 넣기(최대 2000, 전부 아니면 무). */
+  /**
+   * 내역 일괄 등록
+   *
+   * <p>최대 2000건. 하나라도 실패하면 아무것도 넣지 않는다.
+   */
   @PostMapping("/import")
   public ImportResult importAll(
       @PathVariable UUID bookId,
@@ -83,7 +93,9 @@ public class EntryController {
   }
 
   /**
-   * 내역을 고친다. 기록자와 기록 시각은 처음 값을 유지한다.
+   * 내역 수정
+   *
+   * <p>기록자와 기록 시각은 처음 값을 유지한다.
    *
    * @param bookId 가계부 id
    * @param entryId 내역 id
@@ -101,7 +113,7 @@ public class EntryController {
   }
 
   /**
-   * 내역을 지운다.
+   * 내역 삭제
    *
    * @param bookId 가계부 id
    * @param entryId 내역 id

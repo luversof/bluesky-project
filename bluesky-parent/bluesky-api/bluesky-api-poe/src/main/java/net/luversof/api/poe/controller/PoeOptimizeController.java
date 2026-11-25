@@ -16,7 +16,11 @@ import net.luversof.api.poe.service.PoeOptimizeResult;
 import net.luversof.api.poe.service.PoeOptimizeService;
 import net.luversof.api.poe.service.PoeRealStartService;
 
-/** 최적 조합 탐색 잡 API — 시작/상태/결과. 로그인 게이팅은 게이트가 담당(여긴 잡만 구동). */
+/**
+ * PoE1 빌드 최적화
+ *
+ * <p>최적 조합 탐색 작업(시작 / 상태 / 결과). 로그인 확인은 게이트가 한다.
+ */
 @RestController
 @RequestMapping(value = "/api/poe/optimize", produces = MediaType.APPLICATION_JSON_VALUE)
 public class PoeOptimizeController {
@@ -35,8 +39,10 @@ public class PoeOptimizeController {
   }
 
   /**
-   * poe.ninja 실빌드 출발점 — 이 (전직×스킬)의 대표 실빌드(표준 가정으로 재계산한 정규화 PoB 코드 포함). 시뮬레이터 결과 옆 "실빌드에서 출발" 카드와 빌드
-   * 화면 바로 열기에 쓴다. 데이터 없으면 null.
+   * 실빌드 출발점 조회
+   *
+   * <p>poe.ninja 실빌드 출발점 — 이 (전직×스킬)의 대표 실빌드(표준 가정으로 재계산한 정규화 PoB 코드 포함). 시뮬레이터 결과 옆 "실빌드에서 출발" 카드와
+   * 빌드 화면 바로 열기에 쓴다. 데이터 없으면 null.
    */
   @GetMapping("/real-start")
   public PoeRealStartService.RealStart realStart(
@@ -46,7 +52,9 @@ public class PoeOptimizeController {
   }
 
   /**
-   * poe.ninja 실빌드 벤치마크 조회 — 결과 페이지에서 최적화 결과를 실빌드 중앙값과 비교 표시하는 용도. 정확 키(전직+스킬) 우선, 없으면 스킬 폴백. 데이터
+   * 실빌드 벤치마크 조회
+   *
+   * <p>poe.ninja 실빌드 벤치마크 조회 — 결과 페이지에서 최적화 결과를 실빌드 중앙값과 비교 표시하는 용도. 정확 키(전직+스킬) 우선, 없으면 스킬 폴백. 데이터
    * 없으면 null(게이트가 미표시).
    */
   @GetMapping("/archetype")
@@ -61,7 +69,11 @@ public class PoeOptimizeController {
     return poeOptimizeService.ninjaBenchmark(ascendancy, skill);
   }
 
-  /** 실행 중인 최적 조합 탐색 잡 중지 — 취소 요청 성공(실행 중이었음) 시 true. */
+  /**
+   * 빌드 최적화 중지
+   *
+   * <p>실행 중이던 작업을 취소했으면 true.
+   */
   @PostMapping("/stop")
   public boolean stop() {
     return poeOptimizeService.cancel();
@@ -80,7 +92,9 @@ public class PoeOptimizeController {
       PoeOptimizeResult result) {}
 
   /**
-   * 빌드 최적 조합 탐색을 시작한다. 이미 돌고 있으면 시작하지 않는다. 진행은 /status 로 본다.
+   * 빌드 최적화 시작
+   *
+   * <p>이미 돌고 있으면 시작하지 않는다. 진행은 /status 로 본다.
    *
    * @param slug 주 스킬 젬 slug
    * @param objective 목표(기본 auto)
@@ -151,7 +165,9 @@ public class PoeOptimizeController {
   }
 
   /**
-   * 빌드 최적화 작업 상태 · 단계 · 로그와 마지막 결과.
+   * 빌드 최적화 상태 조회
+   *
+   * <p>작업 상태 · 단계 · 로그와 마지막 결과.
    *
    * @return 작업 상태
    */
@@ -169,19 +185,31 @@ public class PoeOptimizeController {
         poeOptimizeService.lastResult());
   }
 
-  /** 최근 결과 목록(최신순) — 목록 표시용 요약만. 전체 결과는 {@code /result?id=} 로 조회. */
+  /**
+   * 최적화 결과 이력 조회
+   *
+   * <p>최신순, 목록 표시용 요약만. 전체 결과는 {@code /result?id=} 로 조회.
+   */
   @GetMapping("/history")
   public List<PoeOptimizeHistoryService.OptimizeHistoryEntry> history() {
     return poeOptimizeHistoryService.list();
   }
 
-  /** 이력 결과 한 건 전체 조회 — 없거나 깨졌으면 null. */
+  /**
+   * 최적화 결과 조회
+   *
+   * <p>이력 한 건 전체. 없거나 깨졌으면 null.
+   */
   @GetMapping("/result")
   public PoeOptimizeResult result(@RequestParam long id) {
     return poeOptimizeHistoryService.result(id);
   }
 
-  /** 이력 한 건 삭제(사용자 요청). 삭제 성공 여부 반환. */
+  /**
+   * 최적화 결과 이력 삭제
+   *
+   * <p>삭제했으면 true.
+   */
   @DeleteMapping("/history/{id}")
   public boolean deleteHistory(@PathVariable long id) {
     return poeOptimizeHistoryService.delete(id);

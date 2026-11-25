@@ -20,7 +20,11 @@ import net.luversof.api.bookkeeping.service.AssetService;
 import net.luversof.api.bookkeeping.service.AssetService.AssetBalance;
 import net.luversof.api.bookkeeping.service.AssetService.AssetCommand;
 
-/** 자산(잔액 포함 목록). */
+/**
+ * 가계부 자산
+ *
+ * <p>통장 · 카드 · 현금 등. 목록은 잔액을 포함한다.
+ */
 @RestController
 @RequestMapping(value = "/api/books/{bookId}/assets", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AssetController {
@@ -32,7 +36,9 @@ public class AssetController {
   }
 
   /**
-   * 가계부의 자산 목록(잔액 포함). 숨긴 자산도 들어 있다.
+   * 자산 목록 조회
+   *
+   * <p>잔액을 포함한다. 숨긴 자산도 들어 있다.
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -43,7 +49,11 @@ public class AssetController {
     return assetService.list(bookId, userId);
   }
 
-  /** 카드별 결제 예정액. month 는 "2026-11"(결제 달). */
+  /**
+   * 카드별 결제 예정액 조회
+   *
+   * <p>month 는 결제 달("2026-11").
+   */
   @GetMapping("/card-bills")
   public List<AssetService.CardBill> cardBills(
       @PathVariable UUID bookId, @RequestParam UUID userId, @RequestParam YearMonth month) {
@@ -51,7 +61,7 @@ public class AssetController {
   }
 
   /**
-   * 자산을 만든다.
+   * 자산 생성
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -65,7 +75,9 @@ public class AssetController {
   }
 
   /**
-   * 자산을 고친다. 내역이 있으면 통화는 바꿀 수 없다.
+   * 자산 수정
+   *
+   * <p>내역이 있으면 통화는 바꿀 수 없다.
    *
    * @param bookId 가계부 id
    * @param assetId 자산 id
@@ -83,7 +95,9 @@ public class AssetController {
   }
 
   /**
-   * 자산을 지운다. 내역이 있으면 지우지 않고 숨긴다.
+   * 자산 삭제
+   *
+   * <p>내역이 있으면 지우지 않고 숨긴다.
    *
    * @param bookId 가계부 id
    * @param assetId 자산 id
@@ -97,7 +111,9 @@ public class AssetController {
   }
 
   /**
-   * 자산 순서를 같은 종류 안에서 한 칸 옮긴다. 끝이면 그대로 둔다.
+   * 자산 순서 변경
+   *
+   * <p>같은 종류 안에서 한 칸 옮긴다. 끝이면 그대로 둔다.
    *
    * @param bookId 가계부 id
    * @param assetId 자산 id

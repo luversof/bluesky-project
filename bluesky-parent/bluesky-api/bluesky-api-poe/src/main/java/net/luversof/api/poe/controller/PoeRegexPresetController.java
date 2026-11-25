@@ -14,7 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import net.luversof.api.poe.service.PoeRegexPresetService;
 
-/** 지도 정규식 프리셋 CRUD — 로그인 게이팅은 게이트가 담당(이력 삭제와 동일 관례). */
+/**
+ * PoE1 지도 정규식 프리셋
+ *
+ * <p>로그인 확인은 게이트가 한다(이력 삭제와 같은 관례).
+ */
 @RestController
 @RequestMapping(value = "/api/poe/regex/presets", produces = MediaType.APPLICATION_JSON_VALUE)
 public class PoeRegexPresetController {
@@ -28,7 +32,7 @@ public class PoeRegexPresetController {
   public record SaveRequest(Long id, String name, String regex, Map<String, Object> data) {}
 
   /**
-   * PoE1 지도 정규식 프리셋 목록.
+   * 지도 정규식 프리셋 목록 조회
    *
    * @return 프리셋 요약 목록
    */
@@ -37,13 +41,21 @@ public class PoeRegexPresetController {
     return poeRegexPresetService.list();
   }
 
-  /** 한 건 전체 조회 — 없거나 깨졌으면 null(빈 응답). */
+  /**
+   * 지도 정규식 프리셋 조회
+   *
+   * <p>없거나 깨졌으면 null(빈 응답).
+   */
   @GetMapping("/{id}")
   public PoeRegexPresetService.RegexPreset get(@PathVariable long id) {
     return poeRegexPresetService.get(id);
   }
 
-  /** 저장 — id 있으면 편집(같은 id 유지), 없으면 신규. 실패 시 null. */
+  /**
+   * 지도 정규식 프리셋 저장
+   *
+   * <p>id 가 있으면 편집(같은 id 유지), 없으면 새로 만든다. 실패하면 null.
+   */
   @PostMapping
   public PoeRegexPresetService.RegexPreset save(@RequestBody SaveRequest request) {
     return poeRegexPresetService.save(
@@ -51,7 +63,7 @@ public class PoeRegexPresetController {
   }
 
   /**
-   * PoE1 지도 정규식 프리셋을 지운다.
+   * 지도 정규식 프리셋 삭제
    *
    * @param id 프리셋 id
    * @return 지웠으면 true

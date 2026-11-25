@@ -15,7 +15,11 @@ import net.luversof.api.stock.repository.TradeRepository;
 import net.luversof.api.stock.web.dto.response.ActivityFilterIdsResponse;
 import net.luversof.api.stock.web.support.RequestRangeUtil;
 
-/** 필터 목록용 id 집계. DISTINCT 4건만 수행하는 경량 엔드포인트다. */
+/**
+ * 필터 목록용 id
+ *
+ * <p>DISTINCT 4건만 수행하는 경량 엔드포인트다.
+ */
 @RestController
 @RequestMapping("/api/activityFilterIds")
 public class ActivityFilterIdsController {
@@ -25,7 +29,9 @@ public class ActivityFilterIdsController {
   @Autowired private DividendRepository dividendRepository;
 
   /**
-   * 기간 안에 매매 · 배당이 있었던 계좌와 종목 id(필터 목록용).
+   * 매매 · 배당이 있던 계좌 · 종목 id 조회
+   *
+   * <p>기간 안에 매매 · 배당이 있었던 계좌와 종목 id(필터 목록용).
    *
    * @param userId 사용자 id
    * @param startDate 시작 시각(선택, ISO-8601)

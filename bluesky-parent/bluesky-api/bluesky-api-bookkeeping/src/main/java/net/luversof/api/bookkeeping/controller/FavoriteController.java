@@ -17,7 +17,11 @@ import net.luversof.api.bookkeeping.domain.BookFavorite;
 import net.luversof.api.bookkeeping.service.FavoriteService;
 import net.luversof.api.bookkeeping.service.FavoriteService.FavoriteCommand;
 
-/** 즐겨찾기(내역 틀). */
+/**
+ * 가계부 즐겨찾기
+ *
+ * <p>자주 쓰는 내역 틀.
+ */
 @RestController
 @RequestMapping(
     value = "/api/books/{bookId}/favorites",
@@ -31,7 +35,7 @@ public class FavoriteController {
   }
 
   /**
-   * 즐겨찾기(내역 틀) 목록.
+   * 즐겨찾기 목록 조회
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -43,7 +47,7 @@ public class FavoriteController {
   }
 
   /**
-   * 즐겨찾기를 만든다.
+   * 즐겨찾기 생성
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -57,7 +61,7 @@ public class FavoriteController {
   }
 
   /**
-   * 즐겨찾기를 지운다.
+   * 즐겨찾기 삭제
    *
    * @param bookId 가계부 id
    * @param favoriteId 즐겨찾기 id

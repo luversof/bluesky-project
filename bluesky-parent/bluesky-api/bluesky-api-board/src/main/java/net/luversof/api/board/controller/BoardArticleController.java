@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.board.domain.BoardArticle;
 import net.luversof.api.board.service.BoardArticleService;
 
-/** 게시글. */
+/** 게시글 */
 @RestController
 @RequestMapping(value = "/api/boardArticle", produces = MediaType.APPLICATION_JSON_VALUE)
 public class BoardArticleController {
@@ -36,7 +36,7 @@ public class BoardArticleController {
   }
 
   /**
-   * 게시글을 쓴다.
+   * 게시글 작성
    *
    * @param boardArticle 쓸 글(게시판 alias, 작성자 userId, 제목, 내용)
    * @return 저장한 글
@@ -48,7 +48,9 @@ public class BoardArticleController {
   }
 
   /**
-   * 게시판의 글 목록. 기본은 한 쪽 20 건, 최신 글부터.
+   * 게시판의 게시글 목록 조회
+   *
+   * <p>기본은 한 쪽 20 건, 최신 글부터.
    *
    * @param boardAlias 게시판 alias
    * @param pageable 쪽 · 크기 · 정렬
@@ -63,7 +65,7 @@ public class BoardArticleController {
   }
 
   /**
-   * 게시글 한 건.
+   * 게시글 조회
    *
    * @param id 게시글 ID
    * @return 게시글, 없으면 빈 값
@@ -74,7 +76,9 @@ public class BoardArticleController {
   }
 
   /**
-   * 게시글을 고친다. 작성자 본인만 고칠 수 있다.
+   * 게시글 수정
+   *
+   * <p>작성자 본인만 고칠 수 있다.
    *
    * @param boardArticle 고칠 글(id, 요청한 사용자 userId 필수)
    * @return 고친 글
@@ -86,7 +90,9 @@ public class BoardArticleController {
   }
 
   /**
-   * 게시글을 지운다. 작성자 본인만 지울 수 있고, 글의 댓글도 함께 지운다.
+   * 게시글 삭제
+   *
+   * <p>작성자 본인만 지울 수 있고, 게시글의 댓글도 함께 지운다.
    *
    * @param boardArticle 지울 글(id, 요청한 사용자 userId 필수)
    */

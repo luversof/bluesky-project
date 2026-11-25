@@ -17,6 +17,11 @@ import net.luversof.api.stock.web.dto.request.MonthlyDividendSnapshotRequest;
 import net.luversof.api.stock.web.dto.request.MonthlyDividendSnapshotUpsertRequest;
 import net.luversof.api.stock.web.dto.response.MonthlyDividendSnapshotResponse;
 
+/**
+ * 월배당 스냅샷
+ *
+ * <p>종목별로 기준일의 보유 수량 · 평단과 월배당 지표(최근 · 1년 평균)를 저장해 둔 것.
+ */
 @RestController
 @RequestMapping("/api/monthlyDividendSnapshot")
 public class MonthlyDividendSnapshotController {
@@ -24,7 +29,7 @@ public class MonthlyDividendSnapshotController {
   @Autowired private MonthlyDividendSnapshotService monthlyDividendSnapshotService;
 
   /**
-   * 사용자의 월배당 스냅샷 목록. 종목별로 기준일의 보유 수량 · 평단과 월배당 지표(최근 · 1년 평균)를 저장해 둔 것이다.
+   * 월배당 스냅샷 목록 조회
    *
    * @param request userId
    * @return 스냅샷 목록
@@ -36,7 +41,9 @@ public class MonthlyDividendSnapshotController {
   }
 
   /**
-   * 스냅샷을 넣는다. 같은 사용자 · 종목이 있으면 고친다.
+   * 월배당 스냅샷 저장
+   *
+   * <p>같은 사용자 · 종목이 있으면 고친다.
    *
    * @param request 사용자 · 종목 심볼 · 저장할 값
    * @return 저장한 스냅샷
@@ -48,7 +55,7 @@ public class MonthlyDividendSnapshotController {
   }
 
   /**
-   * 스냅샷을 지운다.
+   * 월배당 스냅샷 삭제
    *
    * @param userId 사용자 id
    * @param symbol 종목 심볼

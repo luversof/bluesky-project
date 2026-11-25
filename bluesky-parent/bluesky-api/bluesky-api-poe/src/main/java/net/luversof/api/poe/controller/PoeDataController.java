@@ -27,7 +27,11 @@ import net.luversof.api.poe.service.PoeTreeGraphService;
 import net.luversof.api.poe.service.PoeUniqueDataService;
 import net.luversof.api.poe.service.PoeUniqueItem;
 
-/** PoE 정적 게임 데이터 조회 API (게이트가 httpexchange 로 호출). 표시용 record 를 그대로 JSON 직렬화한다. */
+/**
+ * PoE1 게임 데이터
+ *
+ * <p>정적 게임 데이터 조회(게이트가 httpexchange 로 호출). 표시용 record 를 그대로 JSON 직렬화한다.
+ */
 @RestController
 @RequestMapping(value = "/api/poe", produces = MediaType.APPLICATION_JSON_VALUE)
 public class PoeDataController {
@@ -83,7 +87,7 @@ public class PoeDataController {
 
   // ── 스킬젬 ──
   /**
-   * 젬을 찾는다.
+   * 젬 검색
    *
    * @param q 이름 검색어(선택)
    * @param type 젬 종류, 기본 all
@@ -104,14 +108,20 @@ public class PoeDataController {
     return lite ? gems.stream().map(PoeGem::withoutLevels).toList() : gems;
   }
 
-  /** 태그 그룹(유형/원소·피해/전달/특성) — 그룹 칩 UI용 */
+  /**
+   * 젬 태그 그룹 조회
+   *
+   * <p>유형 / 원소 · 피해 / 전달 / 특성. 그룹 칩 UI 용.
+   */
   @GetMapping("/gems/tag-groups")
   public List<PoeGemDataService.TagGroup> gemTagGroups() {
     return poeGemDataService.tagGroups();
   }
 
   /**
-   * 젬 한 개(레벨별 데이터 포함).
+   * 젬 조회
+   *
+   * <p>레벨별 데이터 포함.
    *
    * @param slug 젬 slug
    * @return 젬, 없으면 404
@@ -122,8 +132,10 @@ public class PoeDataController {
   }
 
   /**
-   * API 가 데이터 파일을 마지막으로 읽은 시각(epoch ms). 관리 화면이 <b>파일 갱신 시각</b>과 비교해 "파이프라인은 돌았는데 API 는 아직 옛 데이터"
-   * 상태를 드러낸다 — 앱 밖에서 파이프라인을 돌리면 재기동 전까지 반영되지 않는다.
+   * 데이터 로드 시각 조회
+   *
+   * <p>API 가 데이터 파일을 마지막으로 읽은 시각(epoch ms). 관리 화면이 <b>파일 갱신 시각</b>과 비교해 "파이프라인은 돌았는데 API 는 아직 옛
+   * 데이터" 상태를 드러낸다 — 앱 밖에서 파이프라인을 돌리면 재기동 전까지 반영되지 않는다.
    */
   @GetMapping("/data/loaded-at")
   public Map<String, Object> dataLoadedAt() {
@@ -131,7 +143,9 @@ public class PoeDataController {
   }
 
   /**
-   * 젬 데이터의 패치 버전과 개수.
+   * 젬 데이터 메타 조회
+   *
+   * <p>패치 버전과 개수.
    *
    * @return patch, totalCount
    */
@@ -142,7 +156,9 @@ public class PoeDataController {
 
   // ── 고유 아이템 ──
   /**
-   * 고유 아이템을 찾는다. 대분류를 주지 않은 전체 목록에는 리마인더 문구를 싣지 않는다(상세에서 받는다).
+   * 고유 아이템 검색
+   *
+   * <p>대분류를 주지 않은 전체 목록에는 리마인더 문구를 싣지 않는다(상세에서 받는다).
    *
    * @param q 이름 검색어(선택)
    * @param itemClass 아이템 분류, 기본 all
@@ -162,7 +178,11 @@ public class PoeDataController {
         .toList();
   }
 
-  /** 이름만 담은 전체 목록 — 시뮬 강제 장착 셀렉트(10-04 C124). */
+  /**
+   * 고유 아이템 이름 목록 조회
+   *
+   * <p>시뮬 강제 장착 셀렉트용(10-04 C124).
+   */
   @GetMapping("/uniques/names")
   public List<PoeUniqueItem> uniqueNames() {
     return poeUniqueDataService.search(null, null, "all").stream()
@@ -171,7 +191,7 @@ public class PoeDataController {
   }
 
   /**
-   * 고유 아이템 한 개.
+   * 고유 아이템 조회
    *
    * @param slug 고유 아이템 slug
    * @return 고유 아이템, 없으면 404
@@ -182,7 +202,7 @@ public class PoeDataController {
   }
 
   /**
-   * 고유 아이템 대분류 목록.
+   * 고유 아이템 대분류 목록 조회
    *
    * @return 대분류 이름
    */
@@ -191,14 +211,20 @@ public class PoeDataController {
     return poeUniqueDataService.categories();
   }
 
-  /** 고유를 세부 itemClass 그룹(일반 아이템과 동일 분류)으로 — 그룹 칩 UI용 */
+  /**
+   * 고유 아이템 분류 그룹 조회
+   *
+   * <p>세부 itemClass 그룹(일반 아이템과 동일 분류). 그룹 칩 UI 용.
+   */
   @GetMapping("/uniques/category-groups")
   public List<PoeBaseItemDataService.ClassGroup> uniqueCategoryGroups() {
     return poeUniqueDataService.categoryGroups();
   }
 
   /**
-   * 고유 아이템 개수.
+   * 고유 아이템 메타 조회
+   *
+   * <p>개수.
    *
    * @return totalCount
    */
@@ -209,7 +235,7 @@ public class PoeDataController {
 
   // ── 일반(베이스) 아이템 ──
   /**
-   * 베이스 아이템을 찾는다.
+   * 베이스 아이템 검색
    *
    * @param q 이름 검색어(선택)
    * @param itemClass 아이템 분류, 기본 all
@@ -223,7 +249,9 @@ public class PoeDataController {
   }
 
   /**
-   * 베이스 아이템 한 개. 거래소에서 찾을 수 있는 베이스인지(tradable)도 담는다.
+   * 베이스 아이템 조회
+   *
+   * <p>거래소에서 찾을 수 있는 베이스인지(tradable)도 담는다.
    *
    * @param slug 베이스 slug
    * @return 베이스 아이템, 없으면 404
@@ -237,20 +265,30 @@ public class PoeDataController {
         .orElseThrow(PoeDataController::notFound);
   }
 
-  /** 조인용 — 없으면 200 + 빈 본문(게이트에서 null 로 받음). */
+  /**
+   * 이름으로 베이스 아이템 조회
+   *
+   * <p>조인용. 없으면 200 + 빈 본문(게이트에서 null 로 받는다).
+   */
   @GetMapping("/base-items/by-name")
   public PoeBaseItem baseItemByName(@RequestParam String name) {
     return poeBaseItemDataService.findByName(name).orElse(null);
   }
 
-  /** poedb 속성부여식 성유 목록 — 주요 스킬 + 성유 3종, 비싼 성유 우선 정렬. */
+  /**
+   * 성유 부여 목록 조회
+   *
+   * <p>poedb 속성부여식 성유 목록. 주요 스킬 + 성유 3종, 비싼 성유 우선 정렬.
+   */
   @GetMapping("/tree/anoints")
   public java.util.List<net.luversof.api.poe.service.PoeTreeGraphService.AnointEntry> anoints() {
     return poeTreeGraphService.anointList();
   }
 
   /**
-   * 베이스 아이템 분류(코드 → 이름).
+   * 베이스 아이템 분류 조회
+   *
+   * <p>코드 → 이름.
    *
    * @return 분류 맵
    */
@@ -259,14 +297,20 @@ public class PoeDataController {
     return poeBaseItemDataService.itemClasses();
   }
 
-  /** 아이템 종류를 PoB식 그룹(한손/양손 무기·방어구·장신구·플라스크·주얼)으로 — 그룹 칩 UI용 */
+  /**
+   * 아이템 종류 그룹 조회
+   *
+   * <p>PoB식 그룹(한손 / 양손 무기 · 방어구 · 장신구 · 플라스크 · 주얼). 그룹 칩 UI 용.
+   */
   @GetMapping("/base-items/item-class-groups")
   public List<PoeBaseItemDataService.ClassGroup> itemClassGroups() {
     return poeBaseItemDataService.itemClassGroups();
   }
 
   /**
-   * 베이스 아이템 개수.
+   * 베이스 아이템 메타 조회
+   *
+   * <p>개수.
    *
    * @return totalCount
    */
@@ -277,7 +321,9 @@ public class PoeDataController {
 
   // ── 모드 풀 (일반 아이템 등급표) ──
   /**
-   * 아이템 분류에 붙을 수 있는 옵션 계열(제작 시뮬레이터용 옵션 풀).
+   * 아이템 분류별 옵션 계열 조회
+   *
+   * <p>제작 시뮬레이터용 옵션 풀.
    *
    * @param itemClass 아이템 분류
    * @return 옵션 계열 목록
@@ -290,7 +336,7 @@ public class PoeDataController {
 
   // ── 전체 모드(poedb Modifiers식) ──
   /**
-   * 옵션 표를 볼 수 있는 아이템 분류 목록.
+   * 옵션 표 아이템 분류 목록 조회
    *
    * @return 아이템 분류
    */
@@ -300,7 +346,7 @@ public class PoeDataController {
   }
 
   /**
-   * 아이템 분류의 옵션 표.
+   * 아이템 분류별 옵션 표 조회
    *
    * @param itemClass 아이템 분류
    * @param variant 세부 종류(선택)
@@ -324,7 +370,7 @@ public class PoeDataController {
   // 엘드리치 대상이 아닌 슬롯(무기/반지/허리띠 등)은 예외 대신 null(200) — 아이템 상세는 클래스마다 이걸
   // 호출하므로, 404→500 래핑 예외가 페이지 로드마다 로그를 더럽히는 것을 피한다.
   /**
-   * 아이템 분류의 엘드리치 암시 옵션(eldritch).
+   * 아이템 분류별 엘드리치 옵션 조회
    *
    * @param itemClass 아이템 분류
    * @return eldritch 옵션, 대상이 아닌 분류면 null
@@ -337,7 +383,9 @@ public class PoeDataController {
   // ── 삿된(Foulborn) 모드 풀 ──
   // 유니크 이름 매핑이 게임 데이터에 없어 **토큰(Jewel85 등)** 이 곧 식별자다. 검색은 문구·토큰 양쪽을 본다.
   /**
-   * foulborn 고유 아이템 변형을 찾는다.
+   * foulborn 변형 검색
+   *
+   * <p>foulborn 고유 아이템 변형.
    *
    * @param category 대분류(선택)
    * @param q 검색어(선택)
@@ -350,14 +398,20 @@ public class PoeDataController {
     return poeFoulbornDataService.search(category, q);
   }
 
-  /** 분류(한글) → 모드 수 — 화면 칩 개수. 데이터 없으면 빈 맵(섹션 감춤). */
+  /**
+   * 고유 아이템의 foulborn 모드 수 조회
+   *
+   * <p>분류(한글) → 모드 수. 화면 칩 개수용. 데이터 없으면 빈 맵(섹션 감춤).
+   */
   @GetMapping("/foulborn/for")
   public List<PoeFoulbornDataService.FoulbornGroup> foulbornForUnique(@RequestParam String name) {
     return poeFoulbornDataService.forUnique(name);
   }
 
   /**
-   * 실빌드 사용 빈도 기반 목록 순서 — 시뮬 폼이 "많이 쓰는 것 먼저"로 재배치하는 데 쓴다.
+   * 실빌드 사용 빈도 순서 조회
+   *
+   * <p>시뮬 폼이 "많이 쓰는 것 먼저"로 재배치하는 데 쓴다.
    *
    * @param ascendancy 선택된 전직(없으면 전체 합산)
    * @param skills 선택된 스킬 **영문명** 콤마 구분(없으면 전체 합산)
@@ -377,7 +431,7 @@ public class PoeDataController {
   }
 
   /**
-   * foulborn 변형이 있는 고유 아이템 이름.
+   * foulborn 고유 아이템 이름 조회
    *
    * @return 이름 집합
    */
@@ -387,7 +441,7 @@ public class PoeDataController {
   }
 
   /**
-   * 대분류별 foulborn 변형 수.
+   * 대분류별 foulborn 변형 수 조회
    *
    * @return 대분류 → 개수
    */
@@ -399,7 +453,7 @@ public class PoeDataController {
   // ── 에센스 제작 정보 ──
   // 엘드리치와 같은 이유로 비대상 클래스(주얼 · 플라스크 등)는 예외 대신 null(200). 화살통은 10-30 부터 대상.
   /**
-   * 아이템 분류에 쓸 수 있는 에센스.
+   * 아이템 분류별 에센스 조회
    *
    * @param itemClass 아이템 분류
    * @return 에센스 목록, 에센스를 못 쓰는 분류면 null
@@ -412,7 +466,7 @@ public class PoeDataController {
 
   // ── 작업대(벤치크래프트) ──
   /**
-   * 아이템 분류의 제작대(bench) 옵션.
+   * 아이템 분류별 작업대 옵션 조회
    *
    * @param itemClass 아이템 분류
    * @return 제작대 옵션 목록
@@ -422,7 +476,11 @@ public class PoeDataController {
     return poeBenchDataService.forItemClass(itemClass);
   }
 
-  /** 클러스터 주얼 주요 스킬 사전 — 브라우징 페이지용. */
+  /**
+   * 클러스터 주얼 주요 스킬 조회
+   *
+   * <p>브라우징 페이지용 사전.
+   */
   @GetMapping("/tree/cluster-notables")
   public List<PoeTreeGraphService.ClusterNotable> clusterNotables() {
     // 더 이상 생성되지 않는 주요 스킬(모드 가중치 0, 10-29 C2) 표시 — 옛 주얼엔 남아 있어 지우지 않고 알린다
@@ -437,7 +495,7 @@ public class PoeDataController {
 
   // ── 패시브 트리 ──
   /**
-   * 패시브 트리의 주얼 소켓 노드 id.
+   * 패시브 트리 주얼 소켓 조회
    *
    * @return 노드 id 목록
    */
@@ -447,7 +505,7 @@ public class PoeDataController {
   }
 
   /**
-   * 패시브 트리 노드 한 개.
+   * 패시브 트리 노드 조회
    *
    * @param id 노드 id
    * @return 노드, 없으면 404
@@ -463,7 +521,9 @@ public class PoeDataController {
 
   // ── 문신 ──
   /**
-   * 특정 패시브에 새길 수 있는 문신 목록. 게임 규칙상 소형 패시브는 <b>속성 종류</b>까지 맞아야 한다(힘 소형에는 힘 문신 + 속성 공용 문신).
+   * 패시브에 새길 문신 조회
+   *
+   * <p>게임 규칙상 소형 패시브는 <b>속성 종류</b>까지 맞아야 한다(힘 소형에는 힘 문신 + 속성 공용 문신).
    *
    * @param nodeType 노드 종류(normal/notable/keystone/mastery) — 생략하면 소형으로 본다
    * @param attribute 소형 속성 패시브의 속성(Strength/Dexterity/Intelligence)

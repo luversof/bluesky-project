@@ -10,8 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 import net.luversof.api.poe.service.PoeUpgradeGuideService;
 
 /**
- * 업그레이드 가이드 API — PoB 코드를 받아 "무엇을 바꾸면 얼마나 좋아지는가"를 측정한다. 평가가 수십 번이라 잡으로 돌리고 상태를 폴링한다. 로그인 게이팅은 게이트가
- * 담당(여긴 잡만 구동).
+ * PoE1 업그레이드 가이드
+ *
+ * <p>PoB 코드를 받아 "무엇을 바꾸면 얼마나 좋아지는가"를 측정한다. 평가가 수십 번이라 작업으로 돌리고 상태를 폴링한다. 로그인 확인은 게이트가 한다.
  */
 @RestController
 @RequestMapping(value = "/api/poe/guide", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -24,8 +25,10 @@ public class PoeUpgradeGuideController {
   }
 
   /**
-   * 분석 시작 — 이미 돌고 있거나 코드를 못 읽으면 false(사유는 status 의 error). mercCode = 루미너리 용병 빌드 PoB 코드(선택) — 있으면
-   * 모든 측정에 용병 오라·저주가 들어간다.
+   * 업그레이드 가이드 분석 시작
+   *
+   * <p>이미 돌고 있거나 코드를 못 읽으면 false(사유는 status 의 error). mercCode = 루미너리 용병 빌드 PoB 코드(선택) - 있으면 모든 측정에
+   * 용병 오라 · 저주가 들어간다.
    */
   @PostMapping("/start")
   public boolean start(@RequestParam String code, @RequestParam(required = false) String mercCode) {
@@ -33,7 +36,7 @@ public class PoeUpgradeGuideController {
   }
 
   /**
-   * 업그레이드 가이드 작업 상태.
+   * 업그레이드 가이드 상태 조회
    *
    * @return 작업 상태
    */
@@ -43,8 +46,10 @@ public class PoeUpgradeGuideController {
   }
 
   /**
-   * 자동 다듬기 시작 — 가이드가 실측한 교체안 중 가장 이득이 큰 것을 실제로 적용하고 다시 재기를 반복한다(보통 poe.ninja 실빌드 출발점에). 가이드 잡과 동시에
-   * 돌지 않는다(이미 돌고 있으면 false).
+   * 자동 다듬기 시작
+   *
+   * <p>가이드가 실측한 교체안 중 가장 이득이 큰 것을 실제로 적용하고 다시 재기를 반복한다(보통 poe.ninja 실빌드 출발점에). 가이드 작업과 동시에 돌지
+   * 않는다(이미 돌고 있으면 false).
    */
   @PostMapping("/refine/start")
   public boolean startRefine(@RequestParam String code) {
@@ -52,7 +57,7 @@ public class PoeUpgradeGuideController {
   }
 
   /**
-   * 업그레이드 가이드 다듬기 작업 상태.
+   * 자동 다듬기 상태 조회
    *
    * @return 작업 상태
    */

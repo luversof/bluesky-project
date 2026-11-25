@@ -15,7 +15,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import net.luversof.api.poe.service.NinjaSnapshotSync;
 
-/** PoE2 정적 게임 데이터 조회 API (게이트가 httpexchange 로 호출). PoE1 은 /api/poe — 경로·서비스를 섞지 않는다. */
+/**
+ * PoE2 게임 데이터 · 시뮬레이터
+ *
+ * <p>정적 게임 데이터 조회와 시뮬레이터 · 빌드 작업(게이트가 httpexchange 로 호출). PoE1 은 /api/poe - 경로 · 서비스를 섞지 않는다.
+ */
 @RestController
 @RequestMapping(value = "/api/poe2", produces = MediaType.APPLICATION_JSON_VALUE)
 public class Poe2DataController {
@@ -52,8 +56,10 @@ public class Poe2DataController {
   }
 
   /**
-   * 시뮬레이터 폼 선택지 — 목록은 게임 데이터 전부(액티브 스킬·전직), 순서는 poe.ninja 스냅샷 집계(고른 전직 → 스킬 순서, 고른 스킬 → 전직 순서). 인원은
-   * 내보내지 않는다. 스냅샷은 새 버전이 나오면 Poe2NinjaSyncService 가 다시 받는다.
+   * 시뮬레이터 선택지 조회
+   *
+   * <p>시뮬레이터 폼 선택지 — 목록은 게임 데이터 전부(액티브 스킬·전직), 순서는 poe.ninja 스냅샷 집계(고른 전직 → 스킬 순서, 고른 스킬 → 전직 순서).
+   * 인원은 내보내지 않는다. 스냅샷은 새 버전이 나오면 Poe2NinjaSyncService 가 다시 받는다.
    */
   @GetMapping("/sim/options")
   public Poe2NinjaService.Options simOptions(
@@ -62,7 +68,11 @@ public class Poe2DataController {
     return ninja.options(ascendancy, skill);
   }
 
-  /** 시뮬레이터 미리보기 — (전직, 스킬) 아키타입, 전직이 비었으면 스킬 단위 집계(poe.ninja 스냅샷). 없으면 null. */
+  /**
+   * 시뮬레이터 미리보기 조회
+   *
+   * <p>(전직, 스킬) 아키타입, 전직이 비었으면 스킬 단위 집계(poe.ninja 스냅샷). 없으면 null.
+   */
   @GetMapping("/sim/archetype")
   public Poe2NinjaService.Archetype simArchetype(
       @RequestParam(required = false, defaultValue = "") String ascendancy,
@@ -104,19 +114,31 @@ public class Poe2DataController {
         a.mainSkillKo());
   }
 
-  /** poe.ninja 스냅샷 동기 상태(저장본·현재 버전, 마지막 갱신·엔진 단계). */
+  /**
+   * poe.ninja 동기화 상태 조회
+   *
+   * <p>저장본 · 현재 버전, 마지막 갱신 · 엔진 단계.
+   */
   @GetMapping("/ninja/sync")
   public NinjaSnapshotSync.Status ninjaSyncStatus() {
     return ninjaSync.status();
   }
 
-  /** 지금 버전 확인 → 바뀌었으면 수집(요청 안에서 돈다 — 수 분 걸릴 수 있다). 새로 받았으면 true. */
+  /**
+   * poe.ninja 동기화 실행
+   *
+   * <p>지금 버전을 확인하고 바뀌었으면 수집한다(요청 안에서 돈다 - 수 분 걸릴 수 있다). 새로 받았으면 true.
+   */
   @PostMapping("/ninja/sync")
   public boolean ninjaSyncNow() {
     return ninjaSync.syncBuilds();
   }
 
-  /** 시뮬레이션 시작 — 이미 (시뮬·자동 다듬기가) 돌고 있으면 false. scenario = None | Boss | Pinnacle | Uber | keep. */
+  /**
+   * 시뮬레이션 시작
+   *
+   * <p>이미 (시뮬 · 자동 다듬기가) 돌고 있으면 false. scenario = None | Boss | Pinnacle | Uber | keep.
+   */
   @PostMapping(value = "/sim/start", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   public boolean simStart(
       @RequestParam String skill,
@@ -158,14 +180,18 @@ public class Poe2DataController {
     return sim.start(skill, ascendancy, scenario, unique, tree);
   }
 
-  /** 실행 중인 시뮬레이션 중지 — 돌고 있지 않으면 false(PoE1 /api/poe/optimize/cancel 짝, 10-12 C269). */
+  /**
+   * 시뮬레이션 중지
+   *
+   * <p>돌고 있지 않으면 false(PoE1 /api/poe/optimize/cancel 짝, 10-12 C269).
+   */
   @PostMapping("/sim/stop")
   public boolean simStop() {
     return sim.cancel();
   }
 
   /**
-   * PoE2 시뮬레이터 작업 상태.
+   * 시뮬레이션 상태 조회
    *
    * @return 진행 상태
    */
@@ -177,13 +203,21 @@ public class Poe2DataController {
   // ── 결과 이력·젬 DPS 랭킹 — PoE1 /api/poe/optimize/history·result 와 /api/poe/sim/{start,status,ranking}
   // 에 대응 ──
 
-  /** 최근 시뮬레이션 결과 목록(최신순, 최대 30). */
+  /**
+   * 시뮬레이션 결과 이력 조회
+   *
+   * <p>최신순, 최대 30.
+   */
   @GetMapping("/sim/history")
   public List<Poe2SimService.HistoryEntry> simHistory() {
     return sim.history();
   }
 
-  /** 이력 결과 한 건 전체 — 없으면 404. */
+  /**
+   * 시뮬레이션 결과 조회
+   *
+   * <p>이력 한 건 전체. 없으면 404.
+   */
   @GetMapping("/sim/result")
   public Poe2SimService.SimResult simResult(@RequestParam long id) {
     Poe2SimService.SimResult r = sim.historyResult(id);
@@ -199,14 +233,18 @@ public class Poe2DataController {
     return sim.deleteHistory(id);
   }
 
-  /** 젬 DPS 랭킹 배치 시작 — 이미(랭킹·시뮬·다듬기가) 돌고 있으면 false. */
+  /**
+   * 젬 DPS 랭킹 배치 시작
+   *
+   * <p>이미 (랭킹 · 시뮬 · 다듬기가) 돌고 있으면 false.
+   */
   @PostMapping("/sim/ranking/start")
   public boolean simRankingStart() {
     return ranking.start();
   }
 
   /**
-   * PoE2 시뮬레이터 순위 계산 작업 상태.
+   * 젬 DPS 랭킹 배치 상태 조회
    *
    * @return 진행 상태
    */
@@ -215,13 +253,21 @@ public class Poe2DataController {
     return ranking.status();
   }
 
-  /** 보관된 랭킹 시즌(새 것 먼저) — 10-02 시즌 비교. */
+  /**
+   * 랭킹 시즌 목록 조회
+   *
+   * <p>보관된 랭킹 시즌, 새 것 먼저(10-02 시즌 비교).
+   */
   @GetMapping("/sim/ranking/seasons")
   public java.util.List<String> rankingSeasons() {
     return ranking.seasons();
   }
 
-  /** season 을 주면 그 시즌 보관본(없으면 빈 목록), 없으면 지금 랭킹 — 10-02. */
+  /**
+   * 젬 DPS 랭킹 조회
+   *
+   * <p>season 을 주면 그 시즌 보관본(없으면 빈 목록), 없으면 지금 랭킹(10-02).
+   */
   @GetMapping("/sim/ranking")
   public Poe2SimRankingService.RankingData simRanking(
       @RequestParam(required = false) String season) {
@@ -233,7 +279,11 @@ public class Poe2DataController {
     return ranking.ranking();
   }
 
-  /** poe.ninja 실빌드 아키타입(전직×메인 스킬) 전체 — 시뮬레이터 화면. 실빌드 출발점 코드는 무거워 여기선 뺀다(real-start 로 한 건씩). */
+  /**
+   * poe.ninja 아키타입 목록 조회
+   *
+   * <p>실빌드 아키타입(전직 × 메인 스킬) 전체. 시뮬레이터 화면용. 실빌드 출발점 코드는 무거워 여기선 뺀다(real-start 로 한 건씩).
+   */
   @GetMapping("/ninja/overview")
   public Poe2NinjaService.Overview ninjaOverview() {
     Poe2NinjaService.Overview o = ninja.overview();
@@ -273,14 +323,22 @@ public class Poe2DataController {
             .toList());
   }
 
-  /** 한 아키타입(출발점 코드 포함) — 없으면 null. */
+  /**
+   * poe.ninja 아키타입 조회
+   *
+   * <p>출발점 코드 포함. 없으면 null.
+   */
   @GetMapping("/ninja/archetype")
   public Poe2NinjaService.Archetype ninjaArchetype(
       @RequestParam String ascendancy, @RequestParam String skill) {
     return ninja.find(ascendancy, skill);
   }
 
-  /** 자동 다듬기 시작 — 가이드 교체안(고유·보조젬) 중 가장 이득이 큰 것을 실제로 적용하고 다시 재기를 반복한다. 이미 돌고 있으면 false. */
+  /**
+   * 빌드 자동 다듬기 시작
+   *
+   * <p>가이드 교체안(고유 · 보조젬) 중 가장 이득이 큰 것을 실제로 적용하고 다시 재기를 반복한다. 이미 돌고 있으면 false.
+   */
   @PostMapping(
       value = "/build/refine/start",
       consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -289,7 +347,7 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 빌드 다듬기 작업 상태.
+   * 빌드 자동 다듬기 상태 조회
    *
    * @return 진행 상태
    */
@@ -298,7 +356,11 @@ public class Poe2DataController {
     return refine.status();
   }
 
-  /** PoB(PoE2) 코드 → 빌드 요약. 코드는 수 KB~수십 KB 라 form 본문으로 받는다(URL 쿼리는 헤더 한도 8KB 에 걸린다). */
+  /**
+   * PoB 코드로 빌드 요약
+   *
+   * <p>PoB(PoE2) 코드는 수 KB ~ 수십 KB 라 form 본문으로 받는다(URL 쿼리는 헤더 한도 8KB 에 걸린다).
+   */
   @PostMapping(value = "/build/import", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   public Poe2.BuildSummary importBuild(@RequestParam String code) {
     try {
@@ -314,7 +376,11 @@ public class Poe2DataController {
     }
   }
 
-  /** 패시브 트리 평가(10-01) — 찍은 노드로 엔진 계산. nodes = 콤마 구분 노드 id, skill = 젬 영문 이름(선택). */
+  /**
+   * 패시브 트리 평가
+   *
+   * <p>찍은 노드로 엔진 계산(10-01). nodes = 콤마 구분 노드 id, skill = 젬 영문 이름(선택).
+   */
   @PostMapping(value = "/tree/eval", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   public Poe2.TreeEval treeEval(
       @RequestParam String className,
@@ -382,7 +448,11 @@ public class Poe2DataController {
     return out;
   }
 
-  /** 엔진 재계산 — PoB-PoE2 로 다시 계산해 저장값과 대조·인게임 경고. 요약과 따로(약 2초라 요약을 먼저 보인다). */
+  /**
+   * 빌드 엔진 재계산
+   *
+   * <p>PoB-PoE2 로 다시 계산해 저장값과 대조하고 인게임 경고를 낸다. 요약과 따로 부른다(약 2초라 요약을 먼저 보인다).
+   */
   @PostMapping(value = "/build/recalc", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   public Poe2.BuildRecalc recalcBuild(@RequestParam String code) {
     try {
@@ -392,7 +462,11 @@ public class Poe2DataController {
     }
   }
 
-  /** 닌자 공통 특성 중 이 빌드에 없는 것(10-14 C318) — 엔진 계산 없음. 아키타입이 집계 대상이 아니면 n = 0. */
+  /**
+   * 빌드에 없는 공통 특성 조회
+   *
+   * <p>닌자 공통 특성 중 이 빌드에 없는 것(10-14 C318). 엔진 계산 없음. 아키타입이 집계 대상이 아니면 n = 0.
+   */
   @PostMapping(value = "/build/common-gaps", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   public Poe2CommonGapsService.CommonGaps commonGaps(@RequestParam String code) {
     try {
@@ -402,7 +476,11 @@ public class Poe2DataController {
     }
   }
 
-  /** 가이드 레어 목표만(10-02) — 가이드 뒤에 따로 부른다. set = 가이드와 같은 무기 세트(없으면 주 세트). */
+  /**
+   * 업그레이드 가이드 레어 목표 조회
+   *
+   * <p>가이드 뒤에 따로 부른다(10-02). set = 가이드와 같은 무기 세트(없으면 주 세트).
+   */
   @PostMapping(value = "/build/guide/rares", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   public Poe2.GuideRares guideRares(
       @RequestParam String code, @RequestParam(required = false) Integer set) {
@@ -413,7 +491,11 @@ public class Poe2DataController {
     }
   }
 
-  /** 업그레이드 가이드 — PoB-PoE2 비교 계산기로 칸·보조젬·패시브 기여와 고유 교체 상위(약 3초). */
+  /**
+   * 업그레이드 가이드 조회
+   *
+   * <p>PoB-PoE2 비교 계산기로 칸 · 보조젬 · 패시브 기여와 고유 교체 상위를 낸다(약 3초).
+   */
   @PostMapping(value = "/build/guide", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
   public Poe2.BuildGuide guideBuild(
       @RequestParam String code, @RequestParam(required = false) Integer set) {
@@ -430,7 +512,9 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 데이터의 버전 · 개수 · 로드 시각.
+   * 데이터 메타 조회
+   *
+   * <p>PoE2 데이터의 버전 · 개수 · 로드 시각.
    *
    * @return 메타 정보
    */
@@ -441,7 +525,7 @@ public class Poe2DataController {
 
   // 젬
   /**
-   * PoE2 젬을 찾는다.
+   * 젬 검색
    *
    * @param q 이름 검색어(선택)
    * @param kind 젬 종류(선택)
@@ -459,7 +543,7 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 젬 태그 목록.
+   * 젬 태그 목록 조회
    *
    * @return 태그
    */
@@ -469,7 +553,9 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 젬 태그 묶음(필터 칩용).
+   * 젬 태그 묶음 조회
+   *
+   * <p>필터 칩용.
    *
    * @return 태그 묶음
    */
@@ -479,7 +565,7 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 젬 한 개.
+   * 젬 조회
    *
    * @param slug 젬 slug
    * @return 젬, 없으면 404
@@ -491,7 +577,7 @@ public class Poe2DataController {
 
   // 베이스 아이템
   /**
-   * PoE2 베이스 아이템 분류 목록.
+   * 베이스 아이템 분류 목록 조회
    *
    * @return 아이템 분류
    */
@@ -501,7 +587,9 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 베이스 아이템을 찾는다. 목록에는 키워드 정의를 싣지 않는다(상세에서 받는다).
+   * 베이스 아이템 검색
+   *
+   * <p>목록에는 키워드 정의를 싣지 않는다(상세에서 받는다).
    *
    * @param q 이름 검색어(선택)
    * @param itemClass 아이템 분류(선택)
@@ -520,7 +608,9 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 베이스 아이템 한 개. 거래소에서 찾을 수 있는 베이스인지(tradable)도 담는다.
+   * 베이스 아이템 조회
+   *
+   * <p>거래소에서 찾을 수 있는 베이스인지(tradable)도 담는다.
    *
    * @param slug 베이스 slug
    * @return 베이스 아이템, 없으면 404
@@ -534,7 +624,7 @@ public class Poe2DataController {
 
   // 옵션
   /**
-   * PoE2 옵션 풀 요약 목록.
+   * 옵션 풀 목록 조회
    *
    * @param itemClass 아이템 분류(선택)
    * @return 옵션 풀 요약
@@ -545,7 +635,7 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 옵션 풀 한 개.
+   * 옵션 풀 조회
    *
    * @param key 옵션 풀 키
    * @return 옵션 풀, 없으면 404
@@ -556,7 +646,7 @@ public class Poe2DataController {
   }
 
   /**
-   * 베이스 아이템 이름으로 PoE2 옵션 풀을 찾는다.
+   * 베이스 이름으로 옵션 풀 조회
    *
    * @param name 베이스 이름
    * @return 옵션 풀, 없으면 404
@@ -568,7 +658,9 @@ public class Poe2DataController {
 
   // 증강물
   /**
-   * PoE2 증강물(룬 · 영혼 핵 등)을 찾는다.
+   * 증강물 검색
+   *
+   * <p>룬 · 영혼 핵 등.
    *
    * @param q 이름 검색어(선택)
    * @param kind 종류(선택)
@@ -584,7 +676,7 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 증강물 한 개.
+   * 증강물 조회
    *
    * @param slug 증강물 slug
    * @return 증강물, 없으면 404
@@ -596,7 +688,7 @@ public class Poe2DataController {
 
   // 고유
   /**
-   * PoE2 고유 아이템 분류 목록.
+   * 고유 아이템 분류 목록 조회
    *
    * @return 아이템 분류
    */
@@ -606,7 +698,9 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 고유 아이템을 찾는다. 분류를 주지 않은 전체 목록에는 키워드 정의를 싣지 않는다.
+   * 고유 아이템 검색
+   *
+   * <p>분류를 주지 않은 전체 목록에는 키워드 정의를 싣지 않는다.
    *
    * @param q 이름 검색어(선택)
    * @param itemClass 아이템 분류(선택)
@@ -622,7 +716,7 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 고유 아이템 한 개.
+   * 고유 아이템 조회
    *
    * @param slug 고유 아이템 slug
    * @return 고유 아이템, 없으면 404
@@ -634,7 +728,9 @@ public class Poe2DataController {
 
   // 데이터 관리
   /**
-   * PoE2 데이터 파일을 다시 읽는다(재시작 없이 갱신 반영).
+   * 데이터 다시 읽기
+   *
+   * <p>PoE2 데이터 파일을 다시 읽는다(재시작 없이 갱신 반영).
    *
    * @return 다시 읽은 뒤의 메타 정보
    */
@@ -645,7 +741,7 @@ public class Poe2DataController {
   }
 
   /**
-   * PoE2 데이터 추출 작업 상태.
+   * 데이터 추출 상태 조회
    *
    * @return 진행 상태 · 로그
    */
@@ -654,14 +750,20 @@ public class Poe2DataController {
     return extract.status();
   }
 
-  /** 데이터 버전(현재 · 설정 · 패치 서버 최신) — PoE1 /api/poe/extract/version 짝(10-12 C261). */
+  /**
+   * 데이터 버전 조회
+   *
+   * <p>현재 · 설정 · 패치 서버 최신(PoE1 /api/poe/extract/version 짝, 10-12 C261).
+   */
   @GetMapping("/extract/version")
   public Poe2ExtractService.VersionInfo extractVersion() {
     return extract.version();
   }
 
   /**
-   * PoE2 데이터 추출을 시작한다. 이미 돌고 있으면 시작하지 않는다.
+   * 데이터 추출 시작
+   *
+   * <p>이미 돌고 있으면 시작하지 않는다.
    *
    * @return started(시작했으면 true)
    */

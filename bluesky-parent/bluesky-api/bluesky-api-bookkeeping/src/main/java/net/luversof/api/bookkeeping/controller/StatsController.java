@@ -15,7 +15,11 @@ import net.luversof.api.bookkeeping.service.StatsService;
 import net.luversof.api.bookkeeping.service.StatsService.MonthStats;
 import net.luversof.api.bookkeeping.service.StatsService.MonthTotal;
 
-/** 월 화면 · 통계 화면 합계(통화별, 환산 없음). month · end 는 "2026-11" 형식이고 비우면 오늘이 속한 가계부 월. */
+/**
+ * 가계부 통계
+ *
+ * <p>month · end 는 "2026-11" 형식이고 비우면 오늘이 속한 가계부 월.
+ */
 @RestController
 @RequestMapping(value = "/api/books/{bookId}/stats", produces = MediaType.APPLICATION_JSON_VALUE)
 public class StatsController {
@@ -27,7 +31,9 @@ public class StatsController {
   }
 
   /**
-   * 한 달의 합계(통화별).
+   * 월 합계 조회
+   *
+   * <p>통화별 합계.
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -43,7 +49,9 @@ public class StatsController {
   }
 
   /**
-   * 월별 합계 추이. 내역이 있는 통화마다 모든 달을 채운다(없는 달은 0).
+   * 월별 합계 추이 조회
+   *
+   * <p>내역이 있는 통화마다 모든 달을 채운다(없는 달은 0).
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자

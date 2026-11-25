@@ -16,7 +16,11 @@ import net.luversof.api.poe.service.PoeCraftDataService;
 import net.luversof.api.poe.service.PoeCraftEngine;
 import net.luversof.api.poe.service.PoeCraftService;
 
-/** PoE1 제작 에뮬레이터 API(10-15 C335) — 아이템 상태를 그대로 주고받는다(서버는 상태를 들고 있지 않는다). */
+/**
+ * PoE1 제작
+ *
+ * <p>제작 에뮬레이터(10-15 C335). 아이템 상태를 그대로 주고받는다(서버는 상태를 들고 있지 않는다).
+ */
 @RestController
 @RequestMapping(value = "/api/poe/craft", produces = MediaType.APPLICATION_JSON_VALUE)
 public class PoeCraftController {
@@ -55,7 +59,11 @@ public class PoeCraftController {
     this.rareNames = rareNames;
   }
 
-  /** 목표까지 연타(10-20 C506). */
+  /**
+   * 목표까지 연타
+   *
+   * <p>10-20 C506.
+   */
   @PostMapping(value = "/spam", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftCalcService.SpamResult spam(
       @RequestBody net.luversof.api.poe.service.PoeCraftCalcService.SpamRequest req) {
@@ -66,7 +74,11 @@ public class PoeCraftController {
   /** 같은 옵션을 얻는 다른 길 요청(10-22 P4) — family = 접두/접미:계열(계산기 목표 키와 같다). */
   public record FamilyWaysRequest(PoeCraftEngine.Item item, String family) {}
 
-  /** 같은 옵션을 얻는 다른 길(10-22 P4) — 에센스 · 작업대 · 화석 배수 · 수확. */
+  /**
+   * 같은 옵션을 얻는 다른 방법 조회
+   *
+   * <p>에센스 · 작업대 · 화석 배수 · 수확(10-22 P4).
+   */
   @PostMapping(value = "/family-ways", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftCalcService.FamilyWays familyWays(
       @RequestBody FamilyWaysRequest req) {
@@ -74,7 +86,11 @@ public class PoeCraftController {
     return calc.familyWays(req.item(), req.family());
   }
 
-  /** 고른 화폐 기준 옵션 표(10-22 P3) — 요청은 화폐 적용과 같다(씨앗은 무시). */
+  /**
+   * 화폐 기준 옵션 표 조회
+   *
+   * <p>고른 화폐 기준 옵션 표(10-22 P3). 요청은 화폐 적용과 같다(씨앗은 무시).
+   */
   @PostMapping(value = "/action-pool", consumes = MediaType.APPLICATION_JSON_VALUE)
   public PoeCraftService.ActionPool actionPool(@RequestBody ApplyRequest req) {
     check(req.item());
@@ -89,7 +105,11 @@ public class PoeCraftController {
         : ap;
   }
 
-  /** 화폐 한 번의 목표 적중 확률(10-20 C494) — 에뮬레이터 화폐 단추마다. */
+  /**
+   * 화폐 한 번의 목표 적중 확률 조회
+   *
+   * <p>에뮬레이터 화폐 단추마다 쓴다(10-20 C494).
+   */
   @PostMapping(value = "/hit-chance", consumes = MediaType.APPLICATION_JSON_VALUE)
   public List<net.luversof.api.poe.service.PoeCraftCalcService.Hit> hitChance(
       @RequestBody net.luversof.api.poe.service.PoeCraftCalcService.HitRequest req) {
@@ -97,7 +117,11 @@ public class PoeCraftController {
     return calc.hitChance(req);
   }
 
-  /** 그 종류의 무작위 레어 이름 {en, ko}(10-20 C488) — 낱말표가 없으면 빈 값. */
+  /**
+   * 무작위 레어 이름 생성
+   *
+   * <p>그 종류의 무작위 레어 이름 {en, ko}(10-20 C488). 낱말표가 없으면 빈 값.
+   */
   @GetMapping("/rare-name")
   public java.util.Map<String, String> rareName(@RequestParam String itemClass) {
     String[] n = rareNames.randomName(itemClass, java.util.concurrent.ThreadLocalRandom.current());
@@ -107,7 +131,11 @@ public class PoeCraftController {
   /** 아이템 가져오기 요청 — text = 게임에서 Ctrl+C · Ctrl+Alt+C 로 복사한 글(영 · 한). */
   public record ImportRequest(String text) {}
 
-  /** 게임 아이템 복사 글 → 에뮬레이터 아이템(10-20 C485, craftofexile 의 Import item). 못 읽으면 error. */
+  /**
+   * 게임 아이템 가져오기
+   *
+   * <p>게임 아이템 복사 글을 에뮬레이터 아이템으로 바꾼다(10-20 C485, craftofexile 의 Import item). 못 읽으면 error.
+   */
   @PostMapping(value = "/import", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftImportService.ImportResult importItem(
       @RequestBody ImportRequest req) {
@@ -117,7 +145,11 @@ public class PoeCraftController {
     return importer.parse(req.text());
   }
 
-  /** 최적 제작 경로 백그라운드 시작(C457k) — 작업 id. 기본 20초, 진행은 /optimize/{id}. */
+  /**
+   * 제작 최적화 시작
+   *
+   * <p>최적 제작 경로를 백그라운드로 찾기 시작하고 작업 id 를 돌려준다(C457k). 기본 20초, 진행은 /optimize/{id}.
+   */
   @PostMapping(value = "/optimize/start", consumes = MediaType.APPLICATION_JSON_VALUE)
   public java.util.Map<String, String> optimizeStart(
       @RequestBody net.luversof.api.poe.service.PoeCraftOptimizer.Request req) {
@@ -126,7 +158,7 @@ public class PoeCraftController {
   }
 
   /**
-   * 제작 최적화 작업의 상태.
+   * 제작 최적화 상태 조회
    *
    * @param id 작업 id(시작 응답의 id)
    * @return 작업 상태, 모르는 id 면 404
@@ -141,7 +173,11 @@ public class PoeCraftController {
     return s;
   }
 
-  /** 에뮬레이터 따라 하기(C464) — 끝난 작업의 정책으로 이 아이템의 다음 수단. 모르는 작업이면 404. */
+  /**
+   * 다음 제작 수단 조회
+   *
+   * <p>에뮬레이터 따라 하기(C464). 끝난 작업의 정책으로 이 아이템의 다음 수단을 알려 준다. 모르는 작업이면 404.
+   */
   @PostMapping(value = "/optimize/{id}/next", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftOptimizer.Next optimizeNext(
       @org.springframework.web.bind.annotation.PathVariable String id,
@@ -156,8 +192,10 @@ public class PoeCraftController {
   }
 
   /**
-   * 최적 제작 경로(10-19 C457 사용자 요청) — 에센스 · 작업대 · 야수 · 화폐를 섞어 목표까지 성공 한 번당 최소 기대 비용과 상태별 수단(정책). 시간
-   * 예산(budgetMs, 기본 8초) 안에서. 동기 호출(게이트는 /optimize/start 를 쓴다).
+   * 최적 제작 경로 계산
+   *
+   * <p>에센스 · 작업대 · 야수 · 화폐를 섞어 목표까지 성공 한 번당 최소 기대 비용과 상태별 수단(정책)을 시간 예산(budgetMs, 기본 8초) 안에서
+   * 찾는다(10-19 C457). 동기 호출이고, 게이트는 /optimize/start 를 쓴다.
    */
   @PostMapping(value = "/optimize", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftOptimizer.Result optimize(
@@ -171,7 +209,11 @@ public class PoeCraftController {
     }
   }
 
-  /** 계산기(10-15 C336) — 목표 옵션 묶음 → 방법별 성공 확률 · 기대 시도 · 기대 비용(카오스, 비용 순). */
+  /**
+   * 제작 방법별 기대 비용 계산
+   *
+   * <p>계산기(10-15 C336). 목표 옵션 묶음 → 방법별 성공 확률 · 기대 시도 · 기대 비용(카오스, 비용 순).
+   */
   @PostMapping(value = "/calc", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftCalcService.Response calc(
       @RequestBody net.luversof.api.poe.service.PoeCraftCalcService.Request req) {
@@ -185,7 +227,9 @@ public class PoeCraftController {
   }
 
   /**
-   * 아이템에 제작 행동(화폐 · 에센스 등) 하나를 적용한다. 서버는 상태를 들고 있지 않아 아이템 상태를 그대로 주고받는다.
+   * 제작 행동 적용
+   *
+   * <p>서버는 상태를 들고 있지 않아 아이템 상태를 그대로 주고받는다.
    *
    * @param req 아이템 · 행동 · 인자(에센스 등) · 난수 seed
    * @return 적용한 뒤의 아이템 화면 값
@@ -201,7 +245,9 @@ public class PoeCraftController {
   }
 
   /**
-   * 아이템 상태를 화면 값(옵션 줄 · 등급 등)으로 바꾼다.
+   * 아이템 화면 값 조회
+   *
+   * <p>아이템 상태를 화면 값(옵션 줄 · 등급 등)으로 바꾼다.
    *
    * @param item 아이템 상태
    * @return 아이템 화면 값
@@ -213,7 +259,9 @@ public class PoeCraftController {
   }
 
   /**
-   * 지금 아이템에 붙을 수 있는 옵션 표(가중치 포함).
+   * 옵션 표 조회
+   *
+   * <p>지금 아이템에 붙을 수 있는 옵션 표(가중치 포함).
    *
    * @param req 아이템과 희귀도
    * @return 옵션 줄 목록
@@ -224,7 +272,11 @@ public class PoeCraftController {
     return craft.pool(req.item(), req.rarity());
   }
 
-  /** 다단계 전략 시뮬레이터(10-15 C339) — 단계(화폐 · 인자 · 목표 일부를 채울 때까지 반복)를 모의해 성공률 · 성공 한 번당 기대 비용. */
+  /**
+   * 다단계 제작 전략 모의
+   *
+   * <p>단계(화폐 · 인자 · 목표 일부를 채울 때까지 반복)를 모의해 성공률 · 성공 한 번당 기대 비용을 낸다(10-15 C339).
+   */
   @PostMapping(value = "/strategy", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftCalcService.StrategyResult strategy(
       @RequestBody net.luversof.api.poe.service.PoeCraftCalcService.StrategyRequest req) {
@@ -237,7 +289,11 @@ public class PoeCraftController {
     }
   }
 
-  /** 에뮬레이터에서 쓴 화폐 · 총비용(10-16 C365) — 단계 목록 → 화폐별 개수 · 단가 · 합계(카오스). */
+  /**
+   * 쓴 화폐 · 총비용 계산
+   *
+   * <p>에뮬레이터 단계 목록 → 화폐별 개수 · 단가 · 합계(카오스)(10-16 C365).
+   */
   @PostMapping(value = "/spent", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftCalcService.SpentResult spent(
       @RequestBody net.luversof.api.poe.service.PoeCraftCalcService.SpentRequest req) {
@@ -249,7 +305,11 @@ public class PoeCraftController {
     }
   }
 
-  /** 결과 분포(C533, craftofexile 대량 모의) — 지금 아이템에 화폐를 여러 번 따로 적용한 결과의 계열별 비율. */
+  /**
+   * 제작 결과 분포 모의
+   *
+   * <p>지금 아이템에 화폐를 여러 번 따로 적용한 결과의 계열별 비율(C533, craftofexile 대량 모의).
+   */
   @PostMapping(value = "/distribution", consumes = MediaType.APPLICATION_JSON_VALUE)
   public net.luversof.api.poe.service.PoeCraftCalcService.DistResult distribution(
       @RequestBody net.luversof.api.poe.service.PoeCraftCalcService.DistRequest req) {
@@ -257,7 +317,11 @@ public class PoeCraftController {
     return calc.distribution(req);
   }
 
-  /** 계산기 목표 칸 덧붙임(C548) — 계열별 작업대 값어치 · 바알 타락 고정 속성 · 영향력 옵션 id. */
+  /**
+   * 계산기 부가 정보 조회
+   *
+   * <p>계열별 작업대 값어치 · 바알 타락 고정 속성 · 영향력 옵션 id(C548).
+   */
   @GetMapping("/calc-extras")
   public net.luversof.api.poe.service.PoeCraftCalcService.CalcExtras calcExtras(
       @RequestParam String itemClass,
@@ -277,13 +341,21 @@ public class PoeCraftController {
     return calc.extras(item);
   }
 
-  /** 제작 시세(C529 — 게이트 '가격 직접 입력' 칸의 기본값) — 리그 · 받은 시각 · 이름 → 카오스. */
+  /**
+   * 제작 시세 조회
+   *
+   * <p>리그 · 받은 시각 · 이름 → 카오스. 게이트 '가격 직접 입력' 칸의 기본값(C529).
+   */
   @GetMapping("/prices")
   public net.luversof.api.poe.service.PoeCraftPriceService.Prices prices() {
     return priceService.prices();
   }
 
-  /** 상태마다 옵션 줄(C455 — 에뮬레이터 단계 기록, 최대 100개). */
+  /**
+   * 상태별 옵션 줄 조회
+   *
+   * <p>에뮬레이터 단계 기록용, 최대 100개(C455).
+   */
   @PostMapping(value = "/lines", consumes = MediaType.APPLICATION_JSON_VALUE)
   public List<List<PoeCraftService.Line>> lines(@RequestBody List<PoeCraftEngine.Item> items) {
     List<PoeCraftEngine.Item> in =
@@ -292,7 +364,11 @@ public class PoeCraftController {
     return craft.linesOf(in);
   }
 
-  /** 아이템 종류에 쓸 수 있는 제작 수단(10-15 C338) — 에센스 · 화석 · 공명기 · 수확 · 작업대 · 정복자. */
+  /**
+   * 제작 수단 목록 조회
+   *
+   * <p>아이템 종류에 쓸 수 있는 에센스 · 화석 · 공명기 · 수확 · 작업대 · 정복자(10-15 C338).
+   */
   @GetMapping("/options")
   public PoeCraftService.Options options(
       @RequestParam String itemClass,
@@ -300,7 +376,11 @@ public class PoeCraftController {
     return craft.options(itemClass, variant);
   }
 
-  /** 이 종류의 장막 해제 옵션(C421) — 시뮬레이터 목표 고르기. */
+  /**
+   * 장막 해제 옵션 조회
+   *
+   * <p>시뮬레이터 목표 고르기용(C421).
+   */
   @GetMapping("/veiled")
   public List<net.luversof.api.poe.service.PoeCraftService.VeiledLine> veiled(
       @RequestParam String itemClass,
@@ -309,7 +389,7 @@ public class PoeCraftController {
   }
 
   /**
-   * 아이템 분류에 쓸 수 있는 에센스(제작용).
+   * 제작용 에센스 목록 조회
    *
    * @param itemClass 아이템 분류
    * @return 에센스 목록

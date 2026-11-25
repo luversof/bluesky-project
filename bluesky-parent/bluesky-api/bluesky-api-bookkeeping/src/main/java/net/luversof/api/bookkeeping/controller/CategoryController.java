@@ -18,7 +18,11 @@ import net.luversof.api.bookkeeping.domain.Category;
 import net.luversof.api.bookkeeping.service.CategoryService;
 import net.luversof.api.bookkeeping.service.CategoryService.CategoryCommand;
 
-/** 분류(대 · 소 2단계). */
+/**
+ * 가계부 분류
+ *
+ * <p>대 · 소 2단계.
+ */
 @RestController
 @RequestMapping(
     value = "/api/books/{bookId}/categories",
@@ -32,7 +36,9 @@ public class CategoryController {
   }
 
   /**
-   * 가계부의 분류 목록. 숨긴 분류도 들어 있다(화면이 거른다).
+   * 분류 목록 조회
+   *
+   * <p>숨긴 분류도 들어 있다(화면이 거른다).
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -44,7 +50,7 @@ public class CategoryController {
   }
 
   /**
-   * 분류를 만든다.
+   * 분류 생성
    *
    * @param bookId 가계부 id
    * @param userId 요청한 사용자
@@ -57,7 +63,11 @@ public class CategoryController {
     return categoryService.create(bookId, userId, command);
   }
 
-  /** 이름 · 숨김만 바뀐다. */
+  /**
+   * 분류 수정
+   *
+   * <p>이름 · 숨김만 바뀐다.
+   */
   @PutMapping("/{categoryId}")
   public Category update(
       @PathVariable UUID bookId,
@@ -68,7 +78,9 @@ public class CategoryController {
   }
 
   /**
-   * 분류를 지운다. 내역이나 소분류가 있으면 지우지 않고 자신과 소분류를 숨긴다.
+   * 분류 삭제
+   *
+   * <p>내역이나 소분류가 있으면 지우지 않고 자신과 소분류를 숨긴다.
    *
    * @param bookId 가계부 id
    * @param categoryId 분류 id
@@ -82,7 +94,9 @@ public class CategoryController {
   }
 
   /**
-   * 분류 순서를 같은 부모 · 같은 종류 안에서 한 칸 옮긴다.
+   * 분류 순서 변경
+   *
+   * <p>같은 부모 · 같은 종류 안에서 한 칸 옮긴다.
    *
    * @param bookId 가계부 id
    * @param categoryId 분류 id

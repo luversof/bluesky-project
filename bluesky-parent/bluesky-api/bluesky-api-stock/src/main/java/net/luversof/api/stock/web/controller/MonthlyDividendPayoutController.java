@@ -17,6 +17,7 @@ import net.luversof.api.stock.web.dto.request.MonthlyDividendPayoutRequest;
 import net.luversof.api.stock.web.dto.request.MonthlyDividendPayoutUpsertRequest;
 import net.luversof.api.stock.web.dto.response.MonthlyDividendPayoutResponse;
 
+/** 월배당 지급 이력 */
 @RestController
 @RequestMapping("/api/monthlyDividendPayout")
 public class MonthlyDividendPayoutController {
@@ -24,7 +25,7 @@ public class MonthlyDividendPayoutController {
   @Autowired private MonthlyDividendPayoutService monthlyDividendPayoutService;
 
   /**
-   * 월배당 지급 이력을 찾는다.
+   * 월배당 지급 이력 검색
    *
    * @param request 종목 · 기간 조건
    * @return 지급 이력
@@ -35,7 +36,9 @@ public class MonthlyDividendPayoutController {
   }
 
   /**
-   * 월배당 지급 이력 한 건을 넣는다. 같은 종목 · 기준일 · 지급일이 있으면 고친다.
+   * 월배당 지급 이력 저장
+   *
+   * <p>같은 종목 · 기준일 · 지급일이 있으면 고친다.
    *
    * @param request 종목 심볼 · 기준일 · 지급일 · 분배율 · 주당 금액 · 과세표준
    * @return 저장한 지급 이력
@@ -47,7 +50,7 @@ public class MonthlyDividendPayoutController {
   }
 
   /**
-   * 월배당 지급 이력 한 건을 지운다.
+   * 월배당 지급 이력 삭제
    *
    * @param symbol 종목 심볼
    * @param recordDate 기준일

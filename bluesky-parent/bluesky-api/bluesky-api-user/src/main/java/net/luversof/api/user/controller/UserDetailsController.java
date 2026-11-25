@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 계정
+ *
+ * <p>Spring Security UserDetails 계정. UserDetailsManager 빈이 있을 때만 등록된다.
+ */
 @RestController
 @RequestMapping(value = "/api/userDetails", produces = MediaType.APPLICATION_JSON_VALUE)
 @ConditionalOnBean(UserDetailsManager.class)
@@ -27,7 +32,7 @@ public class UserDetailsController {
   }
 
   /**
-   * username 으로 계정(UserDetails)을 찾는다.
+   * username으로 계정 조회
    *
    * @param username 계정 이름
    * @return 계정(없으면 UsernameNotFoundException)
@@ -38,7 +43,7 @@ public class UserDetailsController {
   }
 
   /**
-   * 계정을 만든다.
+   * 계정 생성
    *
    * @param user 만들 계정
    * @return 만든 계정
@@ -50,7 +55,7 @@ public class UserDetailsController {
   }
 
   /**
-   * 계정을 고친다.
+   * 계정 수정
    *
    * @param user 고칠 계정
    * @return 고친 계정
@@ -62,7 +67,7 @@ public class UserDetailsController {
   }
 
   /**
-   * 계정을 지운다.
+   * 계정 삭제
    *
    * @param username 지울 계정 이름
    */
