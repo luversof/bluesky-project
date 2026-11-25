@@ -454,7 +454,7 @@ class AdminControllerTest implements GeneralWebTest {
           .andExpect(content().string(Matchers.containsString("주소를 알면 그대로 열 수 있습니다")));
       mvc.perform(get("/admin/menu/" + menuId + "/query/new").param("kind", "UPDATE").with(admin()))
           .andExpect(status().isOk())
-          .andExpect(content().string(Matchers.containsString("UPDATE public.\"MainMenu\" SET")))
+          .andExpect(content().string(Matchers.containsString("UPDATE \"public\".\"MainMenu\" SET")))
           .andExpect(content().string(Matchers.containsString("name=\"p.id.role\"")));
       // 메뉴 관리 화면의 레이어(htmx): 화면 틀 없이 폼 조각만, 취소는 레이어 닫기
       mvc.perform(

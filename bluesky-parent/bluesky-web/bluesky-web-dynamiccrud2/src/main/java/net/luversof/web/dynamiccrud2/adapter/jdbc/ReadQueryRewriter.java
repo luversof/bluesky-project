@@ -179,7 +179,9 @@ public final class ReadQueryRewriter {
     var where =
         select.getWhere() == null ? combined : "(" + select.getWhere() + ") AND " + combined;
     try {
-      select.setWhere(CCJSqlParserUtil.parseCondExpression(where));
+      select.setWhere(
+          CCJSqlParserUtil.parseCondExpression(
+              where, true, parser -> parser.withSquareBracketQuotation(true)));
     } catch (JSQLParserException e) {
       throw new IllegalArgumentException(Msg.t("error.search.attachFailed", rootMessage(e)), e);
     }
@@ -234,7 +236,8 @@ public final class ReadQueryRewriter {
 
   private static PlainSelect parse(String sql) throws JSQLParserException {
     // 이름 붙은 파라미터(:name)는 JdbcNamedParameter 로 해석된다. UNION 등 PlainSelect 가 아니면 감싸기로 대신한다.
-    return (PlainSelect) CCJSqlParserUtil.parse(sql);
+    // [이름]: MSSQL 따옴표(SqlDialect.quote 가 늘 붙인다). 기본값은 배열 첨자로 읽어 파싱에 실패한다
+    return (PlainSelect) CCJSqlParserUtil.parse(sql, parser -> parser.withSquareBracketQuotation(true));
   }
 
   private static String orderByClause(SqlDialect dialect, Sort sort) {

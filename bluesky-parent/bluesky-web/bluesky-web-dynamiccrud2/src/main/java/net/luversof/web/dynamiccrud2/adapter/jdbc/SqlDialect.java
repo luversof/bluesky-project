@@ -5,21 +5,19 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
 
 /** JDBC DB 종류별 차이(식별자 따옴표 · 테이블 이름 · 페이징 · 시스템 스키마 · 컬럼 주석). */
 public enum SqlDialect {
-  POSTGRESQL(
-      "\"", "\"", "^[a-z_][a-z0-9_]*$", Set.of("pg_catalog", "information_schema", "pg_toast")) {
+  POSTGRESQL("\"", "\"", Set.of("pg_catalog", "information_schema", "pg_toast")) {
     @Override
     String pagingSuffix(boolean hasOrderBy) {
       return " LIMIT :_limit OFFSET :_offset";
     }
   },
-  MYSQL("`", "`", "^[A-Za-z_][A-Za-z0-9_]*$", Set.of()) {
+  MYSQL("`", "`", Set.of()) {
     @Override
     String pagingSuffix(boolean hasOrderBy) {
       return " LIMIT :_limit OFFSET :_offset";
@@ -31,7 +29,7 @@ public enum SqlDialect {
       return catalog == null ? quote(table) : quote(catalog) + "." + quote(table);
     }
   },
-  MSSQL("[", "]", "^[A-Za-z_][A-Za-z0-9_]*$", Set.of("sys", "INFORMATION_SCHEMA")) {
+  MSSQL("[", "]", Set.of("sys", "INFORMATION_SCHEMA")) {
     /** OFFSET ... FETCH 는 ORDER BY 가 있어야 한다. */
     @Override
     String pagingSuffix(boolean hasOrderBy) {
@@ -67,14 +65,11 @@ public enum SqlDialect {
 
   private final String openQuote;
   private final String closeQuote;
-  private final Pattern simpleIdentifier;
   private final Set<String> systemSchemas;
 
-  SqlDialect(
-      String openQuote, String closeQuote, String simpleIdentifier, Set<String> systemSchemas) {
+  SqlDialect(String openQuote, String closeQuote, Set<String> systemSchemas) {
     this.openQuote = openQuote;
     this.closeQuote = closeQuote;
-    this.simpleIdentifier = Pattern.compile(simpleIdentifier);
     this.systemSchemas = systemSchemas;
   }
 
@@ -93,12 +88,11 @@ public enum SqlDialect {
     throw new BlueskyException(QueryErrorCode.UNSUPPORTED_DATABASE, databaseProductName);
   }
 
-  /** 따옴표 없이 써도 되는 이름은 그대로, 아니면 따옴표로 감싼다(닫는 따옴표는 두 번 써서 이스케이프). */
-  // shortcut: 예약어(예: order, user)는 따옴표를 안 붙인다, 자동 생성 쿼리가 예약어 컬럼에서 깨지면 예약어 목록을 붙일 것
+  /**
+   * 이름을 늘 따옴표로 감싼다(닫는 따옴표는 두 번 써서 이스케이프). 예약어 컬럼(예: MySQL 8 의 virtual, order, user)도 깨지지 않게 -
+   * 감싸도 MySQL · MSSQL 은 대소문자 규칙이 같고, PostgreSQL 은 소문자 이름이면 같은 이름이다(DMT2 UDP-6559 와 같게, 2026-11-26).
+   */
   public String quote(String identifier) {
-    if (simpleIdentifier.matcher(identifier).matches()) {
-      return identifier;
-    }
     return openQuote + identifier.replace(closeQuote, closeQuote + closeQuote) + closeQuote;
   }
 

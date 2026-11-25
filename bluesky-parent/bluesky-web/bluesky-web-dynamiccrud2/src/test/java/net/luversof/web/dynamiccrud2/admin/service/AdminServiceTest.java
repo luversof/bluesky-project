@@ -242,8 +242,8 @@ class AdminServiceTest implements GeneralWebTest {
           .satisfies(q -> {
             assertThat(q.getKind()).isEqualTo(QueryKind.READ);
             assertThat(q.getQueryText())
-                .contains("FROM public.\"MainMenu\"")
-                .endsWith("ORDER BY id");
+                .contains("FROM \"public\".\"MainMenu\"")
+                .endsWith("ORDER BY \"id\"");
           });
       var fields = fieldService.get(menu.getDbTableId()).getFields();
       assertThat(fields).extracting(DbField::getColumnName).contains("id", "project_id", "name");
@@ -257,8 +257,8 @@ class AdminServiceTest implements GeneralWebTest {
       var draft = queryService.draft(menu, QueryKind.UPDATE);
       assertThat(draft.error()).isNull();
       assertThat(draft.queryText())
-          .startsWith("UPDATE public.\"MainMenu\" SET")
-          .endsWith("WHERE id = :id");
+          .startsWith("UPDATE \"public\".\"MainMenu\" SET")
+          .endsWith("WHERE \"id\" = :id");
       var inspection = queryService.inspect(menu, QueryKind.UPDATE, draft.queryText(), null);
       assertThat(inspection.error()).isNull();
       assertThat(inspection.params())

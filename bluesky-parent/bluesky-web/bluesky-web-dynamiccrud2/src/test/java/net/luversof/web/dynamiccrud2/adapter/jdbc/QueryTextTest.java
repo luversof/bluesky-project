@@ -91,16 +91,18 @@ class QueryTextTest {
   }
 
   @Test
-  void dialectQuotesOnlyWhenNeeded() {
-    assertThat(SqlDialect.POSTGRESQL.quote("article")).isEqualTo("article");
+  void dialectAlwaysQuotes() {
+    assertThat(SqlDialect.POSTGRESQL.quote("article")).isEqualTo("\"article\"");
     assertThat(SqlDialect.POSTGRESQL.quote("MenuQuery")).isEqualTo("\"MenuQuery\"");
     assertThat(SqlDialect.POSTGRESQL.quote("a\"b")).isEqualTo("\"a\"\"b\"");
-    assertThat(SqlDialect.MYSQL.quote("MenuQuery")).isEqualTo("MenuQuery");
+    assertThat(SqlDialect.MYSQL.quote("MenuQuery")).isEqualTo("`MenuQuery`");
+    // MySQL 8 예약어 컬럼(예: virtual)
+    assertThat(SqlDialect.MYSQL.quote("virtual")).isEqualTo("`virtual`");
     assertThat(SqlDialect.MYSQL.quote("my col")).isEqualTo("`my col`");
     assertThat(SqlDialect.MSSQL.quote("a]b")).isEqualTo("[a]]b]");
-    assertThat(SqlDialect.MYSQL.qualifiedName("shop", null, "item")).isEqualTo("shop.item");
+    assertThat(SqlDialect.MYSQL.qualifiedName("shop", null, "item")).isEqualTo("`shop`.`item`");
     assertThat(SqlDialect.POSTGRESQL.qualifiedName("db", "public", "Menu"))
-        .isEqualTo("public.\"Menu\"");
+        .isEqualTo("\"public\".\"Menu\"");
   }
 
   @Test

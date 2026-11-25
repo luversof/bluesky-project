@@ -166,9 +166,17 @@ class ReadQueryRewriterTest {
     var filters =
         java.util.List.of(new Filter(java.util.List.of("a"), SearchOperator.EQUALS, "_f0", null));
     assertThat(ReadQueryRewriter.pageQuery(union, SqlDialect.POSTGRESQL, Set.of(), filters, null))
-        .startsWith("SELECT * FROM (" + union + ") t WHERE t.a = :_f0");
+        .startsWith("SELECT * FROM (" + union + ") t WHERE t.\"a\" = :_f0");
     assertThat(ReadQueryRewriter.countQuery(union, SqlDialect.POSTGRESQL, Set.of(), filters))
-        .isEqualTo("SELECT COUNT(*) FROM (" + union + ") t WHERE t.a = :_f0");
+        .isEqualTo("SELECT COUNT(*) FROM (" + union + ") t WHERE t.\"a\" = :_f0");
+  }
+
+  /** MSSQL [이름] 따옴표도 파싱한다 - 못 하면 건수 쿼리에 ORDER BY 가 남아 MSSQL 이 거부한다 */
+  @Test
+  void parsesSquareBracketNames() {
+    var sql = "SELECT [name] FROM [Item] WHERE [name] LIKE :q ORDER BY [name]";
+    assertThat(ReadQueryRewriter.countQuery(sql, SqlDialect.MSSQL, Set.of(), java.util.List.of()))
+        .doesNotContain("ORDER BY");
   }
 
   @Test

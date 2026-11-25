@@ -37,15 +37,16 @@ class DefaultQueryGeneratorTest {
   void generatesAllKindsWithQuotingAndRowKey() {
     var d = SqlDialect.POSTGRESQL;
     assertThat(DefaultQueryGenerator.generate(QueryKind.READ, ARTICLE, d))
-        .isEqualTo("SELECT id, title, \"viewCount\" FROM public.\"Article\" ORDER BY id");
+        .isEqualTo(
+            "SELECT \"id\", \"title\", \"viewCount\" FROM \"public\".\"Article\" ORDER BY \"id\"");
     assertThat(DefaultQueryGenerator.generate(QueryKind.INSERT, ARTICLE, d))
         .isEqualTo(
-            "INSERT INTO public.\"Article\" (title, \"viewCount\") VALUES (:title, :viewCount)");
+            "INSERT INTO \"public\".\"Article\" (\"title\", \"viewCount\") VALUES (:title, :viewCount)");
     assertThat(DefaultQueryGenerator.generate(QueryKind.UPDATE, ARTICLE, d))
         .isEqualTo(
-            "UPDATE public.\"Article\" SET title = :title, \"viewCount\" = :viewCount WHERE id = :id");
+            "UPDATE \"public\".\"Article\" SET \"title\" = :title, \"viewCount\" = :viewCount WHERE \"id\" = :id");
     assertThat(DefaultQueryGenerator.generate(QueryKind.DELETE, ARTICLE, d))
-        .isEqualTo("DELETE FROM public.\"Article\" WHERE id = :id");
+        .isEqualTo("DELETE FROM \"public\".\"Article\" WHERE \"id\" = :id");
   }
 
   @Test
@@ -66,9 +67,9 @@ class DefaultQueryGeneratorTest {
             List.of(List.of("code")),
             Set.of());
     assertThat(DefaultQueryGenerator.generate(QueryKind.DELETE, noPk, SqlDialect.MYSQL))
-        .isEqualTo("DELETE FROM shop.item WHERE code = :code");
+        .isEqualTo("DELETE FROM `shop`.`item` WHERE `code` = :code");
     assertThat(DefaultQueryGenerator.generate(QueryKind.READ, noPk, SqlDialect.MYSQL))
-        .isEqualTo("SELECT code, name FROM shop.item ORDER BY code");
+        .isEqualTo("SELECT `code`, `name` FROM `shop`.`item` ORDER BY `code`");
 
     var noKey =
         new TableMeta(
@@ -81,7 +82,7 @@ class DefaultQueryGeneratorTest {
             () -> DefaultQueryGenerator.generate(QueryKind.UPDATE, noKey, SqlDialect.MYSQL))
         .isInstanceOf(BlueskyException.class);
     assertThat(DefaultQueryGenerator.generate(QueryKind.READ, noKey, SqlDialect.MYSQL))
-        .isEqualTo("SELECT msg FROM log");
+        .isEqualTo("SELECT `msg` FROM `log`");
   }
 
   @Test
