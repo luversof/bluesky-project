@@ -419,3 +419,49 @@ document.addEventListener('keydown', (event) => {
   observer.observe(head);
   observer.observe(table);
 })();
+
+// JSON 칸([data-json], json · jsonb 컬럼 - _components/typedInput · cellValue): 열 때 보기 좋게 펼치고(입력칸 값 · 목록 칸 title),
+// 보내기 전에 입력칸 형식을 검사한다(틀리면 브라우저 입력 검사 말풍선 - htmx 도 보내기 전에 같은 검사를 본다). 빈 값은 NULL 이라 검사하지 않는다
+(() => {
+  const pretty = (text) => {
+    try {
+      return JSON.stringify(JSON.parse(text), null, 2);
+    } catch (e) {
+      return null;
+    }
+  };
+  const apply = (root) =>
+    root.querySelectorAll('[data-json]').forEach((el) => {
+      if (el.dataset.jsonDone) return;
+      el.dataset.jsonDone = '1';
+      if (el.tagName === 'TEXTAREA') {
+        const formatted = el.value.trim() && pretty(el.value);
+        if (formatted) el.value = formatted;
+      } else {
+        const formatted = pretty(el.getAttribute('title') || '');
+        if (formatted) el.title = formatted;
+      }
+    });
+  const check = (el) =>
+    el.setCustomValidity(!el.value.trim() || pretty(el.value) !== null ? '' : el.dataset.jsonInvalid);
+  apply(document);
+  document.addEventListener('htmx:afterSwap', (event) => apply(event.detail.target));
+  document.addEventListener('input', (event) => {
+    if (event.target.matches?.('textarea[data-json]')) check(event.target);
+  });
+  document.addEventListener(
+    'submit',
+    (event) => {
+      const bad = [...event.target.querySelectorAll('textarea[data-json]')].filter((el) => {
+        check(el);
+        return !el.checkValidity();
+      });
+      if (bad.length) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        bad[0].reportValidity();
+      }
+    },
+    true,
+  );
+})();

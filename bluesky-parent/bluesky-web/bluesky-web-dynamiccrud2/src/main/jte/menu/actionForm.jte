@@ -30,7 +30,7 @@
 			@template._components.field(label = field.header(), forId = "v-" + field.name(), required = field.required() && !field.readonly(),
 				hint = field.readonly() ? t("menu.action.readonly") : null, content = @`
 				@template._components.typedInput(id = "v-" + field.name(), name = "v." + field.name(), value = value,
-					inputType = field.inputType(), required = field.required(), maxLength = field.maxLength(), readonly = field.readonly(), options = field.options())
+					inputType = field.inputType(), required = field.required(), maxLength = field.maxLength(), readonly = field.readonly(), options = field.options(), json = field.json())
 			`)
 		@endfor
 	</div>

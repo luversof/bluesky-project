@@ -13,8 +13,14 @@
 @param boolean small = false
 @param boolean readonly = false
 @param Map<String, String> options = java.util.Map.of()
+<%-- json: json · jsonb 컬럼 - 여러 줄(내용만큼 커짐) · 고정폭, 열 때 보기 좋게 펼치고 보내기 전에 JSON 형식 검사(js/ui.js [data-json]) --%>
+@param boolean json = false
 
-@if(options != null && !options.isEmpty())
+@if(json && (options == null || options.isEmpty()))
+	<textarea id="${id}" class="textarea textarea-autogrow code w-full" name="${name}" rows="3" spellcheck="false" data-json
+		data-json-invalid="${net.luversof.web.dynamiccrud2.config.Msg.t("component.json.invalid")}"
+		required="${required && !readonly}" readonly="${readonly}">${value}</textarea>
+@elseif(options != null && !options.isEmpty())
 	<select id="${id}" class="select ${small ? "select-sm" : "w-full"}" name="${name}" required="${required && !readonly}" disabled="${readonly}">
 		<option value="">-</option>
 		@for(var option : options.entrySet())

@@ -151,6 +151,7 @@ public class MenuPageService {
    * @param inputType 필드 입력 형식 - 목록 칸 표시 형식(_components/cellValue)에 쓴다
    * @param options 필드 값 목록(저장값 → 표시, {@link DbField#valueOptionMap()}). 비면 원래 값 그대로
    * @param dateFormat 날짜 · 일시 표시 형식({@link DbField#getDateFormat()}). null 이면 기본 모양
+   * @param json json · jsonb 컬럼 - 목록 칸은 한 줄로 줄이고 올리면 보기 좋게 펼친 전체(_components/cellValue)
    */
   public record Column(
       String label,
@@ -158,7 +159,8 @@ public class MenuPageService {
       boolean sortable,
       InputType inputType,
       Map<String, String> options,
-      String dateFormat) {}
+      String dateFormat,
+      boolean json) {}
 
   public record SearchField(
       String name,
@@ -242,7 +244,8 @@ public class MenuPageService {
       Integer maxLength,
       String value,
       boolean readonly,
-      Map<String, String> options) {}
+      Map<String, String> options,
+      boolean json) {}
 
   private static Map<String, String> optionsOf(DbField field) {
     return field == null ? Map.of() : field.valueOptionMap();
@@ -491,7 +494,8 @@ public class MenuPageService {
               field == null ? null : field.getMaxLength(),
               readonly && rows.size() > 1 ? null : value,
               readonly,
-              optionsOf(field)));
+              optionsOf(field),
+              field != null && ValueConverter.isJson(field.getDataType())));
     }
     return new ActionForm(ctx.menu(), query, fields, rows);
   }
@@ -1021,7 +1025,8 @@ public class MenuPageService {
               sortable,
               field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType(),
               optionsOf(field),
-              field == null ? null : field.getDateFormat()));
+              field == null ? null : field.getDateFormat(),
+              field != null && ValueConverter.isJson(field.getDataType())));
     }
     return columns;
   }

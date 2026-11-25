@@ -115,7 +115,8 @@
 							@template._components.cellValue(value = row.values().get(i),
 								inputType = i < usePage.columns().size() ? usePage.columns().get(i).inputType() : null,
 								options = i < usePage.columns().size() ? usePage.columns().get(i).options() : java.util.Map.of(),
-								dateFormat = i < usePage.columns().size() ? usePage.columns().get(i).dateFormat() : null)
+								dateFormat = i < usePage.columns().size() ? usePage.columns().get(i).dateFormat() : null,
+								json = i < usePage.columns().size() && usePage.columns().get(i).json())
 						@endfor
 						@if(!usePage.updateActions().isEmpty())
 							<td class="sticky-end whitespace-nowrap text-right">

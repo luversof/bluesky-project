@@ -51,6 +51,11 @@ public final class ValueConverter {
     }
   }
 
+  /** json · jsonb 컬럼인가(대소문자 무관 - MySQL 은 JSON). 입력칸은 여러 줄 · 형식 검사, 목록 칸은 줄여 보인다 */
+  public static boolean isJson(String dataType) {
+    return "json".equalsIgnoreCase(dataType) || "jsonb".equalsIgnoreCase(dataType);
+  }
+
   /** 글자로 보내도 되는 문자 타입 이름(DB 마다 다른 이름, 소문자). 이 밖의 타입은 {@link UntypedText} 로 표시해 어댑터가 정한다 */
   private static final Set<String> STRING_TYPES =
       Set.of(

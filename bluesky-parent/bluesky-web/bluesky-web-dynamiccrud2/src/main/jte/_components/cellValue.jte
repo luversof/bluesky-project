@@ -11,6 +11,8 @@
 @param boolean nullMark = false
 @param Map<String, String> options = java.util.Map.of()
 @param String dateFormat = null
+<%-- json: json · jsonb 컬럼 - 한 줄로 줄인 고정폭, 올리면 보기 좋게 펼친 전체(title 을 js/ui.js [data-json] 가 바꾼다) --%>
+@param boolean json = false
 
 !{var raw = value == null ? "" : value;}
 !{var type = inputType == null ? InputType.TEXT : inputType;}
@@ -20,6 +22,8 @@
 
 @if(value == null && nullMark)
 	<td class="hint">NULL</td>
+@elseif(json && !raw.isEmpty())
+	<td class="max-w-xs truncate font-mono text-xs" title="${raw}" data-json>${raw}</td>
 @elseif(options != null && options.containsKey(raw))
 	<td class="max-w-xs truncate" title="${raw}">${options.get(raw)}</td>
 @elseif(type == InputType.BOOLEAN && (yes || no))

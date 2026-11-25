@@ -36,6 +36,11 @@ class ValueConverterTest {
     }
     field.setDataType(null);
     assertThat(ValueConverter.toBindValue("x", field)).as("타입 모름").isEqualTo("x");
+    // JSON 칸(여러 줄 입력 · 목록에서 줄임): json · jsonb, 대소문자 무관
+    assertThat(ValueConverter.isJson("jsonb")).isTrue();
+    assertThat(ValueConverter.isJson("JSON")).isTrue();
+    assertThat(ValueConverter.isJson("text")).isFalse();
+    assertThat(ValueConverter.isJson(null)).isFalse();
   }
 
   @Test
