@@ -5,6 +5,7 @@
 # - Weekdays only. Wake timers are NOT used: a sleeping PC is never woken.
 # - StartWhenAvailable: a run missed while asleep or off starts as soon as the PC is back.
 # - Runs only while you are logged on: claude keeps its login in your user profile.
+# - Runs without a window (conhost --headless).
 # Remove: Unregister-ScheduledTask -TaskPath '\bluesky\' -TaskName 'market-analysis-*' -Confirm:$false
 param(
     [Parameter(Mandatory = $true)][string]$UserId,
@@ -25,8 +26,10 @@ $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatt
 
 foreach ($job in @(@{ Name = 'morning'; At = $MorningAt }, @{ Name = 'evening'; At = $EveningAt })) {
     $script = Join-Path $PSScriptRoot "$($job.Name).ps1"
-    $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
-        -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$script`""
+    # conhost --headless: no window at all. -WindowStyle Hidden alone still shows a window on Windows 11 when
+    # Windows Terminal is the default terminal (it ignores the style), and claude / curl run inside it.
+    $action = New-ScheduledTaskAction -Execute "$env:WINDIR\System32\conhost.exe" `
+        -Argument "--headless powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$script`""
     $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek $weekdays -At $job.At
     Register-ScheduledTask -TaskPath '\bluesky\' -TaskName "market-analysis-$($job.Name)" `
         -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
