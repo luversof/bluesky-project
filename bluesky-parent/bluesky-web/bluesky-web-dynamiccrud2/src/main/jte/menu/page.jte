@@ -65,7 +65,7 @@
 				<button class="btn btn-sm" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-target="#actionPanel">${action.getName()}</button>
 			@endfor
 			@for(var action : usePage.deleteActions())
-				<button class="btn btn-sm btn-error" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-include="[name='rows']:checked" hx-target="#actionPanel">${t("menu.page.selected", action.getName())}</button>
+				<button class="btn btn-sm btn-error" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-include="[name='rows']:checked" hx-target="#actionPanel" data-row-delete="${action.getName()}">${t("menu.page.selected", action.getName())}</button>
 			@endfor
 			@if(menu.isEnableExcel())
 				<a class="btn btn-sm" href="${menuPath}/excel?${searchQuery}${sortPart}">${t("menu.page.excel")}</a>
@@ -80,6 +80,11 @@
 
 	<%-- 작업 폼은 목록 위 레이어로 띄워 스크롤 위치를 바꾸지 않는다 --%>
 	@template._components.modal(id = "actionDialog", panelId = "actionPanel", label = t("menu.page.actionLabel"))
+	<%-- 행 자세히(줄 끝 아이콘): 그 행 모든 컬럼을 세로로. 화면에 있는 값으로 js/row-detail.js 가 그린다(사용자 결정 11-26) --%>
+	<div id="rowDetail" data-title="${t("menu.page.detail.title")}" data-close="${t("common.close")}">
+		@template._components.modal(id = "rowDialog", panelId = "rowPanel", label = t("menu.page.detail.title"))
+	</div>
+	<script src="/js/row-detail.js" defer></script>
 
 	<%-- .table-scroll: 가로 스크롤 상자. 화면을 내리면 표 머리(thead)가 위에 붙은 제목 · 검색 밑에 따라 붙는다(사용자 요청 11-24) --%>
 	<div class="relative table-scroll">
@@ -101,8 +106,8 @@
 							@endif
 						</th>
 					@endfor
-					<%-- 수정 단추 칸은 가로 스크롤과 상관없이 오른쪽 끝에 붙어 보인다(.sticky-end, 사용자 요청 11-24) --%>
-					@if(!usePage.updateActions().isEmpty())<th class="sticky-end"></th>@endif
+					<%-- 자세히 · 수정 단추 칸은 가로 스크롤과 상관없이 오른쪽 끝에 붙어 보인다(.sticky-end, 사용자 요청 11-24). 자세히가 있어 늘 둔다 --%>
+					<th class="sticky-end"><span class="sr-only">${t("menu.page.detail.column")}</span></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -118,18 +123,23 @@
 								dateFormat = i < usePage.columns().size() ? usePage.columns().get(i).dateFormat() : null,
 								json = i < usePage.columns().size() && usePage.columns().get(i).json())
 						@endfor
-						@if(!usePage.updateActions().isEmpty())
-							<td class="sticky-end whitespace-nowrap text-right">
-								<input type="hidden" name="row" value="${row.json()}" />
-								@for(var action : usePage.updateActions())
-									<button class="btn btn-sm" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-include="closest td" hx-target="#actionPanel">${action.getName()}</button>
-								@endfor
-							</td>
-						@endif
+						<td class="sticky-end whitespace-nowrap text-right">
+							<span class="inline-flex items-center gap-1">
+								<button type="button" class="icon-btn" data-row-detail aria-label="${t("menu.page.detail.open")}" data-tip="${t("menu.page.detail.open")}">
+									<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h7"/></svg>
+								</button>
+								@if(!usePage.updateActions().isEmpty())
+									<input type="hidden" name="row" value="${row.json()}" />
+									@for(var action : usePage.updateActions())
+										<button class="btn btn-sm" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-include="closest td" hx-target="#actionPanel" data-row-action>${action.getName()}</button>
+									@endfor
+								@endif
+							</span>
+						</td>
 					</tr>
 				@endfor
 				@if(usePage.rows().isEmpty())
-					@template._components.emptyState(message = t("menu.page.empty"), colspan = usePage.columns().size() + (usePage.deleteActions().isEmpty() ? 0 : 1) + (usePage.updateActions().isEmpty() ? 0 : 1))
+					@template._components.emptyState(message = t("menu.page.empty"), colspan = usePage.columns().size() + (usePage.deleteActions().isEmpty() ? 0 : 1) + 1)
 				@endif
 			</tbody>
 		</table>

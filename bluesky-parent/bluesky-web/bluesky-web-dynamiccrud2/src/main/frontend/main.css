@@ -343,6 +343,14 @@
 	.table thead :where(th).sticky-end { background-color: var(--color-base-200); }
 	/* 화면 위에 붙는 머리(사용 화면의 제목 + 검색): 세로로 스크롤해도 남는다. 안 붙었을 때 자리는 그대로(음수 margin 이 padding 을 상쇄),
 	   붙으면 배경이 지나가는 목록을 가린다(사용자 요청 11-24) */
+	/* 행 자세히(js/row-detail.js): 제목 | 값 두 칸, 값은 줄바꿈 · 긴 글자 그대로(JSON 펼침 포함). 좁으면 한 칸으로 */
+	.row-detail { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.125rem 1rem; font-size: 0.875rem; }
+	.row-detail dt { font-size: 0.75rem; color: color-mix(in oklab, var(--color-base-content) 65%, transparent); padding-top: 0.5rem; }
+	.row-detail dd { white-space: pre-wrap; overflow-wrap: anywhere; }
+	@media (min-width: 40rem) {
+		.row-detail { grid-template-columns: minmax(8rem, max-content) minmax(0, 1fr); }
+		.row-detail dt, .row-detail dd { padding-block: 0.375rem; border-bottom: 1px solid var(--color-base-300); }
+	}
 	/* 메뉴가 없는 메인 메뉴의 메뉴 목록: 평소엔 높이 0, 메뉴를 끄는 동안만 점선 놓을 자리(js/reorder.js, 사용자 결정 11-24) */
 	.reorder-dragging [data-reorder-group]:not(:has(> [data-id])) { min-height: 2rem; border: 1px dashed var(--color-base-300); border-radius: var(--radius-field); }
 	.sticky-head { position: sticky; top: 0; z-index: 20; background-color: var(--color-base-100); padding-block: 0.75rem; margin-block: -0.75rem 0.25rem; }
