@@ -42,8 +42,8 @@ import net.luversof.web.dynamiccrud2.security.MenuAuthorizer;
 @Controller
 public class MenuPageController {
 
-  private static final String CODE = "[a-z0-9][a-z0-9-]*";
-  private static final String MENU_PATH =
+  static final String CODE = "[a-z0-9][a-z0-9-]*";
+  static final String MENU_PATH =
       "/{project:" + CODE + "}/{mainMenu:" + CODE + "}/{menu:" + CODE + "}";
 
   private final MenuPageService useService;
@@ -278,7 +278,7 @@ public class MenuPageController {
   }
 
   /** 검색 입력: 쿼리 파라미터 칸(s.) · 메뉴 검색칸(f.) · 통합 검색(q) */
-  private static MenuPageService.SearchInput searchInput(MultiValueMap<String, String> query) {
+  static MenuPageService.SearchInput searchInput(MultiValueMap<String, String> query) {
     return new MenuPageService.SearchInput(
         prefixed(query, "s."), prefixed(query, "f."), query.getFirst("q"));
   }

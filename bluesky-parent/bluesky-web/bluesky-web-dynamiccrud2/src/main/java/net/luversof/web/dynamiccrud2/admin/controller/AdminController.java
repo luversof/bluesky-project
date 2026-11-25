@@ -59,6 +59,7 @@ public class AdminController {
   private final SearchService searchService;
   private final ChangeLogService changeLogService;
   private final SettingLogService settingLogService;
+  private final net.luversof.web.dynamiccrud2.menu.service.MenuPageService useService;
 
   public AdminController(
       MenuService menuService,
@@ -68,7 +69,8 @@ public class AdminController {
       DatabaseAdapterResolver resolver,
       SearchService searchService,
       ChangeLogService changeLogService,
-      SettingLogService settingLogService) {
+      SettingLogService settingLogService,
+      net.luversof.web.dynamiccrud2.menu.service.MenuPageService useService) {
     this.menuService = menuService;
     this.queryService = queryService;
     this.fieldService = fieldService;
@@ -77,6 +79,7 @@ public class AdminController {
     this.searchService = searchService;
     this.changeLogService = changeLogService;
     this.settingLogService = settingLogService;
+    this.useService = useService;
   }
 
   // ---- Project · MainMenu ----
@@ -267,6 +270,16 @@ public class AdminController {
                     .thenComparing(MenuQuery::getDisplayOrder)
                     .thenComparing(MenuQuery::getName))
             .toList());
+    // JSON 호출 설명(사용 화면 주소 + 파라미터). connection 을 못 열면 설명만 빼고 화면은 그대로
+    model.addAttribute(
+        "apiBase",
+        net.luversof.web.dynamiccrud2.menu.service.MenuPageService.MenuPath.url(
+            menuService.getProject(mainMenu.getProjectId()), mainMenu, menu));
+    try {
+      model.addAttribute("apiCalls", useService.apiDoc(id));
+    } catch (RuntimeException e) {
+      model.addAttribute("apiCalls", List.of());
+    }
     return "admin/menu";
   }
 

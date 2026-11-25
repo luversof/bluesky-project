@@ -16,6 +16,8 @@
 @param String error = null
 <%-- menuPath: 제목에 보일 "프로젝트 › 메인 메뉴 › 메뉴"(없으면 메뉴 이름) --%>
 @param String menuPath = null
+@param String apiBase = null
+@param List<net.luversof.web.dynamiccrud2.menu.service.MenuPageService.ApiCall> apiCalls = java.util.List.of()
 
 !{var menuId = menu.getId().toString();}
 
@@ -112,6 +114,46 @@
 		</table>
 		@template._components.modal(id = "queryDialog", panelId = "queryPanel", label = t("admin.menu.queries"), wide = true)
 	`)
+
+	<%-- JSON 호출 설명: 위 쿼리 · 아래 검색 설정에서 만든다(MenuPageService.apiDoc). 처음엔 접어 둔다 --%>
+	@if(apiBase != null && !apiCalls.isEmpty())
+		@template._components.card(title = t("admin.menu.api"), help = t("admin.menu.api.help"), collapsible = true, open = false, body = @`
+			<div class="grid gap-5">
+				@for(var call : apiCalls)
+					<section class="grid gap-2">
+						<p class="flex flex-wrap items-center gap-2">
+							<span class="badge ${call.method().equals("GET") ? "badge-primary" : ""}">${call.method()}</span>
+							<code class="code text-sm break-all">${apiBase}${call.path()}</code>
+							<span class="hint">${call.kind().name()} · ${call.name()}</span>
+						</p>
+						@if(call.rows())
+							<p class="hint">$unsafe{t("admin.menu.api.rows")}</p>
+						@endif
+						@if(!call.params().isEmpty())
+							<div class="overflow-x-auto">
+								<table class="table" aria-label="${t("admin.menu.api.params", call.name())}">
+									<thead><tr><th>${call.method().equals("GET") ? t("admin.menu.api.col.query") : t("admin.menu.api.col.input")}</th><th>${t("admin.table.col.required")}</th><th>${t("admin.menu.api.col.desc")}</th></tr></thead>
+									<tbody>
+										@for(var param : call.params())
+											<tr><td class="font-mono text-xs whitespace-nowrap">${param.name()}</td><td>${param.required() ? "✓" : ""}</td><td>${param.description()}</td></tr>
+										@endfor
+									</tbody>
+								</table>
+							</div>
+						@endif
+					</section>
+				@endfor
+				<div class="grid gap-2 sm:grid-cols-2">
+					<div><p class="text-sm font-semibold mb-1">${t("admin.menu.api.example.list")}</p><pre class="code text-xs overflow-x-auto">{"total": 1, "page": 0, "pageSize": 20, "sort": null, "descending": false, "message": null,
+ "columns": [{"label": "id", "header": "id", "inputType": "TEXT", "sortable": true}],
+ "rows": [{"values": ["…"], "row": "…"}]}</pre></div>
+					<div><p class="text-sm font-semibold mb-1">${t("admin.menu.api.example.action")}</p><pre class="code text-xs overflow-x-auto">POST  {"inputs": {"name": "…"}, "rows": ["…"]}
+200   {"affected": 1}
+400   {"error": "…"}</pre></div>
+				</div>
+			</div>
+		`)
+	@endif
 
 	<%-- 검색 설정 위 테이블 정보(접힘): 검색칸마다 인덱스 사용 여부가 이미 보여, 전체 구조가 필요할 때만 펼친다(2026-11-23 사용자 결정) --%>
 	@template._components.tableInfo(tables = search.tables(), open = false, targetNoun = targetNoun, rememberKey = "tableInfo")

@@ -231,6 +231,81 @@ public class MenuPageService {
   public record ActionForm(Menu menu, MenuQuery query, List<FormField> fields, List<String> rows) {}
 
   /**
+   * JSON 호출 설명 한 줄(메뉴 관리 화면 "JSON 호출"). path 는 사용 화면 주소 뒤에 붙는다.
+   *
+   * @param rows 작업에 대상 행(목록 JSON 의 row 값)이 필요한가 - 쿼리에 행 키 파라미터가 있으면
+   */
+  public record ApiCall(
+      QueryKind kind,
+      String name,
+      String method,
+      String path,
+      List<ApiParam> params,
+      boolean rows) {}
+
+  /** JSON 호출 파라미터. 조회는 주소의 ?이름=값, 작업은 본문 inputs 의 키 */
+  public record ApiParam(String name, boolean required, String description) {}
+
+  /**
+   * 이 메뉴의 JSON 호출(조회 + 입력 · 수정 · 삭제) 설명. 사용 화면과 같은 규칙(검색칸 · 메뉴 검색 설정 · 파라미터 역할)에서 만들어 쿼리를 고치면 같이
+   * 바뀐다. 쿼리를 실행하지 않는다
+   */
+  public List<ApiCall> apiDoc(UUID menuId) {
+    var ctx = context(menuId);
+    var bound = bindSearch(ctx, Map.of());
+    var filtered = bindFilters(ctx, SearchInput.EMPTY, bound.params());
+    var read = new ArrayList<ApiParam>();
+    bound.fields().forEach(f -> read.add(new ApiParam("s." + f.name(), f.required(), f.header())));
+    filtered
+        .fields()
+        .forEach(f -> {
+          read.add(
+              new ApiParam("f." + f.label(), false, f.header() + " (" + f.operator().name() + ")"));
+          if (f.operator() == SearchOperator.RANGE) {
+            read.add(new ApiParam("f." + f.label() + ".to", false, f.header()));
+          }
+        });
+    if (filtered.keyword() != null) {
+      read.add(new ApiParam("q", false, String.join(", ", filtered.keyword().headers())));
+    }
+    read.add(new ApiParam("page", false, Msg.t("menu.api.param.page")));
+    read.add(new ApiParam("sort", false, Msg.t("menu.api.param.sort")));
+    read.add(new ApiParam("desc", false, Msg.t("menu.api.param.desc")));
+    var calls = new ArrayList<ApiCall>();
+    calls.add(new ApiCall(QueryKind.READ, ctx.read().getName(), "GET", "/api", read, false));
+    ctx.menu().getQueries().stream()
+        .filter(q -> q.getKind() != QueryKind.READ)
+        .sorted(
+            java.util.Comparator.comparing(MenuQuery::getKind)
+                .thenComparing(MenuQuery::getDisplayOrder)
+                .thenComparing(MenuQuery::getName))
+        .forEach(query -> {
+          var settings = QueryService.settingsOf(query);
+          var inputs = new ArrayList<ApiParam>();
+          var needsRow = false;
+          for (var name : paramNames(ctx, query)) {
+            var setting = settingOf(settings, name);
+            if (setting.role() == Role.ROW_KEY) {
+              needsRow = true;
+            } else {
+              inputs.add(
+                  new ApiParam(
+                      name, setting.required(), headerOf(ctx.baseFields().get(name), name)));
+            }
+          }
+          calls.add(
+              new ApiCall(
+                  query.getKind(),
+                  query.getName(),
+                  "POST",
+                  "/api/action/" + query.getId(),
+                  inputs,
+                  needsRow));
+        });
+    return calls;
+  }
+
+  /**
    * 로그인한 사용자가 볼 수 있는 메뉴(표시 켬 + 메뉴 권한)만 남긴 트리. 숨긴 프로젝트 · 메인 메뉴는 아래까지 통째로 빼고, 볼 메뉴가 없는 메인 메뉴 · 프로젝트도
    * 뺀다
    */

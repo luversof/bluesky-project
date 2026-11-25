@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Map;
@@ -81,6 +82,7 @@ class MenuPageControllerTest implements GeneralWebTest {
             "use-test-" + UUID.randomUUID());
     var mainMenu = menuService.saveMainMenu(null, owner.getId(), "main", "main");
     var rowId = UUID.randomUUID();
+    var apiRowId = UUID.randomUUID();
     var name = "row-" + rowId;
     UUID menuId = null;
     String originalOptions = null;
@@ -374,14 +376,80 @@ class MenuPageControllerTest implements GeneralWebTest {
       // 관리 화면이라 USER 는 못 본다
       mvc.perform(get(history).with(normalUser())).andExpect(status().isForbidden());
 
+      // JSON 호출: 화면과 같은 처리 · 검사, 응답만 JSON. 조회 결과의 row 로 수정 · 삭제한다
+      var apiName = "api-" + apiRowId;
+      mvc.perform(
+              post(base + "/api/action/" + insert)
+                  .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                  .content(
+                      "{\"inputs\": {\"id\": \""
+                          + apiRowId
+                          + "\", \"code\": \"a"
+                          + apiRowId.toString().substring(0, 8)
+                          + "\", \"name\": \""
+                          + apiName
+                          + "\", \"displayOrder\": \"1\", \"enableDisplay\": \"false\","
+                          + " \"createdDate\": \"2026-11-25T09:00:00\"}}")
+                  .with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.affected").value(1));
+      var listed =
+          mvc.perform(
+                  get(base + "/api")
+                      .param("s.name", apiName)
+                      .accept(org.springframework.http.MediaType.APPLICATION_JSON)
+                      .with(normalUser()))
+              .andExpect(status().isOk())
+              .andExpect(jsonPath("$.total").value(1))
+              .andExpect(jsonPath("$.columns[1].label").value("이름"))
+              .andExpect(jsonPath("$.rows[0].values[1]").value(apiName))
+              .andReturn()
+              .getResponse()
+              .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+      String apiRow = com.jayway.jsonpath.JsonPath.read(listed, "$.rows[0].row");
+      // 서명 없는 행은 400 과 사유
+      mvc.perform(
+              post(base + "/api/action/" + delete)
+                  .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                  .content("{\"rows\": [\"{\\\"id\\\":\\\"" + apiRowId + "\\\"}\"]}")
+                  .with(normalUser()))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.error").value(Matchers.containsString("선택한 행 정보가 올바르지 않습니다")));
+      mvc.perform(
+              post(base + "/api/action/" + delete)
+                  .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                  .content(
+                      "{\"rows\": ["
+                          + "\""
+                          + apiRow.replace("\\", "\\\\").replace("\"", "\\\"")
+                          + "\""
+                          + "]}")
+                  .with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.affected").value(1));
+      assertThat(projectRepository.findById(apiRowId)).isEmpty();
+      // 메뉴 관리 화면 아래 호출 설명: 조회 주소 · 작업 주소 · 파라미터
+      mvc.perform(get("/admin/menu/" + menuId).with(admin))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("JSON 호출")))
+          .andExpect(content().string(Matchers.containsString(base + "/api")))
+          .andExpect(content().string(Matchers.containsString(base + "/api/action/" + update)))
+          .andExpect(content().string(Matchers.containsString(">s.name<")));
+
       // 메뉴를 ADMIN 전용으로 바꾸면 USER 는 403, 목록에서도 빠진다
       menuService.updateMenu(menuId, "list", "프로젝트 관리", "ROLE_ADMIN", 20, true, true);
       mvc.perform(get(base).with(normalUser())).andExpect(status().isForbidden());
+      mvc.perform(
+              get(base + "/api")
+                  .accept(org.springframework.http.MediaType.APPLICATION_JSON)
+                  .with(normalUser()))
+          .andExpect(status().isForbidden());
       mvc.perform(get("/").with(normalUser()))
           .andExpect(content().string(Matchers.not(Matchers.containsString("프로젝트 관리"))));
       mvc.perform(get(base).with(user("admin").roles("ADMIN"))).andExpect(status().isOk());
     } finally {
       projectRepository.deleteById(rowId);
+      projectRepository.deleteById(apiRowId);
       if (menuId != null) {
         // Project 테이블 필드는 다른 메뉴와 같이 쓸 수 있어 값 목록을 원래대로 돌린다
         if (optionsChanged) {
