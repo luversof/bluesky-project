@@ -18,7 +18,10 @@
 !{var tableId = dbTable.getId().toString();}
 !{var menuQuery = menuId == null ? "" : "?menu=" + menuId;}
 
-@template._layout.layout(title = t("admin.table.title", targetNoun, dbTable.getTableName()), breadcrumb = breadcrumb, content = @`
+<%-- 변경 이력은 메뉴 관리 화면과 같게 제목 줄 오른쪽 끝(사용자 결정 11-26) --%>
+@template._layout.layout(title = t("admin.table.title", targetNoun, dbTable.getTableName()), breadcrumb = breadcrumb, titleActions = @`
+	<a class="btn btn-sm" href="/admin/table/${tableId}/history${menuQuery}">${t("admin.history.title")}</a>
+`, content = @`
 	@template._components.alert(message = error)
 	<%-- 정렬 허용을 정할 때 보도록 필드 표 위에 둔다(메뉴 관리 화면과 같은 표) --%>
 	@template._components.card(title = t("index.tableLabel", targetNoun), help = t("admin.table.index.help"), body = @`

@@ -240,6 +240,22 @@ public class SettingLogService {
     return map;
   }
 
+  /**
+   * DB 다시 읽기 전 · 후 비교용: DB 에 있는 컬럼마다 column.{이름} = 타입(+ auto_increment). 새 컬럼은 이전 값이 비고, DB 에서 사라진
+   * 컬럼은 이후 값이 빈다(diff 가 추가 · 삭제 · 타입 변경을 그대로 보여 준다). 가상 필드는 DB 컬럼이 아니라 뺀다
+   */
+  public static Map<String, String> columns(java.util.Collection<DbField> fields) {
+    var map = new LinkedHashMap<String, String>();
+    fields.stream()
+        .filter(field -> !field.isVirtual() && !field.isMissingInDb())
+        .sorted(java.util.Comparator.comparing(DbField::getColumnName))
+        .forEach(field ->
+            map.put(
+                "column." + field.getColumnName(),
+                field.getDataType() + (field.isAutoIncrement() ? " auto_increment" : "")));
+    return map;
+  }
+
   /** 순서 바꾸기: 바뀐 순서를 이름 목록으로 */
   public static Map<String, String> order(List<String> names) {
     var map = new LinkedHashMap<String, String>();
@@ -268,9 +284,20 @@ public class SettingLogService {
 
   /** 메뉴 범위(메뉴 · 쿼리 · 검색 + 그 메뉴 테이블의 필드), 프로젝트 범위(menu 가 null), 전체(둘 다 null - 프로젝트 순서 등 포함) */
   public HistoryPage page(Menu menu, UUID projectId, Filter filter, int page) {
-    var menuId = menu == null ? null : menu.getId();
-    var tableId = menu == null ? null : menu.getDbTableId();
-    var scopeProject = menu == null ? projectId : null;
+    return page(
+        menu == null ? null : menu.getId(),
+        menu == null ? null : menu.getDbTableId(),
+        menu == null ? projectId : null,
+        filter,
+        page);
+  }
+
+  /** 테이블 범위(테이블 필드 화면): 그 테이블 필드 변경만 - 필드 화면에서 고친 것 · DB 다시 읽기 */
+  public HistoryPage tablePage(UUID tableId, Filter filter, int page) {
+    return page(null, tableId, null, filter, page);
+  }
+
+  private HistoryPage page(UUID menuId, UUID tableId, UUID scopeProject, Filter filter, int page) {
     var zone = ZoneId.systemDefault();
     Instant from = filter.from() == null ? null : filter.from().atStartOfDay(zone).toInstant();
     Instant to =
@@ -331,6 +358,9 @@ public class SettingLogService {
   private static String labelOf(String key) {
     if (key.startsWith("searchValues.")) {
       return Msg.t("setting.field.searchValues", key.substring("searchValues.".length()));
+    }
+    if (key.startsWith("column.")) {
+      return Msg.t("setting.field.column", key.substring("column.".length()));
     }
     try {
       return Msg.t("setting.field." + key);

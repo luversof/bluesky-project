@@ -10,14 +10,21 @@
 @param String action
 @param String pageUrl
 @param boolean settingsTab = false
+<%-- 테이블 필드 이력: 대상이 필드 하나라 대상 고르기를 빼고, 들어온 메뉴(menu)를 찾기 · 처음으로에도 들고 다닌다 --%>
+@param boolean showTarget = true
+@param String keepMenu = null
+
+!{var resetQuery = settingsTab ? "?tab=settings" : keepMenu != null ? "?menu=" + keepMenu : "";}
 
 @template._components.card(title = t("admin.history.filter"), help = t("admin.history.settings.help"), body = @`
 	<form method="get" action="${action}" role="search"
-		class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem_10rem_auto] items-end">
+		class="grid gap-3 sm:grid-cols-2 ${showTarget ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem_10rem_auto]" : "lg:grid-cols-[minmax(0,1fr)_10rem_10rem_auto]"} items-end">
 		@if(settingsTab)<input type="hidden" name="tab" value="settings" />@endif
+		@if(keepMenu != null)<input type="hidden" name="menu" value="${keepMenu}" />@endif
 		@template._components.field(label = t("admin.history.user"), forId = "s-user-input", content = @`
 			@template.admin.userPicker(id = "s-user", usernames = settings.usernames(), selected = filter.username())
 		`)
+		@if(showTarget)
 		@template._components.field(label = t("admin.history.target"), forId = "s-target", content = @`
 			<select id="s-target" class="select w-full" name="target">
 				<option value="">${t("admin.history.all")}</option>
@@ -26,6 +33,7 @@
 				@endfor
 			</select>
 		`)
+		@endif
 		@template._components.field(label = t("admin.history.from"), forId = "s-from", content = @`
 			<input id="s-from" class="input w-full" type="date" name="from" value="${filter.from() == null ? null : filter.from().toString()}" />
 		`)
@@ -34,7 +42,7 @@
 		`)
 		<div class="flex gap-2">
 			<button class="btn btn-primary">${t("menu.page.search")}</button>
-			<a class="btn btn-ghost" href="${action}${settingsTab ? "?tab=settings" : ""}">${t("menu.page.reset")}</a>
+			<a class="btn btn-ghost" href="${action}${resetQuery}">${t("menu.page.reset")}</a>
 		</div>
 	</form>
 `)

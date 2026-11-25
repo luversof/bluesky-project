@@ -60,11 +60,22 @@ public class FieldService {
     return dbTableRepository.save(dbTable);
   }
 
-  /** "컬럼 다시 읽기" */
+  /** "컬럼 다시 읽기". DB 에서 컬럼이 늘거나 · 사라지거나 · 타입이 바뀌었으면 설정 변경 이력에 한 건(바뀐 게 없으면 남지 않는다, 사용자 결정 11-26) */
   public DbTable resync(UUID dbTableId) {
     var dbTable = get(dbTableId);
+    var before = SettingLogService.columns(dbTable.getFields());
     sync(dbTable, readMeta(dbTable), null);
-    return dbTableRepository.save(dbTable);
+    var saved = dbTableRepository.save(dbTable);
+    settingLog.record(
+        Target.FIELD,
+        Action.UPDATE,
+        dbTableId,
+        dbTable.getTableName(),
+        null,
+        null,
+        before,
+        SettingLogService.columns(dbTable.getFields()));
+    return saved;
   }
 
   /** 지금 DB 의 컬럼 · 인덱스(필드 관리 화면의 인덱스 표 · 정렬 안내) */

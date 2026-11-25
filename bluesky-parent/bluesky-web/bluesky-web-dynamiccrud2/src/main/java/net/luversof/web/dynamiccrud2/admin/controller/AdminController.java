@@ -415,6 +415,44 @@ public class AdminController {
     return "admin/projectHistory";
   }
 
+  /** 테이블 필드 변경 이력(필드 화면 제목 줄): 필드 화면에서 고친 것 · DB 다시 읽기로 바뀐 컬럼. menu 는 들어온 메뉴(돌아가는 길) */
+  @GetMapping("/table/{id}/history")
+  public String tableHistory(
+      @PathVariable UUID id,
+      @RequestParam(required = false) UUID menu,
+      @RequestParam(required = false) String user,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+      @RequestParam(defaultValue = "0") int page,
+      Model model) {
+    var dbTable = fieldService.get(id);
+    var filter = new SettingLogService.Filter(user, null, from, to);
+    model.addAttribute("dbTable", dbTable);
+    model.addAttribute("menuId", menu);
+    model.addAttribute("settingFilter", filter);
+    model.addAttribute("settings", settingLogService.tablePage(id, filter, page));
+    var params = new LinkedHashMap<String, Object>();
+    params.put("menu", menu);
+    params.put("user", user);
+    params.put("from", from);
+    params.put("to", to);
+    model.addAttribute(
+        "pageUrl", "/admin/table/" + id + "/history?" + queryString(params) + "page=");
+    var crumbs = new java.util.ArrayList<Crumb>();
+    if (menu != null) {
+      crumbs.addAll(pathTo(menuService.getMenu(menu), true));
+    } else {
+      crumbs.add(new Crumb(Msg.t("admin.index.title"), "/admin"));
+    }
+    crumbs.add(
+        new Crumb(
+            Msg.t("admin.table.name", Msg.t("target.table")),
+            "/admin/table/" + id + (menu == null ? "" : "?menu=" + menu)));
+    crumbs.add(new Crumb(Msg.t("admin.history.title"), null));
+    model.addAttribute("breadcrumb", crumbs);
+    return "admin/tableHistory";
+  }
+
   /** 값이 있는 것만 이름=값& 로(값은 URL 인코딩) */
   private static String queryString(Map<String, Object> params) {
     var result = new StringBuilder();

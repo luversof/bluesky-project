@@ -138,6 +138,32 @@ class AdminControllerTest implements GeneralWebTest {
       assertThat(settingLogRepository.countSearch(menuId, null, null, null, null, null, null))
           .isEqualTo(before);
 
+      // 테이블 필드 변경 이력: 필드 화면 제목 줄에 링크, 그 테이블 필드 이력만. DB 다시 읽기는 바뀐 컬럼이 없으면 남기지 않는다
+      var tableId = menuService.getMenu(menuId).getDbTableId();
+      var since = java.time.Instant.now();
+      try {
+        mvc.perform(get("/admin/table/" + tableId).with(admin()))
+            .andExpect(
+                content().string(Matchers.containsString("/admin/table/" + tableId + "/history")));
+        var fieldLogs =
+            settingLogRepository.countSearch(null, tableId, null, null, null, null, null);
+        mvc.perform(post("/admin/table/" + tableId + "/resync").with(admin()))
+            .andExpect(status().is3xxRedirection());
+        assertThat(settingLogRepository.countSearch(null, tableId, null, null, null, null, null))
+            .isEqualTo(fieldLogs);
+        mvc.perform(
+                get("/admin/table/" + tableId + "/history")
+                    .param("menu", menuId.toString())
+                    .with(admin()))
+            .andExpect(status().isOk())
+            .andExpect(
+                content()
+                    .string(Matchers.containsString("name=\"menu\" value=\"" + menuId + "\"")));
+      } finally {
+        net.luversof.web.dynamiccrud2.TestSettingLogs.purgeFields(
+            settingLogRepository, null, tableId, since);
+      }
+
       // 프로젝트 관리 트리의 메뉴 눈 아이콘: 숨기면 이력이 남고 프로젝트 화면으로 돌아온다
       mvc.perform(
               post("/admin/menu/" + menuId + "/display").param("display", "false").with(admin()))

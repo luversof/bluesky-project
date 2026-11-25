@@ -35,6 +35,10 @@ class SettingLogQueriesImpl implements SettingLogQueries {
           tableId == null
               ? "\"menu_id\" = :menuId"
               : "(\"menu_id\" = :menuId OR (\"target\" = 'FIELD' AND \"targetId\" = :tableId))";
+    } else if (tableId != null) {
+      // 테이블 필드 화면의 변경 이력: 그 테이블 필드(여러 메뉴 공유)만
+      values.put("tableId", tableId);
+      condition = "\"target\" = 'FIELD' AND \"targetId\" = :tableId";
     } else if (projectId != null) {
       values.put("projectId", projectId);
       condition = "\"project_id\" = :projectId";
