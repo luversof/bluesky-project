@@ -538,6 +538,51 @@ class MenuPageControllerTest implements GeneralWebTest {
           .andExpect(content().string(Matchers.containsString(base + "/api/action/" + update)))
           .andExpect(content().string(Matchers.containsString(">s.name<")));
 
+      // 엑셀로 여러 행 넣기: 양식은 작업 폼 제목, 틀린 행이 있으면 아무것도 넣지 않고 행 번호 · 사유, 다 맞으면 넣는다
+      mvc.perform(get(base).with(normalUser()))
+          .andExpect(content().string(Matchers.containsString("/action/" + insert + "/bulk-form")));
+      mvc.perform(get(base + "/action/" + insert + "/bulk-template").with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(header().string("Content-Type", Matchers.startsWith("application/vnd.openxmlformats")));
+      mvc.perform(post(base + "/action/" + insert + "/bulk-form").with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("양식 내려받기")));
+      mvc.perform(post(base + "/action/" + update + "/bulk-form").with(normalUser()))
+          .andExpect(status().isBadRequest());
+      var bulkIds = java.util.List.of(UUID.randomUUID(), UUID.randomUUID());
+      try {
+        var bad =
+            xlsx(
+                java.util.List.of("id", "code", "name", "displayOrder", "enableDisplay", "createdDate"),
+                java.util.List.of(
+                    java.util.List.of(bulkIds.get(0).toString(), "b" + bulkIds.get(0).toString().substring(0, 8), "bulk-1", "1", "true", "2026-11-26T09:00:00"),
+                    java.util.List.of(bulkIds.get(1).toString(), "b" + bulkIds.get(1).toString().substring(0, 8), "bulk-2", "숫자아님", "true", "2026-11-26T09:00:00")));
+        mvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(
+                        base + "/action/" + insert + "/bulk")
+                    .file("file", bad)
+                    .with(normalUser()))
+            .andExpect(status().isOk())
+            .andExpect(content().string(Matchers.containsString("틀린 행이 1개")))
+            .andExpect(content().string(Matchers.containsString("3행:")));
+        assertThat(projectRepository.findById(bulkIds.get(0))).isEmpty();
+        var good =
+            xlsx(
+                java.util.List.of("id", "code", "name", "displayOrder", "enableDisplay", "createdDate"),
+                java.util.List.of(
+                    java.util.List.of(bulkIds.get(0).toString(), "b" + bulkIds.get(0).toString().substring(0, 8), "bulk-1", "1", "true", "2026-11-26T09:00:00"),
+                    java.util.List.of(bulkIds.get(1).toString(), "b" + bulkIds.get(1).toString().substring(0, 8), "bulk-2", "2", "false", "2026-11-26T09:00:00")));
+        mvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(
+                        base + "/action/" + insert + "/bulk")
+                    .file("file", good)
+                    .with(normalUser()))
+            .andExpect(header().string("HX-Refresh", "true"));
+        assertThat(projectRepository.findById(bulkIds.get(1)).orElseThrow().getName()).isEqualTo("bulk-2");
+      } finally {
+        bulkIds.forEach(projectRepository::deleteById);
+      }
+
       // 메뉴를 ADMIN 전용으로 바꾸면 USER 는 403, 목록에서도 빠진다
       menuService.updateMenu(menuId, "list", "프로젝트 관리", "ROLE_ADMIN", 20, true, true);
       mvc.perform(get(base).with(normalUser())).andExpect(status().isForbidden());
@@ -602,5 +647,25 @@ class MenuPageControllerTest implements GeneralWebTest {
         .findFirst()
         .orElseThrow()
         .getId();
+  }
+
+  /** 첫 줄 칸 이름 + 행들(모두 글자 칸)의 xlsx 바이트 */
+  private static byte[] xlsx(java.util.List<String> header, java.util.List<java.util.List<String>> rows)
+      throws java.io.IOException {
+    try (var workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
+        var out = new java.io.ByteArrayOutputStream()) {
+      var sheet = workbook.createSheet("data");
+      var all = new java.util.ArrayList<java.util.List<String>>();
+      all.add(header);
+      all.addAll(rows);
+      for (int r = 0; r < all.size(); r++) {
+        var row = sheet.createRow(r);
+        for (int c = 0; c < all.get(r).size(); c++) {
+          row.createCell(c).setCellValue(all.get(r).get(c));
+        }
+      }
+      workbook.write(out);
+      return out.toByteArray();
+    }
   }
 }

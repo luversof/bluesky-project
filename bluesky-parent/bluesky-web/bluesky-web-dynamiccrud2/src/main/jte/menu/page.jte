@@ -63,6 +63,8 @@
 		<span class="ml-auto flex flex-wrap gap-2">
 			@for(var action : usePage.insertActions())
 				<button class="btn btn-sm" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-target="#actionPanel">${action.getName()}</button>
+				<%-- 엑셀로 여러 행 넣기(양식 내려받기 · 올리기, menu/bulkForm, 사용자 결정 11-26) --%>
+				<button class="btn btn-sm btn-ghost" hx-post="${menuPath}/action/${action.getId().toString()}/bulk-form" hx-target="#actionPanel">${t("menu.bulk.open", action.getName())}</button>
 			@endfor
 			@for(var action : usePage.deleteActions())
 				<button class="btn btn-sm btn-error" hx-post="${menuPath}/action/${action.getId().toString()}/form" hx-include="[name='rows']:checked" hx-target="#actionPanel" data-row-delete="${action.getName()}">${t("menu.page.selected", action.getName())}</button>

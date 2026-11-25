@@ -203,6 +203,100 @@ public class MenuPageController {
     return "menu/actionForm";
   }
 
+  /** 엑셀로 여러 행 넣기 폼(htmx 조각, 입력 작업만) */
+  @PostMapping(MENU_PATH + "/action/{queryId}/bulk-form")
+  public String bulkForm(
+      @PathVariable String project,
+      @PathVariable String mainMenu,
+      @PathVariable String menu,
+      @PathVariable UUID queryId,
+      Model model) {
+    var path = useService.resolve(project, mainMenu, menu);
+    model.addAttribute("menuPath", path.url());
+    model.addAttribute("form", bulkFormOrBadRequest(path.menu().getId(), queryId));
+    model.addAttribute("error", null);
+    model.addAttribute("errors", List.of());
+    return "menu/bulkForm";
+  }
+
+  /** 엑셀 양식: 첫 줄에 칸 이름(작업 폼과 같은 제목)만 */
+  @GetMapping(MENU_PATH + "/action/{queryId}/bulk-template")
+  public void bulkTemplate(
+      @PathVariable String project,
+      @PathVariable String mainMenu,
+      @PathVariable String menu,
+      @PathVariable UUID queryId,
+      HttpServletResponse response)
+      throws IOException {
+    var path = useService.resolve(project, mainMenu, menu);
+    var form = bulkFormOrBadRequest(path.menu().getId(), queryId);
+    try (var workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook()) {
+      writeRow(workbook.createSheet("data").createRow(0), List.<Object>copyOf(form.headers()));
+      response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      response.setHeader(
+          "Content-Disposition",
+          "attachment; filename*=UTF-8''"
+              + URLEncoder.encode(
+                  path.menu().getCode() + "-" + form.query().getName() + "-template.xlsx",
+                  StandardCharsets.UTF_8));
+      workbook.write(response.getOutputStream());
+    }
+  }
+
+  /** 엑셀로 여러 행 넣기 실행(htmx, multipart). 성공하면 목록을 다시 열고, 막히면 폼에 행 번호 · 사유 */
+  @PostMapping(MENU_PATH + "/action/{queryId}/bulk")
+  public String bulk(
+      @PathVariable String project,
+      @PathVariable String mainMenu,
+      @PathVariable String menu,
+      @PathVariable UUID queryId,
+      @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+      Model model) {
+    var path = useService.resolve(project, mainMenu, menu);
+    var menuId = path.menu().getId();
+    model.addAttribute("menuPath", path.url());
+    model.addAttribute("form", bulkFormOrBadRequest(menuId, queryId));
+    String error = null;
+    List<String> errors = List.of();
+    try {
+      useService.runBulk(menuId, queryId, ExcelRows.read(file.getInputStream()));
+      ((org.springframework.web.context.request.ServletRequestAttributes)
+              org.springframework.web.context.request.RequestContextHolder
+                  .currentRequestAttributes())
+          .getResponse()
+          .setHeader("HX-Refresh", "true");
+      return "menu/empty";
+    } catch (MenuPageService.BulkInputException e) {
+      errors = e.getErrors();
+      error = Msg.t("menu.bulk.rejected", errors.size());
+    } catch (IllegalArgumentException e) {
+      error = e.getMessage();
+    } catch (IOException e) {
+      error = Msg.t("menu.bulk.unreadable");
+    } catch (DataAccessException e) {
+      var message = e.getMostSpecificCause().getMessage();
+      error =
+          Msg.t(
+              "menu.bulk.failed",
+              message == null ? "" : message.lines().findFirst().orElse(message));
+    } catch (BlueskyException e) {
+      var message = QueryErrorCode.messageOf(e);
+      error = message == null ? e.getErrorCode() : message;
+    }
+    model.addAttribute("error", error);
+    model.addAttribute("errors", errors);
+    return "menu/bulkForm";
+  }
+
+  private MenuPageService.BulkForm bulkFormOrBadRequest(UUID menuId, UUID queryId) {
+    try {
+      return useService.bulkForm(menuId, queryId);
+    } catch (IllegalArgumentException e) {
+      throw new org.springframework.web.server.ResponseStatusException(
+          org.springframework.http.HttpStatus.BAD_REQUEST, e.getMessage(), e);
+    }
+  }
+
   @GetMapping(MENU_PATH + "/excel")
   public void excel(
       @PathVariable String project,

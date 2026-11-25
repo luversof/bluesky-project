@@ -557,14 +557,7 @@ public class MenuPageService {
                 Msg.t("menu.action.lockedMissing", headerOf(field, name)));
           }
         } else {
-          raw = inputs == null ? null : inputs.get(name);
-          if ((raw == null || raw.isEmpty()) && setting.defaultValue() != null) {
-            raw = setting.defaultValue();
-          }
-          if ((raw == null || raw.isEmpty()) && setting.required()) {
-            throw new IllegalArgumentException(
-                Msg.t("menu.action.required", headerOf(field, name)));
-          }
+          raw = inputValue(setting, field, name, inputs);
         }
         bind.put(name, ValueConverter.toBindValue(raw, field));
         log.put(name, raw);
@@ -600,6 +593,127 @@ public class MenuPageService {
           affected,
           logged,
           e);
+    }
+    return affected;
+  }
+
+  /** 입력칸 값: 비었으면 기본값, 그래도 비었고 필수면 거부 */
+  private static String inputValue(
+      ParamSetting setting, DbField field, String name, Map<String, String> inputs) {
+    var raw = inputs == null ? null : inputs.get(name);
+    if ((raw == null || raw.isEmpty()) && setting.defaultValue() != null) {
+      raw = setting.defaultValue();
+    }
+    if ((raw == null || raw.isEmpty()) && setting.required()) {
+      throw new IllegalArgumentException(Msg.t("menu.action.required", headerOf(field, name)));
+    }
+    return raw;
+  }
+
+  /** 엑셀로 여러 행 넣기: 한 번에 넣는 최대 행 수 */
+  // shortcut: 1000 행 고정, 더 큰 적재가 필요해지면 설정(Dynamiccrud2Properties)으로 뺄 것
+  public static final int BULK_MAX_ROWS = 1000;
+
+  /**
+   * 엑셀로 여러 행 넣기 폼.
+   *
+   * @param names 파라미터 이름(쿼리 순서)
+   * @param headers 엑셀 첫 줄 칸 이름(화면 제목 - 작업 폼과 같은 이름)
+   */
+  public record BulkForm(Menu menu, MenuQuery query, List<String> names, List<String> headers) {}
+
+  /** 엑셀 행 검사에서 막힌 행들(행 번호 + 사유). 하나라도 있으면 아무것도 넣지 않는다 */
+  public static class BulkInputException extends IllegalArgumentException {
+    private final transient List<String> errors;
+
+    public BulkInputException(List<String> errors) {
+      super(String.join("\n", errors));
+      this.errors = List.copyOf(errors);
+    }
+
+    public List<String> getErrors() {
+      return errors;
+    }
+  }
+
+  /** 엑셀로 여러 행 넣기: 입력 작업이고 행을 고르지 않는(행 키 없는) 작업만 */
+  public BulkForm bulkForm(UUID menuId, UUID queryId) {
+    var ctx = context(menuId);
+    var query = queryOf(ctx.menu(), queryId);
+    authorizer.checkRun(ctx.menu(), query);
+    var settings = QueryService.settingsOf(query);
+    var names = paramNames(ctx, query);
+    if (query.getKind() != QueryKind.INSERT
+        || names.stream().anyMatch(n -> settingOf(settings, n).role() == Role.ROW_KEY)) {
+      throw new IllegalArgumentException(Msg.t("menu.bulk.notInsert"));
+    }
+    return new BulkForm(
+        ctx.menu(),
+        query,
+        names,
+        names.stream().map(n -> headerOf(ctx.baseFields().get(n), n)).toList());
+  }
+
+  /**
+   * 엑셀로 여러 행 넣기(사용자 결정 11-26). 행마다 칸 이름 → 값(칸 이름은 화면 제목이나 파라미터 이름). 먼저 모든 행을 검사해(필수 · 기본값 · 형식) 틀린
+   * 행이 하나라도 있으면 아무것도 넣지 않고 행 번호와 사유를 모아 돌려준다. 다 맞으면 한 트랜잭션으로 넣고 이력 한 건.
+   *
+   * @param rows 엑셀 둘째 줄부터(빈 줄은 부른 쪽이 뺀다). 행 번호는 엑셀 줄 번호(첫 줄 = 칸 이름이라 2 부터)
+   * @return 넣은 행 수
+   * @throws BulkInputException 막힌 행들
+   */
+  public int runBulk(UUID menuId, UUID queryId, List<Map<String, String>> rows) {
+    var form = bulkForm(menuId, queryId);
+    var ctx = context(menuId);
+    var query = form.query();
+    if (rows.isEmpty()) {
+      throw new IllegalArgumentException(Msg.t("menu.bulk.empty"));
+    }
+    if (rows.size() > BULK_MAX_ROWS) {
+      throw new IllegalArgumentException(Msg.t("menu.bulk.tooMany", BULK_MAX_ROWS));
+    }
+    var settings = QueryService.settingsOf(query);
+    var binds = new ArrayList<Map<String, Object>>();
+    var logged = new ArrayList<Map<String, String>>();
+    var errors = new ArrayList<String>();
+    for (int i = 0; i < rows.size(); i++) {
+      var row = rows.get(i);
+      var inputs = new HashMap<String, String>();
+      for (int p = 0; p < form.names().size(); p++) {
+        var name = form.names().get(p);
+        var value = row.containsKey(form.headers().get(p)) ? row.get(form.headers().get(p)) : row.get(name);
+        inputs.put(name, value == null ? null : value.strip());
+      }
+      try {
+        var bind = new HashMap<String, Object>();
+        var log = new LinkedHashMap<String, String>();
+        for (var name : form.names()) {
+          var field = ctx.baseFields().get(name);
+          var raw = inputValue(settingOf(settings, name), field, name, inputs);
+          bind.put(name, ValueConverter.toBindValue(raw, field));
+          log.put(name, raw);
+        }
+        binds.add(bind);
+        logged.add(log);
+      } catch (IllegalArgumentException e) {
+        errors.add(Msg.t("menu.bulk.rowError", i + 2, e.getMessage()));
+      }
+    }
+    if (!errors.isEmpty()) {
+      throw new BulkInputException(errors);
+    }
+    var affected = java.util.Arrays.stream(ctx.adapter().modify(query.getQueryText(), binds)).sum();
+    var changeLog = new ChangeLog();
+    changeLog.setMenuId(menuId);
+    changeLog.setMenuQueryId(query.getId());
+    changeLog.setUsername(currentUsername());
+    changeLog.setBindValues(Map.of("rows", logged, "bulk", true));
+    changeLog.setAffectedRows(affected);
+    try {
+      changeLogRepository.save(changeLog);
+    } catch (RuntimeException e) {
+      // 대상 DB 는 이미 커밋됐다(run 과 같은 이유로 성공으로 둔다)
+      LOG.error("[CHANGE_LOG_FAILED] menu={} query={} bulk={} affected={}", menuId, query.getId(), rows.size(), affected, e);
     }
     return affected;
   }
