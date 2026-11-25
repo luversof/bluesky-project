@@ -62,6 +62,13 @@ public class MenuPageController {
     return "menu/index";
   }
 
+  /** 사용 안내(상단 오른쪽 "가이드"). 주소 guide 는 프로젝트 code 로 쓸 수 없다(MenuService.RESERVED_PROJECT_CODES) */
+  @GetMapping("/guide")
+  public String guide() {
+    authorizer.checkLoggedIn();
+    return "menu/guide";
+  }
+
   /** 프로젝트 주소만 오면 그 프로젝트의 첫 메뉴로 */
   @GetMapping("/{project:" + CODE + "}")
   public String project(@PathVariable String project) {

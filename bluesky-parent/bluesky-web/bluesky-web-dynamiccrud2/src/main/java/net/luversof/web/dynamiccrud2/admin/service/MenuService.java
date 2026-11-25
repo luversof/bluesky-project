@@ -33,7 +33,7 @@ public class MenuService {
 
   /** 프로젝트 code 는 주소 첫 단계라 앱이 쓰는 경로와 겹치면 안 된다 */
   public static final Set<String> RESERVED_PROJECT_CODES =
-      Set.of("admin", "error", "actuator", "login", "logout", "oauth2", "js", "webjars");
+      Set.of("admin", "error", "actuator", "login", "logout", "oauth2", "js", "webjars", "guide");
 
   private final ProjectRepository projectRepository;
   private final MainMenuRepository mainMenuRepository;

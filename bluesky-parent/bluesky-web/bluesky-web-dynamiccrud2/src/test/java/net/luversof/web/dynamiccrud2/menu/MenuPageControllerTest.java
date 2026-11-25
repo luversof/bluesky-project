@@ -155,6 +155,15 @@ class MenuPageControllerTest implements GeneralWebTest {
       } else {
         assertThat(usePage).doesNotContain("data-dropdown");
       }
+      // 가이드: 상단 오른쪽 링크, 로그인한 사용자 누구나
+      mvc.perform(get("/guide").with(normalUser()))
+          .andExpect(status().isOk())
+          .andExpect(content().string(Matchers.containsString("<section id=\"search\">")))
+          .andExpect(
+              content()
+                  .string(
+                      Matchers.containsString(
+                          "href=\"/guide\" class=\"app-nav-link\" aria-current=\"page\"")));
       // 프로젝트 · 메인 메뉴 주소까지만 와도 첫 메뉴로, 없는 메인 메뉴는 404
       mvc.perform(get("/" + owner.getCode() + "/main").with(normalUser()))
           .andExpect(status().is3xxRedirection())

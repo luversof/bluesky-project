@@ -24,7 +24,7 @@
 <%-- 지금 구역: /admin 아래면 관리, 그 밖(오류 화면 제외)은 사용 화면 --%>
 !{var requestAttributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();}
 !{var path = requestAttributes instanceof org.springframework.web.context.request.ServletRequestAttributes sra ? sra.getRequest().getRequestURI() : "";}
-!{var section = !showUser ? null : path.startsWith("/admin") ? "admin" : "menu";}
+!{var section = !showUser ? null : path.startsWith("/admin") ? "admin" : path.equals("/guide") ? "guide" : "menu";}
 
 <!DOCTYPE html>
 <html lang="${net.luversof.web.dynamiccrud2.config.Msg.locale().getLanguage()}">
