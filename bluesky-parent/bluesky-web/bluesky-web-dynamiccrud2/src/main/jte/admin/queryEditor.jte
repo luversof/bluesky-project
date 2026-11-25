@@ -50,6 +50,8 @@
 	@template._components.card(title = t("admin.query.col.query"), actions = @`
 		<span class="hint">${t("admin.query.test.hint")}</span>
 		<button type="button" class="btn btn-sm" hx-post="/admin/menu/${menuId}/query/inspect" hx-include="closest form" hx-target="#q-inspection" hx-swap="innerHTML">${t("admin.query.test")}</button>
+		<%-- 실행 계획: 실행하지 않고 DB 계획만(인덱스를 타는지, 사용자 결정 11-26) --%>
+		<button type="button" class="btn btn-sm" hx-post="/admin/menu/${menuId}/query/explain" hx-include="closest form" hx-target="#q-explain" hx-swap="innerHTML">${t("inspect.explain.button")}</button>
 	`, body = @`
 	<div>
 		<%-- 처음엔 작게(두세 줄), 줄이 늘면 내용만큼 커진다(.textarea-autogrow: CSS field-sizing, 안 되는 브라우저는 js/ui.js) --%>
@@ -61,6 +63,7 @@
 			@endif
 		</p>
 	</div>
+	<div id="q-explain" class="mt-4 empty:hidden"></div>
 	<div id="q-inspection" class="mt-4">
 		@template.admin.queryInspection(kind = kind, inspection = inspection, menuId = menu.getId())
 	</div>

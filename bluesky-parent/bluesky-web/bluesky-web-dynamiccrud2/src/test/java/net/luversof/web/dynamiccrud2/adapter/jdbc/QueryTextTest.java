@@ -10,6 +10,15 @@ import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
 class QueryTextTest {
 
+  /** 실행 계획(GENERIC_PLAN)용 번호 파라미터: 같은 이름은 같은 번호, 문자열 · 주석 · 형 변환(::)은 그대로 */
+  @Test
+  void toNumberedParametersKeepsLiteralsAndCasts() {
+    assertThat(
+            QueryText.toNumberedParameters(
+                "SELECT ':no', a::text /* :c */ FROM t WHERE a = :a AND (b = :이름 OR :a IS NULL)"))
+        .isEqualTo("SELECT ':no', a::text /* :c */ FROM t WHERE a = $1 AND (b = $2 OR $1 IS NULL)");
+  }
+
   @Test
   void kindOfSkipsCommentsAndReadsFirstKeyword() {
     assertThat(QueryText.kindOf("-- 목록\n/* x */ select 1")).isEqualTo(QueryKind.READ);

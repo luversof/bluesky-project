@@ -105,6 +105,27 @@ public final class QueryText {
     return depth;
   }
 
+  private static final Pattern NAMED_PARAMETER =
+      Pattern.compile("(?<![:\\p{L}\\p{N}_]):([\\p{L}_][\\p{L}\\p{N}_]*)");
+
+  /**
+   * :이름 파라미터를 PostgreSQL 번호 파라미터($1, $2 …, 같은 이름은 같은 번호)로 바꾼다 - 값 없이 보는 실행 계획(EXPLAIN (GENERIC_PLAN))용.
+   * 주석 · 문자열 안과 형 변환(::)은 건드리지 않는다.
+   */
+  public static String toNumberedParameters(String sql) {
+    var stripped = stripCommentsAndLiterals(sql);
+    var numbers = new java.util.LinkedHashMap<String, Integer>();
+    var matcher = NAMED_PARAMETER.matcher(stripped);
+    var out = new StringBuilder();
+    var last = 0;
+    while (matcher.find()) {
+      var number = numbers.computeIfAbsent(matcher.group(1), name -> numbers.size() + 1);
+      out.append(sql, last, matcher.start()).append('$').append(number);
+      last = matcher.end();
+    }
+    return out.append(sql.substring(last)).toString();
+  }
+
   /** 끝의 세미콜론 하나를 뺀다(실행 · 감싸기 전에). */
   public static String trimTrailingSemicolon(String sql) {
     var trimmed = sql.strip();

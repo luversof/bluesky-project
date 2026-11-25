@@ -316,6 +316,109 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
         });
   }
 
+  /**
+   * PostgreSQL: 값과 무관한 일반 계획(genericPlan, 12 부터) - 안 되면 NULL 을 넣어 본 계획(approximate). MySQL · MariaDB: FORMAT=TREE
+   * (MySQL 8.0.16 부터) - 안 되면 표 EXPLAIN 을 줄로, 파라미터는 NULL(approximate). MSSQL 은 SHOWPLAN 이 따로 일괄 처리여야 해 지원하지 않는다.
+   */
+  // shortcut: MSSQL 실행 계획은 없다(SET SHOWPLAN_TEXT ON 을 따로 보내야 함), MSSQL 연결이 생기면 붙일 것
+  @Override
+  public Explain explain(String query) {
+    if (dialect == SqlDialect.MSSQL) {
+      throw new UnsupportedOperationException();
+    }
+    var sql = QueryText.trimTrailingSemicolon(query);
+    var hasParams = !QueryText.parameterNames(sql).isEmpty();
+    // 트랜잭션 없이 시도마다 따로: EXPLAIN(ANALYZE 없음)은 실행하지 않고, PostgreSQL 은 한 번 실패한 트랜잭션을 더 쓰지 못한다
+    var template = new JdbcTemplate(dataSource);
+    template.setQueryTimeout(properties.queryTimeoutSeconds());
+    if (dialect == SqlDialect.POSTGRESQL) {
+      if (!hasParams) {
+        return new Explain(planLines(template, "EXPLAIN " + sql, List.of()), false);
+      }
+      try {
+        return new Explain(genericPlan(template, sql), false);
+      } catch (org.springframework.dao.DataAccessException e) {
+        // 12 전 PostgreSQL(plan_cache_mode 없음) · 파라미터 타입을 정할 수 없는 쿼리
+      }
+    } else {
+      try {
+        return new Explain(planLines(template, "EXPLAIN FORMAT=TREE " + sql, List.of()), hasParams);
+      } catch (org.springframework.dao.DataAccessException e) {
+        // MariaDB · 옛 MySQL: FORMAT=TREE 를 모른다
+      }
+    }
+    return new Explain(planLines(template, "EXPLAIN " + sql, List.of()), hasParams);
+  }
+
+  /**
+   * PostgreSQL 값과 무관한 일반 계획: PREPARE(:이름 → $n) 뒤 plan_cache_mode = force_generic_plan 으로 EXPLAIN EXECUTE(NULL …). 일반 계획은
+   * 넣은 값을 보지 않아 NULL 을 넣어도 "One-Time Filter: false" 로 접히지 않는다. EXPLAIN (GENERIC_PLAN) 은 드라이버가 확장 프로토콜이라 $n
+   * 바인드 오류가 나 쓰지 않는다. 연결은 풀로 돌아가므로 준비한 문장 · 설정을 되돌린다.
+   */
+  private static List<String> genericPlan(JdbcTemplate template, String sql) {
+    var count = QueryText.parameterNames(sql).size();
+    var nulls = String.join(", ", java.util.Collections.nCopies(count, "NULL"));
+    return template.execute(
+        (org.springframework.jdbc.core.ConnectionCallback<List<String>>)
+            connection -> {
+              try (var statement = connection.createStatement()) {
+                statement.execute("SET plan_cache_mode = force_generic_plan");
+                try {
+                  statement.execute("PREPARE dc2_explain AS " + QueryText.toNumberedParameters(sql));
+                  try (var rs = statement.executeQuery("EXPLAIN EXECUTE dc2_explain(" + nulls + ")")) {
+                    var lines = new ArrayList<String>();
+                    while (rs.next()) {
+                      lines.add(rs.getString(1));
+                    }
+                    return lines;
+                  } finally {
+                    statement.execute("DEALLOCATE dc2_explain");
+                  }
+                } finally {
+                  statement.execute("RESET plan_cache_mode");
+                }
+              }
+            });
+  }
+
+  /**
+   * 계획 결과를 줄로: 한 열이면 그 값(여러 줄이면 나눠서), 여러 열(MySQL 표 EXPLAIN)이면 "열=값" 을 이어서.
+   *
+   * @param nulls null 이면 :이름이 없는 SQL 을 그대로(Statement) 보낸다, 아니면 :이름을 모두 NULL 로 넣는다
+   */
+  private static List<String> planLines(JdbcTemplate template, String sql, List<Object> nulls) {
+    org.springframework.jdbc.core.ResultSetExtractor<List<String>> extractor =
+        rs -> {
+          var lines = new ArrayList<String>();
+          var meta = rs.getMetaData();
+          var count = meta.getColumnCount();
+          while (rs.next()) {
+            if (count == 1) {
+              var value = rs.getString(1);
+              if (value != null) {
+                lines.addAll(value.lines().toList());
+              }
+            } else {
+              var parts = new ArrayList<String>();
+              for (int i = 1; i <= count; i++) {
+                var value = rs.getString(i);
+                if (value != null) {
+                  parts.add(JdbcUtils.lookupColumnName(meta, i) + "=" + value);
+                }
+              }
+              lines.add(String.join("  ", parts));
+            }
+          }
+          return lines;
+        };
+    if (nulls == null) {
+      return template.query(sql, extractor);
+    }
+    var source = new MapSqlParameterSource();
+    QueryText.parameterNames(sql).forEach(name -> source.addValue(name, null));
+    return new NamedParameterJdbcTemplate(template).query(sql, source, extractor);
+  }
+
   @Override
   public int[] insertRows(TableRef table, List<Map<String, Object>> rows) {
     var template = template(0);

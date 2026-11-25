@@ -149,6 +149,31 @@ public class QueryService {
     }
   }
 
+  /**
+   * 쿼리 화면 "실행 계획" 결과.
+   *
+   * @param lines 계획 줄(오류면 빈 목록)
+   * @param approximate 파라미터를 NULL 로 넣어 본 계획
+   * @param error 보일 수 없을 때 사유
+   */
+  public record ExplainResult(List<String> lines, boolean approximate, String error) {}
+
+  /** 실행 계획(실행하지 않는다). 쿼리 형식 검사는 검사 단추와 같다 */
+  public ExplainResult explain(Menu menu, QueryKind kind, String queryText) {
+    var adapter = resolver.resolve(fieldService.get(menu.getDbTableId()).getConnectionName());
+    try {
+      adapter.validate(queryText, kind);
+      var explain = adapter.explain(queryText);
+      return new ExplainResult(explain.lines(), explain.approximate(), null);
+    } catch (BlueskyException e) {
+      return new ExplainResult(List.of(), false, QueryErrorCode.messageOf(e));
+    } catch (UnsupportedOperationException e) {
+      return new ExplainResult(List.of(), false, Msg.t("inspect.explain.unsupported", adapter.databaseType()));
+    } catch (DataAccessException e) {
+      return new ExplainResult(List.of(), false, Msg.t("inspect.explain.failed", firstLine(e)));
+    }
+  }
+
   /** 쿼리 화면 검사(조회는 앞 PREVIEW_ROWS 행 미리 보기) */
   public QueryInspection inspect(
       Menu menu, QueryKind kind, String queryText, Map<String, ParamSetting> submitted) {

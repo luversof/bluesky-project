@@ -72,6 +72,22 @@ class AdminControllerTest implements GeneralWebTest {
         .as("글자(varchar)로는 jsonb = character varying 로 실패한다");
   }
 
+  /** 실행 계획: 실행하지 않고 계획 줄만. 파라미터가 있으면 PostgreSQL 은 값과 무관한 일반 계획(PREPARE + force_generic_plan) */
+  @Test
+  void explainShowsPlanWithoutRunning() {
+    var adapter = resolver.resolve("dynamiccrud2");
+    var plain = adapter.explain("SELECT * FROM \"Menu\"");
+    assertThat(plain.lines()).isNotEmpty();
+    assertThat(plain.approximate()).isFalse();
+    var withParam = adapter.explain("SELECT * FROM \"Menu\" WHERE \"id\" = :id");
+    // 값과 무관한 일반 계획: NULL 로 접힌 "One-Time Filter: false" 가 아니라 $1 조건이 보인다
+    assertThat(withParam.approximate()).isFalse();
+    assertThat(withParam.lines()).anyMatch(line -> line.contains("$1"));
+    // 수정 쿼리도 실행하지 않고 계획만
+    var update = adapter.explain("UPDATE \"Menu\" SET \"name\" = :name WHERE \"id\" = :id");
+    assertThat(update.lines()).anyMatch(line -> line.contains("Update"));
+  }
+
   @Test
   void accessByRole() throws Exception {
     var anonymous = mvc.perform(get("/admin")).andExpect(status().is3xxRedirection()).andReturn();

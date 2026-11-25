@@ -630,6 +630,17 @@ public class AdminController {
     return "admin/queryInspection";
   }
 
+  /** 쿼리 화면 "실행 계획"(htmx 조각, 실행하지 않음) */
+  @PostMapping("/menu/{menuId}/query/explain")
+  public String explain(
+      @PathVariable UUID menuId,
+      @RequestParam QueryKind kind,
+      @RequestParam String queryText,
+      Model model) {
+    model.addAttribute("explain", queryService.explain(menuService.getMenu(menuId), kind, queryText));
+    return "admin/queryExplain";
+  }
+
   @PostMapping("/menu/{menuId}/query")
   public String saveQuery(
       @PathVariable UUID menuId,

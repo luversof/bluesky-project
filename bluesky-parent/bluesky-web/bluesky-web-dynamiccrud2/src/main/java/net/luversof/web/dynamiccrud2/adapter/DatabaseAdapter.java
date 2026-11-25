@@ -125,6 +125,17 @@ public interface DatabaseAdapter {
   int[] insertRows(TableRef table, List<Map<String, Object>> rows);
 
   /**
+   * 실행 계획(쿼리 화면 "실행 계획"). 실행하지 않는다(ANALYZE 없음).
+   *
+   * @param lines 계획 줄
+   * @param approximate 파라미터를 NULL 로 넣어 본 계획이라 실제(값이 있을 때)와 다를 수 있다
+   */
+  record Explain(List<String> lines, boolean approximate) {}
+
+  /** @throws UnsupportedOperationException 이 DB 는 실행 계획을 보이지 않는다 */
+  Explain explain(String query);
+
+  /**
    * 정렬.
    *
    * @param label 결과 컬럼 이름. 호출하는 쪽이 정렬 허용 컬럼인지 먼저 확인한다
