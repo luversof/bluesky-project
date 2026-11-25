@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import io.github.luversof.boot.context.ApplicationContextUtil;
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
+import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import net.luversof.web.dynamiccrud.setting.domain.DbField;
 import net.luversof.web.dynamiccrud.setting.domain.DbQuery;
 import net.luversof.web.dynamiccrud.setting.domain.MainMenu;
@@ -35,31 +36,37 @@ public class SettingDevCheckController {
 
   @Autowired private EventAdminDbFieldService eventAdminFieldService;
 
+  @DevCheckDescription("프로젝트 조회")
   @GetMapping(PATH_PREFIX + "/project")
   public Project project() {
     return eventAdminProjectService.getProject();
   }
 
+  @DevCheckDescription("메인 메뉴 목록 조회")
   @GetMapping(PATH_PREFIX + "/mainMenuList")
   public List<MainMenu> mainMenuList() {
     return eventAdminMainMenuService.getMainMenuList();
   }
 
+  @DevCheckDescription("서브 메뉴 목록 조회")
   @GetMapping(PATH_PREFIX + "/subMenuList")
   public List<SubMenu> subMenuList() {
     return eventAdminSubMenuService.getSubMenuList();
   }
 
+  @DevCheckDescription("DB 쿼리 목록 조회")
   @GetMapping(PATH_PREFIX + "/dbQueryList")
   public List<DbQuery> dbQueryList() {
     return eventAdminQueryService.getDbQueryList();
   }
 
+  @DevCheckDescription("DB 필드 목록 조회")
   @GetMapping(PATH_PREFIX + "/dbFieldList")
   public List<DbField> dbFieldList() {
     return eventAdminFieldService.getDbFieldList();
   }
 
+  @DevCheckDescription("DbField 목록 공급 빈 이름 조회")
   @GetMapping(PATH_PREFIX + "/beanTest")
   public Object beanTest() {
     ResolvableType type =

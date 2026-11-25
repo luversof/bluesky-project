@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
+import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import net.luversof.web.common.menu.domain.Menu;
 import net.luversof.web.common.util.WebCommonUtil;
 
@@ -14,6 +15,7 @@ import net.luversof.web.common.util.WebCommonUtil;
 @RequestMapping(value = "/menu", produces = MediaType.APPLICATION_JSON_VALUE)
 public class WebCommonDevCheckController {
 
+  @DevCheckDescription("메뉴 목록 조회")
   @GetMapping("/menuList")
   public List<Menu> getMenuList(String key) {
     return WebCommonUtil.getMenuList(key);

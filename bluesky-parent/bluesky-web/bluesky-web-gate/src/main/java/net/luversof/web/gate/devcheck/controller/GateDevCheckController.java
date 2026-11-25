@@ -46,7 +46,7 @@ public class GateDevCheckController {
     return messageSource;
   }
 
-  @DevCheckDescription("다국어 메세지 전체 목록 조회")
+  @DevCheckDescription("다국어 메시지 목록 조회")
   @GetMapping("/messageSources")
   public Map<Object, Object> getMessageSources(
       @RequestParam(required = false) String searchKeyword) {
@@ -63,7 +63,7 @@ public class GateDevCheckController {
     return map;
   }
 
-  @DevCheckDescription("다국어 메세지 Locale별 전체 목록 조회")
+  @DevCheckDescription("locale별 다국어 메시지 목록 조회")
   @GetMapping("/messageSourcesByLocale")
   public Map<Object, Object> getMessageSourcesByLocale(
       @RequestParam(required = false) Locale locale,
@@ -93,12 +93,14 @@ public class GateDevCheckController {
   // return messageSource.getMessage(searchKeyword, null, targetLocale);
   // }
 
+  @DevCheckDescription("현재 인증 정보 조회")
   @GetMapping("/authentication")
   public Authentication testSecurityHasRole() {
     SecurityContext context = SecurityContextHolder.getContext();
     return context.getAuthentication();
   }
 
+  @DevCheckDescription("로그인 상태 조회")
   @GetMapping("/loginInfo")
   public Map<String, Object> loginInfo() {
     return Map.of(
@@ -107,6 +109,7 @@ public class GateDevCheckController {
         "username", UserUtil.getUsername() != null ? UserUtil.getUsername() : "");
   }
 
+  @DevCheckDescription("property 값 조회")
   @GetMapping("/property")
   public String property(String key) {
     return environment.getProperty(key);
@@ -119,6 +122,7 @@ public class GateDevCheckController {
     this.serverProperties = serverProperties;
   }
 
+  @DevCheckDescription("ServerProperties 조회")
   @GetMapping("/serverProperties")
   public ServerProperties getServerProperties() {
     return serverProperties;

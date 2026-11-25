@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import io.github.luversof.boot.devcheck.annotation.DevCheckController;
+import io.github.luversof.boot.devcheck.annotation.DevCheckDescription;
 import net.luversof.web.gate.bookkeeping.httpexchange.BookClient;
 import net.luversof.web.gate.bookkeeping.httpexchange.BookClient.BookSummary;
 
@@ -23,6 +24,7 @@ public class BookkeepingDevCheckController {
     this.bookClient = bookClient;
   }
 
+  @DevCheckDescription("사용자 가계부 목록 조회")
   @GetMapping("/books")
   public List<BookSummary> books(@RequestParam UUID userId) {
     return bookClient.list(userId);
