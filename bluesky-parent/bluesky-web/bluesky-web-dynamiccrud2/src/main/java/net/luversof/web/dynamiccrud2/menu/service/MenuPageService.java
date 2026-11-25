@@ -604,6 +604,193 @@ public class MenuPageService {
     return affected;
   }
 
+  /**
+   * 데이터 변경 되돌리기(메뉴 관리 → 변경 이력 → 데이터 변경 한 줄, 사용자 결정 11-26). 실행한 사람이 아니라 지금 그 작업을 실행할 수 있는 사람이 되돌린다.
+   *
+   * <ul>
+   *   <li>수정: 같은 수정 쿼리를 바뀌기 전 값(before)으로 다시 실행. 그 사이 누가 그 행을 바꿨으면(지금 값 ≠ 그때 넣은 값) 막는다.
+   *   <li>삭제: 지운 행(beforeRows, 메뉴 테이블 컬럼만)을 그 테이블에 다시 넣는다. 같은 키 행이 이미 있으면 막는다.
+   *   <li>입력: 되돌리지 않는다 - DB 가 만든 키(자동 증가 등)를 이력이 모를 수 있다.
+   * </ul>
+   *
+   * 되돌린 것도 데이터 변경 이력에 남고(bindValues.revertOf = 되돌린 이력 id), 한 이력은 한 번만 되돌린다.
+   *
+   * @return 되돌린 행 수
+   * @throws IllegalArgumentException 되돌릴 수 없을 때(메시지는 화면에 보인다)
+   */
+  public int revert(UUID menuId, UUID logId) {
+    var ctx = context(menuId);
+    var log =
+        changeLogRepository
+            .findById(logId)
+            .filter(found -> found.getMenuId().equals(menuId))
+            .orElseThrow(() -> new IllegalArgumentException(Msg.t("menu.revert.notFound")));
+    var values = log.getBindValues() == null ? Map.<String, Object>of() : log.getBindValues();
+    if (values.containsKey("revertOf")) {
+      throw new IllegalArgumentException(Msg.t("menu.revert.notRevertible"));
+    }
+    if (changeLogRepository.findRevertedIds(menuId).contains(logId.toString())) {
+      throw new IllegalArgumentException(Msg.t("menu.revert.already"));
+    }
+    var query =
+        ctx.menu().getQueries().stream()
+            .filter(q -> q.getId().equals(log.getMenuQueryId()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(Msg.t("menu.revert.queryGone")));
+    authorizer.checkRun(ctx.menu(), query);
+    var table =
+        new TableRef(
+            ctx.base().getCatalogName(), ctx.base().getSchemaName(), ctx.base().getTableName());
+    var after = textMaps(values.get("rows"));
+    var before = textMaps(values.get("before"));
+    var keyNames =
+        QueryService.settingsOf(query).entrySet().stream()
+            .filter(e -> e.getValue().role() == Role.ROW_KEY)
+            .map(Map.Entry::getKey)
+            .filter(ctx.baseFields()::containsKey)
+            .toList();
+    if (keyNames.isEmpty() || before.isEmpty()) {
+      // 행 키를 모르거나 전후 값이 없는 옛 이력(2026-11-19 전)
+      throw new IllegalArgumentException(Msg.t("menu.revert.notRevertible"));
+    }
+    var changeLog = new ChangeLog();
+    changeLog.setMenuId(menuId);
+    changeLog.setMenuQueryId(query.getId());
+    changeLog.setUsername(currentUsername());
+    int affected;
+    switch (query.getKind()) {
+      case UPDATE -> {
+        var binds = new ArrayList<Map<String, Object>>();
+        for (int i = 0; i < before.size(); i++) {
+          var previous = before.get(i);
+          var done = i < after.size() ? after.get(i) : Map.<String, String>of();
+          checkStillAsChanged(ctx, table, keyNames, previous, done);
+          var bind = new HashMap<String, Object>();
+          previous.forEach(
+              (name, raw) -> bind.put(name, ValueConverter.toBindValue(raw, ctx.baseFields().get(name))));
+          binds.add(bind);
+        }
+        affected = java.util.Arrays.stream(ctx.adapter().modify(query.getQueryText(), binds)).sum();
+        // 되돌린 실행도 수정 이력과 같은 모양: rows = 넣은 값(= 그때의 전), before = 그때 넣은 값
+        changeLog.setBindValues(Map.of("rows", before, "before", after, "revertOf", logId.toString()));
+      }
+      case DELETE -> {
+        var labels = baseColumnLabels(ctx);
+        var inserts = new ArrayList<Map<String, Object>>();
+        var restored = new ArrayList<Map<String, String>>();
+        for (int i = 0; i < before.size(); i++) {
+          var keys = new LinkedHashMap<String, Object>();
+          for (var key : keyNames) {
+            keys.put(key, ValueConverter.toBindValue(before.get(i).get(key), ctx.baseFields().get(key)));
+          }
+          if (ctx.adapter().currentRow(table, List.copyOf(keyNames), keys) != null) {
+            throw new IllegalArgumentException(Msg.t("menu.revert.rowExists"));
+          }
+        }
+        for (var row : textMaps(values.get("beforeRows"))) {
+          var insert = new LinkedHashMap<String, Object>();
+          var shown = new LinkedHashMap<String, String>();
+          labels.forEach(
+              (column, label) -> {
+                if (row.containsKey(label)) {
+                  insert.put(column, ValueConverter.toBindValue(row.get(label), ctx.baseFields().get(column)));
+                  shown.put(column, row.get(label));
+                }
+              });
+          inserts.add(insert);
+          restored.add(shown);
+        }
+        if (inserts.isEmpty()) {
+          throw new IllegalArgumentException(Msg.t("menu.revert.notRevertible"));
+        }
+        affected = java.util.Arrays.stream(ctx.adapter().insertRows(table, inserts)).sum();
+        // 되돌린 삭제는 다시 넣은 행(컬럼별)으로 - 이력 화면에서 입력처럼 보인다
+        changeLog.setBindValues(Map.of("rows", restored, "revertOf", logId.toString()));
+      }
+      default -> throw new IllegalArgumentException(Msg.t("menu.revert.notRevertible"));
+    }
+    changeLog.setAffectedRows(affected);
+    changeLogRepository.save(changeLog);
+    return affected;
+  }
+
+  /**
+   * 수정 되돌리기 전 확인: 그 행의 지금 값이 그때 넣은 값 그대로인가(메뉴 테이블 컬럼인 파라미터만). 다르면 그 사이 다른 변경이 있어 덮어쓰지 않는다. 값 비교는
+   * 바인딩 값으로(숫자 1 = 1.0, 일시 초 생략 같은 모양 차이를 넘는다), JSON 은 내용으로.
+   */
+  private void checkStillAsChanged(
+      Context ctx,
+      TableRef table,
+      List<String> keyNames,
+      Map<String, String> previous,
+      Map<String, String> done) {
+    var keys = new LinkedHashMap<String, Object>();
+    for (var key : keyNames) {
+      keys.put(key, ValueConverter.toBindValue(previous.get(key), ctx.baseFields().get(key)));
+    }
+    var columns =
+        done.keySet().stream()
+            .filter(ctx.baseFields()::containsKey)
+            .filter(name -> !keyNames.contains(name))
+            .toList();
+    if (columns.isEmpty()) {
+      return;
+    }
+    var current = ctx.adapter().currentRow(table, columns, keys);
+    if (current == null) {
+      throw new IllegalArgumentException(Msg.t("menu.action.rowGone"));
+    }
+    for (int i = 0; i < columns.size(); i++) {
+      var field = ctx.baseFields().get(columns.get(i));
+      if (!sameValue(done.get(columns.get(i)), ValueConverter.toText(current.get(i)), field)) {
+        throw new IllegalArgumentException(Msg.t("menu.revert.changedSince"));
+      }
+    }
+  }
+
+  private boolean sameValue(String a, String b, DbField field) {
+    var left = a == null ? "" : a;
+    var right = b == null ? "" : b;
+    if (left.equals(right)) {
+      return true;
+    }
+    if (left.isEmpty() || right.isEmpty()) {
+      return false;
+    }
+    if (field != null && ValueConverter.isJson(field.getDataType())) {
+      try {
+        return objectMapper.readTree(left).equals(objectMapper.readTree(right));
+      } catch (RuntimeException e) {
+        return false;
+      }
+    }
+    try {
+      var x = ValueConverter.toBindValue(left, field);
+      var y = ValueConverter.toBindValue(right, field);
+      if (x instanceof java.math.BigDecimal m && y instanceof java.math.BigDecimal n) {
+        return m.compareTo(n) == 0;
+      }
+      return java.util.Objects.equals(x, y);
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
+  }
+
+  /** 이력 JSON 배열 → [이름: 글자 값] 목록(null 은 null 그대로 - 빈 글자와 구분해 다시 넣는다) */
+  private static List<Map<String, String>> textMaps(Object value) {
+    var result = new ArrayList<Map<String, String>>();
+    if (value instanceof List<?> list) {
+      for (var item : list) {
+        if (item instanceof Map<?, ?> map) {
+          var row = new LinkedHashMap<String, String>();
+          map.forEach((k, v) -> row.put(String.valueOf(k), v == null ? null : String.valueOf(v)));
+          result.add(row);
+        }
+      }
+    }
+    return result;
+  }
+
   // ---- 내부 ----
 
   /**

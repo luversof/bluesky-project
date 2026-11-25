@@ -17,6 +17,9 @@
 @param String pageUrl
 @param java.util.List<net.luversof.web.dynamiccrud2.admin.controller.Crumb> breadcrumb = null
 @param String targetNoun = net.luversof.web.dynamiccrud2.config.Msg.t("target.table")
+<%-- 되돌리기 결과(flash) --%>
+@param String error = null
+@param String notice = null
 
 !{var menuId = menu.getId().toString();}
 
@@ -30,6 +33,8 @@
 	@if(settingsTab)
 		@template.admin.settingHistory(filter = settingFilter, settings = settings, action = "/admin/menu/" + menuId + "/history", pageUrl = pageUrl, settingsTab = true)
 	@else
+	@template._components.alert(message = error)
+	@template._components.alert(message = notice, tone = "success")
 	@template._components.card(title = t("admin.history.filter"), help = t("admin.history.help"), body = @`
 		<form method="get" action="/admin/menu/${menuId}/history" role="search"
 			class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem_10rem_auto] items-end">
@@ -67,7 +72,7 @@
 			<div class="relative overflow-x-auto">
 				<table class="table" aria-label="${t("admin.history.title")}">
 					<thead>
-						<tr><th>${t("admin.history.col.time")}</th><th>${t("admin.history.user")}</th><th>${t("admin.history.query")}</th><th class="text-right">${t("admin.history.col.affected")}</th><th>${t("admin.history.col.values")}</th></tr>
+						<tr><th>${t("admin.history.col.time")}</th><th>${t("admin.history.user")}</th><th>${t("admin.history.query")}</th><th class="text-right">${t("admin.history.col.affected")}</th><th>${t("admin.history.col.values")}</th><th><span class="sr-only">${t("admin.history.revert")}</span></th></tr>
 					</thead>
 					<tbody>
 						@for(var row : history.rows())
@@ -77,6 +82,7 @@
 								<td class="whitespace-nowrap">
 									@if(row.kind() != null)<span class="badge ${row.kind() == QueryKind.DELETE ? "badge-warning" : ""}">${row.kind().name()}</span>@endif
 									${row.queryName()}
+									@if(row.revert())<span class="badge ml-1">${t("admin.history.revertBadge")}</span>@endif
 								</td>
 								<td class="text-right tabular-nums">${row.affectedRows()}</td>
 								<td class="text-xs">
@@ -101,6 +107,16 @@
 											@endfor
 										</div>
 									@endfor
+								</td>
+								<%-- 되돌리기: 수정 = 같은 쿼리를 바뀌기 전 값으로, 삭제 = 지운 행을 다시 넣기. 그 사이 바뀌었으면 막는다(MenuPageService.revert) --%>
+								<td class="whitespace-nowrap text-right">
+									@if(row.revertible())
+										<form method="post" action="/admin/menu/${menuId}/history/${row.id().toString()}/revert">
+											<button class="btn btn-sm" data-confirm="${t(row.kind() == QueryKind.DELETE ? "admin.history.revert.confirmDelete" : "admin.history.revert.confirmUpdate")}">${t("admin.history.revert")}</button>
+										</form>
+									@elseif(row.reverted())
+										<span class="hint">${t("admin.history.reverted")}</span>
+									@endif
 								</td>
 							</tr>
 						@endfor

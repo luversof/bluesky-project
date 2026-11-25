@@ -6,6 +6,7 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -339,6 +340,23 @@ class MenuPageControllerTest implements GeneralWebTest {
                   .param("v.name", name + "-2")
                   .with(normalUser()))
           .andExpect(header().string("HX-Refresh", "true"));
+      // 되돌리기(관리 → 변경 이력): 수정은 바뀌기 전 값으로 다시 수정, 한 번만. 되돌린 뒤 다시 같은 수정을 실행해 아래 흐름을 잇는다
+      var updateLog = changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId).get(0);
+      var revertUrl = "/admin/menu/" + menuId + "/history/" + updateLog.getId() + "/revert";
+      mvc.perform(post(revertUrl).with(user("admin").roles("ADMIN")))
+          .andExpect(flash().attribute("notice", Matchers.containsString("1행")));
+      assertThat(projectRepository.findById(rowId).orElseThrow().getName()).isEqualTo(name);
+      mvc.perform(post(revertUrl).with(user("admin").roles("ADMIN")))
+          .andExpect(flash().attribute("error", Matchers.containsString("이미 되돌린")));
+      mvc.perform(
+              post(base + "/action/" + update + "/run")
+                  .param("rows", rowJson)
+                  .param("v.name", name + "-2")
+                  .with(normalUser()))
+          .andExpect(header().string("HX-Refresh", "true"));
+      // 그 사이 다시 바뀐 행은 되돌리지 않는다(지금 값 name-2 ≠ 되돌리기 이력이 넣은 값 name)
+      var revertLog = changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId).get(1);
+      assertThat(revertLog.getBindValues()).containsKey("revertOf");
       // 수정 불가(unique 인 code): 폼은 읽기 전용, 받은 값은 쓰지 않는다. 조회 결과에 원래 값이 없으면 거부
       queryService.save(
           menuId,
@@ -407,20 +425,35 @@ class MenuPageControllerTest implements GeneralWebTest {
                   .with(normalUser()))
           .andExpect(header().string("HX-Refresh", "true"));
       assertThat(projectRepository.findById(rowId)).isEmpty();
+      // 입력 · 수정 · (되돌리기) · 수정 · 삭제
       assertThat(changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId))
-          .hasSize(3)
+          .hasSize(5)
+          .filteredOn(log -> !log.getBindValues().containsKey("revertOf"))
           .allSatisfy(log -> assertThat(log.getUsername()).isEqualTo("tester"));
+      // 두 번째 수정은 그 뒤 행이 지워져 되돌리지 못한다(최근 순: 삭제 · 두 번째 수정 · 되돌리기 · 첫 수정 · 입력)
+      var secondUpdate = changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId).get(1);
+      mvc.perform(
+              post("/admin/menu/" + menuId + "/history/" + secondUpdate.getId() + "/revert")
+                  .with(user("admin").roles("ADMIN")))
+          .andExpect(flash().attribute("error", Matchers.notNullValue()));
+      // 삭제 되돌리기: 지운 행 중 목록에 있던 컬럼만 다시 넣는다 - 이 목록 행에는 code(NOT NULL)가 없어 DB 가 거부하고 사유가 보인다
+      var deleteLog = changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId).get(0);
+      mvc.perform(
+              post("/admin/menu/" + menuId + "/history/" + deleteLog.getId() + "/revert")
+                  .with(user("admin").roles("ADMIN")))
+          .andExpect(flash().attribute("error", Matchers.containsString("실행 실패")));
+      assertThat(projectRepository.findById(rowId)).isEmpty();
       // 변경 이력 화면(관리): 세 건, 넣은 값이 보이고, 작업 · 사용자로 거른다
       var admin = user("admin").roles("ADMIN");
       // 기본 탭은 메뉴 설정 변경 - 데이터 변경은 tab=data
       var history = "/admin/menu/" + menuId + "/history?tab=data";
       mvc.perform(get(history).with(admin))
           .andExpect(status().isOk())
-          .andExpect(content().string(Matchers.containsString("이력 3건")))
+          .andExpect(content().string(Matchers.containsString("이력 5건")))
           .andExpect(content().string(Matchers.containsString(name)));
       // 전후 비교: 수정은 이전 이름(지움) → 새 이름, 삭제는 지운 행 값
       mvc.perform(get(history).param("query", update.toString()).with(admin))
-          .andExpect(content().string(Matchers.containsString("이력 1건")))
+          .andExpect(content().string(Matchers.containsString("이력 3건")))
           .andExpect(content().string(Matchers.containsString(name + "</del>")))
           .andExpect(content().string(Matchers.containsString(name + "-2</ins>")));
       mvc.perform(get(history).param("query", delete.toString()).with(admin))

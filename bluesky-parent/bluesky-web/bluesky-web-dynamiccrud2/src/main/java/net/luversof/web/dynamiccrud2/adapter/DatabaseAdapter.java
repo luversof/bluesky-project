@@ -119,6 +119,12 @@ public interface DatabaseAdapter {
   int[] modify(String query, List<Map<String, Object>> rows);
 
   /**
+   * 행을 그 테이블에 그대로 넣는다(지운 행 되돌리기). 행마다 컬럼 → 값, 전부 한 트랜잭션. 자동 증가 컬럼에 값을 넣지 못하는 DB(MSSQL IDENTITY ·
+   * PostgreSQL GENERATED ALWAYS)는 실패한다 - 사유는 DB 오류 그대로.
+   */
+  int[] insertRows(TableRef table, List<Map<String, Object>> rows);
+
+  /**
    * 정렬.
    *
    * @param label 결과 컬럼 이름. 호출하는 쪽이 정렬 허용 컬럼인지 먼저 확인한다

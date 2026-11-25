@@ -316,6 +316,38 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
         });
   }
 
+  @Override
+  public int[] insertRows(TableRef table, List<Map<String, Object>> rows) {
+    var template = template(0);
+    var name = dialect.qualifiedName(table.catalog(), table.schema(), table.name());
+    return new TransactionTemplate(new DataSourceTransactionManager(dataSource))
+        .execute(status -> {
+          var counts = new int[rows.size()];
+          for (int i = 0; i < rows.size(); i++) {
+            // 컬럼 이름은 파라미터 이름으로 못 쓸 수 있어(공백 · 한글) 번호로 바인딩한다
+            var bind = new HashMap<String, Object>();
+            var columns = new ArrayList<String>();
+            var params = new ArrayList<String>();
+            for (var entry : rows.get(i).entrySet()) {
+              var param = "c" + bind.size();
+              bind.put(param, entry.getValue());
+              columns.add(dialect.quote(entry.getKey()));
+              params.add(":" + param);
+            }
+            var sql =
+                "INSERT INTO "
+                    + name
+                    + " ("
+                    + String.join(", ", columns)
+                    + ") VALUES ("
+                    + String.join(", ", params)
+                    + ")";
+            counts[i] = template.update(sql, bindable(bind));
+          }
+          return counts;
+        });
+  }
+
   /** 바인딩 값 복사본: {@link UntypedText} 를 이 DB 에 맞게 - PostgreSQL 은 타입 없이(서버가 컬럼 타입으로), 다른 DB 는 글자 그대로 */
   private Map<String, Object> bindable(Map<String, ?> values) {
     var result = new HashMap<String, Object>();

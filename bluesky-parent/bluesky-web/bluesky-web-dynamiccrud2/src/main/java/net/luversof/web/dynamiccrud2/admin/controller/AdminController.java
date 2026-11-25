@@ -359,6 +359,27 @@ public class AdminController {
     return "admin/history";
   }
 
+  /** 데이터 변경 되돌리기(데이터 변경 탭 줄의 "되돌리기"). 결과는 데이터 변경 탭 위 알림(MenuPageService.revert) */
+  @PostMapping("/menu/{id}/history/{logId}/revert")
+  public String revertChange(
+      @PathVariable UUID id, @PathVariable UUID logId, RedirectAttributes redirect) {
+    try {
+      redirect.addFlashAttribute("notice", Msg.t("menu.revert.done", useService.revert(id, logId)));
+    } catch (IllegalArgumentException e) {
+      redirect.addFlashAttribute("error", e.getMessage());
+    } catch (org.springframework.dao.DataAccessException e) {
+      var message = e.getMostSpecificCause().getMessage();
+      redirect.addFlashAttribute(
+          "error",
+          Msg.t(
+              "menu.action.failed",
+              message == null ? "" : message.lines().findFirst().orElse(message)));
+    } catch (BlueskyException e) {
+      redirect.addFlashAttribute("error", messageOf(e));
+    }
+    return "redirect:/admin/menu/" + id + "/history?tab=data";
+  }
+
   /** 프로젝트 설정 변경 이력: 프로젝트 · 메인 메뉴 · 그 아래 메뉴(지운 메뉴 포함) · 쿼리 · 검색 설정 */
   /** 전체 설정 변경 이력(프로젝트 관리 왼쪽 목록 아래 링크): 모든 프로젝트 + 어느 프로젝트에도 속하지 않는 변경(프로젝트 순서 등) */
   @GetMapping("/history")

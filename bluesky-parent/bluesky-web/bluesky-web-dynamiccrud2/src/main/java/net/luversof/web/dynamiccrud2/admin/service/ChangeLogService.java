@@ -49,6 +49,10 @@ public class ChangeLogService {
    * @param queryName 실행한 쿼리 이름(지운 쿼리면 "(지운 쿼리)")
    * @param kind 쿼리 종류(지운 쿼리면 null)
    * @param rows 실행한 행마다 값 목록(전후 비교)
+   * @param id 이력 id(되돌리기)
+   * @param revertible 되돌리기 단추를 보일까: 수정 · 삭제이고, 전후 값이 있고, 되돌리기 이력이 아니고, 아직 안 되돌림
+   * @param reverted 이미 되돌림
+   * @param revert 이 줄이 되돌리기 실행
    */
   public record Row(
       String time,
@@ -56,7 +60,11 @@ public class ChangeLogService {
       String queryName,
       QueryKind kind,
       int affectedRows,
-      List<List<Value>> rows) {}
+      List<List<Value>> rows,
+      UUID id,
+      boolean revertible,
+      boolean reverted,
+      boolean revert) {}
 
   /**
    * 값 하나의 전후. 입력은 after 만, 삭제는 before 만(지운 행 전체), 수정은 둘 다(바뀐 칸은 changed). 전후 비교를 넣기 전(2026-11-19)
@@ -100,9 +108,20 @@ public class ChangeLogService {
                 f.getColumnName(),
                 f.getLabel() == null || f.getLabel().isBlank() ? f.getColumnName() : f.getLabel()));
 
+    var reverted = new java.util.HashSet<>(changeLogRepository.findRevertedIds(menu.getId()));
     var rows = new ArrayList<Row>();
     for (var log : logs) {
       var query = queries.get(log.getMenuQueryId());
+      var values = log.getBindValues() == null ? Map.<String, Object>of() : log.getBindValues();
+      var revert = values.containsKey("revertOf");
+      var done = reverted.contains(String.valueOf(log.getId()));
+      var revertible =
+          query != null
+              && (query.getKind() == QueryKind.UPDATE || query.getKind() == QueryKind.DELETE)
+              && values.get("before") instanceof List<?> before
+              && !before.isEmpty()
+              && !revert
+              && !done;
       rows.add(
           new Row(
               log.getCreatedDate() == null
@@ -112,7 +131,11 @@ public class ChangeLogService {
               query == null ? Msg.t("admin.history.deletedQuery") : query.getName(),
               query == null ? null : query.getKind(),
               log.getAffectedRows(),
-              valuesOf(log, query == null ? null : query.getKind(), labels)));
+              valuesOf(log, query == null ? null : query.getKind(), labels),
+              log.getId(),
+              revertible,
+              done,
+              revert));
     }
     return new HistoryPage(
         rows, total, current, lastPage, changeLogRepository.findUsernames(menu.getId()));
