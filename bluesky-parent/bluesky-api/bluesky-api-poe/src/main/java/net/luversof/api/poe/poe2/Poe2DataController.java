@@ -227,7 +227,11 @@ public class Poe2DataController {
     return r;
   }
 
-  /** 이력 한 건 삭제 — 삭제했으면 true. */
+  /**
+   * 시뮬레이션 결과 이력 삭제
+   *
+   * <p>삭제했으면 true.
+   */
   @org.springframework.web.bind.annotation.DeleteMapping("/sim/history/{id}")
   public boolean deleteSimHistory(@PathVariable long id) {
     return sim.deleteHistory(id);

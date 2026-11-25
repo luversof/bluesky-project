@@ -35,8 +35,10 @@ class ControllerJavadocGuardTest {
 
   private static final Path API_ROOT = Path.of("..");
 
+  // 전체 이름(@org.springframework.web.bind.annotation.PostMapping)도 잡는다 - 놓쳐서 PoE2 3곳이 옛 문장으로 배포됐다.
   private static final Pattern MAPPING =
-      Pattern.compile("^\\s*@(Get|Post|Put|Delete|Patch)Mapping\\b");
+      Pattern.compile(
+          "^\\s*@(?:org\\.springframework\\.web\\.bind\\.annotation\\.)?(Get|Post|Put|Delete|Patch)Mapping\\b");
 
   private static final Pattern METHOD_NAME = Pattern.compile("(\\w+)\\s*\\(");
 

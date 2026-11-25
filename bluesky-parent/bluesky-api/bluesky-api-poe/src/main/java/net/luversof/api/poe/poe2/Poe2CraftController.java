@@ -197,7 +197,11 @@ public class Poe2CraftController {
     }
   }
 
-  /** 결과 분포(C534). */
+  /**
+   * 제작 결과 분포 모의
+   *
+   * <p>지금 아이템에 화폐를 여러 번 따로 적용한 결과의 계열별 비율(C534).
+   */
   @org.springframework.web.bind.annotation.PostMapping(
       value = "/distribution",
       consumes = org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
@@ -207,7 +211,11 @@ public class Poe2CraftController {
     return calc.distribution(req);
   }
 
-  /** 제작 시세(C530 — 게이트 '가격 직접 입력' 칸의 기본값, 디바인). */
+  /**
+   * 제작 시세 조회
+   *
+   * <p>게이트 '가격 직접 입력' 칸의 기본값, 디바인(C530).
+   */
   @org.springframework.web.bind.annotation.GetMapping("/prices")
   public Poe2CraftCalcService.Prices prices() {
     return calc.prices();
