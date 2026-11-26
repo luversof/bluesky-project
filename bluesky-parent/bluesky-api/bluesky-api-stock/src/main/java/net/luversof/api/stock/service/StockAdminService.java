@@ -42,6 +42,7 @@ import net.luversof.api.stock.repository.MonthlyDividendSnapshotRepository;
 import net.luversof.api.stock.repository.StockItemRepository;
 import net.luversof.api.stock.repository.StockItemTagRepository;
 import net.luversof.api.stock.repository.TradeRepository;
+import net.luversof.api.stock.service.analysis.StockAnalysisService;
 import net.luversof.api.stock.web.dto.response.LedgerImportResult;
 import net.luversof.app.google.stock.domain.GoogleSheetDividend;
 import net.luversof.app.google.stock.domain.GoogleSheetStockItem;
@@ -373,9 +374,24 @@ public class StockAdminService {
     return stockItem;
   }
 
-  private void syncStockItemTags(
+  /**
+   * 시트의 태그 열로 태그를 다시 만든다.
+   *
+   * <p>analysis 태그는 시트가 아니라 분석 대상 추가(StockAnalysisService.addTargets)가 붙여 시트에 없다. 통째로 지우면 종목 갱신 한
+   * 번에 분석 대상이 사라져 남긴다(사용자 요청 2026-11-27).
+   */
+  void syncStockItemTags(
       List<GoogleSheetStockItem> googleSheetStockItemList, List<StockItem> savedStockItemList) {
-    stockItemTagRepository.deleteAll();
+    var uniqueTagKeys = new LinkedHashSet<String>();
+    var sheetTags = new ArrayList<StockItemTag>();
+    for (var tag : stockItemTagRepository.findAll()) {
+      if (StockAnalysisService.ANALYSIS_TAG.equals(tag.getTag())) {
+        uniqueTagKeys.add(tag.getStockItemId() + "::" + tag.getTag());
+      } else {
+        sheetTags.add(tag);
+      }
+    }
+    stockItemTagRepository.deleteAll(sheetTags);
 
     Map<String, StockItem> stockItemBySymbol =
         savedStockItemList.stream()
@@ -397,7 +413,6 @@ public class StockAdminService {
                     LinkedHashMap::new));
 
     List<StockItemTag> stockItemTags = new ArrayList<>();
-    var uniqueTagKeys = new LinkedHashSet<String>();
 
     for (var googleSheetStockItem : googleSheetStockItemList) {
       StockItem stockItem =
