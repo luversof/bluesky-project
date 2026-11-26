@@ -151,6 +151,25 @@ class AdminApiControllerTest implements GeneralWebTest {
       mvc.perform(post("/admin/api/tables/" + tableId + "/resync").with(admin()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.columnsReadDate").isNotEmpty());
+
+      // 변경 이력: 위에서 바꾼 것들이 보인다. 데이터 변경은 없음, 없는 이력 되돌리기는 400
+      mvc.perform(get(base + "/history/settings").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.rows[*].targetName", Matchers.hasItem("이름 수정")));
+      mvc.perform(get("/admin/api/projects/" + project.getId() + "/history").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.total").value(Matchers.greaterThan(0)));
+      mvc.perform(get("/admin/api/tables/" + tableId + "/history").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.rows[*].targetName", Matchers.hasItem("MainMenu.name")));
+      mvc.perform(get("/admin/api/history").param("target", "QUERY").param("from", java.time.LocalDate.now().toString()).with(admin()))
+          .andExpect(status().isOk());
+      mvc.perform(get(base + "/history/data").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.total").value(0));
+      mvc.perform(post(base + "/history/" + UUID.randomUUID() + "/revert").with(admin()).accept(MediaType.APPLICATION_JSON))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.error").isNotEmpty());
     } finally {
       if (labelChanged) {
         var field =

@@ -125,6 +125,7 @@
 		<li>조회: <code>GET /프로젝트/메인 메뉴/메뉴/api</code>(검색 파라미터는 화면과 같음)</li>
 		<li>작업: <code>POST …/api/action/{쿼리 id}</code>, 본문 <code>{"inputs": {...}, "rows": [...]}</code></li>
 		<li>메뉴마다 주소 · 파라미터 · 예시는 메뉴 관리 화면의 <b>JSON 호출</b> 카드에 있습니다.</li>
+		<li>관리(프로젝트 · 메인 메뉴 · 메뉴 · 쿼리 · 검색 설정 · 필드 · 변경 이력 · 되돌리기)도 <code>/admin/api/…</code> 로 부를 수 있습니다(설정 관리 권한).</li>
 	</ul>
 	<p>모든 JSON 호출의 주소 · 본문 · 응답은 <a class="link" href="/swagger-ui.html">API 문서(Swagger UI)</a>에서 보고 바로 시험할 수 있습니다(위 목록에서 사용 화면 · 관리 묶음을 고름).</p>
 </section>

@@ -97,6 +97,12 @@ class AdminControllerTest implements GeneralWebTest {
         .andExpect(content().string(Matchers.containsString("메뉴 조회")))
         .andExpect(content().string(Matchers.not(Matchers.containsString("/excel"))))
         .andExpect(content().string(Matchers.not(Matchers.containsString("/admin/"))));
+    // 관리 묶음: /admin/api 만(화면 주소 /admin/menu/{id} 같은 것은 없다)
+    mvc.perform(get("/v3/api-docs/admin").with(admin()))
+        .andExpect(status().isOk())
+        .andExpect(content().string(Matchers.containsString("/admin/api/menus/{id}/history/{logId}/revert")))
+        .andExpect(content().string(Matchers.containsString("/admin/api/projects")))
+        .andExpect(content().string(Matchers.not(Matchers.containsString("\"/admin/menu/{id}\""))));
     mvc.perform(get("/swagger-ui/index.html").with(admin())).andExpect(status().isOk());
   }
 
