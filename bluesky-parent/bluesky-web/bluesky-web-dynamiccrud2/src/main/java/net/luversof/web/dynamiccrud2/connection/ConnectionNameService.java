@@ -33,16 +33,35 @@ public class ConnectionNameService {
   }
 
   /**
+   * 자동완성 후보 하나. kind = DB 종류(postgresql · mysql · mariadb · sqlserver, 모르면 null) - 이름 옆 흐린 글자(DMT2 UDP-6560 의 mongodb ·
+   * dbconn 표시와 같은 자리)
+   */
+  public record ConnectionName(String name, String kind) {}
+
+  /**
    * 이름에 검색어가 들어간 connection(대소문자 무시, 이름순, 최대 {@link #SUGGEST_LIMIT}개). 검색어가 비면 앞에서부터. % · _ 는 글자
    * 그대로 찾는다.
    */
-  // 2차: Mongo 연결 정보(별도 Mongo DB 의 MongoClientConnectionConfig 컬렉션)도 합친다
   public List<String> search(String keyword) {
+    return searchWithKind(keyword).stream().map(ConnectionName::name).toList();
+  }
+
+  /**
+   * {@link #search} 에 DB 종류를 붙인다. 종류는 DB 안에서 url 앞부분(jdbc:postgresql: …)만 보고 정한다 - url · 계정은 앱으로 가져오지
+   * 않는다.
+   */
+  // 2차: Mongo 연결 정보(별도 Mongo DB 의 MongoClientConnectionConfig 컬렉션)도 합친다
+  public List<ConnectionName> searchWithKind(String keyword) {
     // connectionInfo 저장소는 JDBC 다. 테이블 따옴표만 DB 종류를 따른다(PG 는 "DataSourceConnectionConfig")
     var adapter = (JdbcDatabaseAdapter) resolver.resolve(properties.connectionInfoConnection());
     // ESCAPE 문자는 '!' - 백슬래시는 MySQL 문자열 안에서 따로 해석돼 벤더마다 달라진다
     var sql =
-        "SELECT connection FROM "
+        "SELECT connection,"
+            + " CASE WHEN LOWER(url) LIKE 'jdbc:postgresql:%' THEN 'postgresql'"
+            + " WHEN LOWER(url) LIKE 'jdbc:mariadb:%' THEN 'mariadb'"
+            + " WHEN LOWER(url) LIKE 'jdbc:mysql:%' THEN 'mysql'"
+            + " WHEN LOWER(url) LIKE 'jdbc:sqlserver:%' THEN 'sqlserver' END"
+            + " FROM "
             + adapter.getDialect().quote(CONFIG_TABLE)
             + " WHERE LOWER(connection) LIKE LOWER(:keyword) ESCAPE '!' ORDER BY connection";
     var escaped =
@@ -54,7 +73,9 @@ public class ConnectionNameService {
         .read(sql, Map.of("keyword", "%" + escaped + "%"), Set.of(), null, 0, SUGGEST_LIMIT)
         .rows()
         .stream()
-        .map(row -> String.valueOf(row.get(0)))
+        .map(row ->
+            new ConnectionName(
+                String.valueOf(row.get(0)), row.get(1) == null ? null : String.valueOf(row.get(1))))
         .toList();
   }
 }

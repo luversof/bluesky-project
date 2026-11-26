@@ -194,7 +194,7 @@ public class AdminController {
   /** connection 검색 후보(htmx, combobox 목록의 li) */
   @GetMapping("/connection/search")
   public String connectionOptions(@RequestParam(defaultValue = "") String keyword, Model model) {
-    model.addAttribute("names", connectionNameService.search(keyword));
+    model.addAttribute("names", connectionNameService.searchWithKind(keyword));
     return "admin/connectionOptions";
   }
 

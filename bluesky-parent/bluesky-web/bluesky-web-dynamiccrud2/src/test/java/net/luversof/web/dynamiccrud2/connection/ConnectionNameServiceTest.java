@@ -28,6 +28,9 @@ class ConnectionNameServiceTest implements GeneralWebTest {
     // % · _ 는 와일드카드가 아니라 글자로 찾는다
     assertThat(connectionNameService.search("%")).doesNotContain("connectioninfo");
     assertThat(connectionNameService.search("no-such-connection-zzz")).isEmpty();
+    // DB 종류(url 앞부분으로 DB 안에서 정한다 - url 은 가져오지 않는다)
+    assertThat(connectionNameService.searchWithKind("crud2"))
+        .contains(new ConnectionNameService.ConnectionName("dynamiccrud2", "postgresql"));
 
     assertThat(resolver.resolve("connectioninfo").listTables())
         .extracting(TableRef::name)

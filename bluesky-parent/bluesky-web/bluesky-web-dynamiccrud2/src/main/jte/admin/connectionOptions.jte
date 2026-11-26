@@ -1,11 +1,13 @@
-<%-- connection 검색 후보(_components/combobox 목록 칸에 들어간다) --%>
+<%-- connection 검색 후보(_components/combobox 목록 칸에 들어간다). 이름 옆 흐린 글자 = DB 종류(postgresql · mysql · mariadb · sqlserver),
+     고르면 입력칸엔 이름만(data-label). DMT2 UDP-6560 의 종류(mongodb · dbconn) 표시와 같은 자리 --%>
 @import static net.luversof.web.dynamiccrud2.config.Msg.t
 @import java.util.List
+@import net.luversof.web.dynamiccrud2.connection.ConnectionNameService.ConnectionName
 
-@param List<String> names
+@param List<ConnectionName> names
 
 @for(var name : names)
-	<li role="option" aria-selected="false" data-value="${name}">${name}</li>
+	@template._components.pickOption(value = name.name(), label = name.name(), sub = name.kind())
 @endfor
 @if(names.isEmpty())
 	<li aria-disabled="true">${t("admin.menuCreate.connEmpty")}</li>

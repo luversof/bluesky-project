@@ -411,7 +411,13 @@ class AdminControllerTest implements GeneralWebTest {
                   .header("HX-Request", "true")
                   .with(admin()))
           .andExpect(status().isOk())
-          .andExpect(content().string(Matchers.containsString("data-value=\"dynamiccrud2\"")));
+          .andExpect(content().string(Matchers.containsString("data-value=\"dynamiccrud2\"")))
+          // 이름 옆 흐린 글자로 DB 종류, 고르면 입력칸엔 이름만(data-label)
+          .andExpect(
+              content()
+                  .string(
+                      Matchers.containsString(
+                          "data-label=\"dynamiccrud2\">dynamiccrud2 <span class=\"combobox-sub\">postgresql</span>")));
       // 없는 이름을 적으면 테이블 칸에 안내가 나온다(오류 화면이 아니라)
       mvc.perform(
               get("/admin/connection/tables")
