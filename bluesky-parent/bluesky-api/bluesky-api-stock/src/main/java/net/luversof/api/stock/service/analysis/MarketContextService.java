@@ -120,19 +120,19 @@ public class MarketContextService {
     return fetch(userId, null);
   }
 
-  /** 저녁 분석 기준의 리플레이(아래 morning=false). */
+  /** 저녁 분석 기준의 리플레이(아래 EVENING). */
   public MarketContext fetch(UUID userId, LocalDate asOf) {
-    return fetch(userId, asOf, false);
+    return fetch(userId, asOf, AnalysisSlot.EVENING);
   }
 
   /**
    * asOf: 리플레이 기준일. 국내 지수는 asOf 까지. 해외는 저녁 분석(asOf 20:00 KST)이면 asOf 전날(미국 날짜)까지 - asOf 날짜의 미국 장은
    * 한국 시간으로 다음 날 새벽에 끝난다. morning(다음 거래일 08:00 KST, 아침 작업 시각)이면 asOf 날짜의 미국 장까지 들어간다. null 이면 지금.
    */
-  public MarketContext fetch(UUID userId, LocalDate asOf, boolean morning) {
-    MarketContext base = fetchCached(userId, asOf, morning);
-    // 장전가는 분 단위로 바뀌어 캐시에 두지 않는다. 저녁 분석에는 없다(다음 날 아침 값이다).
-    return asOf == null || morning ? withPremarket(base, userId, asOf) : base;
+  public MarketContext fetch(UUID userId, LocalDate asOf, AnalysisSlot slot) {
+    MarketContext base = fetchCached(userId, asOf, slot);
+    // 장전가는 분 단위로 바뀌어 캐시에 두지 않는다. 08:30 전 시점에는 없다(다음 날 아침 값이다).
+    return asOf == null || slot.premarket() ? withPremarket(base, userId, asOf) : base;
   }
 
   private MarketContext withPremarket(MarketContext base, UUID userId, LocalDate asOf) {
@@ -226,14 +226,14 @@ public class MarketContextService {
     return next;
   }
 
-  private MarketContext fetchCached(UUID userId, LocalDate asOf, boolean morning) {
+  private MarketContext fetchCached(UUID userId, LocalDate asOf, AnalysisSlot slot) {
     if (asOf != null) {
-      String key = asOf + (morning ? "@morning" : "@evening");
+      String key = asOf + "@" + slot;
       MarketContext past = pastCache.get(key);
       if (past != null) {
         return past;
       }
-      MarketContext result = load(userId, asOf, morning);
+      MarketContext result = load(userId, asOf, slot);
       // 다 받은 것만 둔다 - 초당 한도(500)로 몇 개 빠진 결과를 두면 그날은 재기동 전까지 계속 빠진 채로 나온다(2026-11-12 리플레이 입력 146 일).
       if (result.unavailable().isEmpty()) {
         pastCache.put(key, result);
@@ -244,14 +244,14 @@ public class MarketContextService {
     if (hit != null && hit.fetchedAt().isAfter(Instant.now().minus(CACHE_TTL))) {
       return hit;
     }
-    MarketContext result = load(userId, null, false);
+    MarketContext result = load(userId, null, AnalysisSlot.EVENING);
     if (!result.lines().isEmpty()) {
       cached = result;
     }
     return result;
   }
 
-  private MarketContext load(UUID userId, LocalDate asOf, boolean morning) {
+  private MarketContext load(UUID userId, LocalDate asOf, AnalysisSlot slot) {
     if (userId == null) {
       return new MarketContext(Instant.now(), List.of(), DEFS.stream().map(Def::key).toList());
     }
@@ -268,7 +268,9 @@ public class MarketContextService {
     for (Def def : DEFS) {
       try {
         LocalDate end =
-            asOf != null && !morning && def.kind() == Kind.OVERSEAS ? today.minusDays(1) : today;
+            asOf != null && !slot.overseasOfBaseDate() && def.kind() == Kind.OVERSEAS
+                ? today.minusDays(1)
+                : today;
         MarketLine line =
             lineOf(def, fetchRowsRetrying(config, def, end.minusDays(LOOKBACK_DAYS), end));
         if (line == null) {
@@ -287,8 +289,8 @@ public class MarketContextService {
         unavailable.add(def.key());
       }
     }
-    // 야간 거래는 기준일 18:00 ~ 다음 날 05:00 - 저녁 분석(20:00) 때는 아직 열려 있어 넣지 않는다.
-    if (asOf == null || morning) {
+    // 야간 거래는 기준일 18:00 ~ 다음 날 05:00 - 16:00 · 20:00 시점에는 아직 열려 있어 넣지 않는다.
+    if (asOf == null || slot.nightFutures()) {
       MarketLine night = nightFuturesLine(today);
       if (night == null) {
         unavailable.add(NIGHT_FUTURES_KEY);

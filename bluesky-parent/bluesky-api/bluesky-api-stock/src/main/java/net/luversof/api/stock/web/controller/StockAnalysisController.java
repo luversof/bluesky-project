@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import net.luversof.api.stock.service.analysis.AnalysisSlot;
 import net.luversof.api.stock.service.analysis.MarketDailyCollectService;
 import net.luversof.api.stock.service.analysis.StockAnalysisService;
 import net.luversof.api.stock.service.analysis.StockNewsCollectService;
@@ -122,7 +123,8 @@ public class StockAnalysisController {
    *
    * @param userId KIS 설정을 읽을 사용자(선택, 없으면 시장 지표를 비운다)
    * @param asOf 리플레이 기준일(선택, 그날까지의 데이터만 쓴다). 비우면 지금
-   * @param morning true 면 기준일 다음 날 아침 분석 기준
+   * @param morning true 면 기준일 다음 날 아침 분석 기준(slot=PREMARKET 과 같다)
+   * @param slot 분석 시점(선택, morning 보다 우선): CLOSE · EVENING · NIGHT · PREMARKET
    * @param flows true 면 투자자 수급을 붙인다
    * @param chunk 0 부터의 묶음 번호. 음수면 전체
    * @param chunkSize 묶음 크기
@@ -133,11 +135,13 @@ public class StockAnalysisController {
       @RequestParam(required = false) UUID userId,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOf,
       @RequestParam(defaultValue = "false") boolean morning,
+      @RequestParam(required = false) AnalysisSlot slot,
       @RequestParam(defaultValue = "false") boolean flows,
       @RequestParam(defaultValue = "-1") int chunk,
       @RequestParam(defaultValue = "10") int chunkSize) {
     StockAnalysisService.AnalysisInput input =
-        stockAnalysisService.buildInput(userId, asOf, morning, flows);
+        stockAnalysisService.buildInput(
+            userId, asOf, slot != null ? slot : AnalysisSlot.ofMorning(morning), flows);
     if (chunk < 0) {
       return input;
     }
@@ -192,6 +196,31 @@ public class StockAnalysisController {
   }
 
   /**
+   * 예측이 없는 분석 시점 조회
+   *
+   * <p>최근 lookback 거래일의 (기준일, 시점) 중 version 예측이 없는 것. 최근 날짜부터, 하루에 CLOSE · EVENING · NIGHT ·
+   * PREMARKET 순서(아침 작업이 앞에서부터 채운다).
+   */
+  @GetMapping("/missing-slots")
+  public List<StockAnalysisService.SlotDate> missingSlots(
+      @RequestParam List<String> symbols,
+      @RequestParam(defaultValue = "60") int lookback,
+      @RequestParam String version) {
+    return stockAnalysisService.missingSlots(symbols, Math.clamp(lookback, 1, 60), version);
+  }
+
+  /**
+   * 지금의 분석 시점 조회
+   *
+   * <p>지금 실행하면 쓸 기준일(마감된 마지막 거래일)과 시점. 실시간 분석이 이 기준일 · 시점으로 입력을 만든다.
+   */
+  @GetMapping("/as-of-now")
+  public StockAnalysisService.SlotDate asOfNow(
+      @RequestParam(defaultValue = "005930") String symbol) {
+    return stockAnalysisService.currentAsOf(symbol, java.time.Instant.now());
+  }
+
+  /**
    * 예측 저장
    *
    * <p>replay · asOf 를 주면 리플레이 회차로 저장하고 바로 채점한다(replay.py --save).
@@ -201,8 +230,10 @@ public class StockAnalysisController {
       @RequestBody StockAnalysisService.SubmitRequest request,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate asOf,
       @RequestParam(defaultValue = "false") boolean morning,
+      @RequestParam(required = false) AnalysisSlot slot,
       @RequestParam(required = false) String replay) {
-    return stockAnalysisService.submit(request, asOf, morning, replay);
+    return stockAnalysisService.submit(
+        request, asOf, slot != null ? slot : AnalysisSlot.ofMorning(morning), replay);
   }
 
   /**

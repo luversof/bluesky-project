@@ -174,5 +174,6 @@ public interface StockAnalysisClient {
       BigDecimal actualChangePct,
       String actualDirection,
       Boolean hit,
-      Boolean late) {}
+      Boolean late,
+      String slot) {}
 }

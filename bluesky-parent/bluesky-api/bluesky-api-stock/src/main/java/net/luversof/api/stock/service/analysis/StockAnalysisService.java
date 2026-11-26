@@ -237,6 +237,98 @@ public class StockAnalysisService {
     return List.copyOf(out);
   }
 
+  /** 기준일 하나의 분석 시점. */
+  public record SlotDate(LocalDate baseDate, AnalysisSlot slot) {}
+
+  /**
+   * 지금 실행할 때의 기준일과 시점(사용자 결정 2026-11-27: 아무 때나 돌려도 그 시각까지의 자료로 다음 종가를 판단). 기준일은 마감된 마지막 거래일 - 장중에는
+   * 시세 갱신이 오늘 행을 이미 써 두므로 15:40 전의 오늘 행은 건너뛴다.
+   */
+  public SlotDate currentAsOf(String symbol, Instant now) {
+    StockItem item = stockItemRepository.findBySymbol(symbol);
+    if (item == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no stock item: " + symbol);
+    }
+    LocalDate today = now.atZone(PredictionMath.MARKET_ZONE_ID).toLocalDate();
+    boolean closed =
+        !now.isBefore(today.atTime(15, 40).atZone(PredictionMath.MARKET_ZONE_ID).toInstant());
+    LocalDate base =
+        stockPriceHistoryRepository
+            .findTop70ByStockItemIdOrderByTradeDateDesc(item.getId())
+            .stream()
+            .map(StockPriceHistory::getTradeDate)
+            .filter(d -> d.isBefore(today) || (closed && !d.isAfter(today)))
+            .findFirst()
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.CONFLICT, "no price: " + symbol));
+    return new SlotDate(base, AnalysisSlot.current(base, now));
+  }
+
+  /**
+   * version 의 예측이 아직 없는 (기준일, 시점) - 최근 lookback 거래일, 최근 날짜부터, 하루에 네 시점 순서로(사용자 결정 2026-11-27). 실시간
+   * 회차도 만든 시각의 시점을 덮는다. 그 시점 시각이 아직 안 왔으면 뺀다 - 08:30 시점은 다음 거래일 08:30 이 지나야(장전가가 있어야) 센다.
+   */
+  public List<SlotDate> missingSlots(List<String> symbols, int lookback, String version) {
+    return missingSlots(symbols, lookback, version, Instant.now());
+  }
+
+  List<SlotDate> missingSlots(List<String> symbols, int lookback, String version, Instant now) {
+    java.util.LinkedHashSet<SlotDate> out = new java.util.LinkedHashSet<>();
+    for (String symbol : symbols) {
+      StockItem item = stockItemRepository.findBySymbol(symbol);
+      if (item == null) {
+        continue;
+      }
+      List<StockPrediction> predictions =
+          stockPredictionRepository.findByStockItemId(item.getId()).stream()
+              .filter(p -> coversVersion(p, version))
+              .toList();
+      Map<UUID, StockPredictionGrade> grades = gradesOf(predictions);
+      Set<SlotDate> covered =
+          predictions.stream()
+              .map(p -> {
+                StockPredictionGrade g = grades.get(p.getId());
+                return new SlotDate(
+                    p.getBaseDate(),
+                    AnalysisSlot.of(
+                        p.getBaseDate(), p.getCreatedDate(), g == null ? null : g.isLate()));
+              })
+              .collect(Collectors.toSet());
+      out.addAll(
+          missingSlots(
+              stockPriceHistoryRepository
+                  .findTop70ByStockItemIdOrderByTradeDateDesc(item.getId())
+                  .stream()
+                  .limit(lookback)
+                  .map(StockPriceHistory::getTradeDate)
+                  .toList(),
+              covered,
+              now));
+    }
+    return List.copyOf(out);
+  }
+
+  static List<SlotDate> missingSlots(
+      List<LocalDate> latestFirst, Set<SlotDate> covered, Instant now) {
+    List<SlotDate> out = new ArrayList<>();
+    for (LocalDate d : latestFirst) {
+      for (AnalysisSlot s : AnalysisSlot.REPLAYABLE) {
+        Instant ready =
+            s == AnalysisSlot.PREMARKET
+                ? AnalysisSlot.nextWeekday(d)
+                    .atTime(8, 30)
+                    .atZone(PredictionMath.MARKET_ZONE_ID)
+                    .toInstant()
+                : s.at(d);
+        SlotDate sd = new SlotDate(d, s);
+        if (ready.isBefore(now) && !covered.contains(sd)) {
+          out.add(sd);
+        }
+      }
+    }
+    return out;
+  }
+
   static boolean coversVersion(StockPrediction p, String version) {
     return version.equals(p.getPromptVersion())
         || (REANALYSIS_PREFIX + version).equals(p.getReplay());
@@ -335,16 +427,16 @@ public class StockAnalysisService {
 
   /** morning: 리플레이 분석 시각을 기준일 다음 날 08:00 KST(아침 작업)로 - 간밤 미국 장과 그 사이 뉴스까지 보인다. */
   public AnalysisInput buildInput(UUID userId, LocalDate asOf, boolean morning) {
-    return buildInput(userId, asOf, morning, false);
+    return buildInput(userId, asOf, AnalysisSlot.ofMorning(morning), false);
   }
 
   /**
    * flows: 외국인 · 기관 수급을 붙인다. 기본은 끈다 - 리플레이(2026-11-11, 9 종목 23 거래일)에서 수급을 쓰게 한 v6 이 v3 보다 D+1 4.8%p
    * 낮았다. 대상을 늘린 뒤 다시 시험한다.
    */
-  public AnalysisInput buildInput(UUID userId, LocalDate asOf, boolean morning, boolean flows) {
+  public AnalysisInput buildInput(UUID userId, LocalDate asOf, AnalysisSlot slot, boolean flows) {
     List<StockItem> targets = findTargets();
-    Map<UUID, List<StockNews>> newsByItem = recentNewsByItem(asOf, morning);
+    Map<UUID, List<StockNews>> newsByItem = recentNewsByItem(asOf, slot);
     Map<UUID, List<String>> tagsByItem = tagsByItem(targets);
     List<AnalysisItem> items =
         targets.stream()
@@ -357,7 +449,7 @@ public class StockAnalysisService {
             .toList();
     return new AnalysisInput(
         Instant.now(),
-        marketContextService.fetch(userId, asOf, morning),
+        marketContextService.fetch(userId, asOf, slot),
         items,
         flows ? investorFlows(userId, targets, asOf) : Map.of());
   }
@@ -404,16 +496,16 @@ public class StockAnalysisService {
   }
 
   private Map<UUID, List<StockNews>> recentNewsByItem() {
-    return recentNewsByItem(null, false);
+    return recentNewsByItem(null, AnalysisSlot.EVENING);
   }
 
-  private Map<UUID, List<StockNews>> recentNewsByItem(LocalDate asOf, boolean morning) {
+  private Map<UUID, List<StockNews>> recentNewsByItem(LocalDate asOf, AnalysisSlot slot) {
     if (asOf == null) {
       Instant since = Instant.now().minus(NEWS_DAYS, ChronoUnit.DAYS);
       return stockNewsRepository.findByPublishedDateAfter(since).stream()
           .collect(Collectors.groupingBy(StockNews::getStockItemId));
     }
-    Instant until = analyzedAt(asOf, morning);
+    Instant until = slot.at(asOf);
     return stockNewsRepository
         .findByPublishedDateBetween(until.minus(NEWS_DAYS, ChronoUnit.DAYS), until)
         .stream()
@@ -425,9 +517,7 @@ public class StockAnalysisService {
    * v10 부터. 그 전은 08:00).
    */
   static Instant analyzedAt(LocalDate asOf, boolean morning) {
-    return morning
-        ? asOf.plusDays(1).atTime(8, 30).atZone(PredictionMath.MARKET_ZONE_ID).toInstant()
-        : asOf.atTime(20, 0).atZone(PredictionMath.MARKET_ZONE_ID).toInstant();
+    return AnalysisSlot.ofMorning(morning).at(asOf);
   }
 
   /**
@@ -614,7 +704,7 @@ public class StockAnalysisService {
 
   @Transactional
   public SubmitResult submit(SubmitRequest request) {
-    return submit(request, null, false, null);
+    return submit(request, null, AnalysisSlot.EVENING, null);
   }
 
   /**
@@ -623,11 +713,10 @@ public class StockAnalysisService {
    */
   @Transactional
   public SubmitResult submit(
-      SubmitRequest request, LocalDate asOf, boolean morning, String replay) {
-    if ((replay == null) != (asOf == null)
-        || (replay != null && (replay.isBlank() || replay.length() > 50))) {
-      throw new ResponseStatusException(
-          HttpStatus.BAD_REQUEST, "replay(<=50) and asOf go together");
+      SubmitRequest request, LocalDate asOf, AnalysisSlot slot, String replay) {
+    // 실시간 회차도 asOf 를 준다(2026-11-27): 장중에는 시세 갱신이 오늘 행을 써 두어 asOf 없이는 기준일이 오늘이 된다. 만든 시각은 지금 그대로.
+    if (replay != null && (asOf == null || replay.isBlank() || replay.length() > 50)) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "replay(<=50) needs asOf");
     }
     if (request == null
         || isBlank(request.modelId())
@@ -641,7 +730,7 @@ public class StockAnalysisService {
     Map<String, StockItem> targets =
         findTargets().stream()
             .collect(Collectors.toMap(StockItem::getSymbol, Function.identity(), (a, b) -> a));
-    Map<UUID, List<StockNews>> newsByItem = recentNewsByItem(asOf, morning);
+    Map<UUID, List<StockNews>> newsByItem = recentNewsByItem(asOf, slot);
     Map<UUID, List<String>> tagsByItem = tagsByItem(List.copyOf(targets.values()));
     Map<String, AnalysisItem> builtItems = new HashMap<>();
 
@@ -696,7 +785,7 @@ public class StockAnalysisService {
       saved++;
     }
     if (replay != null && saved > 0) {
-      stockPredictionRepository.updateCreatedDateByRunId(runId, analyzedAt(asOf, morning));
+      stockPredictionRepository.updateCreatedDateByRunId(runId, slot.at(asOf));
       grade();
     }
     return new SubmitResult(saved == 0 ? null : runId, saved, rejected);
@@ -928,7 +1017,8 @@ public class StockAnalysisService {
       BigDecimal actualChangePct,
       String actualDirection,
       Boolean hit,
-      Boolean late) {}
+      Boolean late,
+      AnalysisSlot slot) {}
 
   record Graded(StockPrediction prediction, StockPredictionGrade grade) {}
 
@@ -1375,7 +1465,8 @@ public class StockAnalysisService {
               g == null ? null : g.getActualChangePct(),
               g == null ? null : g.getActualDirection(),
               g == null ? null : g.isHit(),
-              g == null ? null : g.isLate());
+              g == null ? null : g.isLate(),
+              AnalysisSlot.of(p.getBaseDate(), p.getCreatedDate(), g == null ? null : g.isLate()));
         })
         .toList();
   }

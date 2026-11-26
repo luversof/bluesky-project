@@ -90,7 +90,8 @@ class StockAnalysisRecentPageTest {
         null,
         null,
         hit,
-        late);
+        late,
+        "PREMARKET");
   }
 
   @Test
@@ -154,7 +155,8 @@ class StockAnalysisRecentPageTest {
             new java.math.BigDecimal("-7.0086"),
             "DOWN",
             true,
-            false);
+            false,
+            "PREMARKET");
     assertThat(StockAnalysisViewController.actualClose(p)).isEqualByComparingTo("70301");
     assertThat(
             StockAnalysisViewController.actualClose(
@@ -181,7 +183,8 @@ class StockAnalysisRecentPageTest {
         null,
         null,
         hit,
-        false);
+        false,
+        "PREMARKET");
   }
 
   @Test

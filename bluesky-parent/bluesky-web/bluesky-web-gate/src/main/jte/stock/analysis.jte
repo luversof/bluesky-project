@@ -30,6 +30,10 @@
 @param List<String> dailyVersions = List.of()
 @param String adoptedVersion = null
 @param String dailyVersion = "live"
+@param List<String> slots = List.of()
+@param String dailySlot = "PREMARKET"
+@param StockAnalysisViewController.Upcoming upcoming = null
+@param List<StockAnalysisViewController.SlotHits> slotHits = null
 
 !{java.util.function.Function<BigDecimal, String> pct = v -> v == null ? "-" : (v.signum() > 0 ? "+" : "") + v.stripTrailingZeros().toPlainString() + "%";}
 !{java.util.function.Function<BigDecimal, String> num = v -> v == null ? "-" : v.stripTrailingZeros().toPlainString();}
@@ -73,13 +77,20 @@
 						@endfor
 						<option value="live" selected="${"live".equals(dailyVersion)}">${MessageUtil.getMessage("stock.analysis.version.live")}</option>
 					</select>
+					<%-- 분석 시점(2026-11-27): 버전은 같은 (기준일, 시점) 에서만 비교한다. 기본은 08:30 장전가 뒤. --%>
+					<label class="text-sm" for="analysis-slot">${MessageUtil.getMessage("stock.analysis.slot")}</label>
+					<select id="analysis-slot" name="slot" class="select select-bordered select-sm">
+						@for(var sl : slots)
+							<option value="${sl}" selected="${sl.equals(dailySlot)}">${MessageUtil.getMessage("stock.analysis.slot." + sl)}</option>
+						@endfor
+					</select>
 					<button type="submit" class="btn btn-sm btn-primary">${MessageUtil.getMessage("stock.analysis.runs.show")}</button>
 				</form>
 				@if(focus != null)
 					<p class="text-sm font-semibold" role="status">${StockViewSupport.msg("stock.analysis.focus", focus.name(), focus.symbol())}</p>
 				@endif
 				@if(adoptedVersion != null)
-					<p class="text-sm" role="status"><span class="badge badge-primary">${MessageUtil.getMessage("stock.analysis.adopted.badge")}</span> ${StockViewSupport.msg("stock.analysis.adopted.now", adoptedVersion)}</p>
+					<p class="text-sm" role="status"><span class="badge badge-sm badge-outline badge-primary">${MessageUtil.getMessage("stock.analysis.adopted.badge")}</span> ${StockViewSupport.msg("stock.analysis.adopted.now", adoptedVersion)}</p>
 				@endif
 
 				<div class="grid stat-card-grid grid-cols-3 gap-3">
@@ -87,6 +98,69 @@
 					@template._components.ui.statCard(label = MessageUtil.getMessage("stock.analysis.card.pending"), value = String.valueOf(summary.pending()), amount = false)
 					@template._components.ui.statCard(label = MessageUtil.getMessage("stock.analysis.card.late"), value = String.valueOf(summary.late()), amount = false)
 				</div>
+
+				<%-- 다음 거래일 예측(사용자 요청 2026-11-27): 가장 최근 기준일의 회차를 모두, 늦게 만든 것부터. 아무 때나 돌린 회차가 쌓인다. --%>
+				@if(upcoming != null && !upcoming.runs().isEmpty())
+					@template._components.ui.card(title = StockViewSupport.msg("stock.analysis.upcoming.title", String.valueOf(upcoming.baseDate())), body = @`
+						<div class="overflow-x-auto">
+							<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.upcoming.aria")}">
+								<thead><tr>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.col.runTime")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.slot")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.version")}</th>
+									<th scope="col">D+1</th>
+									<th scope="col">D+5</th>
+								</tr></thead>
+								<tbody>
+									@for(var r : upcoming.runs())
+										<tr>
+											<td class="whitespace-nowrap">${r.createdDate() == null ? "-" : runTime.format(r.createdDate())}
+												<span class="badge badge-sm badge-outline ${r.live() ? "badge-primary" : "badge-info"}">${MessageUtil.getMessage(r.live() ? "stock.analysis.upcoming.live" : "stock.analysis.upcoming.backfill")}</span>
+											</td>
+											<td class="whitespace-nowrap">${r.slot() == null ? "-" : MessageUtil.getMessage("stock.analysis.slot." + r.slot())}</td>
+											<td class="whitespace-nowrap">${r.version()}</td>
+											@for(var p : java.util.Arrays.asList(r.d1(), r.d5()))
+												<td class="whitespace-nowrap">
+													@if(p == null)
+														-
+													@else
+														@template.stock.htmx.fragments.components.predictionBadge(direction = p.direction(), confidence = p.confidence(), rationale = p.rationale(), hit = p.hit(), actualDirection = p.actualDirection(), actualChangePct = p.actualChangePct(), pct = pct)
+													@endif
+												</td>
+											@endfor
+										</tr>
+									@endfor
+								</tbody>
+							</table>
+						</div>
+						<p class="mt-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.analysis.upcoming.note")}</p>
+					`)
+				@endif
+
+				<%-- 시점별 적중(2026-11-27): 고른 버전 · 기간에서 언제 돌린 예측이 얼마나 맞나. 장중은 장이 열린 뒤 만든 늦은 예측. --%>
+				@if(slotHits != null && !slotHits.isEmpty())
+					@template._components.ui.card(title = MessageUtil.getMessage("stock.analysis.slotHits.title"), body = @`
+						<div class="overflow-x-auto">
+							<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.slotHits.title")}">
+								<thead><tr>
+									<th scope="col">${MessageUtil.getMessage("stock.analysis.slot")}</th>
+									<th scope="col" class="text-right">D+1</th>
+									<th scope="col" class="text-right">D+5</th>
+								</tr></thead>
+								<tbody>
+									@for(var h : slotHits)
+										<tr>
+											<td class="whitespace-nowrap">${MessageUtil.getMessage("stock.analysis.slot." + h.slot())}</td>
+											<td class="whitespace-nowrap text-right">${h.hits().d1Graded() == 0 ? "-" : StockViewSupport.msg("stock.analysis.slotHits.value", rate.apply(h.hits().d1RatePct()), String.valueOf(h.hits().d1Hit()), String.valueOf(h.hits().d1Graded()))}</td>
+											<td class="whitespace-nowrap text-right">${h.hits().d5Graded() == 0 ? "-" : StockViewSupport.msg("stock.analysis.slotHits.value", rate.apply(h.hits().d5RatePct()), String.valueOf(h.hits().d5Hit()), String.valueOf(h.hits().d5Graded()))}</td>
+										</tr>
+									@endfor
+								</tbody>
+							</table>
+						</div>
+						<p class="mt-2 text-xs text-base-content/60">${MessageUtil.getMessage("stock.analysis.slotHits.note")}</p>
+					`)
+				@endif
 
 				<%-- 일자별 적중(사용자 요청 2026-11-20): 기준일마다 그날 회차(운영 회차 우선)의 D+1 · D+5 가 맞았는지. 위에 기간 안 적중 수를 센다. --%>
 				<div id="analysis-daily">
@@ -196,7 +270,7 @@
 									@for(var v : versionCompare.versions())
 										<th scope="col" class="whitespace-nowrap">${v}
 											@if(v.equals(adoptedVersion))
-												<span class="badge badge-sm badge-primary">${MessageUtil.getMessage("stock.analysis.adopted.badge")}</span>
+												<span class="badge badge-sm badge-outline badge-primary">${MessageUtil.getMessage("stock.analysis.adopted.badge")}</span>
 											@endif
 											@if(v.equals(versionCompare.versions().get(0)))
 												<span class="badge badge-sm badge-outline badge-primary">${MessageUtil.getMessage("stock.analysis.compare.base")}</span>
@@ -300,7 +374,7 @@
 												<td class="whitespace-nowrap">${String.valueOf(r.date())}</td>
 												<td class="whitespace-nowrap font-semibold">${r.version()}
 													@if(r == current)
-														<span class="badge badge-sm badge-primary">${MessageUtil.getMessage("stock.analysis.adopted.badge")}</span>
+														<span class="badge badge-sm badge-outline badge-primary">${MessageUtil.getMessage("stock.analysis.adopted.badge")}</span>
 													@endif
 												</td>
 												<td class="whitespace-nowrap">${r.area() == null ? "-" : r.area()}</td>

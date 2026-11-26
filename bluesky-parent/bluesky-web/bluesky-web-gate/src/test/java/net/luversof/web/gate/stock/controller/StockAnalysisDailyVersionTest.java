@@ -32,7 +32,8 @@ class StockAnalysisDailyVersionTest {
         null,
         null,
         true,
-        false);
+        false,
+        "PREMARKET");
   }
 
   private static final List<StockAnalysisClient.RecentPrediction> PREDS =
@@ -74,7 +75,8 @@ class StockAnalysisDailyVersionTest {
         null,
         null,
         hit,
-        false);
+        false,
+        "PREMARKET");
   }
 
   @Test

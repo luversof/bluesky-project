@@ -105,6 +105,7 @@ public class StockAnalysisViewController {
       @RequestParam(required = false) String symbol,
       @RequestParam(required = false) String period,
       @RequestParam(required = false) String version,
+      @RequestParam(required = false) String slot,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate runDate,
       @RequestParam(defaultValue = "false") boolean onlyDisagree,
@@ -152,6 +153,9 @@ public class StockAnalysisViewController {
       model.addAttribute("dailyVersions", versions);
       model.addAttribute("adoptedVersion", adopted);
       model.addAttribute("dailyVersion", dailyVersion);
+      String dailySlot = slot != null && SLOTS.contains(slot) ? slot : DEFAULT_SLOT;
+      model.addAttribute("slots", SLOTS);
+      model.addAttribute("dailySlot", dailySlot);
       // 쪽 버튼은 이 화면을 다시 불러 그 카드만 바꾼다(htmxPagination 이 runsPage · dailyPage 를 붙인다).
       model.addAttribute(
           "pageUrl",
@@ -159,22 +163,25 @@ public class StockAnalysisViewController {
               .queryParamIfPresent("symbol", java.util.Optional.ofNullable(selected))
               .queryParam("period", p)
               .queryParam("version", dailyVersion)
+              .queryParam("slot", dailySlot)
               .queryParamIfPresent("runDate", java.util.Optional.ofNullable(runDate))
               .queryParam("onlyDisagree", onlyDisagree)
               .encode()
               .toUriString());
 
       if (history != null) {
-        List<DailyRow> daily =
-            dailyRows(history.predictions(), dailyVersion, periodStart(p, LocalDate.now(KST)));
+        LocalDate from = periodStart(p, LocalDate.now(KST));
+        // 시점 고르기(2026-11-27): 버전은 같은 (기준일, 시점) 에서만 비교한다 - 일자별 표 · 버전 비교 · 확신도는 고른 시점만.
+        List<RecentPrediction> ofSlot = ofSlot(history.predictions(), dailySlot);
+        model.addAttribute("upcoming", upcoming(history.predictions()));
+        model.addAttribute("slotHits", slotHits(history.predictions(), dailyVersion, from));
+        List<DailyRow> daily = dailyRows(ofSlot, dailyVersion, from);
         Page<DailyRow> dailyRows = pageOf(daily, dailyPage);
         model.addAttribute("dailyHits", dailyHits(daily));
         model.addAttribute("confidenceCuts", confidenceCuts(daily));
         model.addAttribute("daily", dailyRows.getContent());
         model.addAttribute("dailyPagination", new Pagination(dailyRows));
-        model.addAttribute(
-            "versionCompare",
-            versionCompare(history.predictions(), periodStart(p, LocalDate.now(KST))));
+        model.addAttribute("versionCompare", versionCompare(ofSlot, from));
       }
 
       // 회차 비교: 그날의 회차들을 기간별로 나란히(사용자 요청 2026-11-10), 고른 종목만.
@@ -236,9 +243,15 @@ public class StockAnalysisViewController {
    * 적중률에서 빼므로 여기서도 뺀다.
    */
   static List<DailyRow> dailyRows(List<RecentPrediction> predictions, LocalDate from) {
+    return dailyRows(predictions, from, false);
+  }
+
+  /** includeLate: 장중 시점 적중을 따로 셀 때만 늦은 예측도 넣는다. */
+  static List<DailyRow> dailyRows(
+      List<RecentPrediction> predictions, LocalDate from, boolean includeLate) {
     Map<LocalDate, List<RecentPrediction>> byDate =
         predictions.stream()
-            .filter(p -> !Boolean.TRUE.equals(p.late()))
+            .filter(p -> includeLate || !Boolean.TRUE.equals(p.late()))
             .filter(p -> from == null || !p.baseDate().isBefore(from))
             .collect(
                 Collectors.groupingBy(
@@ -261,6 +274,93 @@ public class StockAnalysisViewController {
               return new DailyRow(e.getKey(), horizon(run, 1), horizon(run, 5));
             })
             .toList();
+  }
+
+  /**
+   * 분석 시점(api-stock AnalysisSlot, 2026-11-27): 16:00 종가 뒤 · 20:00 저녁 · 06:00 야간선물 뒤 · 08:30 장전가 뒤.
+   * 고르기 기본은 PREMARKET - 그 전부터 쌓인 아침 분석과 같은 시점이다. all 은 시점을 섞는다(그날 운영 회차 우선).
+   */
+  static final List<String> SLOTS = List.of("PREMARKET", "NIGHT", "EVENING", "CLOSE", "all");
+
+  static final String DEFAULT_SLOT = "PREMARKET";
+
+  /** 시점별 적중 표의 순서. INTRADAY 는 장이 열린 뒤 만든 실시간 예측(늦은 예측)이라 다른 표에서는 빠지고 여기서만 센다. */
+  static final List<String> SLOT_ORDER =
+      List.of("CLOSE", "EVENING", "NIGHT", "PREMARKET", "INTRADAY");
+
+  static List<RecentPrediction> ofSlot(List<RecentPrediction> predictions, String slot) {
+    return "all".equals(slot)
+        ? predictions
+        : predictions.stream().filter(p -> slot.equals(p.slot())).toList();
+  }
+
+  public record SlotHits(String slot, DailyHits hits) {}
+
+  /** 버전 하나의 시점별 적중(사용자 결정 2026-11-27: 언제 돌린 예측이 얼마나 맞나). 채점된 날이 없는 시점은 뺀다. */
+  static List<SlotHits> slotHits(
+      List<RecentPrediction> predictions, String version, LocalDate from) {
+    List<RecentPrediction> ofVersion =
+        LIVE_FIRST.equals(version)
+            ? predictions
+            : predictions.stream().filter(p -> compareKey(p).equals(version)).toList();
+    return SLOT_ORDER.stream()
+        .map(s ->
+            new SlotHits(s, dailyHits(dailyRows(ofSlot(ofVersion, s), from, "INTRADAY".equals(s)))))
+        .filter(h -> h.hits().d1Graded() + h.hits().d5Graded() > 0)
+        .toList();
+  }
+
+  /** 다음 거래일 예측의 회차 하나: 만든 시각 · 시점 · 버전 키 · 실시간(replay 없음) 여부와 D+1 · D+5. */
+  public record UpcomingRun(
+      Instant createdDate,
+      String slot,
+      String version,
+      boolean live,
+      RecentPrediction d1,
+      RecentPrediction d5) {}
+
+  public record Upcoming(LocalDate baseDate, List<UpcomingRun> runs) {}
+
+  /**
+   * 다음 거래일 예측(사용자 요청 2026-11-27: 전날 다음 날을 미리 본다): 가장 최근 기준일의 회차를 모두, 늦게 만든 것부터. 아무 때나 돌린 회차가 다 쌓여
+   * 그날 예측이 시점마다 어떻게 바뀌었는지 보인다. 예측이 없으면 null.
+   */
+  static Upcoming upcoming(List<RecentPrediction> predictions) {
+    LocalDate base =
+        predictions.stream()
+            .map(RecentPrediction::baseDate)
+            .max(Comparator.naturalOrder())
+            .orElse(null);
+    if (base == null) {
+      return null;
+    }
+    Map<String, List<RecentPrediction>> byRun =
+        predictions.stream()
+            .filter(p -> base.equals(p.baseDate()))
+            .collect(
+                Collectors.groupingBy(
+                    p -> runDay(p) + "#" + p.runSeq(), LinkedHashMap::new, Collectors.toList()));
+    List<UpcomingRun> runs =
+        byRun.values().stream()
+            .map(run -> {
+              RecentPrediction first = run.get(0);
+              return new UpcomingRun(
+                  run.stream()
+                      .map(RecentPrediction::createdDate)
+                      .filter(Objects::nonNull)
+                      .max(Comparator.naturalOrder())
+                      .orElse(null),
+                  first.slot(),
+                  compareKey(first),
+                  first.replay() == null,
+                  horizon(run, 1),
+                  horizon(run, 5));
+            })
+            .sorted(
+                Comparator.comparing(
+                    UpcomingRun::createdDate, Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
+    return new Upcoming(base, runs);
   }
 
   /** 재분석 회차의 리플레이 이름 앞부분 - api-stock StockAnalysisService.REANALYSIS_PREFIX 와 같다. */
