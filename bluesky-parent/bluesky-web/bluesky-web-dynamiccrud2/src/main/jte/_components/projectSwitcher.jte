@@ -9,7 +9,8 @@
 @param List<Project> projects
 
 <details class="nav-dropdown" data-dropdown>
-	<summary class="font-semibold hover:underline" aria-label="${t("layout.project.switch", current.getName())}">${current.getName()} <span aria-hidden="true">▾</span></summary>
+	<%-- select-none: 빠르게 두 번 누르면 이름 글자가 선택되던 것(DMT2 80c8003) --%>
+	<summary class="font-semibold hover:underline select-none" aria-label="${t("layout.project.switch", current.getName())}">${current.getName()} <span class="nav-dropdown-caret" aria-hidden="true">▾</span></summary>
 	<ul class="nav-dropdown-list">
 		@for(var project : projects)
 			<li><a href="/${project.getCode()}" aria-current="${project.getId().equals(current.getId()) ? "page" : null}">${project.getName()}</a></li>

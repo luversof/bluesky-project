@@ -38,6 +38,10 @@
 			let theme = null;
 			try { theme = localStorage.getItem('dc2-theme'); } catch (e) {}
 			document.documentElement.dataset.theme = theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+			// 왼쪽 메뉴를 접어 두었으면 그리기 전에 접는다(js/ui.js [data-sidebar-toggle])
+			let sidebar = null;
+			try { sidebar = localStorage.getItem('dc2-sidebar'); } catch (e) {}
+			if (sidebar === 'collapsed') document.documentElement.dataset.sidebar = 'collapsed';
 		})();
 	</script>
 	<link href="/main.css" rel="stylesheet" />
@@ -87,7 +91,15 @@
 	</header>
 	@if(sidebar != null)
 		<div class="grow w-full px-4 md:px-6 py-6 flex flex-col md:flex-row gap-6">
-			<aside class="md:w-56 shrink-0" aria-label="${net.luversof.web.dynamiccrud2.config.Msg.t("layout.sidebar")}">${sidebar}</aside>
+			<%-- 왼쪽 메뉴 접기 · 펼치기(DMT2 69e8830): 접으면 단추만 남는 띠로 줄어든다(폭 애니메이션, main.css .dc2-sidebar). 상태는 이 브라우저에 기억 --%>
+			<aside class="dc2-sidebar shrink-0" aria-label="${net.luversof.web.dynamiccrud2.config.Msg.t("layout.sidebar")}">
+				<button type="button" class="icon-btn dc2-sidebar-toggle" data-sidebar-toggle aria-controls="dc2-sidebar-body" aria-expanded="true"
+					data-label-collapse="${net.luversof.web.dynamiccrud2.config.Msg.t("layout.sidebar.collapse")}" data-label-expand="${net.luversof.web.dynamiccrud2.config.Msg.t("layout.sidebar.expand")}"
+					aria-label="${net.luversof.web.dynamiccrud2.config.Msg.t("layout.sidebar.collapse")}" title="${net.luversof.web.dynamiccrud2.config.Msg.t("layout.sidebar.collapse")}">
+					<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5"/></svg>
+				</button>
+				<div id="dc2-sidebar-body" class="dc2-sidebar-body">${sidebar}</div>
+			</aside>
 			<main class="grow min-w-0">
 				<%-- stickyHead(사용 화면의 검색)는 세로 스크롤해도 위에 붙어 있다(.sticky-head). 제목(메뉴 이름)은 왼쪽 메뉴에서 눌린 것과 같아
 				     화면에서는 빼고 화면 낭독기에만 둔다(DMT2 ed3997b - 목록을 한 화면에 더 보이게) --%>

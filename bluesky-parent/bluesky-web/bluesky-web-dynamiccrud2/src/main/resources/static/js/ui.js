@@ -403,6 +403,29 @@ document.addEventListener('keydown', (event) => {
   dropdown.querySelector('summary').focus();
 });
 
+// 왼쪽 메뉴 접기 · 펼치기(_layout/layout [data-sidebar-toggle]): <html data-sidebar="collapsed"> 로 접고, 이 브라우저에 기억한다(dc2-sidebar).
+// 그리기 전 상태는 layout 머리 스크립트가 맞춘다 - 여기서는 단추 글자 · aria-expanded 만 맞추고 눌렀을 때 바꾼다
+(() => {
+  const button = document.querySelector('[data-sidebar-toggle]');
+  if (!button) return;
+  const root = document.documentElement;
+  const sync = () => {
+    const collapsed = root.dataset.sidebar === 'collapsed';
+    const label = collapsed ? button.dataset.labelExpand : button.dataset.labelCollapse;
+    button.setAttribute('aria-expanded', String(!collapsed));
+    button.setAttribute('aria-label', label);
+    button.title = label;
+  };
+  button.addEventListener('click', () => {
+    const collapsed = root.dataset.sidebar !== 'collapsed';
+    if (collapsed) root.dataset.sidebar = 'collapsed';
+    else delete root.dataset.sidebar;
+    try { localStorage.setItem('dc2-sidebar', collapsed ? 'collapsed' : 'open'); } catch (e) {}
+    sync();
+  });
+  sync();
+})();
+
 // 표 머리 따라 붙기(main.css .table-scroll): 스크롤하면 위에 붙는 머리(.sticky-head, 사용 화면의 검색 · 건수) 아래 끝과 목록 상자 윗변의
 // 차이만큼 thead 를 내린다. 내리는 끝은 표 아래 끝(thead 가 표 밖으로 나가지 않게). 창 크기 · 검색 칸 줄바꿈 · 표 높이가 바뀌어도 다시 맞춘다
 (() => {
