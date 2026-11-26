@@ -172,7 +172,11 @@ public class AdminStructureApiController {
   @Operation(summary = "연결의 테이블 목록", description = "메뉴 만들기의 catalog · schema · table 후보")
   @GetMapping("/connections/{connectionName}/tables")
   public List<TableRef> tables(@PathVariable String connectionName) {
-    return resolver.resolve(connectionName).listTables();
+    try {
+      return resolver.resolve(connectionName).listTables();
+    } catch (org.springframework.dao.DataAccessException e) {
+      throw connectionFailed(connectionName, e);
+    }
   }
 
   @Operation(summary = "메뉴 만들기", description = "필드를 테이블 단위로 등록하고 조회 쿼리를 만든다. 만든 메뉴는 보이는 상태")
@@ -184,8 +188,13 @@ public class AdminStructureApiController {
           net.luversof.web.dynamiccrud2.config.Msg.t("admin.menuCreate.tableFromList"));
     }
     var ref = new TableRef(blankToNull(body.catalog()), blankToNull(body.schema()), body.table());
-    return MenuView.of(
-        menuService.createMenu(mainMenuId, body.code(), body.name(), body.connectionName(), ref));
+    try {
+      return MenuView.of(
+          menuService.createMenu(mainMenuId, body.code(), body.name(), body.connectionName(), ref));
+    } catch (org.springframework.dao.DataAccessResourceFailureException e) {
+      // 대상 연결 실패만(설정 DB 오류는 그대로 - AdminApiAdvice)
+      throw connectionFailed(body.connectionName(), e);
+    }
   }
 
   @Operation(summary = "메뉴 설정", description = "작업(쿼리) · 검색 설정 포함")
@@ -240,6 +249,17 @@ public class AdminStructureApiController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void menuOrder(@PathVariable UUID mainMenuId, @RequestBody Order body) {
     menuService.reorderMenus(mainMenuId, body.ids());
+  }
+
+  private static final org.slf4j.Logger LOG =
+      org.slf4j.LoggerFactory.getLogger(AdminStructureApiController.class);
+
+  /** 연결 실패(서버에 닿지 않음 · 계정 거부): 400 + 관리 화면과 같은 안내, 원인은 로그에 */
+  private static IllegalArgumentException connectionFailed(String connectionName, Exception e) {
+    var name = connectionName == null ? "" : connectionName.strip();
+    LOG.warn("connection {} unavailable: {}", name, e.getMessage());
+    return new IllegalArgumentException(
+        net.luversof.web.dynamiccrud2.config.Msg.t("admin.menuCreate.connFailed", name), e);
   }
 
   private static boolean isBlank(String value) {
