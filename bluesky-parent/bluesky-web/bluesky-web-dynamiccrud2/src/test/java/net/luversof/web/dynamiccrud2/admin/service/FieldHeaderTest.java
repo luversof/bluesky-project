@@ -21,7 +21,8 @@ class FieldHeaderTest {
   void labelWinsOverAlias() {
     // 이름 모양 별칭(AS applyTime)은 필드 라벨이 먼저, 사람이 읽는 별칭(AS 'Job 실행 ID')은 별칭이 먼저
     assertThat(FieldService.headerOf(field("이름", "주석"), "user_alias", "user_name")).isEqualTo("이름");
-    assertThat(FieldService.headerOf(field("이름", "주석"), "Job 실행 ID", "user_name")).isEqualTo("Job 실행 ID");
+    assertThat(FieldService.headerOf(field("이름", "주석"), "Job 실행 ID", "user_name"))
+        .isEqualTo("Job 실행 ID");
     assertThat(FieldService.headerOf(field(" ", "주석"), "별칭", "user_name")).isEqualTo("별칭");
     assertThat(FieldService.headerOf(field(null, "주석"), null, "user_name")).isEqualTo("주석");
     assertThat(FieldService.headerOf(field(null, null), null, "x")).isEqualTo("user_name");

@@ -21,6 +21,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.CountOptions;
+
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud2.adapter.ColumnMeta;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter;
@@ -36,13 +37,14 @@ import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.domain.QueryKind;
 
 /**
- * MongoDB 어댑터. 작업 원문 형식은 {@link MongoQuery}. 테이블 = 컬렉션(TableRef.name), 컬럼 = 문서 {@value #SAMPLE_SIZE}개를 읽어 모은
- * 최상위 필드, 행 키 = _id.
+ * MongoDB 어댑터. 작업 원문 형식은 {@link MongoQuery}. 테이블 = 컬렉션(TableRef.name), 컬럼 = 문서 {@value
+ * #SAMPLE_SIZE}개를 읽어 모은 최상위 필드, 행 키 = _id.
  *
- * <p>조회: find + countDocuments + sort + skip/limit. 결과 이름은 projection(포함)이 있으면 그 키, 없으면 이 쪽 문서들의 필드(처음 나온
- * 순서, _id 먼저).
+ * <p>조회: find + countDocuments + sort + skip/limit. 결과 이름은 projection(포함)이 있으면 그 키, 없으면 이 쪽 문서들의
+ * 필드(처음 나온 순서, _id 먼저).
  */
-// shortcut: 여러 행 입력 · 수정 · 삭제가 한 트랜잭션이 아니다(Mongo 트랜잭션은 replica set 필요), 중간에 실패하면 앞 행은 남는다 - 묶음 실행이 생기면
+// shortcut: 여러 행 입력 · 수정 · 삭제가 한 트랜잭션이 아니다(Mongo 트랜잭션은 replica set 필요), 중간에 실패하면 앞 행은 남는다 - 묶음 실행이
+// 생기면
 // ClientSession 트랜잭션으로 바꿀 것
 public class MongoDatabaseAdapter implements DatabaseAdapter {
 
@@ -167,12 +169,20 @@ public class MongoDatabaseAdapter implements DatabaseAdapter {
   public String generate(QueryKind kind, TableMeta table) {
     var name = table.ref().name();
     var fields = table.columns().stream().map(ColumnMeta::name).filter(f -> !ID.equals(f)).toList();
-    var head = "{\"collection\": \"" + name + "\", \"operation\": \"" + MongoQuery.Operation.of(kind).json + "\", ";
+    var head =
+        "{\"collection\": \""
+            + name
+            + "\", \"operation\": \""
+            + MongoQuery.Operation.of(kind).json
+            + "\", ";
     return switch (kind) {
       case READ -> head + "\"filter\": {}, \"sort\": {\"_id\": -1}}";
       case INSERT -> head + "\"document\": " + paramsObject(fields) + "}";
       case UPDATE ->
-          head + "\"filter\": {\"_id\": :_id}, \"update\": {\"$set\": " + paramsObject(fields) + "}}";
+          head
+              + "\"filter\": {\"_id\": :_id}, \"update\": {\"$set\": "
+              + paramsObject(fields)
+              + "}}";
       case DELETE -> head + "\"filter\": {\"_id\": :_id}}";
     };
   }
@@ -211,9 +221,7 @@ public class MongoDatabaseAdapter implements DatabaseAdapter {
     var parsed = MongoQuery.parse(query);
     if (listTables().stream().noneMatch(ref -> ref.name().equals(parsed.collection()))) {
       throw new BadSqlGrammarException(
-          "mongo",
-          query,
-          new SQLException("collection not found: " + parsed.collection()));
+          "mongo", query, new SQLException("collection not found: " + parsed.collection()));
     }
   }
 
@@ -230,28 +238,33 @@ public class MongoDatabaseAdapter implements DatabaseAdapter {
       parsed = MongoQuery.parse(query);
     } catch (BlueskyException e) {
       var conditions = new ArrayList<SearchCondition>();
-      MongoQuery.parameterNames(query).forEach(n -> conditions.add(new SearchCondition(n, null, false)));
-      return new ReadAnalysis(false, QueryErrorCode.messageOf(e), conditions, List.of(), false, false);
+      MongoQuery.parameterNames(query)
+          .forEach(n -> conditions.add(new SearchCondition(n, null, false)));
+      return new ReadAnalysis(
+          false, QueryErrorCode.messageOf(e), conditions, List.of(), false, false);
     }
     var conditions = new ArrayList<SearchCondition>();
     var seen = new HashSet<String>();
-    parsed.filterOrEmpty().forEach((key, value) -> {
-      for (var name : MongoQuery.parametersIn(value)) {
-        if (seen.add(name)) {
-          conditions.add(
-              new SearchCondition(
-                  name, key + ": " + toJson(value), !key.startsWith("$")));
-        }
-      }
-    });
+    parsed
+        .filterOrEmpty()
+        .forEach((key, value) -> {
+          for (var name : MongoQuery.parametersIn(value)) {
+            if (seen.add(name)) {
+              conditions.add(
+                  new SearchCondition(name, key + ": " + toJson(value), !key.startsWith("$")));
+            }
+          }
+        });
     var columns = new ArrayList<ResultColumn>();
     var included = includedFields(parsed.projection());
     if (included.isEmpty()) {
-      columns.add(new ResultColumn("*", null, null, parsed.collection(), null, ResultColumn.Kind.ALL));
+      columns.add(
+          new ResultColumn("*", null, null, parsed.collection(), null, ResultColumn.Kind.ALL));
     } else {
       included.forEach(field ->
           columns.add(
-              new ResultColumn(field, null, null, parsed.collection(), field, ResultColumn.Kind.COLUMN)));
+              new ResultColumn(
+                  field, null, null, parsed.collection(), field, ResultColumn.Kind.COLUMN)));
     }
     return new ReadAnalysis(
         true, null, conditions, columns, false, parsed.sort() != null && !parsed.sort().isEmpty());
@@ -333,7 +346,8 @@ public class MongoDatabaseAdapter implements DatabaseAdapter {
   @Override
   public List<Object> currentRow(TableRef table, List<String> columns, Map<String, Object> keys) {
     var filter = new Document();
-    keys.forEach((key, value) -> filter.put(key, ID.equals(key) ? idValue(value) : MongoQuery.toBson(value)));
+    keys.forEach((key, value) ->
+        filter.put(key, ID.equals(key) ? idValue(value) : MongoQuery.toBson(value)));
     var found = new ArrayList<Document>();
     collection(table.name()).find(filter).limit(2).into(found);
     return found.size() == 1 ? values(found.getFirst(), columns) : null;
@@ -360,7 +374,8 @@ public class MongoDatabaseAdapter implements DatabaseAdapter {
     var documents = new ArrayList<Document>(rows.size());
     for (var row : rows) {
       var document = new Document();
-      row.forEach((key, value) -> document.put(key, ID.equals(key) ? idValue(value) : MongoQuery.toBson(value)));
+      row.forEach((key, value) ->
+          document.put(key, ID.equals(key) ? idValue(value) : MongoQuery.toBson(value)));
       documents.add(document);
     }
     if (!documents.isEmpty()) {
@@ -483,7 +498,8 @@ public class MongoDatabaseAdapter implements DatabaseAdapter {
     return new ReadResult(labels, rows, total);
   }
 
-  // shortcut: projection 이 없으면 결과 이름이 쪽마다 다를 수 있다(문서마다 필드가 달라서), 화면 칸이 흔들리면 쿼리에 projection 을 넣게 안내할 것
+  // shortcut: projection 이 없으면 결과 이름이 쪽마다 다를 수 있다(문서마다 필드가 달라서), 화면 칸이 흔들리면 쿼리에 projection 을 넣게 안내할
+  // 것
   private static List<String> labelsOf(MongoQuery parsed, List<Document> documents) {
     var included = includedFields(parsed.projection());
     if (!included.isEmpty()) {

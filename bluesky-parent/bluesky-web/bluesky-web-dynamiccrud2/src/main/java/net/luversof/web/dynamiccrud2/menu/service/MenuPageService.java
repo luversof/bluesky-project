@@ -1318,14 +1318,16 @@ public class MenuPageService {
         .toList();
   }
 
-  /**
-   * 메뉴 설정 화면의 "목록에서 숨길 칸" 후보: 조회 쿼리 결과 이름(* 면 메뉴 테이블 필드) + 이미 숨긴 이름. 쿼리를 실행하지 않는다
-   */
+  /** 메뉴 설정 화면의 "목록에서 숨길 칸" 후보: 조회 쿼리 결과 이름(* 면 메뉴 테이블 필드) + 이미 숨긴 이름. 쿼리를 실행하지 않는다 */
   public List<Column> listColumns(UUID menuId) {
     var ctx = context(menuId);
     var labels = new java.util.LinkedHashSet<>(analysisLabels(ctx.analysis()));
-    if (ctx.analysis().columns().stream().anyMatch(c -> c.kind() == ResultColumn.Kind.ALL || c.kind() == ResultColumn.Kind.ALL_TABLE)) {
-      ctx.base().getFields().stream().filter(f -> !f.isVirtual()).forEach(f -> labels.add(f.getColumnName()));
+    if (ctx.analysis().columns().stream()
+        .anyMatch(
+            c -> c.kind() == ResultColumn.Kind.ALL || c.kind() == ResultColumn.Kind.ALL_TABLE)) {
+      ctx.base().getFields().stream()
+          .filter(f -> !f.isVirtual())
+          .forEach(f -> labels.add(f.getColumnName()));
     }
     labels.addAll(ctx.menu().listHiddenLabels());
     return columnsOf(ctx, List.copyOf(labels));

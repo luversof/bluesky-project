@@ -454,7 +454,9 @@ public class MenuService {
   public Menu setListHidden(UUID id, java.util.Collection<String> labels) {
     var menu = getMenu(id);
     var before = SettingLogService.snapshot(menu);
-    var text = String.join("\n", labels.stream().map(String::strip).filter(s -> !s.isEmpty()).distinct().toList());
+    var text =
+        String.join(
+            "\n", labels.stream().map(String::strip).filter(s -> !s.isEmpty()).distinct().toList());
     menu.setListHidden(text.isEmpty() ? null : text);
     var saved = menuRepository.save(menu);
     settingLog.record(

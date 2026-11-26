@@ -20,6 +20,7 @@ import org.testcontainers.mongodb.MongoDBContainer;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+
 import io.github.luversof.boot.exception.BlueskyException;
 import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapter.Sort;
 import net.luversof.web.dynamiccrud2.adapter.Filter;
@@ -43,13 +44,18 @@ class MongoDatabaseAdapterWriteTest {
     container.start();
     client = MongoClients.create(container.getConnectionString());
     var database = client.getDatabase("dmt");
-    database.getCollection("users")
+    database
+        .getCollection("users")
         .insertMany(
             List.of(
                 new Document("name", "alpha").append("age", 20).append("tags", List.of("a")),
                 new Document("name", "beta").append("age", 30),
-                new Document("name", "Gamma").append("age", 40).append("profile", new Document("lv", 3))));
-    adapter = new MongoDatabaseAdapter(database, new Dynamiccrud2Properties(null, null, null, null, null));
+                new Document("name", "Gamma")
+                    .append("age", 40)
+                    .append("profile", new Document("lv", 3))));
+    adapter =
+        new MongoDatabaseAdapter(
+            database, new Dynamiccrud2Properties(null, null, null, null, null));
   }
 
   @AfterAll
@@ -74,7 +80,9 @@ class MongoDatabaseAdapterWriteTest {
   @Test
   void readSearchSortAndPage() {
     var meta = adapter.readTable(new TableRef(null, null, "users"));
-    assertThat(meta.columns()).extracting(c -> c.name()).containsExactly("_id", "name", "age", "profile", "tags");
+    assertThat(meta.columns())
+        .extracting(c -> c.name())
+        .containsExactly("_id", "name", "age", "profile", "tags");
     assertThat(meta.columns().get(0).typeName()).isEqualTo("objectId");
 
     var query =
@@ -82,18 +90,29 @@ class MongoDatabaseAdapterWriteTest {
         {"collection": "users", "operation": "find", "filter": {"age": {"$gte": :minAge}}, "sort": {"age": 1}}
         """;
     var analysis = adapter.analyzeRead(query);
-    assertThat(analysis.conditions()).singleElement().satisfies(c -> assertThat(c.optionalCapable()).isTrue());
+    assertThat(analysis.conditions())
+        .singleElement()
+        .satisfies(c -> assertThat(c.optionalCapable()).isTrue());
 
-    var page = adapter.read(query, Map.of("minAge", new BigDecimal("25")), Set.of(), List.of(), null, 0, 1);
+    var page =
+        adapter.read(
+            query, Map.of("minAge", new BigDecimal("25")), Set.of(), List.of(), null, 0, 1);
     assertThat(page.total()).isEqualTo(2);
-    assertThat(page.rows()).singleElement().satisfies(row -> assertThat(row.get(page.labels().indexOf("name"))).isEqualTo("beta"));
-    var next = adapter.read(query, Map.of("minAge", new BigDecimal("25")), Set.of(), List.of(), null, 1, 1);
+    assertThat(page.rows())
+        .singleElement()
+        .satisfies(row -> assertThat(row.get(page.labels().indexOf("name"))).isEqualTo("beta"));
+    var next =
+        adapter.read(
+            query, Map.of("minAge", new BigDecimal("25")), Set.of(), List.of(), null, 1, 1);
     assertThat(next.rows().getFirst().get(next.labels().indexOf("name"))).isEqualTo("Gamma");
     // 빈 선택 조건은 뺀다 · 화면 정렬 · 화면 검색(부분 일치, 대소문자 무시)
-    var all = adapter.read(query, Map.of(), Set.of("minAge"), List.of(), new Sort("name", true), 0, 10);
+    var all =
+        adapter.read(query, Map.of(), Set.of("minAge"), List.of(), new Sort("name", true), 0, 10);
     assertThat(all.total()).isEqualTo(3);
     // Mongo 기본 정렬은 대소문자를 가린다(바이트 순: 소문자 > 대문자)
-    assertThat(all.rows()).extracting(r -> r.get(all.labels().indexOf("name"))).containsExactly("beta", "alpha", "Gamma");
+    assertThat(all.rows())
+        .extracting(r -> r.get(all.labels().indexOf("name")))
+        .containsExactly("beta", "alpha", "Gamma");
     var searched =
         adapter.read(
             query,
@@ -115,11 +134,14 @@ class MongoDatabaseAdapterWriteTest {
     var insert = adapter.generate(QueryKind.INSERT, meta);
     var update = adapter.generate(QueryKind.UPDATE, meta);
     var delete = adapter.generate(QueryKind.DELETE, meta);
-    for (var entry : Map.of(QueryKind.INSERT, insert, QueryKind.UPDATE, update, QueryKind.DELETE, delete).entrySet()) {
+    for (var entry :
+        Map.of(QueryKind.INSERT, insert, QueryKind.UPDATE, update, QueryKind.DELETE, delete)
+            .entrySet()) {
       adapter.validate(entry.getValue(), entry.getKey());
       adapter.check(entry.getValue());
     }
-    assertThat(adapter.parameterNames(update)).containsExactly("_id", "name", "age", "profile", "tags");
+    assertThat(adapter.parameterNames(update))
+        .containsExactly("_id", "name", "age", "profile", "tags");
 
     var values = new java.util.HashMap<String, Object>();
     values.put("name", "delta");
@@ -145,7 +167,8 @@ class MongoDatabaseAdapterWriteTest {
     values.put("_id", id);
     values.put("name", "delta2");
     assertThat(adapter.modify(update, List.of(values))).containsExactly(1);
-    assertThat(adapter.currentRow(meta.ref(), List.of("name"), Map.of("_id", id))).containsExactly("delta2");
+    assertThat(adapter.currentRow(meta.ref(), List.of("name"), Map.of("_id", id)))
+        .containsExactly("delta2");
 
     assertThat(adapter.modify(delete, List.of(Map.of("_id", id)))).containsExactly(1);
     assertThat(adapter.currentRow(meta.ref(), List.of("name"), Map.of("_id", id))).isNull();
@@ -154,18 +177,16 @@ class MongoDatabaseAdapterWriteTest {
   @Test
   void rejectsUnsafeOrWrongQueries() {
     // filter 에 파라미터가 없는 수정 · 삭제는 전체 문서를 바꿀 수 있다
-    assertThatThrownBy(
-            () ->
-                adapter.validate(
-                    "{\"collection\": \"users\", \"operation\": \"deleteMany\", \"filter\": {}}", QueryKind.DELETE))
+    assertThatThrownBy(() ->
+            adapter.validate(
+                "{\"collection\": \"users\", \"operation\": \"deleteMany\", \"filter\": {}}",
+                QueryKind.DELETE))
         .isInstanceOf(BlueskyException.class);
-    assertThatThrownBy(
-            () ->
-                adapter.validate(
-                    "{\"collection\": \"users\", \"operation\": \"find\"}", QueryKind.DELETE))
+    assertThatThrownBy(() ->
+            adapter.validate(
+                "{\"collection\": \"users\", \"operation\": \"find\"}", QueryKind.DELETE))
         .isInstanceOf(BlueskyException.class);
-    assertThatThrownBy(
-            () -> adapter.check("{\"collection\": \"nope\", \"operation\": \"find\"}"))
+    assertThatThrownBy(() -> adapter.check("{\"collection\": \"nope\", \"operation\": \"find\"}"))
         .isInstanceOf(DataAccessException.class);
   }
 }

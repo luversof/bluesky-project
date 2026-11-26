@@ -98,7 +98,8 @@ public final class ReadQueryRewriter {
         rejectFiltersOnUserPaging(filters);
         return source;
       }
-      // 감싼 안쪽 ORDER BY 는 MSSQL 이 막는다 - 끝의 ORDER BY 를 바깥(결과 이름)으로 옮긴다(옮길 수 없는 모양이면 그대로, DMT2 e4fec06)
+      // 감싼 안쪽 ORDER BY 는 MSSQL 이 막는다 - 끝의 ORDER BY 를 바깥(결과 이름)으로 옮긴다(옮길 수 없는 모양이면 그대로, DMT2
+      // e4fec06)
       var split = TrailingOrderBy.of(source, dialect);
       var inner = split == null ? source : split.body();
       var ownOrder = split == null || sort != null ? List.<String>of() : split.terms();

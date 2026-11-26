@@ -62,8 +62,9 @@ public class ConnectionNameService {
   }
 
   /**
-   * {@link #search} 에 읽은 출처(reader key)를 붙인다. Mongo 연결(앱 설정 connection-map, 출처 {@value #MONGO_READER})과 JDBC
-   * 표를 합쳐 이름순(DMT2 9dfa599 와 같게). 같은 이름이 둘 다 있으면 Mongo 로 쓰인다(DatabaseAdapterResolver)
+   * {@link #search} 에 읽은 출처(reader key)를 붙인다. Mongo 연결(앱 설정 connection-map, 출처 {@value
+   * #MONGO_READER})과 JDBC 표를 합쳐 이름순(DMT2 9dfa599 와 같게). 같은 이름이 둘 다 있으면 Mongo 로
+   * 쓰인다(DatabaseAdapterResolver)
    */
   public List<ConnectionName> searchWithSource(String keyword) {
     var needle = keyword == null ? "" : keyword.strip().toLowerCase(java.util.Locale.ROOT);
@@ -72,7 +73,9 @@ public class ConnectionNameService {
     mongoNames.stream()
         .filter(name -> name.toLowerCase(java.util.Locale.ROOT).contains(needle))
         .forEach(name -> names.add(new ConnectionName(name, MONGO_READER)));
-    jdbcNames(keyword).stream().filter(name -> !mongoNames.contains(name.name())).forEach(names::add);
+    jdbcNames(keyword).stream()
+        .filter(name -> !mongoNames.contains(name.name()))
+        .forEach(names::add);
     names.sort(java.util.Comparator.comparing(ConnectionName::name, String.CASE_INSENSITIVE_ORDER));
     return names.size() > SUGGEST_LIMIT ? List.copyOf(names.subList(0, SUGGEST_LIMIT)) : names;
   }

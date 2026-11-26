@@ -64,8 +64,7 @@ class MongoQueryTest {
 
   @Test
   void screenFiltersBecomeMongoConditions() {
-    var params =
-        Map.<String, Object>of("kw", "%a!_b%", "from", new BigDecimal("1"), "eq", "x");
+    var params = Map.<String, Object>of("kw", "%a!_b%", "from", new BigDecimal("1"), "eq", "x");
     var filter =
         MongoQuery.filterOf(
             List.of(
@@ -87,12 +86,14 @@ class MongoQueryTest {
   void rejectsBrokenOrUnknownShapes() {
     assertThatThrownBy(() -> MongoQuery.parse("{\"collection\": \"u\", \"operation\": \"find\""))
         .isInstanceOf(BlueskyException.class);
-    assertThatThrownBy(() -> MongoQuery.parse("{\"collection\": \"u\", \"operation\": \"aggregate\"}"))
+    assertThatThrownBy(
+            () -> MongoQuery.parse("{\"collection\": \"u\", \"operation\": \"aggregate\"}"))
         .isInstanceOf(BlueskyException.class);
     assertThatThrownBy(() -> MongoQuery.parse("{\"operation\": \"find\"}"))
         .isInstanceOf(BlueskyException.class);
-    assertThatThrownBy(
-            () -> MongoQuery.parse("{\"collection\": \"u\", \"operation\": \"updateMany\", \"filter\": {}}"))
+    assertThatThrownBy(() ->
+            MongoQuery.parse(
+                "{\"collection\": \"u\", \"operation\": \"updateMany\", \"filter\": {}}"))
         .isInstanceOf(BlueskyException.class);
   }
 

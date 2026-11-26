@@ -10,8 +10,8 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 /**
- * 조회 SQL 의 SELECT 칸 목록을 글자로 다룬다(JSqlParser 로 다시 쓰면 1차 · 사용자 서식이 사라진다). 칸마다 시작 위치(쉼표 다음)와 최상위 FROM 위치.
- * 1차 가져오기(칸 빼기 · 별칭 바꾸기 · 순서)와 메뉴 설정의 칸 순서 바꾸기가 쓴다.
+ * 조회 SQL 의 SELECT 칸 목록을 글자로 다룬다(JSqlParser 로 다시 쓰면 1차 · 사용자 서식이 사라진다). 칸마다 시작 위치(쉼표 다음)와 최상위 FROM
+ * 위치. 1차 가져오기(칸 빼기 · 별칭 바꾸기 · 순서)와 메뉴 설정의 칸 순서 바꾸기가 쓴다.
  *
  * @param starts 칸마다 시작 위치
  * @param from 최상위 FROM 위치
@@ -54,8 +54,10 @@ public record SelectColumns(List<Integer> starts, int from) {
         starts.add(i + 1);
       } else if (depth == 0
           && sql.regionMatches(true, i, "FROM", 0, 4)
-          && !Character.isLetterOrDigit(sql.charAt(i - 1)) && sql.charAt(i - 1) != '_'
-          && (i + 4 >= sql.length() || !Character.isLetterOrDigit(sql.charAt(i + 4)) && sql.charAt(i + 4) != '_')) {
+          && !Character.isLetterOrDigit(sql.charAt(i - 1))
+          && sql.charAt(i - 1) != '_'
+          && (i + 4 >= sql.length()
+              || !Character.isLetterOrDigit(sql.charAt(i + 4)) && sql.charAt(i + 4) != '_')) {
         return new SelectColumns(starts, i);
       }
     }
@@ -98,10 +100,13 @@ public record SelectColumns(List<Integer> starts, int from) {
     order.forEach((k, v) -> lower.put(k.toLowerCase(Locale.ROOT), v));
     var items = list.items(sql);
     var ranked = new ArrayList<Integer>(IntStream.range(0, items.size()).boxed().toList());
-    ranked.sort(Comparator.comparing(k -> {
-      var name = resultName(items.get(k));
-      return name == null ? Integer.MAX_VALUE : lower.getOrDefault(name.toLowerCase(Locale.ROOT), Integer.MAX_VALUE);
-    }));
+    ranked.sort(
+        Comparator.comparing(k -> {
+          var name = resultName(items.get(k));
+          return name == null
+              ? Integer.MAX_VALUE
+              : lower.getOrDefault(name.toLowerCase(Locale.ROOT), Integer.MAX_VALUE);
+        }));
     if (ranked.equals(IntStream.range(0, items.size()).boxed().toList())) {
       return null;
     }
@@ -110,7 +115,10 @@ public record SelectColumns(List<Integer> starts, int from) {
       var slot = items.get(k);
       var lead = slot.substring(0, slot.length() - slot.stripLeading().length());
       var trail = slot.substring(slot.stripTrailing().length());
-      out.append(k == 0 ? "" : ",").append(lead.isEmpty() && k > 0 ? " " : lead).append(items.get(ranked.get(k)).strip()).append(trail);
+      out.append(k == 0 ? "" : ",")
+          .append(lead.isEmpty() && k > 0 ? " " : lead)
+          .append(items.get(ranked.get(k)).strip())
+          .append(trail);
     }
     return out.append(sql.substring(list.from())).toString();
   }

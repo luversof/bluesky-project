@@ -21,9 +21,9 @@ import net.luversof.web.dynamiccrud2.adapter.mongo.MongoDatabaseAdapter;
 import net.luversof.web.dynamiccrud2.config.Dynamiccrud2Properties;
 
 /**
- * connection 이름 → 어댑터. Mongo 연결 목록(bluesky-boot.connection-info.mongodb.connection-map)에 있는 이름이면 Mongo, 아니면
- * JDBC. 연결은 connectionInfo 에서 그때그때 읽고, JDBC DB 종류는 제품 이름으로 고른다. Mongo 연결 목록을 설정하지 않으면(지금 기본) 모두
- * JDBC 다(DMT2 9dfa599 UDP-6560 이식).
+ * connection 이름 → 어댑터. Mongo 연결 목록(bluesky-boot.connection-info.mongodb.connection-map)에 있는 이름이면
+ * Mongo, 아니면 JDBC. 연결은 connectionInfo 에서 그때그때 읽고, JDBC DB 종류는 제품 이름으로 고른다. Mongo 연결 목록을 설정하지 않으면(지금
+ * 기본) 모두 JDBC 다(DMT2 9dfa599 UDP-6560 이식).
  */
 @Component
 public class DatabaseAdapterResolver {
@@ -44,10 +44,11 @@ public class DatabaseAdapterResolver {
   }
 
   /**
-   * Mongo 연결 이름(앱 설정의 connection-map). 설정이 없으면 빈 값. 연결 정보를 Mongo 컬렉션에서 읽는 mongodb-mongoclient reader 는
-   * 데이터베이스 이름을 MongoClient 에서 알 수 없어 쓰지 않는다
+   * Mongo 연결 이름(앱 설정의 connection-map). 설정이 없으면 빈 값. 연결 정보를 Mongo 컬렉션에서 읽는 mongodb-mongoclient
+   * reader 는 데이터베이스 이름을 MongoClient 에서 알 수 없어 쓰지 않는다
    */
-  // shortcut: properties-mongoclient(connection-map)만, mongodb-mongoclient 저장소 연결이 필요해지면 이름 · database 를 그 컬렉션에서 읽을 것
+  // shortcut: properties-mongoclient(connection-map)만, mongodb-mongoclient 저장소 연결이 필요해지면 이름 ·
+  // database 를 그 컬렉션에서 읽을 것
   public Set<String> mongoConnectionNames() {
     var mongo = mongoConnections.getIfAvailable();
     return mongo == null || mongo.getConnectionMap() == null

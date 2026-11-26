@@ -138,7 +138,10 @@ public class Menu {
 
   /** 목록에서 숨길 결과 이름들 */
   public Set<String> listHiddenLabels() {
-    return listHidden == null ? Set.of() : new LinkedHashSet<>(listHidden.lines().map(String::strip).filter(s -> !s.isEmpty()).toList());
+    return listHidden == null
+        ? Set.of()
+        : new LinkedHashSet<>(
+            listHidden.lines().map(String::strip).filter(s -> !s.isEmpty()).toList());
   }
 
   public boolean isEnableExcel() {

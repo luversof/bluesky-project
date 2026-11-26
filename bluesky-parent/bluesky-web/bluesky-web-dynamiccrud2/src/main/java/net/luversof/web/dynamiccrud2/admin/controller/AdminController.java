@@ -284,7 +284,9 @@ public class AdminController {
           "columnsReorderable",
           menu.getQueries().stream()
               .filter(q -> q.getKind() == QueryKind.READ)
-              .anyMatch(q -> net.luversof.web.dynamiccrud2.adapter.jdbc.SelectColumns.reorderable(q.getQueryText())));
+              .anyMatch(q ->
+                  net.luversof.web.dynamiccrud2.adapter.jdbc.SelectColumns.reorderable(
+                      q.getQueryText())));
     } catch (RuntimeException e) {
       model.addAttribute("listColumns", List.of());
     }
@@ -541,12 +543,16 @@ public class AdminController {
       @RequestParam(name = "show", required = false) List<String> show,
       RedirectAttributes redirect) {
     var shown = show == null ? java.util.Set.<String>of() : java.util.Set.copyOf(show);
-    var hidden = all == null ? List.<String>of() : all.stream().filter(label -> !shown.contains(label)).toList();
+    var hidden =
+        all == null
+            ? List.<String>of()
+            : all.stream().filter(label -> !shown.contains(label)).toList();
     return run(
         redirect,
         "redirect:/admin/menu/" + id,
         () -> {
-          // 칸 순서(all = 화면에서 끈 순서): 바뀌었으면 조회 쿼리 SELECT 순서를 바꾼다(DMT2 26e7b32 - 칸 순서는 쿼리 순서 그대로). 저장 검사를 거친다
+          // 칸 순서(all = 화면에서 끈 순서): 바뀌었으면 조회 쿼리 SELECT 순서를 바꾼다(DMT2 26e7b32 - 칸 순서는 쿼리 순서 그대로). 저장
+          // 검사를 거친다
           var read =
               menuService.getMenu(id).getQueries().stream()
                   .filter(q -> q.getKind() == QueryKind.READ)
@@ -686,8 +692,8 @@ public class AdminController {
   }
 
   /**
-   * 기본 쿼리 다시 만들기(htmx 조각 admin/queryTextBox): DB 테이블의 지금 컬럼으로 그 종류의 기본 쿼리를 만들어 입력칸만 바꾼다. 저장은 하지 않는다.
-   * 만들 수 없으면(PK · unique 없음 · 연결 실패) 입력칸은 그대로 두고 사유를 보인다
+   * 기본 쿼리 다시 만들기(htmx 조각 admin/queryTextBox): DB 테이블의 지금 컬럼으로 그 종류의 기본 쿼리를 만들어 입력칸만 바꾼다. 저장은 하지
+   * 않는다. 만들 수 없으면(PK · unique 없음 · 연결 실패) 입력칸은 그대로 두고 사유를 보인다
    */
   @PostMapping("/menu/{menuId}/query/draft")
   public String redraftQuery(

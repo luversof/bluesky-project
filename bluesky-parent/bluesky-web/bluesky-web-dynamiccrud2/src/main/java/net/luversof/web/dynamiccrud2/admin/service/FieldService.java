@@ -248,7 +248,8 @@ public class FieldService {
    * 된다(2026-11-19 사용자 결정 - 예전엔 별칭이 라벨을 말없이 덮었다).
    */
   public static String headerOf(DbField field, String alias, String fallback) {
-    // 사람이 읽으라고 쓴 별칭(AS 'Job 실행 ID' - 공백 · 한글 등 이름에 못 쓰는 글자)은 메뉴의 칸 제목이다 - 테이블 필드 라벨(여러 메뉴 공유)보다 먼저(DMT2 6327f68)
+    // 사람이 읽으라고 쓴 별칭(AS 'Job 실행 ID' - 공백 · 한글 등 이름에 못 쓰는 글자)은 메뉴의 칸 제목이다 - 테이블 필드 라벨(여러 메뉴 공유)보다
+    // 먼저(DMT2 6327f68)
     if (alias != null && !alias.matches("[A-Za-z0-9_$#@.]+")) {
       return alias;
     }

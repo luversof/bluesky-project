@@ -112,7 +112,8 @@ record MongoQuery(
     for (var key : root.keySet()) {
       if (!Set.of("collection", "operation", "filter", "sort", "projection", "document", "update")
           .contains(key)) {
-        throw new BlueskyException(QueryErrorCode.QUERY_CHECK_FAILED, "unknown key \"" + key + "\"");
+        throw new BlueskyException(
+            QueryErrorCode.QUERY_CHECK_FAILED, "unknown key \"" + key + "\"");
       }
     }
     var query =
@@ -139,7 +140,8 @@ record MongoQuery(
       return null;
     }
     if (!(value instanceof Document document)) {
-      throw new BlueskyException(QueryErrorCode.QUERY_CHECK_FAILED, "\"" + key + "\" must be an object");
+      throw new BlueskyException(
+          QueryErrorCode.QUERY_CHECK_FAILED, "\"" + key + "\" must be an object");
     }
     return document;
   }
@@ -383,7 +385,10 @@ record MongoQuery(
       return document.toJson();
     }
     if (value instanceof List<?> list) {
-      return new Document("v", list).toJson().replaceFirst("^\\{\"v\": ", "").replaceFirst("}$", "");
+      return new Document("v", list)
+          .toJson()
+          .replaceFirst("^\\{\"v\": ", "")
+          .replaceFirst("}$", "");
     }
     if (value instanceof Binary binary) {
       return Base64.getEncoder().encodeToString(binary.getData());
