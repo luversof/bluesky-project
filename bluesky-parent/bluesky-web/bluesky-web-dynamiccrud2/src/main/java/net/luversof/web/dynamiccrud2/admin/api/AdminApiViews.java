@@ -37,10 +37,20 @@ public final class AdminApiViews {
   public record Affected(int affected) {}
 
   public record ProjectView(
-      UUID id, String code, String name, boolean enableDisplay, int displayOrder, Instant createdDate) {
+      UUID id,
+      String code,
+      String name,
+      boolean enableDisplay,
+      int displayOrder,
+      Instant createdDate) {
     static ProjectView of(Project p) {
       return new ProjectView(
-          p.getId(), p.getCode(), p.getName(), p.isEnableDisplay(), p.getDisplayOrder(), p.getCreatedDate());
+          p.getId(),
+          p.getCode(),
+          p.getName(),
+          p.isEnableDisplay(),
+          p.getDisplayOrder(),
+          p.getCreatedDate());
     }
   }
 
@@ -48,16 +58,31 @@ public final class AdminApiViews {
       UUID id, UUID projectId, String code, String name, boolean enableDisplay, int displayOrder) {
     static MainMenuView of(MainMenu m) {
       return new MainMenuView(
-          m.getId(), m.getProjectId(), m.getCode(), m.getName(), m.isEnableDisplay(), m.getDisplayOrder());
+          m.getId(),
+          m.getProjectId(),
+          m.getCode(),
+          m.getName(),
+          m.isEnableDisplay(),
+          m.getDisplayOrder());
     }
   }
 
   @Schema(description = "메뉴 요약(구조 트리)")
   public record MenuSummary(
-      UUID id, String code, String name, String authority, boolean enableDisplay, int displayOrder) {
+      UUID id,
+      String code,
+      String name,
+      String authority,
+      boolean enableDisplay,
+      int displayOrder) {
     static MenuSummary of(Menu m) {
       return new MenuSummary(
-          m.getId(), m.getCode(), m.getName(), m.getAuthority(), m.isEnableDisplay(), m.getDisplayOrder());
+          m.getId(),
+          m.getCode(),
+          m.getName(),
+          m.getAuthority(),
+          m.isEnableDisplay(),
+          m.getDisplayOrder());
     }
   }
 
@@ -77,7 +102,13 @@ public final class AdminApiViews {
       int displayOrder) {
     static QueryView of(MenuQuery q) {
       return new QueryView(
-          q.getId(), q.getKind(), q.getName(), q.getQueryText(), q.getAuthority(), q.getParamSettings(), q.getDisplayOrder());
+          q.getId(),
+          q.getKind(),
+          q.getName(),
+          q.getQueryText(),
+          q.getAuthority(),
+          q.getParamSettings(),
+          q.getDisplayOrder());
     }
   }
 
@@ -109,7 +140,9 @@ public final class AdminApiViews {
           m.getDisplayOrder(),
           m.getSearchSettings(),
           m.getQueries().stream()
-              .sorted(Comparator.comparing(MenuQuery::getKind).thenComparingInt(MenuQuery::getDisplayOrder))
+              .sorted(
+                  Comparator.comparing(MenuQuery::getKind)
+                      .thenComparingInt(MenuQuery::getDisplayOrder))
               .map(QueryView::of)
               .toList());
     }
@@ -129,7 +162,12 @@ public final class AdminApiViews {
           "메뉴 만들기: 연결 이름(connection) · 테이블(catalog · schema · table - 테이블 목록 응답 그대로)을 고르면 필드를 등록하고 조회 쿼리를"
               + " 만든다")
   public record MenuCreate(
-      String code, String name, String connectionName, String catalog, String schema, String table) {}
+      String code,
+      String name,
+      String connectionName,
+      String catalog,
+      String schema,
+      String table) {}
 
   @Schema(description = "메뉴 복사. code · name 을 비우면 \"이름 복사본\" · code-copy(겹치면 -copy2 …)")
   public record MenuCopy(String code, String name) {}
@@ -186,7 +224,9 @@ public final class AdminApiViews {
           t.getTableName(),
           t.getColumnsReadDate(),
           t.getFields().stream()
-              .sorted(Comparator.comparing(DbField::isVirtual).thenComparingInt(DbField::getDisplayOrder))
+              .sorted(
+                  Comparator.comparing(DbField::isVirtual)
+                      .thenComparingInt(DbField::getDisplayOrder))
               .map(FieldView::of)
               .toList());
     }

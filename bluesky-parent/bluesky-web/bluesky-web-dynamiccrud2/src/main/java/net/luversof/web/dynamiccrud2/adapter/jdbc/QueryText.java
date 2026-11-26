@@ -109,8 +109,8 @@ public final class QueryText {
       Pattern.compile("(?<![:\\p{L}\\p{N}_]):([\\p{L}_][\\p{L}\\p{N}_]*)");
 
   /**
-   * :이름 파라미터를 PostgreSQL 번호 파라미터($1, $2 …, 같은 이름은 같은 번호)로 바꾼다 - 값 없이 보는 실행 계획(EXPLAIN (GENERIC_PLAN))용.
-   * 주석 · 문자열 안과 형 변환(::)은 건드리지 않는다.
+   * :이름 파라미터를 PostgreSQL 번호 파라미터($1, $2 …, 같은 이름은 같은 번호)로 바꾼다 - 값 없이 보는 실행 계획(EXPLAIN
+   * (GENERIC_PLAN))용. 주석 · 문자열 안과 형 변환(::)은 건드리지 않는다.
    */
   public static String toNumberedParameters(String sql) {
     var stripped = stripCommentsAndLiterals(sql);

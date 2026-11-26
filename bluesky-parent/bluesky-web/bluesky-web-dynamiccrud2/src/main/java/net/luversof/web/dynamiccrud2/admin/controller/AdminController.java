@@ -248,7 +248,8 @@ public class AdminController {
       // 테이블 컬럼을 읽다 연결이 끊김 · 계정 거부: 오류 화면 대신 관리 화면 안내, 원인은 로그에.
       // 설정 DB 오류(다른 DataAccessException)는 대상 연결 탓이 아니라 여기서 잡지 않는다
       LOG.warn("connection {} unavailable: {}", connectionName, e.getMessage());
-      redirect.addFlashAttribute("error", Msg.t("admin.menuCreate.connFailed", connectionName.strip()));
+      redirect.addFlashAttribute(
+          "error", Msg.t("admin.menuCreate.connFailed", connectionName.strip()));
       return projectPage;
     }
   }
@@ -650,7 +651,8 @@ public class AdminController {
       @RequestParam QueryKind kind,
       @RequestParam String queryText,
       Model model) {
-    model.addAttribute("explain", queryService.explain(menuService.getMenu(menuId), kind, queryText));
+    model.addAttribute(
+        "explain", queryService.explain(menuService.getMenu(menuId), kind, queryText));
     return "admin/queryExplain";
   }
 

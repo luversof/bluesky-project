@@ -63,21 +63,31 @@ public class AdminHistoryApiController {
     this.useService = useService;
   }
 
-  @Operation(summary = "전체 설정 변경 이력", description = "모든 프로젝트 + 어느 프로젝트에도 속하지 않는 변경(프로젝트 순서 · 테이블 필드 등)")
+  @Operation(
+      summary = "전체 설정 변경 이력",
+      description = "모든 프로젝트 + 어느 프로젝트에도 속하지 않는 변경(프로젝트 순서 · 테이블 필드 등)")
   @GetMapping("/history")
   public SettingLogService.HistoryPage allHistory(
       @Parameter(description = "사용자") @RequestParam(required = false) String user,
-      @Parameter(description = "대상(PROJECT · MAIN_MENU · MENU · QUERY · SEARCH · FIELD …)") @RequestParam(required = false)
+      @Parameter(description = "대상(PROJECT · MAIN_MENU · MENU · QUERY · SEARCH · FIELD …)")
+          @RequestParam(required = false)
           String target,
-      @Parameter(description = "시작일(그날 포함)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+      @Parameter(description = "시작일(그날 포함)")
+          @RequestParam(required = false)
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate from,
-      @Parameter(description = "종료일(그날 포함)") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+      @Parameter(description = "종료일(그날 포함)")
+          @RequestParam(required = false)
+          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate to,
       @Parameter(description = "쪽(0 부터)") @RequestParam(defaultValue = "0") int page) {
-    return settingLogService.page(null, null, new SettingLogService.Filter(user, target, from, to), page);
+    return settingLogService.page(
+        null, null, new SettingLogService.Filter(user, target, from, to), page);
   }
 
-  @Operation(summary = "프로젝트 설정 변경 이력", description = "프로젝트 · 메인 메뉴 · 그 아래 메뉴(지운 메뉴 포함) · 쿼리 · 검색 설정")
+  @Operation(
+      summary = "프로젝트 설정 변경 이력",
+      description = "프로젝트 · 메인 메뉴 · 그 아래 메뉴(지운 메뉴 포함) · 쿼리 · 검색 설정")
   @GetMapping("/projects/{id}/history")
   public SettingLogService.HistoryPage projectHistory(
       @PathVariable UUID id,
@@ -87,7 +97,8 @@ public class AdminHistoryApiController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
       @RequestParam(defaultValue = "0") int page) {
     menuService.getProject(id);
-    return settingLogService.page(null, id, new SettingLogService.Filter(user, target, from, to), page);
+    return settingLogService.page(
+        null, id, new SettingLogService.Filter(user, target, from, to), page);
   }
 
   @Operation(summary = "메뉴 설정 변경 이력", description = "메뉴 · 쿼리 · 검색 설정 + 그 메뉴 테이블의 필드 변경")
@@ -127,7 +138,8 @@ public class AdminHistoryApiController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
       @RequestParam(defaultValue = "0") int page) {
     fieldService.get(id);
-    return settingLogService.tablePage(id, new SettingLogService.Filter(user, null, from, to), page);
+    return settingLogService.tablePage(
+        id, new SettingLogService.Filter(user, null, from, to), page);
   }
 
   @Operation(

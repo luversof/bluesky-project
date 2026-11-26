@@ -22,7 +22,8 @@ class ExcelRowsTest {
         var out = new ByteArrayOutputStream()) {
       var sheet = workbook.createSheet();
       var dateStyle = workbook.createCellStyle();
-      dateStyle.setDataFormat(workbook.getCreationHelper().createDataFormat().getFormat("yyyy-mm-dd"));
+      dateStyle.setDataFormat(
+          workbook.getCreationHelper().createDataFormat().getFormat("yyyy-mm-dd"));
       var header = sheet.createRow(0);
       String[] names = {"n", "d", "t", "b", "f", "s"};
       for (int i = 0; i < names.length; i++) {

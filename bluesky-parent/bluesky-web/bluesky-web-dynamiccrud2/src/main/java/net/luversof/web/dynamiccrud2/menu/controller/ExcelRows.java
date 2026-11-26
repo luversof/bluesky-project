@@ -16,14 +16,17 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /**
- * 엑셀로 여러 행 넣기(사용 화면): 첫 시트의 첫 줄 = 칸 이름, 둘째 줄부터 한 줄 = 한 행. 칸 값은 화면 입력과 같은 글자로 - 날짜 칸은 ISO(2026-11-26,
- * 시각이 있으면 2026-11-26T13:20), 수는 지수 없는 글자, 참거짓은 true / false, 수식은 계산된 값. 칸이 모두 빈 줄은 뺀다.
+ * 엑셀로 여러 행 넣기(사용 화면): 첫 시트의 첫 줄 = 칸 이름, 둘째 줄부터 한 줄 = 한 행. 칸 값은 화면 입력과 같은 글자로 - 날짜 칸은
+ * ISO(2026-11-26, 시각이 있으면 2026-11-26T13:20), 수는 지수 없는 글자, 참거짓은 true / false, 수식은 계산된 값. 칸이 모두 빈 줄은
+ * 뺀다.
  */
 final class ExcelRows {
 
   private ExcelRows() {}
 
-  /** @throws IOException xlsx 가 아니거나 읽을 수 없을 때(POI 의 형식 오류도 여기로) */
+  /**
+   * @throws IOException xlsx 가 아니거나 읽을 수 없을 때(POI 의 형식 오류도 여기로)
+   */
   static List<Map<String, String>> read(InputStream input) throws IOException {
     try (var workbook = new XSSFWorkbook(input)) {
       var sheet = workbook.getSheetAt(0);
@@ -70,7 +73,10 @@ final class ExcelRows {
     if (cell == null) {
       return "";
     }
-    var type = cell.getCellType() == CellType.FORMULA ? cell.getCachedFormulaResultType() : cell.getCellType();
+    var type =
+        cell.getCellType() == CellType.FORMULA
+            ? cell.getCachedFormulaResultType()
+            : cell.getCellType();
     return switch (type) {
       case STRING -> cell.getStringCellValue();
       case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());

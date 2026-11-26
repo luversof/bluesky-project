@@ -52,8 +52,8 @@ class MessagesPropertiesTest {
   }
 
   /**
-   * 파일은 ASCII 만(한글 · 기호는 \\uXXXX, 사내 메시지 파일 관례 - DMT2 와 같게). STS · Eclipse 는 .properties 를 ISO-8859-1 로 열어 날
-   * UTF-8 한글이 깨져 보인다. 새 문구를 한글 그대로 넣으면 여기서 막힌다 - native2ascii 로 바꿔 넣을 것.
+   * 파일은 ASCII 만(한글 · 기호는 \\uXXXX, 사내 메시지 파일 관례 - DMT2 와 같게). STS · Eclipse 는 .properties 를
+   * ISO-8859-1 로 열어 날 UTF-8 한글이 깨져 보인다. 새 문구를 한글 그대로 넣으면 여기서 막힌다 - native2ascii 로 바꿔 넣을 것.
    */
   @Test
   void asciiOnlyAndSameKeys() throws IOException {
@@ -69,7 +69,8 @@ class MessagesPropertiesTest {
     }
     var ko = load(readUtf8("messages.properties"));
     var en = load(readUtf8("messages_en.properties"));
-    assertThat(ko.values().stream().anyMatch(v -> Pattern.compile("[가-힣]").matcher((String) v).find()))
+    assertThat(
+            ko.values().stream().anyMatch(v -> Pattern.compile("[가-힣]").matcher((String) v).find()))
         .as("한국어 문구")
         .isTrue();
     assertThat(ko.values()).noneMatch(v -> ((String) v).contains("\uFFFD"));

@@ -30,7 +30,8 @@ class ConnectionNameServiceTest implements GeneralWebTest {
     assertThat(connectionNameService.search("no-such-connection-zzz")).isEmpty();
     // 읽은 출처 = 켜진 JDBC reader key(application.properties 의 readers.postgresql-datasource)
     assertThat(connectionNameService.searchWithSource("crud2"))
-        .contains(new ConnectionNameService.ConnectionName("dynamiccrud2", "postgresql-datasource"));
+        .contains(
+            new ConnectionNameService.ConnectionName("dynamiccrud2", "postgresql-datasource"));
 
     assertThat(resolver.resolve("connectioninfo").listTables())
         .extracting(TableRef::name)
@@ -51,9 +52,10 @@ class ConnectionNameServiceTest implements GeneralWebTest {
     assertThat(service.datasourceSource()).isEqualTo("mariadb-datasource · postgresql-datasource");
   }
 
-  private static io.github.luversof.boot.connectioninfo.ConnectionInfoProperties.ConnectionInfoReaderProperties reader(
-      boolean enabled) {
-    return new io.github.luversof.boot.connectioninfo.ConnectionInfoProperties.ConnectionInfoReaderProperties(
-        enabled, java.util.Map.of());
+  private static io.github.luversof.boot.connectioninfo.ConnectionInfoProperties
+          .ConnectionInfoReaderProperties
+      reader(boolean enabled) {
+    return new io.github.luversof.boot.connectioninfo.ConnectionInfoProperties
+        .ConnectionInfoReaderProperties(enabled, java.util.Map.of());
   }
 }

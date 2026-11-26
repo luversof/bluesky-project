@@ -5,8 +5,8 @@ import net.luversof.web.dynamiccrud2.config.Msg;
 
 /**
  * 쿼리 저장 · 실행 검사 오류 코드(BlueskyException 으로 던진다). 화면 문구는 다국어 메시지 {@code error.query.<이름>}
- * (messages.properties · messages_en.properties, ASCII 만 - 한글은 \\uXXXX, MessagesPropertiesTest 가 막는다). 인자는 {0}
- * · {1}.
+ * (messages.properties · messages_en.properties, ASCII 만 - 한글은 \\uXXXX, MessagesPropertiesTest 가
+ * 막는다). 인자는 {0} · {1}.
  */
 public enum QueryErrorCode {
   EMPTY_QUERY,

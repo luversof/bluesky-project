@@ -59,13 +59,25 @@ public final class ValueConverter {
   /** 글자로 보내도 되는 문자 타입 이름(DB 마다 다른 이름, 소문자). 이 밖의 타입은 {@link UntypedText} 로 표시해 어댑터가 정한다 */
   private static final Set<String> STRING_TYPES =
       Set.of(
-          "text", "varchar", "character varying", "char", "character", "bpchar", "name",
-          "nvarchar", "nchar", "ntext", "tinytext", "mediumtext", "longtext", "string");
+          "text",
+          "varchar",
+          "character varying",
+          "char",
+          "character",
+          "bpchar",
+          "name",
+          "nvarchar",
+          "nchar",
+          "ntext",
+          "tinytext",
+          "mediumtext",
+          "longtext",
+          "string");
 
   /**
-   * 글자 칸 값. uuid 는 UUID 로. 표준 문자 타입이 아닌 컬럼(jsonb · inet · enum · interval · 배열 등)은 {@link UntypedText} -
-   * PostgreSQL 어댑터는 타입 없이 보내 서버가 컬럼 타입으로 바꾸게 하고, 다른 DB 는 글자 그대로 보낸다(2026-11-26, 예전엔 json ·
-   * jsonb 만 대소문자로 PostgreSQL 을 짐작했다). 타입을 모르면(필드 정보 없음) 글자 그대로.
+   * 글자 칸 값. uuid 는 UUID 로. 표준 문자 타입이 아닌 컬럼(jsonb · inet · enum · interval · 배열 등)은 {@link
+   * UntypedText} - PostgreSQL 어댑터는 타입 없이 보내 서버가 컬럼 타입으로 바꾸게 하고, 다른 DB 는 글자 그대로 보낸다(2026-11-26, 예전엔
+   * json · jsonb 만 대소문자로 PostgreSQL 을 짐작했다). 타입을 모르면(필드 정보 없음) 글자 그대로.
    */
   private static Object textValue(String raw, String dataType) {
     if ("uuid".equalsIgnoreCase(dataType)) {

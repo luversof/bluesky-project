@@ -55,7 +55,9 @@ class AdminControllerTest implements GeneralWebTest {
     return user("admin").roles("ADMIN");
   }
 
-  /** PostgreSQL 은 표준 문자 타입이 아닌 컬럼(jsonb)과 글자를 비교 · 저장하지 않는다 - UntypedText 는 타입 없이 보내 서버가 맞춘다(읽기만) */
+  /**
+   * PostgreSQL 은 표준 문자 타입이 아닌 컬럼(jsonb)과 글자를 비교 · 저장하지 않는다 - UntypedText 는 타입 없이 보내 서버가 맞춘다(읽기만)
+   */
   @Test
   void postgresBindsUntypedTextAsColumnType() {
     var adapter = resolver.resolve("dynamiccrud2");
@@ -100,7 +102,9 @@ class AdminControllerTest implements GeneralWebTest {
     // 관리 묶음: /admin/api 만(화면 주소 /admin/menu/{id} 같은 것은 없다)
     mvc.perform(get("/v3/api-docs/admin").with(admin()))
         .andExpect(status().isOk())
-        .andExpect(content().string(Matchers.containsString("/admin/api/menus/{id}/history/{logId}/revert")))
+        .andExpect(
+            content()
+                .string(Matchers.containsString("/admin/api/menus/{id}/history/{logId}/revert")))
         .andExpect(content().string(Matchers.containsString("/admin/api/projects")))
         .andExpect(content().string(Matchers.not(Matchers.containsString("\"/admin/menu/{id}\""))));
     mvc.perform(get("/swagger-ui/index.html").with(admin())).andExpect(status().isOk());
@@ -474,12 +478,15 @@ class AdminControllerTest implements GeneralWebTest {
       assertThat(copied.isEnableDisplay()).isFalse();
       // 숨김 안내: 프로젝트 · 메인 메뉴 · 메뉴 모두 주소로도 막힌다(MenuPageService.resolve, 메뉴는 11-26 부터)
       mvc.perform(get("/admin").param("project", project.getId().toString()).with(admin()))
-          .andExpect(content().string(Matchers.containsString("그 아래 메뉴까지 메뉴 목록에서 빠지고 주소로도 열리지 않습니다")))
+          .andExpect(
+              content().string(Matchers.containsString("그 아래 메뉴까지 메뉴 목록에서 빠지고 주소로도 열리지 않습니다")))
           .andExpect(content().string(Matchers.containsString("메뉴 목록에서 빠지고 주소로도 열리지 않습니다)")))
-          .andExpect(content().string(Matchers.not(Matchers.containsString("주소를 알면 그대로 열 수 있습니다"))));
+          .andExpect(
+              content().string(Matchers.not(Matchers.containsString("주소를 알면 그대로 열 수 있습니다"))));
       mvc.perform(get("/admin/menu/" + menuId + "/query/new").param("kind", "UPDATE").with(admin()))
           .andExpect(status().isOk())
-          .andExpect(content().string(Matchers.containsString("UPDATE \"public\".\"MainMenu\" SET")))
+          .andExpect(
+              content().string(Matchers.containsString("UPDATE \"public\".\"MainMenu\" SET")))
           .andExpect(content().string(Matchers.containsString("name=\"p.id.role\"")));
       // 메뉴 관리 화면의 레이어(htmx): 화면 틀 없이 폼 조각만, 취소는 레이어 닫기
       mvc.perform(

@@ -89,8 +89,8 @@ public enum SqlDialect {
   }
 
   /**
-   * 이름을 늘 따옴표로 감싼다(닫는 따옴표는 두 번 써서 이스케이프). 예약어 컬럼(예: MySQL 8 의 virtual, order, user)도 깨지지 않게 -
-   * 감싸도 MySQL · MSSQL 은 대소문자 규칙이 같고, PostgreSQL 은 소문자 이름이면 같은 이름이다(DMT2 UDP-6559 와 같게, 2026-11-26).
+   * 이름을 늘 따옴표로 감싼다(닫는 따옴표는 두 번 써서 이스케이프). 예약어 컬럼(예: MySQL 8 의 virtual, order, user)도 깨지지 않게 - 감싸도
+   * MySQL · MSSQL 은 대소문자 규칙이 같고, PostgreSQL 은 소문자 이름이면 같은 이름이다(DMT2 UDP-6559 와 같게, 2026-11-26).
    */
   public String quote(String identifier) {
     return openQuote + identifier.replace(closeQuote, closeQuote + closeQuote) + closeQuote;

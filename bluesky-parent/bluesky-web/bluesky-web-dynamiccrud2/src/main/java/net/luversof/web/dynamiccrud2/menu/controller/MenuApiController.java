@@ -164,7 +164,8 @@ public class MenuApiController {
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiError unreadable(org.springframework.http.converter.HttpMessageNotReadableException e) {
     var cause = e.getMostSpecificCause().getMessage();
-    return new ApiError(Msg.t("api.unreadable", cause == null ? "" : cause.lines().findFirst().orElse(cause)));
+    return new ApiError(
+        Msg.t("api.unreadable", cause == null ? "" : cause.lines().findFirst().orElse(cause)));
   }
 
   /** DB 가 받지 않은 실행(제약 위반 등) - 첫 줄만 */

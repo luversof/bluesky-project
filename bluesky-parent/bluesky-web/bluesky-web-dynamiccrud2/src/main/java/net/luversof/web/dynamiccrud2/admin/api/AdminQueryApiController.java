@@ -35,7 +35,9 @@ import net.luversof.web.dynamiccrud2.domain.QueryKind;
 /** 관리 JSON 호출 - 메뉴의 작업(쿼리) · 검색 설정 · 테이블 필드. 관리 화면과 같은 서비스 · 검사 · 설정 변경 이력 */
 @RestController
 @RequestMapping("/admin/api")
-@Tag(name = "관리 - 쿼리 · 검색 · 필드", description = "작업(조회 · 입력 · 수정 · 삭제 쿼리) · 검사 · 실행 계획, 검색 설정, 테이블 필드 표시 설정")
+@Tag(
+    name = "관리 - 쿼리 · 검색 · 필드",
+    description = "작업(조회 · 입력 · 수정 · 삭제 쿼리) · 검사 · 실행 계획, 검색 설정, 테이블 필드 표시 설정")
 @ApiResponse(
     responseCode = "400",
     description = "쿼리 검사 거부(문법 · 종류 · WHERE 없는 수정 등), 입력 형식",
@@ -85,7 +87,9 @@ public class AdminQueryApiController {
       String values,
       Boolean required) {}
 
-  @Schema(description = "검색 설정 저장 본문. fields = 결과 이름 → 검색칸(빠진 결과는 검색칸에서 뺀다, 넣은 순서가 화면 순서), keyword = 통합 검색에 넣을 결과 이름")
+  @Schema(
+      description =
+          "검색 설정 저장 본문. fields = 결과 이름 → 검색칸(빠진 결과는 검색칸에서 뺀다, 넣은 순서가 화면 순서), keyword = 통합 검색에 넣을 결과 이름")
   public record SearchInput(Map<String, SearchField> fields, List<String> keyword) {}
 
   @Schema(description = "검색 설정 후보. parsed = 조회 쿼리를 해석했는지(못 했으면 후보 없음)")
@@ -104,15 +108,19 @@ public class AdminQueryApiController {
 
   @Operation(
       summary = "쿼리 검사",
-      description = "저장하지 않고 검사 - 조회는 앞 몇 행 미리 보기, 입력 · 수정 · 삭제는 실행하지 않고 DB 에서 검사. error 가 있으면 저장되지 않는다")
+      description =
+          "저장하지 않고 검사 - 조회는 앞 몇 행 미리 보기, 입력 · 수정 · 삭제는 실행하지 않고 DB 에서 검사. error 가 있으면 저장되지 않는다")
   @PostMapping("/menus/{menuId}/queries/inspect")
-  public QueryService.QueryInspection inspect(@PathVariable UUID menuId, @RequestBody QueryInput body) {
-    return queryService.inspect(menuService.getMenu(menuId), body.kind(), body.queryText(), body.params());
+  public QueryService.QueryInspection inspect(
+      @PathVariable UUID menuId, @RequestBody QueryInput body) {
+    return queryService.inspect(
+        menuService.getMenu(menuId), body.kind(), body.queryText(), body.params());
   }
 
   @Operation(summary = "실행 계획", description = "실행하지 않고 DB 계획(PostgreSQL 은 값과 무관한 일반 계획)")
   @PostMapping("/menus/{menuId}/queries/explain")
-  public QueryService.ExplainResult explain(@PathVariable UUID menuId, @RequestBody QueryInput body) {
+  public QueryService.ExplainResult explain(
+      @PathVariable UUID menuId, @RequestBody QueryInput body) {
     return queryService.explain(menuService.getMenu(menuId), body.kind(), body.queryText());
   }
 
@@ -123,7 +131,13 @@ public class AdminQueryApiController {
     menuService.getMenu(menuId);
     return MenuView.of(
         queryService.save(
-            menuId, null, body.kind(), body.name(), body.queryText(), body.params(), body.authority()));
+            menuId,
+            null,
+            body.kind(),
+            body.name(),
+            body.queryText(),
+            body.params(),
+            body.authority()));
   }
 
   @Operation(summary = "작업 바꾸기", description = "쿼리 · 이름 · 권한 · 파라미터 설정")
@@ -163,15 +177,14 @@ public class AdminQueryApiController {
     var fields = new java.util.LinkedHashMap<String, SearchService.FieldInput>();
     if (body.fields() != null) {
       body.fields()
-          .forEach(
-              (label, field) ->
-                  fields.put(
-                      label,
-                      new SearchService.FieldInput(
-                          field == null ? null : field.operator(),
-                          field == null ? null : field.pick(),
-                          field == null ? null : field.values(),
-                          field != null && Boolean.TRUE.equals(field.required()))));
+          .forEach((label, field) ->
+              fields.put(
+                  label,
+                  new SearchService.FieldInput(
+                      field == null ? null : field.operator(),
+                      field == null ? null : field.pick(),
+                      field == null ? null : field.values(),
+                      field != null && Boolean.TRUE.equals(field.required()))));
     }
     searchService.saveFields(id, fields, body.keyword() == null ? List.of() : body.keyword());
     return MenuView.of(menuService.getMenu(id));
@@ -185,7 +198,9 @@ public class AdminQueryApiController {
     return TableView.of(fieldService.get(id));
   }
 
-  @Operation(summary = "필드 표시 설정 바꾸기", description = "라벨 · 입력 형식 · 최대 길이 · 정렬 허용 · 수정 가능 · 값 목록 · 날짜 형식")
+  @Operation(
+      summary = "필드 표시 설정 바꾸기",
+      description = "라벨 · 입력 형식 · 최대 길이 · 정렬 허용 · 수정 가능 · 값 목록 · 날짜 형식")
   @PutMapping("/tables/{id}/fields/{columnName}")
   public TableView updateField(
       @PathVariable UUID id, @PathVariable String columnName, @RequestBody FieldUpdate body) {

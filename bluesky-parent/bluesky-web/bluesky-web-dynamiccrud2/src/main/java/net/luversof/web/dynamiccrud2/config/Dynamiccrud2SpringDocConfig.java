@@ -9,7 +9,8 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 
 /**
- * JSON 호출 문서(Swagger UI: /swagger-ui.html, 명세: /v3/api-docs/{group}). 화면(@Controller)은 빼고 @RestController 만 싣는다.
+ * JSON 호출 문서(Swagger UI: /swagger-ui.html, 명세: /v3/api-docs/{group}). 화면(@Controller)은
+ * 빼고 @RestController 만 싣는다.
  *
  * <ul>
  *   <li>use: 사용 화면 JSON 호출(메뉴 조회 · 작업 실행, MenuApiController)

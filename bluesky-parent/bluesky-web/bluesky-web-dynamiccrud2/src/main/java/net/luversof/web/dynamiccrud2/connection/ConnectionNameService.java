@@ -21,7 +21,10 @@ public class ConnectionNameService {
   /** connectionInfo JDBC 저장 테이블(bluesky-boot-connectioninfo 의 *-datasource reader 가 읽는 테이블) */
   private static final String CONFIG_TABLE = "DataSourceConnectionConfig";
 
-  /** JDBC 연결 정보 reader key 끝(postgresql-datasource · mariadb-datasource · mysql-datasource · sqlserver-datasource) */
+  /**
+   * JDBC 연결 정보 reader key 끝(postgresql-datasource · mariadb-datasource · mysql-datasource ·
+   * sqlserver-datasource)
+   */
   private static final String DATASOURCE_READER_SUFFIX = "-datasource";
 
   /** 자동완성 후보 수 */
@@ -41,9 +44,9 @@ public class ConnectionNameService {
   }
 
   /**
-   * 자동완성 후보 하나. source = 이 연결 정보를 읽는 reader key(bluesky-boot.connection-info.readers.{key}, 예 postgresql-datasource) -
-   * 이름 옆 흐린 글자(DMT2 UDP-6560 의 mongodb · dbconn 표시와 같은 자리). 출처가 늘면(Mongo 의 mongodb-mongoclient 등) 그 reader key 로
-   * 보인다(사용자 결정 11-26 - DB 종류가 아니라 읽는 기준으로).
+   * 자동완성 후보 하나. source = 이 연결 정보를 읽는 reader key(bluesky-boot.connection-info.readers.{key}, 예
+   * postgresql-datasource) - 이름 옆 흐린 글자(DMT2 UDP-6560 의 mongodb · dbconn 표시와 같은 자리). 출처가 늘면(Mongo 의
+   * mongodb-mongoclient 등) 그 reader key 로 보인다(사용자 결정 11-26 - DB 종류가 아니라 읽는 기준으로).
    */
   public record ConnectionName(String name, String source) {}
 
@@ -56,7 +59,8 @@ public class ConnectionNameService {
   }
 
   /** {@link #search} 에 읽은 출처(reader key)를 붙인다 */
-  // 2차: Mongo 연결 정보(별도 Mongo DB 의 MongoClientConnectionConfig 컬렉션)도 합친다 - source 는 그 reader key(mongodb-mongoclient)
+  // 2차: Mongo 연결 정보(별도 Mongo DB 의 MongoClientConnectionConfig 컬렉션)도 합친다 - source 는 그 reader
+  // key(mongodb-mongoclient)
   public List<ConnectionName> searchWithSource(String keyword) {
     // connectionInfo 저장소는 JDBC 다. 테이블 따옴표만 DB 종류를 따른다(PG 는 "DataSourceConnectionConfig")
     var adapter = (JdbcDatabaseAdapter) resolver.resolve(properties.connectionInfoConnection());
@@ -80,8 +84,8 @@ public class ConnectionNameService {
   }
 
   /**
-   * 이 표({@value #CONFIG_TABLE})를 읽는 켜진 JDBC reader key. 하나면 그것, 여럿이면 이어서(어느 reader 의 표인지 이름만으로는 가릴 수 없다),
-   * 없으면 null(표시 없음)
+   * 이 표({@value #CONFIG_TABLE})를 읽는 켜진 JDBC reader key. 하나면 그것, 여럿이면 이어서(어느 reader 의 표인지 이름만으로는 가릴
+   * 수 없다), 없으면 null(표시 없음)
    */
   String datasourceSource() {
     var keys =

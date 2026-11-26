@@ -317,8 +317,9 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
   }
 
   /**
-   * PostgreSQL: 값과 무관한 일반 계획(genericPlan, 12 부터) - 안 되면 NULL 을 넣어 본 계획(approximate). MySQL · MariaDB: FORMAT=TREE
-   * (MySQL 8.0.16 부터) - 안 되면 표 EXPLAIN 을 줄로, 파라미터는 NULL(approximate). MSSQL 은 SHOWPLAN 이 따로 일괄 처리여야 해 지원하지 않는다.
+   * PostgreSQL: 값과 무관한 일반 계획(genericPlan, 12 부터) - 안 되면 NULL 을 넣어 본 계획(approximate). MySQL ·
+   * MariaDB: FORMAT=TREE (MySQL 8.0.16 부터) - 안 되면 표 EXPLAIN 을 줄로, 파라미터는 NULL(approximate). MSSQL 은
+   * SHOWPLAN 이 따로 일괄 처리여야 해 지원하지 않는다.
    */
   // shortcut: MSSQL 실행 계획은 없다(SET SHOWPLAN_TEXT ON 을 따로 보내야 함), MSSQL 연결이 생기면 붙일 것
   @Override
@@ -351,9 +352,9 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
   }
 
   /**
-   * PostgreSQL 값과 무관한 일반 계획: PREPARE(:이름 → $n) 뒤 plan_cache_mode = force_generic_plan 으로 EXPLAIN EXECUTE(NULL …). 일반 계획은
-   * 넣은 값을 보지 않아 NULL 을 넣어도 "One-Time Filter: false" 로 접히지 않는다. EXPLAIN (GENERIC_PLAN) 은 드라이버가 확장 프로토콜이라 $n
-   * 바인드 오류가 나 쓰지 않는다. 연결은 풀로 돌아가므로 준비한 문장 · 설정을 되돌린다.
+   * PostgreSQL 값과 무관한 일반 계획: PREPARE(:이름 → $n) 뒤 plan_cache_mode = force_generic_plan 으로 EXPLAIN
+   * EXECUTE(NULL …). 일반 계획은 넣은 값을 보지 않아 NULL 을 넣어도 "One-Time Filter: false" 로 접히지 않는다. EXPLAIN
+   * (GENERIC_PLAN) 은 드라이버가 확장 프로토콜이라 $n 바인드 오류가 나 쓰지 않는다. 연결은 풀로 돌아가므로 준비한 문장 · 설정을 되돌린다.
    */
   private static List<String> genericPlan(JdbcTemplate template, String sql) {
     var count = QueryText.parameterNames(sql).size();
@@ -364,8 +365,10 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
               try (var statement = connection.createStatement()) {
                 statement.execute("SET plan_cache_mode = force_generic_plan");
                 try {
-                  statement.execute("PREPARE dc2_explain AS " + QueryText.toNumberedParameters(sql));
-                  try (var rs = statement.executeQuery("EXPLAIN EXECUTE dc2_explain(" + nulls + ")")) {
+                  statement.execute(
+                      "PREPARE dc2_explain AS " + QueryText.toNumberedParameters(sql));
+                  try (var rs =
+                      statement.executeQuery("EXPLAIN EXECUTE dc2_explain(" + nulls + ")")) {
                     var lines = new ArrayList<String>();
                     while (rs.next()) {
                       lines.add(rs.getString(1));
@@ -451,18 +454,19 @@ public class JdbcDatabaseAdapter implements DatabaseAdapter {
         });
   }
 
-  /** 바인딩 값 복사본: {@link UntypedText} 를 이 DB 에 맞게 - PostgreSQL 은 타입 없이(서버가 컬럼 타입으로), 다른 DB 는 글자 그대로 */
+  /**
+   * 바인딩 값 복사본: {@link UntypedText} 를 이 DB 에 맞게 - PostgreSQL 은 타입 없이(서버가 컬럼 타입으로), 다른 DB 는 글자 그대로
+   */
   private Map<String, Object> bindable(Map<String, ?> values) {
     var result = new HashMap<String, Object>();
-    values.forEach(
-        (name, value) ->
-            result.put(
-                name,
-                value instanceof UntypedText text
-                    ? (dialect == SqlDialect.POSTGRESQL
-                        ? new SqlParameterValue(Types.OTHER, text.value())
-                        : text.value())
-                    : value));
+    values.forEach((name, value) ->
+        result.put(
+            name,
+            value instanceof UntypedText text
+                ? (dialect == SqlDialect.POSTGRESQL
+                    ? new SqlParameterValue(Types.OTHER, text.value())
+                    : text.value())
+                : value));
     return result;
   }
 

@@ -113,8 +113,8 @@ public class MenuPageService {
   }
 
   /**
-   * 주소의 code 로 메뉴를 찾는다. 없거나, 숨긴 메뉴이거나, 숨긴 프로젝트 · 메인 메뉴 아래면 404(2026-11-24 사용자 요청: 숨기면 아래 메뉴도 숨긴
-   * 것으로 본다, 11-26: 숨긴 메뉴도 주소로 열지 않는다 - DMT2 UDP-6558, 예전엔 목록에서만 뺐다)
+   * 주소의 code 로 메뉴를 찾는다. 없거나, 숨긴 메뉴이거나, 숨긴 프로젝트 · 메인 메뉴 아래면 404(2026-11-24 사용자 요청: 숨기면 아래 메뉴도 숨긴 것으로
+   * 본다, 11-26: 숨긴 메뉴도 주소로 열지 않는다 - DMT2 UDP-6558, 예전엔 목록에서만 뺐다)
    */
   public MenuPath resolve(String projectCode, String mainMenuCode, String menuCode) {
     var project =
@@ -683,7 +683,8 @@ public class MenuPageService {
       var inputs = new HashMap<String, String>();
       for (int p = 0; p < form.names().size(); p++) {
         var name = form.names().get(p);
-        var value = row.containsKey(form.headers().get(p)) ? row.get(form.headers().get(p)) : row.get(name);
+        var value =
+            row.containsKey(form.headers().get(p)) ? row.get(form.headers().get(p)) : row.get(name);
         inputs.put(name, value == null ? null : value.strip());
       }
       try {
@@ -715,7 +716,13 @@ public class MenuPageService {
       changeLogRepository.save(changeLog);
     } catch (RuntimeException e) {
       // 대상 DB 는 이미 커밋됐다(run 과 같은 이유로 성공으로 둔다)
-      LOG.error("[CHANGE_LOG_FAILED] menu={} query={} bulk={} affected={}", menuId, query.getId(), rows.size(), affected, e);
+      LOG.error(
+          "[CHANGE_LOG_FAILED] menu={} query={} bulk={} affected={}",
+          menuId,
+          query.getId(),
+          rows.size(),
+          affected,
+          e);
     }
     return affected;
   }
@@ -782,13 +789,14 @@ public class MenuPageService {
           var done = i < after.size() ? after.get(i) : Map.<String, String>of();
           checkStillAsChanged(ctx, table, keyNames, previous, done);
           var bind = new HashMap<String, Object>();
-          previous.forEach(
-              (name, raw) -> bind.put(name, ValueConverter.toBindValue(raw, ctx.baseFields().get(name))));
+          previous.forEach((name, raw) ->
+              bind.put(name, ValueConverter.toBindValue(raw, ctx.baseFields().get(name))));
           binds.add(bind);
         }
         affected = java.util.Arrays.stream(ctx.adapter().modify(query.getQueryText(), binds)).sum();
         // 되돌린 실행도 수정 이력과 같은 모양: rows = 넣은 값(= 그때의 전), before = 그때 넣은 값
-        changeLog.setBindValues(Map.of("rows", before, "before", after, "revertOf", logId.toString()));
+        changeLog.setBindValues(
+            Map.of("rows", before, "before", after, "revertOf", logId.toString()));
       }
       case DELETE -> {
         var labels = baseColumnLabels(ctx);
@@ -797,7 +805,8 @@ public class MenuPageService {
         for (int i = 0; i < before.size(); i++) {
           var keys = new LinkedHashMap<String, Object>();
           for (var key : keyNames) {
-            keys.put(key, ValueConverter.toBindValue(before.get(i).get(key), ctx.baseFields().get(key)));
+            keys.put(
+                key, ValueConverter.toBindValue(before.get(i).get(key), ctx.baseFields().get(key)));
           }
           if (ctx.adapter().currentRow(table, List.copyOf(keyNames), keys) != null) {
             throw new IllegalArgumentException(Msg.t("menu.revert.rowExists"));
@@ -806,13 +815,13 @@ public class MenuPageService {
         for (var row : textMaps(values.get("beforeRows"))) {
           var insert = new LinkedHashMap<String, Object>();
           var shown = new LinkedHashMap<String, String>();
-          labels.forEach(
-              (column, label) -> {
-                if (row.containsKey(label)) {
-                  insert.put(column, ValueConverter.toBindValue(row.get(label), ctx.baseFields().get(column)));
-                  shown.put(column, row.get(label));
-                }
-              });
+          labels.forEach((column, label) -> {
+            if (row.containsKey(label)) {
+              insert.put(
+                  column, ValueConverter.toBindValue(row.get(label), ctx.baseFields().get(column)));
+              shown.put(column, row.get(label));
+            }
+          });
           inserts.add(insert);
           restored.add(shown);
         }

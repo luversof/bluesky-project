@@ -168,7 +168,8 @@ public class QueryService {
     } catch (BlueskyException e) {
       return new ExplainResult(List.of(), false, QueryErrorCode.messageOf(e));
     } catch (UnsupportedOperationException e) {
-      return new ExplainResult(List.of(), false, Msg.t("inspect.explain.unsupported", adapter.databaseType()));
+      return new ExplainResult(
+          List.of(), false, Msg.t("inspect.explain.unsupported", adapter.databaseType()));
     } catch (DataAccessException e) {
       return new ExplainResult(List.of(), false, Msg.t("inspect.explain.failed", firstLine(e)));
     }

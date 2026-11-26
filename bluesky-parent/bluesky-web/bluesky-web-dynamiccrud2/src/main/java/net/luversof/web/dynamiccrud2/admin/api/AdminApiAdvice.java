@@ -39,7 +39,8 @@ public class AdminApiAdvice {
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiError unreadable(org.springframework.http.converter.HttpMessageNotReadableException e) {
     var cause = e.getMostSpecificCause().getMessage();
-    return new ApiError(Msg.t("api.unreadable", cause == null ? "" : cause.lines().findFirst().orElse(cause)));
+    return new ApiError(
+        Msg.t("api.unreadable", cause == null ? "" : cause.lines().findFirst().orElse(cause)));
   }
 
   /** 없는 id(서비스의 findById().orElseThrow()) */
@@ -55,6 +56,8 @@ public class AdminApiAdvice {
   public ApiError failed(DataAccessException e) {
     var message = e.getMostSpecificCause().getMessage();
     return new ApiError(
-        Msg.t("menu.action.failed", message == null ? "" : message.lines().findFirst().orElse(message)));
+        Msg.t(
+            "menu.action.failed",
+            message == null ? "" : message.lines().findFirst().orElse(message)));
   }
 }

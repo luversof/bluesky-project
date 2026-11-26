@@ -39,8 +39,8 @@ import net.luversof.web.dynamiccrud2.admin.service.MenuService;
 import net.luversof.web.dynamiccrud2.connection.ConnectionNameService;
 
 /**
- * 관리 JSON 호출 - 구조(프로젝트 · 메인 메뉴 · 메뉴). 관리 화면(AdminController)과 같은 서비스 · 검사 · 설정 변경 이력을 거친다. /admin/** 라
- * 설정 관리 권한(AdminAccessInterceptor)이 막는다.
+ * 관리 JSON 호출 - 구조(프로젝트 · 메인 메뉴 · 메뉴). 관리 화면(AdminController)과 같은 서비스 · 검사 · 설정 변경 이력을 거친다.
+ * /admin/** 라 설정 관리 권한(AdminAccessInterceptor)이 막는다.
  */
 @RestController
 @RequestMapping("/admin/api")
@@ -163,7 +163,10 @@ public class AdminStructureApiController {
 
   // ---- 메뉴 ----
 
-  @Operation(summary = "연결 이름 찾기", description = "메뉴 만들기의 connectionName 후보(name). source = 이 연결 정보를 읽는 reader key(예 postgresql-datasource)")
+  @Operation(
+      summary = "연결 이름 찾기",
+      description =
+          "메뉴 만들기의 connectionName 후보(name). source = 이 연결 정보를 읽는 reader key(예 postgresql-datasource)")
   @GetMapping("/connections")
   public List<ConnectionNameService.ConnectionName> connections(
       @RequestParam(defaultValue = "") String keyword) {

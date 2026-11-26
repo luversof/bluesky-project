@@ -34,7 +34,8 @@ class AdminTableOptionsTest {
     var adapter = mock(DatabaseAdapter.class);
     when(resolver.resolve("SomeDb")).thenReturn(adapter);
     when(adapter.listTables())
-        .thenThrow(new CannotGetJdbcConnectionException("Failed to obtain JDBC Connection: refused"));
+        .thenThrow(
+            new CannotGetJdbcConnectionException("Failed to obtain JDBC Connection: refused"));
     var model = new ExtendedModelMap();
     assertThat(controller.tableOptions(" SomeDb ", model)).isEqualTo("admin/tableOptions");
     assertThat((String) model.get("error"))
@@ -44,7 +45,8 @@ class AdminTableOptionsTest {
     assertThat((java.util.List<?>) model.get("tables")).isEmpty();
     // 관리 JSON 호출도 같은 안내(400 - AdminApiAdvice 가 IllegalArgumentException 을 {"error"} 로)
     var api =
-        new net.luversof.web.dynamiccrud2.admin.api.AdminStructureApiController(menuService, null, resolver);
+        new net.luversof.web.dynamiccrud2.admin.api.AdminStructureApiController(
+            menuService, null, resolver);
     assertThatThrownBy(() -> api.tables("SomeDb"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("SomeDb")
@@ -69,8 +71,9 @@ class AdminTableOptionsTest {
 
     when(menuService.createMenu(any(), any(), any(), eq("Other"), any()))
         .thenThrow(new DataIntegrityViolationException("settings db"));
-    assertThatThrownBy(
-            () -> controller.createMenu(mainMenuId, "c", "n", "Other", "||t", new RedirectAttributesModelMap()))
+    assertThatThrownBy(() ->
+            controller.createMenu(
+                mainMenuId, "c", "n", "Other", "||t", new RedirectAttributesModelMap()))
         .isInstanceOf(DataIntegrityViolationException.class);
   }
 }

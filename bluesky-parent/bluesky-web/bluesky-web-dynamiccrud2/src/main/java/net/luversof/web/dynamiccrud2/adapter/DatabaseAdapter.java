@@ -132,7 +132,9 @@ public interface DatabaseAdapter {
    */
   record Explain(List<String> lines, boolean approximate) {}
 
-  /** @throws UnsupportedOperationException 이 DB 는 실행 계획을 보이지 않는다 */
+  /**
+   * @throws UnsupportedOperationException 이 DB 는 실행 계획을 보이지 않는다
+   */
   Explain explain(String query);
 
   /**
