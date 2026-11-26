@@ -126,4 +126,5 @@
 		<li>Action: <code>POST …/api/action/{query id}</code>, body <code>{"inputs": {...}, "rows": [...]}</code></li>
 		<li>Each menu's addresses, parameters and examples are in the <b>JSON calls</b> card on its settings screen.</li>
 	</ul>
+	<p>Addresses, bodies and responses of every JSON call are in the <a class="link" href="/swagger-ui.html">API docs (Swagger UI)</a>, where you can also try them (pick the use or admin group at the top).</p>
 </section>

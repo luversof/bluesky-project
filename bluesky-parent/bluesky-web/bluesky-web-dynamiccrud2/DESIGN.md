@@ -284,6 +284,12 @@
   - JSqlParser 에 `withSquareBracketQuotation(true)`(파싱 · 검색 조건 붙이기 둘 다): 기본값은 `[이름]` 을 배열 첨자로 읽어 MSSQL 쿼리 재작성(건수 쿼리 ORDER BY 제거 등)이 빠졌다.
   - 이미 저장된 메뉴 쿼리는 바뀌지 않는다(예약어 컬럼이 있으면 쿼리 편집에서 직접 감쌀 것). 새로 만드는 쿼리 초안만 모두 따옴표.
   - 확인: 테스트 74/74(기대 문자열 갱신 + `parsesSquareBracketNames`), 브라우저 테스트 프로젝트 6개 메뉴 목록 · 정렬 이상 없음.
+- API 문서(2026-11-26 사용자 요청): springdoc-openapi(`springdoc-openapi-starter-webmvc-ui`, 버전은 상위 BOM - 3.2.1). Swagger UI `/swagger-ui.html`, 명세 `/v3/api-docs/{use|admin}`.
+  - 묶음 두 개(`Dynamiccrud2SpringDocConfig`): use = 사용 화면 JSON 호출(`MenuApiController`), admin = `/admin/api/**`. 둘 다 `@RestController` 만 싣는다(화면 @Controller 주소 · 엑셀은 빠짐).
+  - 사용 화면 API 설명: 조회의 검색값(s. · f. · q)은 이름이 메뉴마다 달라 쿼리 파라미터로 싣지 않고 설명에 적었다(메뉴별 실제 이름은 메뉴 관리 "JSON 호출" 카드). 오류는 `{"error": 사유}` + 400/401/403/404.
+  - 가이드(/guide) JSON 호출 절에 API 문서 링크.
+  - 호출은 로그인 세션(쿠키). CSRF 는 공통 보안 설정(`ClientUserSecurityConfig`)이 꺼 두었다 - 화면 폼과 같은 조건이라 따로 바꾸지 않았다.
+  - 확인: 테스트 75/75(`apiDocsListOnlyJsonCalls` - use 명세에 작업 주소 · 화면 주소 없음 · Swagger UI 200).
   - 확인 중 환경(Boot 4.2 로 올린 뒤): `~/.m2` 의 `bluesky-test` jar 가 Logback 1.6 대응 전 판이라 테스트 컨텍스트가 "Circular variable reference ... CONSOLE_LOG_PATTERN" 로 실패 → `mvn -pl bluesky-test install` 로 해결. 앱은 예전 bluesky-boot 기준으로 컴파일된 `bluesky-client-common` jar 때문에 화면이 500("BlueskyClientResponseErrorHandler does not implement ResponseErrorHandler") - 다른 서비스가 그 jar 를 잡고 있어 설치가 막혀, dc2 만 client-common · client-user target/classes 를 `additional-classpath-elements` 앞에 두고 띄웠다. 다른 서비스를 내린 뒤 `mvn -pl bluesky-client/bluesky-client-user -am install` 하면 이 우회는 필요 없다.
 - 쿼리 작성 화면 정리(2026-11-23 사용자 요청): 테이블 인덱스 표를 메뉴 관리 화면에서 쿼리 추가 · 편집 화면(`admin/queryEditor`, 레이어 · 단독 둘 다)의 쿼리 입력칸 위로 옮겼다 - WHERE · ORDER BY 를 쓸 때 보도록. 표는 조회 쿼리가 쓰는 테이블들(`SearchService.setup(menu).tables()`, AdminController.editor). 메뉴 관리 안내(검색 설정)는 "검색칸마다 보이는 인덱스 사용 여부" 로 고쳤다. 쿼리 입력칸은 처음 세 줄, 줄이 늘면 내용만큼 커진다(`.textarea-autogrow`: CSS `field-sizing: content`, 최대 70vh 뒤로는 스크롤, 모르는 브라우저는 js/ui.js 가 높이를 맞춤).
   - 같은 날 추가 요청: 인덱스와 함께 **컬럼 정보**도(입력 · 수정 · 삭제 쿼리를 그 기준으로 쓰도록). 카드 "테이블 정보" 에 테이블마다 컬럼 표(`_components/columnTable`: 이름 · 타입(길이 - 글자 · 이진 · 고정 소수 타입만) · NULL 허용(NOT NULL 배지) · 기본값 · 키(PK · unique · 자동 증가) · 주석) → 인덱스 표 순서. `SearchService.TableIndexes` 에 읽은 `TableMeta`(meta) 를 함께 싣는다(못 읽으면 null). `indexTable` 에 heading 인자. 쓰지 않게 된 `admin.menu.index.help` 문구는 지웠다.

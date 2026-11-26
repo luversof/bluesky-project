@@ -17,6 +17,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.luversof.boot.exception.BlueskyException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import net.luversof.web.dynamiccrud2.adapter.QueryErrorCode;
 import net.luversof.web.dynamiccrud2.config.Msg;
 import net.luversof.web.dynamiccrud2.menu.service.MenuPageService;
@@ -33,6 +39,14 @@ import net.luversof.web.dynamiccrud2.menu.service.MenuPageService;
  * 로그인 · 권한이 없으면 화면 이동 대신 401 · 403(AccessDeniedAdvice 가 JSON 요청을 가린다)
  */
 @RestController
+@Tag(name = "메뉴 사용", description = "사용 화면과 같은 조회 · 작업 실행. 메뉴 주소는 /{프로젝트}/{메인 메뉴}/{메뉴} (주소 이름 code)")
+@ApiResponse(
+    responseCode = "400",
+    description = "입력값 · 검색값 · 행 서명 · 동시 수정 검사 실패, DB 거부",
+    content = @Content(schema = @Schema(implementation = MenuApiController.ApiError.class)))
+@ApiResponse(responseCode = "401", description = "로그인 없음")
+@ApiResponse(responseCode = "403", description = "메뉴 · 작업 권한 없음")
+@ApiResponse(responseCode = "404", description = "없거나 숨긴 메뉴 · 작업")
 public class MenuApiController {
 
   private final MenuPageService useService;
@@ -42,9 +56,11 @@ public class MenuApiController {
   }
 
   /** 결과 컬럼. label = 결과 이름(정렬 sort 에 쓴다), header = 화면 제목 */
+  @Schema(description = "결과 컬럼. label = 결과 이름(정렬 sort 에 쓴다), header = 화면 제목, inputType = 입력 형식")
   public record ApiColumn(String label, String header, String inputType, boolean sortable) {}
 
   /** 행. values 는 columns 순서(결과 이름이 겹칠 수 있어 맵이 아닌 목록), row 는 수정 · 삭제에 넘길 서명된 행 값 */
+  @Schema(description = "행. values 는 columns 순서, row 는 수정 · 삭제 작업에 그대로 넘길 서명된 행 값")
   public record ApiRow(List<String> values, String row) {}
 
   /** message: 필수 검색값이 없거나 조회가 실패하면 그 사유(그때 rows 는 비어 있다) */
@@ -58,21 +74,39 @@ public class MenuApiController {
       List<ApiColumn> columns,
       List<ApiRow> rows) {}
 
+  @Schema(
+      description =
+          "작업 실행 본문. inputs = 파라미터 이름 → 값(화면 입력칸과 같은 글자), rows = 고른 행(조회 응답 rows[].row 그대로,"
+              + " 수정 · 삭제처럼 행 키를 쓰는 작업만)")
   public record ApiAction(Map<String, String> inputs, List<String> rows) {}
 
+  @Schema(description = "영향 행 수 합")
   public record ApiResult(int affected) {}
 
+  @Schema(description = "오류 사유(화면에 보이는 문구와 같다)")
   public record ApiError(String error) {}
 
+  @Operation(
+      summary = "메뉴 조회",
+      description =
+          """
+          사용 화면 목록과 같은 조회(한 쪽). 검색값은 화면과 같은 이름의 쿼리 파라미터로 넘긴다:
+          - s.{파라미터} : 조회 쿼리의 :파라미터 검색칸
+          - f.{결과 이름} : 메뉴 검색 설정 칸(범위의 끝은 f.{결과 이름}.to)
+          - q : 통합 검색어
+          메뉴마다 쓸 수 있는 이름은 메뉴 관리 화면의 "JSON 호출" 에 나온다. 필수 검색값이 없으면 rows 는 비고 message 에 사유.
+          """)
   @GetMapping(MenuPageController.MENU_PATH + "/api")
   public ApiPage list(
-      @PathVariable String project,
-      @PathVariable String mainMenu,
-      @PathVariable String menu,
-      @RequestParam MultiValueMap<String, String> query,
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(required = false) String sort,
-      @RequestParam(defaultValue = "false") boolean desc) {
+      @Parameter(description = "프로젝트 주소 이름") @PathVariable String project,
+      @Parameter(description = "메인 메뉴 주소 이름") @PathVariable String mainMenu,
+      @Parameter(description = "메뉴 주소 이름") @PathVariable String menu,
+      @Parameter(hidden = true) @RequestParam MultiValueMap<String, String> query,
+      @Parameter(description = "쪽 번호(0 부터)") @RequestParam(defaultValue = "0") int page,
+      @Parameter(description = "정렬할 결과 이름(정렬 허용 컬럼만, columns[].sortable)")
+          @RequestParam(required = false)
+          String sort,
+      @Parameter(description = "내림차순") @RequestParam(defaultValue = "false") boolean desc) {
     var path = useService.resolve(project, mainMenu, menu);
     var usePage =
         useService.page(
@@ -90,12 +124,17 @@ public class MenuApiController {
         usePage.rows().stream().map(r -> new ApiRow(r.values(), r.json())).toList());
   }
 
+  @Operation(
+      summary = "작업 실행(입력 · 수정 · 삭제)",
+      description =
+          "화면 작업 단추와 같은 실행 · 검사(필수 · 기본값 · 형식 · 수정 불가 컬럼 · 동시 수정). 한 트랜잭션, 데이터 변경 이력에 남는다."
+              + " 작업 id 는 메뉴 관리 화면 \"JSON 호출\" 에 나온다.")
   @PostMapping(MenuPageController.MENU_PATH + "/api/action/{queryId}")
   public ApiResult action(
-      @PathVariable String project,
-      @PathVariable String mainMenu,
-      @PathVariable String menu,
-      @PathVariable UUID queryId,
+      @Parameter(description = "프로젝트 주소 이름") @PathVariable String project,
+      @Parameter(description = "메인 메뉴 주소 이름") @PathVariable String mainMenu,
+      @Parameter(description = "메뉴 주소 이름") @PathVariable String menu,
+      @Parameter(description = "작업(쿼리) id") @PathVariable UUID queryId,
       @RequestBody ApiAction body) {
     var path = useService.resolve(project, mainMenu, menu);
     return new ApiResult(

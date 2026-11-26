@@ -94,6 +94,13 @@
 			<artifactId>jsqlparser</artifactId>
 		</dependency>
 
+		<!-- (s) springdoc-openapi : JSON API docs (/swagger-ui.html) -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+		</dependency>
+		<!-- (e) springdoc-openapi -->
+
 		<!-- (s) webjars -->
 		<dependency>
 			<groupId>org.webjars</groupId>

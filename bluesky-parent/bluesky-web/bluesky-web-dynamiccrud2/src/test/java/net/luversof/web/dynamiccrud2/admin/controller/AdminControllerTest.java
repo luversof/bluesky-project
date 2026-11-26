@@ -88,6 +88,18 @@ class AdminControllerTest implements GeneralWebTest {
     assertThat(update.lines()).anyMatch(line -> line.contains("Update"));
   }
 
+  /** API 문서(springdoc): 사용 화면 묶음에는 JSON 호출만 - 화면 주소(@Controller)는 싣지 않는다 */
+  @Test
+  void apiDocsListOnlyJsonCalls() throws Exception {
+    mvc.perform(get("/v3/api-docs/use").with(admin()))
+        .andExpect(status().isOk())
+        .andExpect(content().string(Matchers.containsString("/api/action/{queryId}")))
+        .andExpect(content().string(Matchers.containsString("메뉴 조회")))
+        .andExpect(content().string(Matchers.not(Matchers.containsString("/excel"))))
+        .andExpect(content().string(Matchers.not(Matchers.containsString("/admin/"))));
+    mvc.perform(get("/swagger-ui/index.html").with(admin())).andExpect(status().isOk());
+  }
+
   @Test
   void accessByRole() throws Exception {
     var anonymous = mvc.perform(get("/admin")).andExpect(status().is3xxRedirection()).andReturn();
