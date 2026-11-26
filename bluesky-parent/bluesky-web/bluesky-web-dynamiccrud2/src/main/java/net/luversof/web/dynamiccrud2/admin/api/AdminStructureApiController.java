@@ -163,11 +163,11 @@ public class AdminStructureApiController {
 
   // ---- 메뉴 ----
 
-  @Operation(summary = "연결 이름 찾기", description = "메뉴 만들기의 connectionName 후보(name). kind = DB 종류(postgresql · mysql · mariadb · sqlserver)")
+  @Operation(summary = "연결 이름 찾기", description = "메뉴 만들기의 connectionName 후보(name). source = 이 연결 정보를 읽는 reader key(예 postgresql-datasource)")
   @GetMapping("/connections")
   public List<ConnectionNameService.ConnectionName> connections(
       @RequestParam(defaultValue = "") String keyword) {
-    return connectionNameService.searchWithKind(keyword);
+    return connectionNameService.searchWithSource(keyword);
   }
 
   @Operation(summary = "연결의 테이블 목록", description = "메뉴 만들기의 catalog · schema · table 후보")

@@ -28,12 +28,32 @@ class ConnectionNameServiceTest implements GeneralWebTest {
     // % · _ 는 와일드카드가 아니라 글자로 찾는다
     assertThat(connectionNameService.search("%")).doesNotContain("connectioninfo");
     assertThat(connectionNameService.search("no-such-connection-zzz")).isEmpty();
-    // DB 종류(url 앞부분으로 DB 안에서 정한다 - url 은 가져오지 않는다)
-    assertThat(connectionNameService.searchWithKind("crud2"))
-        .contains(new ConnectionNameService.ConnectionName("dynamiccrud2", "postgresql"));
+    // 읽은 출처 = 켜진 JDBC reader key(application.properties 의 readers.postgresql-datasource)
+    assertThat(connectionNameService.searchWithSource("crud2"))
+        .contains(new ConnectionNameService.ConnectionName("dynamiccrud2", "postgresql-datasource"));
 
     assertThat(resolver.resolve("connectioninfo").listTables())
         .extracting(TableRef::name)
         .contains("DataSourceConnectionConfig");
+  }
+
+  /** 출처 표시: 켜진 *-datasource reader 만, 여럿이면 이어서, 없으면 표시 없음(Mongo reader 는 이 표의 출처가 아니다) */
+  @Test
+  void sourceIsEnabledDatasourceReaderKey() {
+    var props = new io.github.luversof.boot.connectioninfo.ConnectionInfoProperties();
+    var service = new ConnectionNameService(null, null, props);
+    assertThat(service.datasourceSource()).isNull();
+    props.getReaders().put("postgresql-datasource", reader(true));
+    props.getReaders().put("mariadb-datasource", reader(false));
+    props.getReaders().put("mongodb-mongoclient", reader(true));
+    assertThat(service.datasourceSource()).isEqualTo("postgresql-datasource");
+    props.getReaders().put("mariadb-datasource", reader(true));
+    assertThat(service.datasourceSource()).isEqualTo("mariadb-datasource · postgresql-datasource");
+  }
+
+  private static io.github.luversof.boot.connectioninfo.ConnectionInfoProperties.ConnectionInfoReaderProperties reader(
+      boolean enabled) {
+    return new io.github.luversof.boot.connectioninfo.ConnectionInfoProperties.ConnectionInfoReaderProperties(
+        enabled, java.util.Map.of());
   }
 }
