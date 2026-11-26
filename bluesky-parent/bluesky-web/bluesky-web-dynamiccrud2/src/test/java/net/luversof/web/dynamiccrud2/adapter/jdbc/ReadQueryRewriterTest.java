@@ -179,6 +179,45 @@ class ReadQueryRewriterTest {
         .doesNotContain("ORDER BY");
   }
 
+  /** FROM 이 하위 쿼리 하나면 결과 컬럼의 테이블을 모른다(DMT2 59fa9fd - 분석이 NoSuchElementException 으로 죽던 것) */
+  @Test
+  void analyzeSubqueryFrom() {
+    var analysis =
+        ReadQueryRewriter.analyze(
+            "SELECT date, count FROM (SELECT d AS date, COUNT(*) AS count FROM t GROUP BY d) AS x ORDER BY date");
+    assertThat(analysis.parsed()).isTrue();
+    assertThat(analysis.columns())
+        .extracting(c -> c.label() + ":" + c.tableName())
+        .containsExactly("date:null", "count:null");
+    assertThat(ReadQueryRewriter.analyze("SELECT * FROM (SELECT 1 AS a) x").columns()).hasSize(1);
+  }
+
+  /** 해석 못 하는 쿼리(JSqlParser 5.4 는 컬럼 이름 number 를 못 읽는다)의 끝 ORDER BY 는 감싼 바깥으로 - MSSQL 은 감싼 안쪽 ORDER BY 를 막는다(DMT2 e4fec06) */
+  @Test
+  void unparsedQueryMovesTrailingOrderByOutside() {
+    var sql =
+        "SELECT idx, number, name FROM dbo.promotion_coupon WITH(NOLOCK) WHERE name LIKE '%a, b%' ORDER BY idx DESC, c.name";
+    assertThat(ReadQueryRewriter.analyze(sql).parsed()).isFalse();
+    var body =
+        "SELECT idx, number, name FROM dbo.promotion_coupon WITH(NOLOCK) WHERE name LIKE '%a, b%'";
+    assertThat(ReadQueryRewriter.pageQuery(sql, SqlDialect.MSSQL, Set.of(), null))
+        .isEqualTo(
+            "SELECT * FROM ("
+                + body
+                + ") t ORDER BY t.[idx] DESC, t.[name]"
+                + SqlDialect.MSSQL.pagingSuffix(true));
+    // 화면 정렬이 있으면 원래 ORDER BY 는 버린다
+    assertThat(ReadQueryRewriter.pageQuery(sql, SqlDialect.MSSQL, Set.of(), new Sort("name", false)))
+        .isEqualTo(
+            "SELECT * FROM (" + body + ") t ORDER BY [name] ASC" + SqlDialect.MSSQL.pagingSuffix(true));
+    assertThat(ReadQueryRewriter.countQuery(sql, SqlDialect.MSSQL, Set.of(), java.util.List.of()))
+        .isEqualTo("SELECT COUNT(*) FROM (" + body + ") t");
+    // 식 정렬은 건드리지 않는다
+    var expr = "SELECT number FROM t ORDER BY LEN(number)";
+    assertThat(ReadQueryRewriter.countQuery(expr, SqlDialect.MSSQL, Set.of(), java.util.List.of()))
+        .isEqualTo("SELECT COUNT(*) FROM (" + expr + ") t");
+  }
+
   @Test
   void likeValuesEscapeWildcards() {
     assertThat(Filter.escapeLike("10%_a!b")).isEqualTo("10!%!_a!!b");

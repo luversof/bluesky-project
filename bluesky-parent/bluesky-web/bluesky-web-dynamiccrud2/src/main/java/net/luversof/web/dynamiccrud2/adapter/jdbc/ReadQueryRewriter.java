@@ -98,11 +98,17 @@ public final class ReadQueryRewriter {
         rejectFiltersOnUserPaging(filters);
         return source;
       }
-      var wrapped = "SELECT * FROM (" + source + ") t" + outerWhere(dialect, filters);
+      // 감싼 안쪽 ORDER BY 는 MSSQL 이 막는다 - 끝의 ORDER BY 를 바깥(결과 이름)으로 옮긴다(옮길 수 없는 모양이면 그대로, DMT2 e4fec06)
+      var split = TrailingOrderBy.of(source, dialect);
+      var inner = split == null ? source : split.body();
+      var ownOrder = split == null || sort != null ? List.<String>of() : split.terms();
+      var wrapped = "SELECT * FROM (" + inner + ") t" + outerWhere(dialect, filters);
       if (sort != null) {
         wrapped += orderByClause(dialect, sort);
+      } else if (!ownOrder.isEmpty()) {
+        wrapped += " ORDER BY " + String.join(", ", ownOrder);
       }
-      return wrapped + dialect.pagingSuffix(sort != null);
+      return wrapped + dialect.pagingSuffix(sort != null || !ownOrder.isEmpty());
     }
     dropConditions(select, emptyOptionalParams);
     applyFilters(select, filters);
@@ -139,7 +145,8 @@ public final class ReadQueryRewriter {
       if (QueryText.parameterNames(source).contains(LIMIT_PARAM)) {
         rejectFiltersOnUserPaging(filters);
       }
-      inner = source;
+      var split = TrailingOrderBy.of(source, dialect);
+      inner = split == null ? source : split.body();
       outer = outerWhere(dialect, filters);
     }
     return "SELECT COUNT(*) FROM (" + inner + ") t" + outer;
@@ -245,6 +252,66 @@ public final class ReadQueryRewriter {
     return " ORDER BY " + dialect.quote(sort.label()) + (sort.descending() ? " DESC" : " ASC");
   }
 
+  /**
+   * 해석하지 못한 쿼리(JSqlParser 예약어 컬럼 number 등)의 끝 ORDER BY. 괄호 · 따옴표 밖 마지막 ORDER BY 이고 뒤에 페이징(OFFSET ·
+   * FETCH · LIMIT · FOR) 이 없을 때만. 항목은 감싼 바깥에서 쓰게 결과 이름(t.이름)으로 바꾼다 - 이름 하나([표.]이름 [ASC|DESC])가 아니면
+   * 옮기지 않는다(null)
+   */
+  record TrailingOrderBy(String body, List<String> terms) {
+
+    private static final Pattern TERM =
+        Pattern.compile(
+            "(?is)^\\s*(?:[\\w\\[\\]`\"]+\\.)?(\\[[^\\]]+\\]|`[^`]+`|\"[^\"]+\"|\\w+)\\s*(ASC|DESC)?\\s*$");
+    private static final Pattern ORDER_BY = Pattern.compile("(?is)^ORDER\\s+BY\\b");
+    private static final Pattern PAGING = Pattern.compile("(?i)\\b(OFFSET|FETCH|LIMIT|FOR)\\b");
+
+    static TrailingOrderBy of(String sql, SqlDialect dialect) {
+      var at = -1;
+      var depth = 0;
+      char quote = 0;
+      for (int i = 0; i < sql.length(); i++) {
+        var c = sql.charAt(i);
+        if (quote != 0) {
+          if (c == quote) {
+            quote = 0;
+          }
+        } else if (c == '\'' || c == '"' || c == '`') {
+          quote = c;
+        } else if (c == '[') {
+          quote = ']';
+        } else if (c == '(') {
+          depth++;
+        } else if (c == ')') {
+          depth--;
+        } else if (depth == 0
+            && sql.regionMatches(true, i, "ORDER", 0, 5)
+            && (i == 0 || !Character.isLetterOrDigit(sql.charAt(i - 1)))
+            && ORDER_BY.matcher(sql.substring(i)).find()) {
+          at = i;
+        }
+      }
+      if (at < 0) {
+        return null;
+      }
+      var tail = sql.substring(at).replaceFirst("(?is)^ORDER\\s+BY\\s+", "");
+      if (PAGING.matcher(tail).find()) {
+        return null;
+      }
+      var terms = new ArrayList<String>();
+      for (var part : tail.split(",")) {
+        var m = TERM.matcher(part);
+        if (!m.find()) {
+          return null;
+        }
+        terms.add(
+            "t."
+                + dialect.quote(unquote(m.group(1)))
+                + ("DESC".equalsIgnoreCase(m.group(2)) ? " DESC" : ""));
+      }
+      return new TrailingOrderBy(sql.substring(0, at).stripTrailing(), terms);
+    }
+  }
+
   private static boolean hasOwnPaging(PlainSelect select) {
     return select.getLimit() != null
         || select.getOffset() != null
@@ -322,7 +389,8 @@ public final class ReadQueryRewriter {
   private static List<ResultColumn> columns(PlainSelect select) {
     var tables = new HashMap<String, Table>();
     var tableCount = collectTables(select, tables);
-    var single = tableCount == 1 ? tables.values().iterator().next() : null;
+    // FROM 이 하위 쿼리 하나(SELECT * FROM (...) A)면 테이블은 0개 - 컬럼이 어느 테이블 것인지 모른다
+    var single = tableCount == 1 && tables.size() == 1 ? tables.values().iterator().next() : null;
     var result = new ArrayList<ResultColumn>();
     for (var item : select.getSelectItems()) {
       var expression = item.getExpression();
