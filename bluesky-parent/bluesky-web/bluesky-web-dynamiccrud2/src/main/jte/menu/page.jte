@@ -16,6 +16,8 @@
 	brandMenu = nav == null || projects.size() < 2 ? null : @`@template._components.projectSwitcher(current = nav.project(), projects = projects)`, sidebar = nav == null ? null : @`
 	<nav class="grid gap-4 text-sm">
 		@for(var mainMenuNode : nav.mainMenus())
+			<%-- 같은 메인 메뉴의 다른 메뉴로 갈 때 지금 검색 조건(q · s. · f.)을 그대로 넘긴다(DMT2 ed3997b). 그 메뉴에 없는 칸은 무시된다 --%>
+			!{var carry = !searchQuery.isEmpty() && mainMenuNode.menus().stream().anyMatch(x -> x.getId().equals(menu.getId())) ? "?" + searchQuery : "";}
 			<div>
 				<p class="font-semibold mb-1">${mainMenuNode.mainMenu().getName()}</p>
 				<ul class="grid gap-0.5 border-l border-base-300">
@@ -23,7 +25,7 @@
 						!{var current = item.getId().equals(menu.getId());}
 						<li>
 							<a class="block pl-3 py-1 -ml-px border-l-2 ${current ? "border-primary text-primary font-semibold" : "border-transparent hover:border-base-300 hover:bg-base-200"}"
-								href="/${nav.project().getCode()}/${mainMenuNode.mainMenu().getCode()}/${item.getCode()}"
+								href="/${nav.project().getCode()}/${mainMenuNode.mainMenu().getCode()}/${item.getCode()}${carry}"
 								aria-current="${current ? "page" : null}">${item.getName()}</a>
 						</li>
 					@endfor
@@ -35,9 +37,10 @@
 	<%-- 검색 폼 · 총 건수 줄은 제목과 함께 화면 위에 붙어 있다(layout stickyHead, 사용자 요청 11-24) --%>
 	<%-- 검색: 통합 검색 · 메뉴 검색 설정 칸 · 쿼리 :파라미터 칸을 한 폼으로. 페이지 · 정렬은 새 검색에서 처음으로 돌린다 --%>
 	@if(usePage.keyword() != null || !usePage.filterFields().isEmpty() || !usePage.searchFields().isEmpty())
-		<form method="get" action="${menuPath}" class="card mb-3 flex flex-wrap items-end gap-3" role="search" aria-label="${t("menu.page.searchLabel", menu.getName())}">
+		<%-- 상자 없이 한 줄(DMT2 ed3997b - 목록을 한 화면에 더 보이게) --%>
+		<form method="get" action="${menuPath}" class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2" role="search" aria-label="${t("menu.page.searchLabel", menu.getName())}">
 			@if(usePage.keyword() != null)
-				@template._components.field(label = t("menu.page.keyword"), forId = "q", content = @`
+				@template._components.field(label = t("menu.page.keyword"), forId = "q", inline = true, content = @`
 					<input id="q" class="input input-sm w-64" type="search" name="q" value="${usePage.keyword().value()}"
 						placeholder="${String.join(" · ", usePage.keyword().headers())}" aria-describedby="q-hint" />
 					<span id="q-hint" class="sr-only">${t("menu.page.keyword.hint", String.join(", ", usePage.keyword().headers()))}</span>
@@ -47,7 +50,7 @@
 				@template._components.searchFilter(field = usePage.filterFields().get(i), index = i)
 			@endfor
 			@for(var field : usePage.searchFields())
-				@template._components.field(label = field.header(), forId = "s-" + field.name(), required = field.required(), content = @`
+				@template._components.field(label = field.header(), forId = "s-" + field.name(), required = field.required(), inline = true, content = @`
 					@template._components.typedInput(id = "s-" + field.name(), name = "s." + field.name(), value = field.value(), inputType = field.inputType(), small = true, options = field.options())
 				`)
 			@endfor

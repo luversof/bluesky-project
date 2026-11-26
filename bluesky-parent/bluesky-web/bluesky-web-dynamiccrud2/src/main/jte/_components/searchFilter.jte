@@ -9,7 +9,7 @@
 
 !{var id = "f-" + index;}
 
-@template._components.field(label = field.header() + (field.operator() == SearchOperator.RANGE ? "" : " · " + field.operator().title()), forId = id, required = field.required(), hint = field.tooMany() ? t("menu.search.tooMany") : null, content = @`
+@template._components.field(label = field.header() + (field.operator() == SearchOperator.RANGE ? "" : " · " + field.operator().title()), forId = id, required = field.required(), hint = field.tooMany() ? t("menu.search.tooMany") : null, inline = true, content = @`
 	@if(field.operator() == SearchOperator.RANGE)
 		<div class="flex items-center gap-1">
 			@template._components.typedInput(id = id, name = "f." + field.label(), value = field.value(), inputType = field.inputType(), small = true, options = field.options())

@@ -188,13 +188,21 @@ class MenuPageControllerTest implements GeneralWebTest {
       // 메뉴 자체를 숨겨도 주소 · JSON 호출 · 엑셀 모두 404(프로젝트 · 메인 메뉴와 같다, DMT2 UDP-6558 11-26 - 관리자도)
       menuService.setMenuDisplay(menuId, false);
       mvc.perform(get(base).with(normalUser())).andExpect(status().isNotFound());
-      mvc.perform(get(base + "/api").with(normalUser()).accept(org.springframework.http.MediaType.APPLICATION_JSON))
+      mvc.perform(
+              get(base + "/api")
+                  .with(normalUser())
+                  .accept(org.springframework.http.MediaType.APPLICATION_JSON))
           .andExpect(status().isNotFound());
-      mvc.perform(get(base + "/excel").with(user("master").roles("MASTER"))).andExpect(status().isNotFound());
+      mvc.perform(get(base + "/excel").with(user("master").roles("MASTER")))
+          .andExpect(status().isNotFound());
       menuService.setMenuDisplay(menuId, true);
       mvc.perform(get(base).param("s.name", name).with(normalUser()))
           .andExpect(status().isOk())
-          .andExpect(content().string(Matchers.containsString("전체 0건")));
+          .andExpect(content().string(Matchers.containsString("전체 0건")))
+          // 같은 메인 메뉴의 왼쪽 메뉴 링크는 지금 검색 조건을 넘긴다(DMT2 ed3997b)
+          .andExpect(
+              content()
+                  .string(Matchers.containsString("href=\"" + base + "?s.name=" + name + "\"")));
 
       // 입력: uuid · 숫자 · 날짜시간 문자열이 컬럼 타입으로 바뀌어야 PostgreSQL 이 받는다
       mvc.perform(
@@ -434,13 +442,26 @@ class MenuPageControllerTest implements GeneralWebTest {
           .filteredOn(log -> !log.getBindValues().containsKey("revertOf"))
           .allSatisfy(log -> assertThat(log.getUsername()).isEqualTo("tester"));
       // 두 번째 수정은 그 뒤 행이 지워져 되돌리지 못한다(최근 순: 삭제 · 두 번째 수정 · 되돌리기 · 첫 수정 · 입력)
-      var secondUpdate = changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId).get(1);
+      // 같은 시각이면 순서가 바뀔 수 있어 작업 id · 되돌리기 여부로 찾는다(DMT2 ed3997b)
+      var logs = changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId);
+      var secondUpdate =
+          logs.stream()
+              .filter(log ->
+                  log.getMenuQueryId().equals(update)
+                      && !log.getBindValues().containsKey("revertOf"))
+              .filter(log -> !log.getId().equals(updateLog.getId()))
+              .findFirst()
+              .orElseThrow();
       mvc.perform(
               post("/admin/menu/" + menuId + "/history/" + secondUpdate.getId() + "/revert")
                   .with(user("admin").roles("ADMIN")))
           .andExpect(flash().attribute("error", Matchers.notNullValue()));
       // 삭제 되돌리기: 지운 행 중 목록에 있던 컬럼만 다시 넣는다 - 이 목록 행에는 code(NOT NULL)가 없어 DB 가 거부하고 사유가 보인다
-      var deleteLog = changeLogRepository.findByMenuIdOrderByCreatedDateDesc(menuId).get(0);
+      var deleteLog =
+          logs.stream()
+              .filter(log -> log.getMenuQueryId().equals(delete))
+              .findFirst()
+              .orElseThrow();
       mvc.perform(
               post("/admin/menu/" + menuId + "/history/" + deleteLog.getId() + "/revert")
                   .with(user("admin").roles("ADMIN")))
@@ -546,7 +567,9 @@ class MenuPageControllerTest implements GeneralWebTest {
           .andExpect(content().string(Matchers.containsString("/action/" + insert + "/bulk-form")));
       mvc.perform(get(base + "/action/" + insert + "/bulk-template").with(normalUser()))
           .andExpect(status().isOk())
-          .andExpect(header().string("Content-Type", Matchers.startsWith("application/vnd.openxmlformats")));
+          .andExpect(
+              header()
+                  .string("Content-Type", Matchers.startsWith("application/vnd.openxmlformats")));
       mvc.perform(post(base + "/action/" + insert + "/bulk-form").with(normalUser()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("양식 내려받기")));
@@ -556,10 +579,23 @@ class MenuPageControllerTest implements GeneralWebTest {
       try {
         var bad =
             xlsx(
-                java.util.List.of("id", "code", "name", "displayOrder", "enableDisplay", "createdDate"),
                 java.util.List.of(
-                    java.util.List.of(bulkIds.get(0).toString(), "b" + bulkIds.get(0).toString().substring(0, 8), "bulk-1", "1", "true", "2026-11-26T09:00:00"),
-                    java.util.List.of(bulkIds.get(1).toString(), "b" + bulkIds.get(1).toString().substring(0, 8), "bulk-2", "숫자아님", "true", "2026-11-26T09:00:00")));
+                    "id", "code", "name", "displayOrder", "enableDisplay", "createdDate"),
+                java.util.List.of(
+                    java.util.List.of(
+                        bulkIds.get(0).toString(),
+                        "b" + bulkIds.get(0).toString().substring(0, 8),
+                        "bulk-1",
+                        "1",
+                        "true",
+                        "2026-11-26T09:00:00"),
+                    java.util.List.of(
+                        bulkIds.get(1).toString(),
+                        "b" + bulkIds.get(1).toString().substring(0, 8),
+                        "bulk-2",
+                        "숫자아님",
+                        "true",
+                        "2026-11-26T09:00:00")));
         mvc.perform(
                 org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(
                         base + "/action/" + insert + "/bulk")
@@ -571,17 +607,31 @@ class MenuPageControllerTest implements GeneralWebTest {
         assertThat(projectRepository.findById(bulkIds.get(0))).isEmpty();
         var good =
             xlsx(
-                java.util.List.of("id", "code", "name", "displayOrder", "enableDisplay", "createdDate"),
                 java.util.List.of(
-                    java.util.List.of(bulkIds.get(0).toString(), "b" + bulkIds.get(0).toString().substring(0, 8), "bulk-1", "1", "true", "2026-11-26T09:00:00"),
-                    java.util.List.of(bulkIds.get(1).toString(), "b" + bulkIds.get(1).toString().substring(0, 8), "bulk-2", "2", "false", "2026-11-26T09:00:00")));
+                    "id", "code", "name", "displayOrder", "enableDisplay", "createdDate"),
+                java.util.List.of(
+                    java.util.List.of(
+                        bulkIds.get(0).toString(),
+                        "b" + bulkIds.get(0).toString().substring(0, 8),
+                        "bulk-1",
+                        "1",
+                        "true",
+                        "2026-11-26T09:00:00"),
+                    java.util.List.of(
+                        bulkIds.get(1).toString(),
+                        "b" + bulkIds.get(1).toString().substring(0, 8),
+                        "bulk-2",
+                        "2",
+                        "false",
+                        "2026-11-26T09:00:00")));
         mvc.perform(
                 org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(
                         base + "/action/" + insert + "/bulk")
                     .file("file", good)
                     .with(normalUser()))
             .andExpect(header().string("HX-Refresh", "true"));
-        assertThat(projectRepository.findById(bulkIds.get(1)).orElseThrow().getName()).isEqualTo("bulk-2");
+        assertThat(projectRepository.findById(bulkIds.get(1)).orElseThrow().getName())
+            .isEqualTo("bulk-2");
       } finally {
         bulkIds.forEach(projectRepository::deleteById);
       }
@@ -653,7 +703,8 @@ class MenuPageControllerTest implements GeneralWebTest {
   }
 
   /** 첫 줄 칸 이름 + 행들(모두 글자 칸)의 xlsx 바이트 */
-  private static byte[] xlsx(java.util.List<String> header, java.util.List<java.util.List<String>> rows)
+  private static byte[] xlsx(
+      java.util.List<String> header, java.util.List<java.util.List<String>> rows)
       throws java.io.IOException {
     try (var workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
         var out = new java.io.ByteArrayOutputStream()) {

@@ -89,9 +89,10 @@
 		<div class="grow w-full px-4 md:px-6 py-6 flex flex-col md:flex-row gap-6">
 			<aside class="md:w-56 shrink-0" aria-label="${net.luversof.web.dynamiccrud2.config.Msg.t("layout.sidebar")}">${sidebar}</aside>
 			<main class="grow min-w-0">
-				<%-- 제목과 stickyHead(사용 화면의 검색)는 세로 스크롤해도 위에 붙어 있다(.sticky-head) --%>
+				<%-- stickyHead(사용 화면의 검색)는 세로 스크롤해도 위에 붙어 있다(.sticky-head). 제목(메뉴 이름)은 왼쪽 메뉴에서 눌린 것과 같아
+				     화면에서는 빼고 화면 낭독기에만 둔다(DMT2 ed3997b - 목록을 한 화면에 더 보이게) --%>
 				<div class="sticky-head">
-					<h1 class="text-xl font-semibold ${stickyHead != null ? "mb-4" : ""}">${title}</h1>
+					<h1 class="sr-only">${title}</h1>
 					${stickyHead}
 				</div>
 				${content}

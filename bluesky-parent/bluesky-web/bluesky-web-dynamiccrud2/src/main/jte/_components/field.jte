@@ -8,10 +8,12 @@
 @param String help = null
 @param boolean required = false
 @param String cssClass = ""
+<%-- inline: 라벨을 입력 왼쪽 한 줄에(사용 화면 검색 - 높이를 줄인다, 사용자 요청 11-26) --%>
+@param boolean inline = false
 
-<div class="${cssClass}">
-	<div class="flex items-center gap-1">
-		<label class="label" for="${forId}">${label}@if(required) <span class="text-error">*</span>@endif</label>
+<div class="${inline ? "flex items-center gap-2" : ""} ${cssClass}">
+	<div class="flex items-center gap-1 ${inline ? "shrink-0" : ""}">
+		<label class="label ${inline ? "mb-0 whitespace-nowrap" : ""}" for="${forId}">${label}@if(required) <span class="text-error">*</span>@endif</label>
 		@if(help != null)@template._components.help(text = help, label = t("common.helpFor", label))@endif
 	</div>
 	${content}
