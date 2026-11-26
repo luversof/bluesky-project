@@ -113,8 +113,8 @@ public class MenuPageService {
   }
 
   /**
-   * 주소의 code 로 메뉴를 찾는다. 없거나, 숨긴 프로젝트 · 메인 메뉴 아래면 404(2026-11-24 사용자 요청: 숨기면 아래 메뉴도 숨긴 것으로 본다). 메뉴
-   * 자체의 "메뉴 목록에 표시" 는 목록에서만 빼는 값이라 주소로는 열린다(복사한 메뉴는 숨김으로 만들어져 보이기 전에 주소로 확인)
+   * 주소의 code 로 메뉴를 찾는다. 없거나, 숨긴 메뉴이거나, 숨긴 프로젝트 · 메인 메뉴 아래면 404(2026-11-24 사용자 요청: 숨기면 아래 메뉴도 숨긴
+   * 것으로 본다, 11-26: 숨긴 메뉴도 주소로 열지 않는다 - DMT2 UDP-6558, 예전엔 목록에서만 뺐다)
    */
   public MenuPath resolve(String projectCode, String mainMenuCode, String menuCode) {
     var project =
@@ -130,6 +130,8 @@ public class MenuPageService {
     var menu =
         menuRepository
             .findByMainMenuIdAndCode(mainMenu.getId(), menuCode)
+            // 숨긴 메뉴도 주소로 열리지 않는다(프로젝트 · 메인 메뉴와 같게, DMT2 UDP-6558 11-26 - 예전엔 목록에서만 빠졌다)
+            .filter(Menu::isEnableDisplay)
             .orElseThrow(MenuPageService::notFound);
     return new MenuPath(project, mainMenu, menu);
   }

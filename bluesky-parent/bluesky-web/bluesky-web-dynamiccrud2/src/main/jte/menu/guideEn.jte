@@ -91,7 +91,7 @@
 		<li>Roles: <code>ROLE_MASTER</code> &gt; <code>ROLE_ADMIN</code> &gt; <code>ROLE_USER</code>, a higher role includes the lower ones. Admin screens need <code>ROLE_ADMIN</code> or higher.</li>
 		<li><b>Hiding</b> (eye icon):
 			<ul>
-				<li>Menu: leaves the menu list but still opens by address.</li>
+				<li>Menu: leaves the menu list and no longer opens by address.</li>
 				<li>Project, main menu: the menus under it leave the list and no longer open by address either.</li>
 			</ul>
 		</li>

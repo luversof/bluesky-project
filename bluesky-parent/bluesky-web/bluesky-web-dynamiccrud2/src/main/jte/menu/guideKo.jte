@@ -91,7 +91,7 @@
 		<li>역할은 <code>ROLE_MASTER</code> &gt; <code>ROLE_ADMIN</code> &gt; <code>ROLE_USER</code> 순으로 위 역할이 아래 역할을 포함합니다. 관리 화면은 <code>ROLE_ADMIN</code> 이상만 엽니다.</li>
 		<li><b>숨기기</b>(눈 아이콘):
 			<ul>
-				<li>메뉴: 메뉴 목록에서만 빠지고 주소로는 열립니다.</li>
+				<li>메뉴: 메뉴 목록에서 빠지고 주소로도 열리지 않습니다.</li>
 				<li>프로젝트 · 메인 메뉴: 그 아래 메뉴까지 목록에서 빠지고 주소로도 열리지 않습니다.</li>
 			</ul>
 		</li>

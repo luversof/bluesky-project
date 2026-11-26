@@ -110,7 +110,7 @@
 															<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-1a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h1"/></svg>
 														</button>
 													</form>
-													@template._components.displayToggle(action = "/admin/menu/" + menuId + "/display", name = menu.getName(), shown = menu.isEnableDisplay(), opensByAddress = true)
+													@template._components.displayToggle(action = "/admin/menu/" + menuId + "/display", name = menu.getName(), shown = menu.isEnableDisplay(), menu = true)
 													@template._components.iconDelete(action = "/admin/menu/" + menuId + "/delete", label = t("admin.deleteItem", menu.getName()), confirm = t("admin.menu.deleteConfirm"))
 												</span>
 											</div>

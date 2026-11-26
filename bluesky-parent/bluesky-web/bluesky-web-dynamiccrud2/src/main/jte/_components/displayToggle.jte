@@ -6,8 +6,8 @@
 @param String name
 @param boolean shown
 @param String back = null
-<%-- opensByAddress: 숨겨도 주소로는 열리는가. 메뉴는 열리고(목록에서만 빠짐), 프로젝트 · 메인 메뉴는 아래 메뉴까지 주소로도 막힌다(MenuPageService.resolve) --%>
-@param boolean opensByAddress = false
+<%-- menu: 메뉴 자체(아래 메뉴 없음)인가 - 안내 문구만 다르다. 숨기면 메뉴 · 프로젝트 · 메인 메뉴 모두 주소로도 열리지 않는다(MenuPageService.resolve) --%>
+@param boolean menu = false
 
 <%-- is-hidden-state: 숨김 상태 표시는 줄에 올리지 않아도 늘 보인다(main.css .reveal-icons) --%>
 <form method="post" action="${action}" class="inline-flex ${shown ? "" : "is-hidden-state"}">
@@ -15,7 +15,7 @@
 	<input type="hidden" name="display" value="${String.valueOf(!shown)}" />
 	@if(back != null)<input type="hidden" name="back" value="${back}" />@endif
 	<button class="icon-btn" aria-label="${shown ? t("display.hide", name) : t("display.show", name)}"
-		data-tip="${shown ? t(opensByAddress ? "display.hide.title.menu" : "display.hide.title") : t("display.show.title")}">
+		data-tip="${shown ? t(menu ? "display.hide.title.menu" : "display.hide.title") : t("display.show.title")}">
 		@template._components.eyeIcon(slashed = !shown)
 	</button>
 </form>

@@ -185,9 +185,12 @@ class MenuPageControllerTest implements GeneralWebTest {
       mvc.perform(get(base).with(normalUser())).andExpect(status().isNotFound());
       mvc.perform(get(base + "/excel").with(normalUser())).andExpect(status().isNotFound());
       menuService.setProjectDisplay(owner.getId(), true);
-      // 메뉴 자체의 "메뉴 목록에 표시" 는 목록에서만 빠지고 주소로는 열린다
+      // 메뉴 자체를 숨겨도 주소 · JSON 호출 · 엑셀 모두 404(프로젝트 · 메인 메뉴와 같다, DMT2 UDP-6558 11-26 - 관리자도)
       menuService.setMenuDisplay(menuId, false);
-      mvc.perform(get(base).with(normalUser())).andExpect(status().isOk());
+      mvc.perform(get(base).with(normalUser())).andExpect(status().isNotFound());
+      mvc.perform(get(base + "/api").with(normalUser()).accept(org.springframework.http.MediaType.APPLICATION_JSON))
+          .andExpect(status().isNotFound());
+      mvc.perform(get(base + "/excel").with(user("master").roles("MASTER"))).andExpect(status().isNotFound());
       menuService.setMenuDisplay(menuId, true);
       mvc.perform(get(base).param("s.name", name).with(normalUser()))
           .andExpect(status().isOk())
