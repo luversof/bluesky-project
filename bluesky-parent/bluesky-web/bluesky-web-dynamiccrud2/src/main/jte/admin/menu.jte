@@ -20,6 +20,8 @@
 @param List<net.luversof.web.dynamiccrud2.menu.service.MenuPageService.ApiCall> apiCalls = java.util.List.of()
 <%-- 목록 표시 여부 후보(MenuPageService.listColumns). 비면(연결 실패 등) 그 카드를 뺀다 --%>
 @param List<net.luversof.web.dynamiccrud2.menu.service.MenuPageService.Column> listColumns = java.util.List.of()
+<%-- 조회 쿼리 SELECT 칸 순서를 화면에서 바꿀 수 있는가(SelectColumns.reorderable) --%>
+@param boolean columnsReorderable = false
 
 !{var menuId = menu.getId().toString();}
 
@@ -119,17 +121,23 @@
 	`)
 
 	<%-- 목록 표시 여부(DMT2 80c8003 · b78cadd): 체크 = 보임. 끈 칸은 사용 화면 목록에서만 빠지고 행 자세히 · 수정에는 보인다.
-	     all = 후보 전체(끈 칸 = all - show 로 저장, MenuService.setListHidden) --%>
+	     all = 후보 전체(끈 칸 = all - show 로 저장, MenuService.setListHidden). ⠿ 로 끈 순서는 저장 때 조회 쿼리 SELECT 순서가 된다
+	     (DMT2 26e7b32, js/reorder.js - data-reorder-url 이 비어 바로 저장하지 않고 [저장] 때 all 순서로 보낸다). SELECT * · Mongo · 별칭 없는 식이 있으면 끌기 없음 --%>
 	@if(!listColumns.isEmpty())
-		@template._components.card(title = t("admin.menu.listHidden"), help = t("admin.menu.listHidden.help"), body = @`
+		@template._components.card(title = t("admin.menu.listHidden"), help = t(columnsReorderable ? "admin.menu.listHidden.help" : "admin.menu.listHidden.helpNoOrder"), body = @`
 			<form method="post" action="/admin/menu/${menuId}/list-hidden" class="flex flex-wrap items-center gap-x-5 gap-y-2">
-				@for(var column : listColumns)
-					<label class="flex items-center gap-2 text-sm">
-						<input type="hidden" name="all" value="${column.label()}" />
-						<input class="checkbox" type="checkbox" name="show" value="${column.label()}" checked="${!column.hidden()}" /> ${column.header()}
-						@if(!column.header().equals(column.label()))<span class="hint font-mono text-xs">${column.label()}</span>@endif
-					</label>
-				@endfor
+				<div class="flex flex-wrap items-center gap-x-4 gap-y-2" data-reorder-url="">
+					@for(var column : listColumns)
+						<div class="flex items-center gap-1 text-sm" data-id="${column.label()}">
+							@if(columnsReorderable)@template._components.dragHandle(name = column.header())@endif
+							<label class="flex items-center gap-2">
+								<input type="hidden" name="all" value="${column.label()}" />
+								<input class="checkbox" type="checkbox" name="show" value="${column.label()}" checked="${!column.hidden()}" /> ${column.header()}
+								@if(!column.header().equals(column.label()))<span class="hint font-mono text-xs">${column.label()}</span>@endif
+							</label>
+						</div>
+					@endfor
+				</div>
 				<button class="btn btn-sm btn-primary ml-auto">${t("common.save")}</button>
 			</form>
 		`)

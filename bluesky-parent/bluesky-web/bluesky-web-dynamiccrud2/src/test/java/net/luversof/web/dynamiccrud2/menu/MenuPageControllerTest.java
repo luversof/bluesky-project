@@ -214,11 +214,30 @@ class MenuPageControllerTest implements GeneralWebTest {
               content().string(Matchers.containsString("name=\"show\" value=\"displayOrder\" />")));
       mvc.perform(
               post("/admin/menu/" + menuId + "/list-hidden")
-                  .param("all", "displayOrder", "name")
-                  .param("show", "displayOrder", "name")
+                  .param("all", "id", "이름", "displayOrder", "createdDate")
+                  .param("show", "id", "이름", "displayOrder", "createdDate")
                   .with(user("master").roles("MASTER")))
           .andExpect(status().is3xxRedirection());
       assertThat(menuService.getMenu(menuId).getListHidden()).isNull();
+      var originalSelect = "SELECT id, name AS \"이름\", \"displayOrder\", \"createdDate\" FROM";
+      assertThat(readText(menuId)).startsWith(originalSelect);
+      // ⠿ 로 끈 칸 순서(all 순서)는 조회 쿼리 SELECT 순서가 된다(DMT2 26e7b32), 되돌리면 원래대로
+      mvc.perform(
+              post("/admin/menu/" + menuId + "/list-hidden")
+                  .param("all", "createdDate", "이름", "id", "displayOrder")
+                  .param("show", "createdDate", "이름", "id", "displayOrder")
+                  .with(user("master").roles("MASTER")))
+          .andExpect(status().is3xxRedirection());
+      assertThat(readText(menuId))
+          .startsWith(
+              "SELECT \"createdDate\", name AS \"이름\", id, \"displayOrder\" FROM \"Project\" WHERE name = :name");
+      mvc.perform(
+              post("/admin/menu/" + menuId + "/list-hidden")
+                  .param("all", "id", "이름", "displayOrder", "createdDate")
+                  .param("show", "id", "이름", "displayOrder", "createdDate")
+                  .with(user("master").roles("MASTER")))
+          .andExpect(status().is3xxRedirection());
+      assertThat(readText(menuId)).startsWith(originalSelect);
       // 기본 쿼리 다시 만들기(DMT2 90c5952): 입력칸 조각만(저장하지 않음), 종류마다 그 기본 쿼리
       for (var kind : QueryKind.values()) {
         mvc.perform(
@@ -731,6 +750,14 @@ class MenuPageControllerTest implements GeneralWebTest {
         valueOptions,
         field.getDateFormat());
     return before;
+  }
+
+  private String readText(UUID menuId) {
+    return menuService.getMenu(menuId).getQueries().stream()
+        .filter(q -> q.getKind() == QueryKind.READ)
+        .findFirst()
+        .orElseThrow()
+        .getQueryText();
   }
 
   private static UUID idOf(net.luversof.web.dynamiccrud2.domain.Menu menu, QueryKind kind) {

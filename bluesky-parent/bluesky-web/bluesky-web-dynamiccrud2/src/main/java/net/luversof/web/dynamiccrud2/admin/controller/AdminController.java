@@ -280,6 +280,11 @@ public class AdminController {
     // 목록에서 숨길 칸 후보. connection 을 못 열면 그 부분만 뺀다
     try {
       model.addAttribute("listColumns", useService.listColumns(id));
+      model.addAttribute(
+          "columnsReorderable",
+          menu.getQueries().stream()
+              .filter(q -> q.getKind() == QueryKind.READ)
+              .anyMatch(q -> net.luversof.web.dynamiccrud2.adapter.jdbc.SelectColumns.reorderable(q.getQueryText())));
     } catch (RuntimeException e) {
       model.addAttribute("listColumns", List.of());
     }
@@ -537,7 +542,39 @@ public class AdminController {
       RedirectAttributes redirect) {
     var shown = show == null ? java.util.Set.<String>of() : java.util.Set.copyOf(show);
     var hidden = all == null ? List.<String>of() : all.stream().filter(label -> !shown.contains(label)).toList();
-    return run(redirect, "redirect:/admin/menu/" + id, () -> menuService.setListHidden(id, hidden));
+    return run(
+        redirect,
+        "redirect:/admin/menu/" + id,
+        () -> {
+          // 칸 순서(all = 화면에서 끈 순서): 바뀌었으면 조회 쿼리 SELECT 순서를 바꾼다(DMT2 26e7b32 - 칸 순서는 쿼리 순서 그대로). 저장 검사를 거친다
+          var read =
+              menuService.getMenu(id).getQueries().stream()
+                  .filter(q -> q.getKind() == QueryKind.READ)
+                  .findFirst()
+                  .orElseThrow();
+          if (all != null
+              && net.luversof.web.dynamiccrud2.adapter.jdbc.SelectColumns.reorderable(
+                  read.getQueryText())) {
+            var order = new java.util.HashMap<String, Integer>();
+            for (int i = 0; i < all.size(); i++) {
+              order.putIfAbsent(all.get(i), i);
+            }
+            var reordered =
+                net.luversof.web.dynamiccrud2.adapter.jdbc.SelectColumns.reorder(
+                    read.getQueryText(), order);
+            if (reordered != null) {
+              queryService.save(
+                  id,
+                  read.getId(),
+                  QueryKind.READ,
+                  read.getName(),
+                  reordered,
+                  QueryService.settingsOf(read),
+                  read.getAuthority());
+            }
+          }
+          menuService.setListHidden(id, hidden);
+        });
   }
 
   /** 검색 설정: on = 검색칸으로 고른 결과 이름들, op.결과이름 = 방식, kw = 통합 검색에 넣은 결과 이름들 */
