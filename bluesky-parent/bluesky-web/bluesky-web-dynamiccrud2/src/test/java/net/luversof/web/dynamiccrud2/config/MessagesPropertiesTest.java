@@ -51,14 +51,29 @@ class MessagesPropertiesTest {
     return properties;
   }
 
+  /**
+   * 파일은 ASCII 만(한글 · 기호는 \\uXXXX, 사내 메시지 파일 관례 - DMT2 와 같게). STS · Eclipse 는 .properties 를 ISO-8859-1 로 열어 날
+   * UTF-8 한글이 깨져 보인다. 새 문구를 한글 그대로 넣으면 여기서 막힌다 - native2ascii 로 바꿔 넣을 것.
+   */
   @Test
-  void utf8AndSameKeys() throws IOException {
-    var ko = readUtf8("messages.properties");
-    var en = readUtf8("messages_en.properties");
-    assertThat(ko).doesNotContain("�");
-    assertThat(en).doesNotContain("�");
-    assertThat(Pattern.compile("[가-힣]").matcher(ko).find()).as("한국어 문구").isTrue();
-    assertThat(load(ko).stringPropertyNames()).isEqualTo(load(en).stringPropertyNames());
+  void asciiOnlyAndSameKeys() throws IOException {
+    for (var name : new String[] {"messages.properties", "messages_en.properties"}) {
+      var text = readUtf8(name);
+      var lineNo = 0;
+      for (var line : text.split("\\r?\\n", -1)) {
+        lineNo++;
+        assertThat(line.chars().allMatch(c -> c < 128))
+            .as("%s:%d 에 ASCII 가 아닌 글자(한글은 \\uXXXX 로): %s", name, lineNo, line)
+            .isTrue();
+      }
+    }
+    var ko = load(readUtf8("messages.properties"));
+    var en = load(readUtf8("messages_en.properties"));
+    assertThat(ko.values().stream().anyMatch(v -> Pattern.compile("[가-힣]").matcher((String) v).find()))
+        .as("한국어 문구")
+        .isTrue();
+    assertThat(ko.values()).noneMatch(v -> ((String) v).contains("\uFFFD"));
+    assertThat(ko.stringPropertyNames()).isEqualTo(en.stringPropertyNames());
   }
 
   @Test
