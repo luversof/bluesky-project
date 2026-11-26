@@ -173,6 +173,7 @@ public class SettingLogService {
     map.put("pageSize", String.valueOf(menu.getPageSize()));
     map.put("enableDisplay", String.valueOf(menu.isEnableDisplay()));
     map.put("enableExcel", String.valueOf(menu.isEnableExcel()));
+    map.put("listHidden", menu.getListHidden());
     return map;
   }
 

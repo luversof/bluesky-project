@@ -88,6 +88,8 @@ CREATE TABLE "Menu" (
 	"pageSize" INTEGER NOT NULL DEFAULT 15,
 	-- 화면에서 고른 검색칸 · 통합 검색 컬럼({"fields":[{"label","operator"}],"keyword":[label]}). NULL = 없음
 	"searchSettings" JSONB,
+	-- 사용 화면 목록에서 뺄 결과 이름(한 줄에 하나, 자세히 · 수정 · 엑셀에는 보임). NULL = 모두 보임
+	"listHidden" TEXT,
 	"enableExcel" BOOLEAN NOT NULL DEFAULT FALSE,
 	"enableDisplay" BOOLEAN NOT NULL DEFAULT TRUE,
 	"displayOrder" INTEGER NOT NULL DEFAULT 0,

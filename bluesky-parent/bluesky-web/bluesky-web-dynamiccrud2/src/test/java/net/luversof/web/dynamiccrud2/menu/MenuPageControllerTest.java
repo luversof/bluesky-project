@@ -196,6 +196,45 @@ class MenuPageControllerTest implements GeneralWebTest {
       mvc.perform(get(base + "/excel").with(user("master").roles("MASTER")))
           .andExpect(status().isNotFound());
       menuService.setMenuDisplay(menuId, true);
+      // 목록 표시 여부(DMT2 80c8003 · b78cadd): 끈 칸은 그려 두되 hidden - 행 자세히가 읽는다. 관리 화면은 체크가 꺼진 채로
+      menuService.setListHidden(menuId, java.util.List.of("displayOrder"));
+      var hiddenPage =
+          mvc.perform(get(base).with(normalUser()))
+              .andReturn()
+              .getResponse()
+              .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+      assertThat(
+              java.util.regex.Pattern.compile("<th [^>]*\\shidden[\\s>]")
+                  .matcher(hiddenPage)
+                  .results()
+                  .count())
+          .isEqualTo(1);
+      mvc.perform(get("/admin/menu/" + menuId).with(user("master").roles("MASTER")))
+          .andExpect(
+              content().string(Matchers.containsString("name=\"show\" value=\"displayOrder\" />")));
+      mvc.perform(
+              post("/admin/menu/" + menuId + "/list-hidden")
+                  .param("all", "displayOrder", "name")
+                  .param("show", "displayOrder", "name")
+                  .with(user("master").roles("MASTER")))
+          .andExpect(status().is3xxRedirection());
+      assertThat(menuService.getMenu(menuId).getListHidden()).isNull();
+      // 기본 쿼리 다시 만들기(DMT2 90c5952): 입력칸 조각만(저장하지 않음), 종류마다 그 기본 쿼리
+      for (var kind : QueryKind.values()) {
+        mvc.perform(
+                post("/admin/menu/" + menuId + "/query/draft")
+                    .param("kind", kind.name())
+                    .param("queryText", "old text")
+                    .with(user("master").roles("MASTER")))
+            .andExpect(status().isOk())
+            .andExpect(content().string(Matchers.containsString("id=\"q-queryText\"")))
+            .andExpect(content().string(Matchers.not(Matchers.containsString("old text"))))
+            .andExpect(
+                content()
+                    .string(
+                        Matchers.containsString(kind == QueryKind.READ ? "SELECT" : kind.name())));
+      }
+      assertThat(menuService.getMenu(menuId).getQueries()).hasSize(saved.getQueries().size());
       mvc.perform(get(base).param("s.name", name).with(normalUser()))
           .andExpect(status().isOk())
           .andExpect(content().string(Matchers.containsString("전체 0건")))

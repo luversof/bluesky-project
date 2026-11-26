@@ -18,6 +18,8 @@
 @param String menuPath = null
 @param String apiBase = null
 @param List<net.luversof.web.dynamiccrud2.menu.service.MenuPageService.ApiCall> apiCalls = java.util.List.of()
+<%-- 목록 표시 여부 후보(MenuPageService.listColumns). 비면(연결 실패 등) 그 카드를 뺀다 --%>
+@param List<net.luversof.web.dynamiccrud2.menu.service.MenuPageService.Column> listColumns = java.util.List.of()
 
 !{var menuId = menu.getId().toString();}
 
@@ -116,7 +118,37 @@
 		@template._components.modal(id = "queryDialog", panelId = "queryPanel", label = t("admin.menu.queries"), wide = true)
 	`)
 
-	<%-- JSON 호출 설명: 위 쿼리 · 아래 검색 설정에서 만든다(MenuPageService.apiDoc). 처음엔 접어 둔다 --%>
+	<%-- 목록 표시 여부(DMT2 80c8003 · b78cadd): 체크 = 보임. 끈 칸은 사용 화면 목록에서만 빠지고 행 자세히 · 수정에는 보인다.
+	     all = 후보 전체(끈 칸 = all - show 로 저장, MenuService.setListHidden) --%>
+	@if(!listColumns.isEmpty())
+		@template._components.card(title = t("admin.menu.listHidden"), help = t("admin.menu.listHidden.help"), body = @`
+			<form method="post" action="/admin/menu/${menuId}/list-hidden" class="flex flex-wrap items-center gap-x-5 gap-y-2">
+				@for(var column : listColumns)
+					<label class="flex items-center gap-2 text-sm">
+						<input type="hidden" name="all" value="${column.label()}" />
+						<input class="checkbox" type="checkbox" name="show" value="${column.label()}" checked="${!column.hidden()}" /> ${column.header()}
+						@if(!column.header().equals(column.label()))<span class="hint font-mono text-xs">${column.label()}</span>@endif
+					</label>
+				@endfor
+				<button class="btn btn-sm btn-primary ml-auto">${t("common.save")}</button>
+			</form>
+		`)
+	@endif
+
+	@template._components.card(title = t("admin.menu.search"), help = t("admin.menu.search.help"), body = @`
+		@if(!search.parsed())
+			@template._components.alert(message = t("admin.menu.search.unparsed"), tone = "info", cssClass = "")
+		@elseif(search.candidates().isEmpty())
+			@template._components.emptyState(message = t("admin.menu.search.noColumns"))
+		@else
+			@template.admin.searchSettings(search = search, menuId = menuId)
+		@endif
+	`)
+
+	<%-- 테이블(컬렉션) 정보(접힘): 검색칸마다 인덱스 사용 여부가 이미 보여, 전체 구조가 필요할 때만 펼친다(2026-11-23 사용자 결정). 순서: 쿼리 · 목록 표시 여부 · 검색 설정 · 테이블 정보 · JSON 호출(DMT2 57aa061) --%>
+	@template._components.tableInfo(tables = search.tables(), open = false, targetNoun = targetNoun, rememberKey = "tableInfo")
+
+	<%-- JSON 호출 설명: 위 쿼리 · 검색 설정에서 만든다(MenuPageService.apiDoc). 처음엔 접어 둔다 --%>
 	@if(apiBase != null && !apiCalls.isEmpty())
 		@template._components.card(title = t("admin.menu.api"), help = t("admin.menu.api.help"), collapsible = true, open = false, rememberKey = "menu-api", body = @`
 			<div class="grid gap-5">
@@ -157,16 +189,4 @@
 			</div>
 		`)
 	@endif
-
-	<%-- 검색 설정 위 테이블 정보(접힘): 검색칸마다 인덱스 사용 여부가 이미 보여, 전체 구조가 필요할 때만 펼친다(2026-11-23 사용자 결정) --%>
-	@template._components.tableInfo(tables = search.tables(), open = false, targetNoun = targetNoun, rememberKey = "tableInfo")
-	@template._components.card(title = t("admin.menu.search"), help = t("admin.menu.search.help"), body = @`
-		@if(!search.parsed())
-			@template._components.alert(message = t("admin.menu.search.unparsed"), tone = "info", cssClass = "")
-		@elseif(search.candidates().isEmpty())
-			@template._components.emptyState(message = t("admin.menu.search.noColumns"))
-		@else
-			@template.admin.searchSettings(search = search, menuId = menuId)
-		@endif
-	`)
 `)

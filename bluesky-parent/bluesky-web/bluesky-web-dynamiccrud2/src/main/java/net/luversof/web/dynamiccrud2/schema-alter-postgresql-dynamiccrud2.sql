@@ -142,3 +142,14 @@ END $$;
 
 -- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 값 목록 · 날짜 형식 설정이 사라진다)
 -- ALTER TABLE "DbField" DROP COLUMN IF EXISTS "options";
+
+-- 2026-11-26 메뉴 목록 표시 여부(listHidden, DMT2 80c8003)
+-- 까닭: 행 자세히 · 수정 · 엑셀에는 두고 사용 화면 목록에서만 뺄 칸(결과 이름, 한 줄에 하나). NULL = 모두 보임.
+-- 이 열이 없으면 앱이 메뉴를 못 읽으므로 앱 배포 전에 적용할 것.
+ALTER TABLE "Menu" ADD COLUMN IF NOT EXISTS "listHidden" TEXT;
+
+-- 확인(열 1 개)
+-- SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'Menu' AND column_name = 'listHidden';
+
+-- 되돌리기(앱을 이전 판으로 돌린 뒤에만, 목록에서 뺀 칸이 다시 보인다)
+-- ALTER TABLE "Menu" DROP COLUMN IF EXISTS "listHidden";

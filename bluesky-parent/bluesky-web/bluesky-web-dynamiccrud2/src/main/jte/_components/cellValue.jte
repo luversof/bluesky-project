@@ -13,6 +13,8 @@
 @param String dateFormat = null
 <%-- json: json · jsonb 컬럼 - 한 줄로 줄인 고정폭, 올리면 보기 좋게 펼친 전체(title 을 js/ui.js [data-json] 가 바꾼다) --%>
 @param boolean json = false
+<%-- hidden: 목록에서 숨긴 칸(메뉴 설정) - 값은 두어 행 자세히(js/row-detail.js)가 읽는다 --%>
+@param boolean hidden = false
 
 !{var raw = value == null ? "" : value;}
 !{var type = inputType == null ? InputType.TEXT : inputType;}
@@ -21,21 +23,21 @@
 !{var no = lower.equals("false") || lower.equals("f") || lower.equals("0") || lower.equals("n");}
 
 @if(value == null && nullMark)
-	<td class="hint">NULL</td>
+	<td hidden="${hidden}" class="hint">NULL</td>
 @elseif(json && !raw.isEmpty())
-	<td class="max-w-xs truncate font-mono text-xs" title="${raw}" data-json>${raw}</td>
+	<td hidden="${hidden}" class="max-w-xs truncate font-mono text-xs" title="${raw}" data-json>${raw}</td>
 @elseif(options != null && options.containsKey(raw))
-	<td class="max-w-xs truncate" title="${raw}">${options.get(raw)}</td>
+	<td hidden="${hidden}" class="max-w-xs truncate" title="${raw}">${options.get(raw)}</td>
 @elseif(type == InputType.BOOLEAN && (yes || no))
-	<td class="${type.align()}" title="${raw}"><span aria-hidden="true">${yes ? "✓" : "–"}</span><span class="sr-only">${t(yes ? "common.yes" : "common.no")}</span></td>
+	<td hidden="${hidden}" class="${type.align()}" title="${raw}"><span aria-hidden="true">${yes ? "✓" : "–"}</span><span class="sr-only">${t(yes ? "common.yes" : "common.no")}</span></td>
 @elseif(type == InputType.NUMBER)
-	<td class="max-w-xs truncate ${type.align()} tabular-nums" title="${raw}">${raw}</td>
+	<td hidden="${hidden}" class="max-w-xs truncate ${type.align()} tabular-nums" title="${raw}">${raw}</td>
 @elseif((type == InputType.DATETIME || type == InputType.DATE) && dateFormat != null)
-	<td class="whitespace-nowrap tabular-nums" title="${raw}">${net.luversof.web.dynamiccrud2.menu.service.ValueConverter.formatDate(raw, dateFormat)}</td>
+	<td hidden="${hidden}" class="whitespace-nowrap tabular-nums" title="${raw}">${net.luversof.web.dynamiccrud2.menu.service.ValueConverter.formatDate(raw, dateFormat)}</td>
 @elseif(type == InputType.DATETIME)
-	<td class="whitespace-nowrap tabular-nums" title="${raw}">${raw.replace('T', ' ')}</td>
+	<td hidden="${hidden}" class="whitespace-nowrap tabular-nums" title="${raw}">${raw.replace('T', ' ')}</td>
 @elseif(type == InputType.DATE)
-	<td class="whitespace-nowrap tabular-nums" title="${raw}">${raw.length() > 10 ? raw.substring(0, 10) : raw}</td>
+	<td hidden="${hidden}" class="whitespace-nowrap tabular-nums" title="${raw}">${raw.length() > 10 ? raw.substring(0, 10) : raw}</td>
 @else
-	<td class="max-w-xs truncate" title="${raw}">${raw}</td>
+	<td hidden="${hidden}" class="max-w-xs truncate" title="${raw}">${raw}</td>
 @endif

@@ -44,6 +44,10 @@ public class Menu {
   @Column("searchSettings")
   private java.util.Map<String, Object> searchSettings;
 
+  /** 사용 화면 목록에서 숨길 결과 이름(한 줄에 하나). 자세히 · 수정에는 보인다. null = 모두 보임 */
+  @Column("listHidden")
+  private String listHidden;
+
   @Column("enableExcel")
   private boolean enableExcel;
 
@@ -122,6 +126,19 @@ public class Menu {
 
   public void setPageSize(int pageSize) {
     this.pageSize = pageSize;
+  }
+
+  public String getListHidden() {
+    return listHidden;
+  }
+
+  public void setListHidden(String listHidden) {
+    this.listHidden = listHidden;
+  }
+
+  /** 목록에서 숨길 결과 이름들 */
+  public Set<String> listHiddenLabels() {
+    return listHidden == null ? Set.of() : new LinkedHashSet<>(listHidden.lines().map(String::strip).filter(s -> !s.isEmpty()).toList());
   }
 
   public boolean isEnableExcel() {

@@ -277,6 +277,12 @@ public class AdminController {
     var crumbs = pathTo(menu, false);
     model.addAttribute("breadcrumb", crumbs);
     model.addAttribute("search", searchService.setup(menu));
+    // 목록에서 숨길 칸 후보. connection 을 못 열면 그 부분만 뺀다
+    try {
+      model.addAttribute("listColumns", useService.listColumns(id));
+    } catch (RuntimeException e) {
+      model.addAttribute("listColumns", List.of());
+    }
     model.addAttribute(
         "queries",
         menu.getQueries().stream()
@@ -522,6 +528,18 @@ public class AdminController {
                 id, code, name, authority, pageSize, enableExcel, enableDisplay));
   }
 
+  /** 목록 표시 여부: all = 화면의 칸 전체, show = 체크한(목록에 보일) 칸. 체크를 끈 칸 = 목록에서 숨김 */
+  @PostMapping("/menu/{id}/list-hidden")
+  public String saveListHidden(
+      @PathVariable UUID id,
+      @RequestParam(name = "all", required = false) List<String> all,
+      @RequestParam(name = "show", required = false) List<String> show,
+      RedirectAttributes redirect) {
+    var shown = show == null ? java.util.Set.<String>of() : java.util.Set.copyOf(show);
+    var hidden = all == null ? List.<String>of() : all.stream().filter(label -> !shown.contains(label)).toList();
+    return run(redirect, "redirect:/admin/menu/" + id, () -> menuService.setListHidden(id, hidden));
+  }
+
   /** 검색 설정: on = 검색칸으로 고른 결과 이름들, op.결과이름 = 방식, kw = 통합 검색에 넣은 결과 이름들 */
   @PostMapping("/menu/{id}/search")
   public String saveSearch(
@@ -628,6 +646,28 @@ public class AdminController {
         query.getAuthority(),
         QueryService.settingsOf(query),
         null);
+  }
+
+  /**
+   * 기본 쿼리 다시 만들기(htmx 조각 admin/queryTextBox): DB 테이블의 지금 컬럼으로 그 종류의 기본 쿼리를 만들어 입력칸만 바꾼다. 저장은 하지 않는다.
+   * 만들 수 없으면(PK · unique 없음 · 연결 실패) 입력칸은 그대로 두고 사유를 보인다
+   */
+  @PostMapping("/menu/{menuId}/query/draft")
+  public String redraftQuery(
+      @PathVariable UUID menuId,
+      @RequestParam QueryKind kind,
+      @RequestParam(defaultValue = "") String queryText,
+      Model model) {
+    QueryService.Draft draft;
+    try {
+      draft = queryService.draft(menuService.getMenu(menuId), kind);
+    } catch (RuntimeException e) {
+      draft = new QueryService.Draft("", Msg.t("admin.query.redraft.failed", e.getMessage()));
+    }
+    var failed = draft.error() != null || draft.queryText().isBlank();
+    model.addAttribute("queryText", failed ? queryText : draft.queryText());
+    model.addAttribute("error", draft.error());
+    return "admin/queryTextBox";
   }
 
   /** 쿼리 아래 표(파라미터 · 결과 컬럼 · 경고)를 다시 그린다(htmx) */

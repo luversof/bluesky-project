@@ -379,6 +379,7 @@ public class MenuService {
     copy.setAuthority(source.getAuthority());
     copy.setPageSize(source.getPageSize());
     copy.setEnableExcel(source.isEnableExcel());
+    copy.setListHidden(source.getListHidden());
     copy.setEnableDisplay(false);
     copy.setSearchSettings(
         source.getSearchSettings() == null
@@ -436,6 +437,25 @@ public class MenuService {
     menu.setPageSize(Math.max(1, pageSize));
     menu.setEnableExcel(enableExcel);
     menu.setEnableDisplay(enableDisplay);
+    var saved = menuRepository.save(menu);
+    settingLog.record(
+        Target.MENU,
+        Action.UPDATE,
+        id,
+        saved.getName(),
+        null,
+        id,
+        before,
+        SettingLogService.snapshot(saved));
+    return saved;
+  }
+
+  /** 사용 화면 목록에서 숨길 결과 이름들(자세히 · 수정에는 보인다). 비면 모두 보임 */
+  public Menu setListHidden(UUID id, java.util.Collection<String> labels) {
+    var menu = getMenu(id);
+    var before = SettingLogService.snapshot(menu);
+    var text = String.join("\n", labels.stream().map(String::strip).filter(s -> !s.isEmpty()).distinct().toList());
+    menu.setListHidden(text.isEmpty() ? null : text);
     var saved = menuRepository.save(menu);
     settingLog.record(
         Target.MENU,

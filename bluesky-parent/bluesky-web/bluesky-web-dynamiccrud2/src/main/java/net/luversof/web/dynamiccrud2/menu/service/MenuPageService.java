@@ -154,6 +154,7 @@ public class MenuPageService {
    * @param options 필드 값 목록(저장값 → 표시, {@link DbField#valueOptionMap()}). 비면 원래 값 그대로
    * @param dateFormat 날짜 · 일시 표시 형식({@link DbField#getDateFormat()}). null 이면 기본 모양
    * @param json json · jsonb 컬럼 - 목록 칸은 한 줄로 줄이고 올리면 보기 좋게 펼친 전체(_components/cellValue)
+   * @param hidden 목록에서 숨김(메뉴 설정 listHidden) - 칸은 그려 두되 숨겨 행 자세히(js/row-detail.js)에는 보인다
    */
   public record Column(
       String label,
@@ -162,7 +163,8 @@ public class MenuPageService {
       InputType inputType,
       Map<String, String> options,
       String dateFormat,
-      boolean json) {}
+      boolean json,
+      boolean hidden) {}
 
   public record SearchField(
       String name,
@@ -1316,7 +1318,21 @@ public class MenuPageService {
         .toList();
   }
 
+  /**
+   * 메뉴 설정 화면의 "목록에서 숨길 칸" 후보: 조회 쿼리 결과 이름(* 면 메뉴 테이블 필드) + 이미 숨긴 이름. 쿼리를 실행하지 않는다
+   */
+  public List<Column> listColumns(UUID menuId) {
+    var ctx = context(menuId);
+    var labels = new java.util.LinkedHashSet<>(analysisLabels(ctx.analysis()));
+    if (ctx.analysis().columns().stream().anyMatch(c -> c.kind() == ResultColumn.Kind.ALL || c.kind() == ResultColumn.Kind.ALL_TABLE)) {
+      ctx.base().getFields().stream().filter(f -> !f.isVirtual()).forEach(f -> labels.add(f.getColumnName()));
+    }
+    labels.addAll(ctx.menu().listHiddenLabels());
+    return columnsOf(ctx, List.copyOf(labels));
+  }
+
   private List<Column> columnsOf(Context ctx, List<String> labels) {
+    var hidden = ctx.menu().listHiddenLabels();
     var byLabel = new HashMap<String, ResultColumn>();
     ctx.analysis().columns().forEach(c -> byLabel.putIfAbsent(c.label(), c));
     var columns = new ArrayList<Column>();
@@ -1338,7 +1354,8 @@ public class MenuPageService {
               field == null || field.getInputType() == null ? InputType.TEXT : field.getInputType(),
               optionsOf(field),
               field == null ? null : field.getDateFormat(),
-              field != null && ValueConverter.isJson(field.getDataType())));
+              field != null && ValueConverter.isJson(field.getDataType()),
+              hidden.contains(label)));
     }
     return columns;
   }

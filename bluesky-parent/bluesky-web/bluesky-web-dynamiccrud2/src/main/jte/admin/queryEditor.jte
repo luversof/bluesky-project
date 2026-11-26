@@ -52,10 +52,11 @@
 		<button type="button" class="btn btn-sm" hx-post="/admin/menu/${menuId}/query/inspect" hx-include="closest form" hx-target="#q-inspection" hx-swap="innerHTML">${t("admin.query.test")}</button>
 		<%-- 실행 계획: 실행하지 않고 DB 계획만(인덱스를 타는지, 사용자 결정 11-26) --%>
 		<button type="button" class="btn btn-sm" hx-post="/admin/menu/${menuId}/query/explain" hx-include="closest form" hx-target="#q-explain" hx-swap="innerHTML">${t("inspect.explain.button")}</button>
+		<%-- 기본 쿼리 다시 만들기(DMT2 90c5952): DB 테이블이 바뀌었을 때 지금 컬럼으로 만든 기본 쿼리로 입력칸만 바꾼다(저장은 [저장]) --%>
+		<button type="button" class="btn btn-sm" hx-post="/admin/menu/${menuId}/query/draft" hx-include="closest form" hx-target="#q-query-box" hx-swap="innerHTML" hx-confirm="${t("admin.query.redraft.confirm")}">${t("admin.query.redraft")}</button>
 	`, body = @`
 	<div>
-		<%-- 처음엔 작게(두세 줄), 줄이 늘면 내용만큼 커진다(.textarea-autogrow: CSS field-sizing, 안 되는 브라우저는 js/ui.js) --%>
-		<textarea aria-label="${t("admin.query.col.query")}" id="q-queryText" class="textarea textarea-autogrow code w-full" name="queryText" rows="3" spellcheck="false" required>${queryText}</textarea>
+		<div id="q-query-box">@template.admin.queryTextBox(queryText = queryText)</div>
 		<p class="hint mt-1">
 			$unsafe{t("admin.query.paramHint")}
 			<%-- Mongo 작업은 늘 JSON 문서({ 로 시작), SQL 은 그럴 일이 없다 --%>
