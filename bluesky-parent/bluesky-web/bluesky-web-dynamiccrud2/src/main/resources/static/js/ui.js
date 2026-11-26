@@ -403,21 +403,35 @@ document.addEventListener('keydown', (event) => {
   dropdown.querySelector('summary').focus();
 });
 
-// 표 머리 따라 붙기(main.css .table-scroll): 위에 붙는 머리(.sticky-head, 사용 화면의 제목 · 검색 · 건수) 높이 --sticky-head-h 와
-// 표 머리가 내려갈 수 있는 거리 --thead-travel(표 높이 - thead 높이)을 잰다. 검색 칸 줄바꿈 · 창 크기에 따라 다시 잰다
+// 표 머리 따라 붙기(main.css .table-scroll): 스크롤하면 위에 붙는 머리(.sticky-head, 사용 화면의 검색 · 건수) 아래 끝과 목록 상자 윗변의
+// 차이만큼 thead 를 내린다. 내리는 끝은 표 아래 끝(thead 가 표 밖으로 나가지 않게). 창 크기 · 검색 칸 줄바꿈 · 표 높이가 바뀌어도 다시 맞춘다
 (() => {
   const head = document.querySelector('.sticky-head');
   const box = document.querySelector('.table-scroll');
   if (!head || !box) return;
   const table = box.querySelector('table');
-  const thead = table.querySelector('thead');
-  const measure = () => {
-    document.documentElement.style.setProperty('--sticky-head-h', head.offsetHeight + 'px');
-    box.style.setProperty('--thead-travel', Math.max(0, table.offsetHeight - thead.offsetHeight) + 'px');
+  const thead = table && table.querySelector('thead');
+  if (!thead) return;
+  let queued = false;
+  const place = () => {
+    queued = false;
+    const travel = Math.max(0, table.offsetHeight - thead.offsetHeight);
+    const offset = Math.min(Math.max(0, head.getBoundingClientRect().bottom - box.getBoundingClientRect().top), travel);
+    thead.style.transform = offset > 0 ? 'translateY(' + offset + 'px)' : '';
   };
-  const observer = new ResizeObserver(measure);
+  const queue = () => {
+    if (!queued) {
+      queued = true;
+      requestAnimationFrame(place);
+    }
+  };
+  // 스크롤은 그 자리에서 바로(다음 프레임으로 미루면 thead 가 한 프레임 늦게 따라와 떨려 보인다)
+  addEventListener('scroll', place, { passive: true });
+  addEventListener('resize', queue);
+  const observer = new ResizeObserver(queue);
   observer.observe(head);
   observer.observe(table);
+  place();
 })();
 
 // JSON 칸([data-json], json · jsonb 컬럼 - _components/typedInput · cellValue): 열 때 보기 좋게 펼치고(입력칸 값 · 목록 칸 title),

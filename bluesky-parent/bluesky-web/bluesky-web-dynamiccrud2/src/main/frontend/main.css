@@ -355,19 +355,12 @@
 	.reorder-dragging [data-reorder-group]:not(:has(> [data-id])) { min-height: 2rem; border: 1px dashed var(--color-base-300); border-radius: var(--radius-field); }
 	.sticky-head { position: sticky; top: 0; z-index: 20; background-color: var(--color-base-100); padding-block: 0.75rem; margin-block: -0.75rem 0.25rem; }
 	/* 사용 화면 목록 상자(가로 스크롤): 표 머리(thead)가 붙는 머리(.sticky-head) 바로 밑에 따라 붙는다(사용자 요청 11-24).
-	   가로 스크롤 상자가 세로 스크롤 상자도 되므로 thead 에 position: sticky 는 화면 기준으로 듣지 않는다 - 대신 상자를 view timeline
-	   으로 삼아, 상자 윗변이 붙는 머리 밑을 지나간 만큼 thead 를 내린다(스크롤과 같은 프레임, 떨림 없음). 내리는 끝은 표 아래 끝까지.
-	   --sticky-head-h(붙는 머리 높이) · --thead-travel(표 높이 - thead 높이)은 js/ui.js 가 잰다. 안 되는 브라우저는 thead 가 그냥 함께 올라간다 */
+	   가로 스크롤 상자가 세로 스크롤 상자도 되므로 thead 에 position: sticky 는 화면 기준으로 듣지 않는다 - js/ui.js 가 스크롤마다
+	   붙는 머리 아래 끝과 상자 윗변의 차이만큼 thead 를 내린다(표 아래 끝까지). 예전 CSS view timeline 방식은 진행되지 않는 경우가 있어
+	   바꿨다(DMT2 c2baba7, 11-26). 머리 칸 글자는 한 줄(좁은 칸에서 글자마다 꺾이지 않게) */
 	.table-scroll { overflow-x: auto; }
-	@supports (animation-timeline: view()) {
-		.table-scroll { view-timeline: --list block; view-timeline-inset: var(--sticky-head-h, 0px) 0px; }
-		.table-scroll .table thead {
-			position: relative; z-index: 2;
-			animation: thead-follow linear both; animation-timeline: --list;
-			animation-range: exit-crossing 0px exit-crossing var(--thead-travel, 0px);
-		}
-	}
-	@keyframes thead-follow { from { transform: none; } to { transform: translateY(var(--thead-travel, 0px)); } }
+	.table-scroll .table thead { position: relative; z-index: 2; }
+	.table-scroll .table thead th { white-space: nowrap; }
 
 	.badge {
 		display: inline-flex; align-items: center; height: 1.375rem; padding-inline: 0.5rem; font-size: 0.75rem;
