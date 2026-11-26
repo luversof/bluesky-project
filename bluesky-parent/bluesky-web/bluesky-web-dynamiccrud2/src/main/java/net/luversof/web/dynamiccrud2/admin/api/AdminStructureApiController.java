@@ -178,7 +178,7 @@ public class AdminStructureApiController {
   public List<TableRef> tables(@PathVariable String connectionName) {
     try {
       return resolver.resolve(connectionName).listTables();
-    } catch (org.springframework.dao.DataAccessException e) {
+    } catch (org.springframework.dao.DataAccessException | com.mongodb.MongoException e) {
       throw connectionFailed(connectionName, e);
     }
   }
@@ -195,7 +195,8 @@ public class AdminStructureApiController {
     try {
       return MenuView.of(
           menuService.createMenu(mainMenuId, body.code(), body.name(), body.connectionName(), ref));
-    } catch (org.springframework.dao.DataAccessResourceFailureException e) {
+    } catch (org.springframework.dao.DataAccessResourceFailureException
+        | com.mongodb.MongoException e) {
       // 대상 연결 실패만(설정 DB 오류는 그대로 - AdminApiAdvice)
       throw connectionFailed(body.connectionName(), e);
     }

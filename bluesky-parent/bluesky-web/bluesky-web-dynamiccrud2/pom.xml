@@ -33,6 +33,11 @@
 			<groupId>io.github.luversof</groupId>
 			<artifactId>bluesky-boot-autoconfigure-connectioninfo-jdbc</artifactId>
 		</dependency>
+		<!-- Mongo menus: MongoClient per name from bluesky-boot.connection-info.mongodb.connection-map (unset = no Mongo connections) -->
+		<dependency>
+			<groupId>io.github.luversof</groupId>
+			<artifactId>bluesky-boot-autoconfigure-connectioninfo-mongodb</artifactId>
+		</dependency>
 		<!-- (e) bluesky boot connectioninfo -->
 
 		<!-- (s) bluesky boot crypto -->
@@ -133,6 +138,12 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- Mongo adapter tests on a throwaway container (skipped without Docker) -->
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-mongodb</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

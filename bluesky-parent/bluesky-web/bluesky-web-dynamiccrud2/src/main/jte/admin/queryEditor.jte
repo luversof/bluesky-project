@@ -58,7 +58,10 @@
 		<textarea aria-label="${t("admin.query.col.query")}" id="q-queryText" class="textarea textarea-autogrow code w-full" name="queryText" rows="3" spellcheck="false" required>${queryText}</textarea>
 		<p class="hint mt-1">
 			$unsafe{t("admin.query.paramHint")}
-			@if(kind == QueryKind.READ)
+			<%-- Mongo 작업은 늘 JSON 문서({ 로 시작), SQL 은 그럴 일이 없다 --%>
+			@if(queryText != null && queryText.strip().startsWith("{"))
+				$unsafe{t("admin.query.mongoHint")}
+			@elseif(kind == QueryKind.READ)
 				$unsafe{t("admin.query.readHint")}
 			@endif
 		</p>

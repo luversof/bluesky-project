@@ -24,7 +24,8 @@ public enum QueryErrorCode {
   RESERVED_CODE,
   DUPLICATE_CODE,
   READ_QUERY_REQUIRED,
-  NOT_OPTIONAL_CAPABLE;
+  NOT_OPTIONAL_CAPABLE,
+  NO_PARAMETER_IN_MONGO_FILTER;
 
   /** 화면에 보일 문구(지금 요청 언어). 이 enum 의 오류가 아니면 null */
   public static String messageOf(BlueskyException e) {

@@ -210,7 +210,7 @@ public class AdminController {
         tables = resolver.resolve(connectionName.strip()).listTables();
       } catch (BlueskyException e) {
         error = messageOf(e);
-      } catch (org.springframework.dao.DataAccessException e) {
+      } catch (org.springframework.dao.DataAccessException | com.mongodb.MongoException e) {
         // 서버에 닿지 않음 · 계정 거부 등: 오류 화면(500) 대신 목록 자리에 안내 한 줄, 원인은 로그에(DMT2 UDP-6560 과 같게)
         LOG.warn("connection {} unavailable: {}", connectionName, e.getMessage());
         error = Msg.t("admin.menuCreate.connFailed", connectionName.strip());
@@ -244,7 +244,8 @@ public class AdminController {
     } catch (BlueskyException e) {
       redirect.addFlashAttribute("error", messageOf(e));
       return projectPage;
-    } catch (org.springframework.dao.DataAccessResourceFailureException e) {
+    } catch (org.springframework.dao.DataAccessResourceFailureException
+        | com.mongodb.MongoException e) {
       // 테이블 컬럼을 읽다 연결이 끊김 · 계정 거부: 오류 화면 대신 관리 화면 안내, 원인은 로그에.
       // 설정 DB 오류(다른 DataAccessException)는 대상 연결 탓이 아니라 여기서 잡지 않는다
       LOG.warn("connection {} unavailable: {}", connectionName, e.getMessage());

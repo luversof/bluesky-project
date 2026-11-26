@@ -27,6 +27,9 @@ public class ConnectionNameService {
    */
   private static final String DATASOURCE_READER_SUFFIX = "-datasource";
 
+  /** Mongo 연결 이름을 읽는 reader key(bluesky-boot.connection-info.mongodb.connection-map) */
+  static final String MONGO_READER = "properties-mongoclient";
+
   /** 자동완성 후보 수 */
   public static final int SUGGEST_LIMIT = 30;
 
@@ -58,10 +61,23 @@ public class ConnectionNameService {
     return searchWithSource(keyword).stream().map(ConnectionName::name).toList();
   }
 
-  /** {@link #search} 에 읽은 출처(reader key)를 붙인다 */
-  // 2차: Mongo 연결 정보(별도 Mongo DB 의 MongoClientConnectionConfig 컬렉션)도 합친다 - source 는 그 reader
-  // key(mongodb-mongoclient)
+  /**
+   * {@link #search} 에 읽은 출처(reader key)를 붙인다. Mongo 연결(앱 설정 connection-map, 출처 {@value #MONGO_READER})과 JDBC
+   * 표를 합쳐 이름순(DMT2 9dfa599 와 같게). 같은 이름이 둘 다 있으면 Mongo 로 쓰인다(DatabaseAdapterResolver)
+   */
   public List<ConnectionName> searchWithSource(String keyword) {
+    var needle = keyword == null ? "" : keyword.strip().toLowerCase(java.util.Locale.ROOT);
+    var mongoNames = resolver.mongoConnectionNames();
+    var names = new java.util.ArrayList<ConnectionName>();
+    mongoNames.stream()
+        .filter(name -> name.toLowerCase(java.util.Locale.ROOT).contains(needle))
+        .forEach(name -> names.add(new ConnectionName(name, MONGO_READER)));
+    jdbcNames(keyword).stream().filter(name -> !mongoNames.contains(name.name())).forEach(names::add);
+    names.sort(java.util.Comparator.comparing(ConnectionName::name, String.CASE_INSENSITIVE_ORDER));
+    return names.size() > SUGGEST_LIMIT ? List.copyOf(names.subList(0, SUGGEST_LIMIT)) : names;
+  }
+
+  private List<ConnectionName> jdbcNames(String keyword) {
     // connectionInfo 저장소는 JDBC 다. 테이블 따옴표만 DB 종류를 따른다(PG 는 "DataSourceConnectionConfig")
     var adapter = (JdbcDatabaseAdapter) resolver.resolve(properties.connectionInfoConnection());
     // ESCAPE 문자는 '!' - 백슬래시는 MySQL 문자열 안에서 따로 해석돼 벤더마다 달라진다

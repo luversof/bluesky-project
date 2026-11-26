@@ -83,6 +83,10 @@ public final class ValueConverter {
     if ("uuid".equalsIgnoreCase(dataType)) {
       return UUID.fromString(raw.strip());
     }
+    // Mongo _id 등(MongoDatabaseAdapter 가 붙인 타입 이름)
+    if ("objectId".equals(dataType) && org.bson.types.ObjectId.isValid(raw.strip())) {
+      return new org.bson.types.ObjectId(raw.strip());
+    }
     if (dataType != null && !STRING_TYPES.contains(dataType.toLowerCase(java.util.Locale.ROOT))) {
       return new UntypedText(raw);
     }
