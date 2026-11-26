@@ -159,6 +159,14 @@ public class MenuApiController {
     return new ApiError(message == null ? e.getErrorCode() : message);
   }
 
+  /** 본문이 JSON 이 아니거나 모양이 다름 - 다른 오류와 같은 {"error"} 로 */
+  @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ApiError unreadable(org.springframework.http.converter.HttpMessageNotReadableException e) {
+    var cause = e.getMostSpecificCause().getMessage();
+    return new ApiError(Msg.t("api.unreadable", cause == null ? "" : cause.lines().findFirst().orElse(cause)));
+  }
+
   /** DB 가 받지 않은 실행(제약 위반 등) - 첫 줄만 */
   @ExceptionHandler(DataAccessException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)

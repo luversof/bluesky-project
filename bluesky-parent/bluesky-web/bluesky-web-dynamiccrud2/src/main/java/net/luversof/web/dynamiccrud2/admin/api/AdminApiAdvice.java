@@ -14,6 +14,8 @@ import net.luversof.web.dynamiccrud2.admin.api.AdminApiViews.ApiError;
 import net.luversof.web.dynamiccrud2.config.Msg;
 
 /** 관리 JSON 호출의 오류를 {"error": 사유} 로(화면이면 폼 위에 보일 문구). 로그인 · 권한은 AccessDeniedAdvice 가 401 · 403 으로 */
+// 공통 처리기(ProblemDetail 등)보다 먼저 - 이 패키지 컨트롤러에만 걸리므로 다른 화면에는 영향이 없다
+@org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(basePackageClasses = AdminApiAdvice.class)
 public class AdminApiAdvice {
 
@@ -30,6 +32,14 @@ public class AdminApiAdvice {
   public ApiError rejected(BlueskyException e) {
     var message = QueryErrorCode.messageOf(e);
     return new ApiError(message == null ? e.getErrorCode() : message);
+  }
+
+  /** 본문이 JSON 이 아니거나 모양이 다름(모르는 enum 값 등) */
+  @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ApiError unreadable(org.springframework.http.converter.HttpMessageNotReadableException e) {
+    var cause = e.getMostSpecificCause().getMessage();
+    return new ApiError(Msg.t("api.unreadable", cause == null ? "" : cause.lines().findFirst().orElse(cause)));
   }
 
   /** 없는 id(서비스의 findById().orElseThrow()) */
