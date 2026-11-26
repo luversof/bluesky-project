@@ -1,0 +1,185 @@
+package net.luversof.web.dynamiccrud2.admin.api;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.UUID;
+
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+
+import com.jayway.jsonpath.JsonPath;
+
+import net.luversof.GeneralWebTest;
+import net.luversof.web.dynamiccrud2.TestSettingLogs;
+import net.luversof.web.dynamiccrud2.adapter.DatabaseAdapterResolver;
+import net.luversof.web.dynamiccrud2.admin.service.MenuService;
+import net.luversof.web.dynamiccrud2.repository.DbTableRepository;
+import net.luversof.web.dynamiccrud2.repository.SettingLogRepository;
+
+/** 관리 JSON 호출(/admin/api/**): 화면과 같은 서비스 · 검사를 JSON 으로. 설정 catalog(dynamiccrud2) 자체 테이블로 만들고 만든 것만 지운다 */
+class AdminApiControllerTest implements GeneralWebTest {
+
+  @Autowired WebApplicationContext context;
+  @Autowired MenuService menuService;
+  @Autowired DatabaseAdapterResolver resolver;
+  @Autowired DbTableRepository dbTableRepository;
+  @Autowired SettingLogRepository settingLogRepository;
+
+  MockMvc mvc;
+
+  @BeforeEach
+  void setUp() {
+    mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+  }
+
+  private static RequestPostProcessor admin() {
+    return user("admin").roles("ADMIN");
+  }
+
+  private static MockHttpServletRequestBuilder json(MockHttpServletRequestBuilder request, String body) {
+    return request.contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).content(body);
+  }
+
+  private String idOf(org.springframework.test.web.servlet.ResultActions result) throws Exception {
+    return JsonPath.read(result.andReturn().getResponse().getContentAsString(), "$.id");
+  }
+
+  /** 프로젝트 → 메인 메뉴 → 메뉴 만들기 · 바꾸기 · 복사 · 옮기기 · 보이기 · 지우기, 하위가 있으면 못 지움, 없는 id 404, USER 403 */
+  @Test
+  void structureLifecycle() throws Exception {
+    var ref =
+        resolver.resolve("dynamiccrud2").listTables().stream()
+            .filter(t -> t.name().equals("MainMenu"))
+            .findFirst()
+            .orElseThrow();
+    var preexisting =
+        dbTableRepository.findIdByLocation("dynamiccrud2", ref.catalog(), ref.schema(), ref.name());
+    var code = "a" + UUID.randomUUID().toString().substring(0, 8);
+    var projectId =
+        idOf(
+            mvc.perform(json(post("/admin/api/projects"), "{\"code\":\"" + code + "\",\"name\":\"api-p\"}").with(admin()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value(code)));
+    String menuId = null;
+    String copyId = null;
+    String mainId = null;
+    String otherId = null;
+    try {
+      // 형식이 틀린 주소 이름은 400 + 사유
+      mvc.perform(json(post("/admin/api/projects"), "{\"code\":\"Bad Code\",\"name\":\"x\"}").with(admin()))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.error").isNotEmpty());
+      mainId =
+          idOf(
+              mvc.perform(
+                      json(post("/admin/api/projects/" + projectId + "/main-menus"), "{\"code\":\"main\",\"name\":\"메인\"}")
+                          .with(admin()))
+                  .andExpect(status().isCreated()));
+      otherId =
+          idOf(
+              mvc.perform(
+                      json(post("/admin/api/projects/" + projectId + "/main-menus"), "{\"code\":\"other\",\"name\":\"다른\"}")
+                          .with(admin()))
+                  .andExpect(status().isCreated()));
+      mvc.perform(get("/admin/api/connections/dynamiccrud2/tables").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$[?(@.name == 'MainMenu')]").isNotEmpty());
+      menuId =
+          idOf(
+              mvc.perform(
+                      json(
+                              post("/admin/api/main-menus/" + mainId + "/menus"),
+                              "{\"code\":\"list\",\"name\":\"목록\",\"connectionName\":\"dynamiccrud2\",\"schema\":\""
+                                  + ref.schema()
+                                  + "\",\"table\":\"MainMenu\"}")
+                          .with(admin()))
+                  .andExpect(status().isCreated())
+                  .andExpect(jsonPath("$.queries[0].kind").value("READ")));
+      mvc.perform(
+              json(
+                      put("/admin/api/menus/" + menuId),
+                      "{\"code\":\"list\",\"name\":\"목록2\",\"authority\":null,\"pageSize\":30,\"enableExcel\":true,\"enableDisplay\":true}")
+                  .with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.pageSize").value(30));
+      copyId =
+          idOf(
+              mvc.perform(post("/admin/api/menus/" + menuId + "/copy").with(admin()))
+                  .andExpect(status().isCreated())
+                  .andExpect(jsonPath("$.code").value("list-copy"))
+                  .andExpect(jsonPath("$.enableDisplay").value(false)));
+      // 다른 메인 메뉴로 옮기기(순서에 넣기)
+      mvc.perform(json(put("/admin/api/main-menus/" + otherId + "/menus/order"), "{\"ids\":[\"" + copyId + "\"]}").with(admin()))
+          .andExpect(status().isNoContent());
+      mvc.perform(get("/admin/api/menus/" + copyId).with(admin()))
+          .andExpect(jsonPath("$.mainMenuId").value(otherId));
+      mvc.perform(json(put("/admin/api/menus/" + copyId + "/display"), "{\"display\":true}").with(admin()))
+          .andExpect(jsonPath("$.enableDisplay").value(true));
+      mvc.perform(get("/admin/api/projects").with(admin()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$[?(@.project.id == '" + projectId + "')].mainMenus[*].menus[*].name", Matchers.hasItems("목록2", "목록2 복사본")));
+      // 하위가 있으면 못 지움
+      mvc.perform(delete("/admin/api/main-menus/" + mainId).with(admin()).accept(MediaType.APPLICATION_JSON))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.error").isNotEmpty());
+      // 없는 id
+      mvc.perform(get("/admin/api/menus/" + UUID.randomUUID()).with(admin()).accept(MediaType.APPLICATION_JSON))
+          .andExpect(status().isNotFound());
+      // 관리 권한이 없으면 403
+      mvc.perform(get("/admin/api/projects").with(user("tester").roles("USER")).accept(MediaType.APPLICATION_JSON))
+          .andExpect(status().isForbidden());
+
+      mvc.perform(delete("/admin/api/menus/" + copyId).with(admin())).andExpect(status().isNoContent());
+      copyId = null;
+      mvc.perform(delete("/admin/api/menus/" + menuId).with(admin())).andExpect(status().isNoContent());
+      menuId = null;
+      mvc.perform(delete("/admin/api/main-menus/" + otherId).with(admin())).andExpect(status().isNoContent());
+      otherId = null;
+      mvc.perform(delete("/admin/api/main-menus/" + mainId).with(admin())).andExpect(status().isNoContent());
+      mainId = null;
+      mvc.perform(delete("/admin/api/projects/" + projectId).with(admin())).andExpect(status().isNoContent());
+      assertThat(menuService.tree()).noneMatch(p -> p.project().getCode().equals(code));
+      projectId = null;
+    } finally {
+      for (var id : new String[] {copyId, menuId}) {
+        if (id != null) {
+          menuService.deleteMenu(UUID.fromString(id));
+        }
+      }
+      for (var id : new String[] {otherId, mainId}) {
+        if (id != null) {
+          menuService.deleteMainMenu(UUID.fromString(id));
+        }
+      }
+      if (projectId != null) {
+        menuService.deleteProject(UUID.fromString(projectId));
+      }
+      var tableId =
+          dbTableRepository.findIdByLocation("dynamiccrud2", ref.catalog(), ref.schema(), ref.name());
+      if (preexisting.isEmpty() && tableId.isPresent()) {
+        dbTableRepository.deleteById(tableId.get());
+      }
+      settingLogRepository
+          .search(null, null, null, "admin", null, null, null, 1000, 0)
+          .stream()
+          .filter(log -> log.getTargetName() != null && (log.getTargetName().startsWith("api-p") || log.getTargetName().startsWith("목록") || log.getTargetName().equals("메인") || log.getTargetName().equals("다른")))
+          .forEach(settingLogRepository::delete);
+    }
+  }
+}
