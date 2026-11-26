@@ -234,7 +234,8 @@
 		margin: auto; padding: 0; background: transparent; color: inherit;
 		width: min(42rem, calc(100vw - 2rem)); max-height: 90vh; overflow: auto;
 	}
-	.modal-wide { width: min(72rem, calc(100vw - 2rem)); }
+	/* 넓은 레이어(쿼리 편집): 화면 폭 따라 최대 1280px - 검사 표 칸 글자가 꺾이지 않게(DMT2 b102543 과 같은 폭) */
+	.modal-wide { width: min(80rem, calc(100vw - 2rem)); }
 	.modal::backdrop { background-color: rgb(0 0 0 / 0.45); }
 
 	/* 테마 전환 단추(_components/themeToggle): 지금 테마의 반대를 보여 준다 */
