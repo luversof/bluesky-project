@@ -32,7 +32,7 @@
 	String settledEmptyNote = MessageUtil.getMessage("stock.dividend.calendar.settled.empty");
 	String allOutsideNote = MessageUtil.getMessage("stock.dividend.calendar.all.outside");
 	// 그 달 배당이 전부 월배당 기준 데이터 없는 종목이라 한 칸도 못 채운 달이 있다
-	// (실측 2026-11: 삼성전자+SK텔레콤 3,481,886 원). 그때 '금액은 예상치' 라고 하면 가리킬 칸이 없다.
+	// (실측 2026-11: 한 종목+한 종목 N 원). 그때 '금액은 예상치' 라고 하면 가리킬 칸이 없다.
 	// 날짜도 금액도 전부 실제일 때만 '실제' 라고 말한다. 한 칸이라도 추정이 섞여 있으면 화면은 추정이라고 말해야 한다.
 	boolean allActual = !calendar.hasEstimatedDate() && calendar.hasActualAmount() && !calendar.hasEstimatedAmount();
 	String missingLabel = MessageUtil.getMessage("stock.dividend.calendar.missing");
@@ -133,8 +133,8 @@
 		</div>
 	@endif
 	<%-- 달력은 월배당 기준 데이터가 있는 종목만 그린다. 그 달 원장에 있는 나머지는 통째로 안 보이므로
-	     금액과 함께 밝힌다 - 실측 2026-09-15: 2026-08 은 분기배당인 삼성전자 1,886,082 원이 빠져
-	     그 달 배당(세전 4,982,406 원)의 37.9% 가 달력 밖에 있었다. 안 밝히면 합이 안 맞는 까닭을 알 길이 없다.
+	     금액과 함께 밝힌다 - 실측 2026-09-15: 2026-08 은 분기배당인 한 종목 N 원이 빠져
+	     그 달 배당(세전 N 원)의 37.9% 가 달력 밖에 있었다. 안 밝히면 합이 안 맞는 까닭을 알 길이 없다.
 	     금액은 amount-value 로 감싼다 - MessageFormat 안에 넣으면 '금액 숨김' 이 못 가린다. --%>
 	@if(calendar.hasMissing())
 		<div class="mt-3 rounded-box bg-warning/10 px-3 py-2 text-xs" data-calendar-missing="${calendar.missing().size()}">
@@ -151,8 +151,8 @@
 		</div>
 	@endif
 	<%-- 화면 위 요약 카드와 월중/월말 소계는 <b>지금 보유 수량</b> 기준 예상이라 달을 넘겨도 값이 같다
-	     (실측 2026-09-15: 어느 달을 봐도 3,956,660 원). 그 옆에 그 달 실제 합계가 없으면 위 숫자가
-	     그 달 얘기로 읽힌다 - 2026-08 은 실제 4,982,406 원으로 요약과 -20.6%, 2026-07 은 +16.9% 어긋난다.
+	     (실측 2026-09-15: 어느 달을 봐도 N 원). 그 옆에 그 달 실제 합계가 없으면 위 숫자가
+	     그 달 얘기로 읽힌다 - 2026-08 은 실제 N 원으로 요약과 -20.6%, 2026-07 은 +16.9% 어긋난다.
 	     달력에 놓인 것 + 놓지 못한 것을 모두 더한 값이라 위 두 상자 뒤에 둔다. --%>
 	@if(calendar.hasActualAmount())
 		<div class="mt-2 border-t border-base-200 pt-2 text-right text-xs text-base-content/70" data-calendar-actual-month-total>

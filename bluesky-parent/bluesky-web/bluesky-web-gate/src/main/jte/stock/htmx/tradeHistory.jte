@@ -30,7 +30,7 @@
 @param BigDecimal totalTax = BigDecimal.ZERO
 @param long totalSellCount = -1L
 <%-- 계좌명이 없으면 같은 날 같은 값의 다른 계좌 거래가 화면에서 완전히 같은 줄이 된다.
-     실측 2026-09-10: 258행 중 2쌍이 연금저축1/연금저축2 로 갈리는 별개 거래인데 구분할 길이 없었다.
+     실측 2026-09-10: 258행 중 2쌍이 연금 계좌/연금 계좌 로 갈리는 별개 거래인데 구분할 길이 없었다.
      매매 화면의 같은 표(tradeDetailList)는 계좌 열을 갖고 있어 둘이 어긋나 있었다. --%>
 @param Map<UUID, String> accountNames = Map.of()
 @param String tradePeriod
@@ -56,7 +56,7 @@ BigDecimal safeFee = totalFee != null ? totalFee : BigDecimal.ZERO;
 BigDecimal safeTax = totalTax != null ? totalTax : BigDecimal.ZERO;
 boolean rpPositive = safeRp.compareTo(BigDecimal.ZERO) >= 0;
 // 이 카드의 금액(실현손익)은 기간 전체다. 건수도 같은 범위여야 한다 - 예전에는 현재 페이지의 행만 세어
-// 자산성장 화면이 "실현손익 +225,630,135 · 매도 0건(페이지 기준)" 을 보여줬다(실측 2026-09-10).
+// 자산성장 화면이 "실현손익 +N · 매도 0건(페이지 기준)" 을 보여줬다(실측 2026-09-10).
 // 1페이지가 최근 매수로만 차 있으면 0 이 나온다. 매매 화면은 같은 카드를 "매도 55건" 으로 보여준다.
 // 호출부가 기간 건수를 주지 않으면(-1) 예전처럼 페이지 기준으로 떨어진다.
 long pageSellCount = trades != null ? trades.stream().filter(t -> t.type() == TradeType.SELL).count() : 0L;

@@ -41,12 +41,12 @@
 	String selectionCountTemplate = MessageUtil.getMessage("stock.analytics.selection.count");
 	String selectionClearLabel = MessageUtil.getMessage("stock.analytics.selection.clear");
 	// 두 표의 열은 매도원가·매도금액·실현손익·수익률인데, 매도금액 - 매도원가 는 실현손익이 되지 않는다.
-	// 실측 2026-09-11(전체 기간): 차이가 종목 37 행 전부 그 종목의 거래세와 정확히 같았고 합은 1,932,821 이다
+	// 실측 2026-09-11(전체 기간): 차이가 종목 37 행 전부 그 종목의 거래세와 정확히 같았고 합은 N 이다
 	// (수수료 100,671 은 빠지지 않는다). 화면에 거래세 열이 없어 빼서 맞춰 볼 수 없으므로 기준을 적어 둔다.
 	String realizedBasisNote = MessageUtil.getMessage("stock.realized.basis.note");
 	String totalLabel = MessageUtil.getMessage("common.label.total");
 	// 합계 줄. 같은 화면의 연도별/월별 매매 표와 상세 목록은 이미 tfoot 합계를 보여 주는데 이 두 표만 없었다
-	// (실측 2026-09-11). 그래서 매도원가 총합(전체 기간 1,166,104,134)은 화면 어디에도 없었고,
+	// (실측 2026-09-11). 그래서 매도원가 총합(전체 기간 N)은 화면 어디에도 없었고,
 	// 매도금액·실현손익도 표에서 더해 카드와 맞춰 볼 수 없었다. 행에서 쓰는 식을 그대로 다시 쓴다.
 	// JTE 는 표를 람다(tableCard body) 안에서 렌더하므로 누적 변수는 effectively final 이어야 한다 - 스트림으로 한 번에 접는다.
 	List<AccountRealizedRow> accRows = accountRealizedList != null ? accountRealizedList : List.<AccountRealizedRow>of();
@@ -133,7 +133,7 @@
 							${StockFormatUtil.signedWon(StockFormatUtil.displayWon(rowNet))}
 							<%-- 기록된 실현손익은 계좌를 합친 원가를 따른다(실측 2026-08-23: 매도 54건 중
 								 종목 단위 원가로 50건이 재현되고 계좌x종목 단위로는 38건뿐). 그래서 이 값은
-								 이 계좌의 매수와 맞지 않을 수 있다 - 연금저축1 은 그 계좌 매매 기준의 1/5,
+								 이 계좌의 매수와 맞지 않을 수 있다 - 연금 계좌 는 그 계좌 매매 기준의 1/5,
 								 ISA 는 반대로 104 배. 크게 갈릴 때만 밝힌다(작은 차이까지 적으면 소음). --%>
 							!{BigDecimal rowOwn = row.realizedOwnBasis() != null ? row.realizedOwnBasis() : BigDecimal.ZERO;}
 							!{BigDecimal rowBasisGap = RealizedBasisGap.amount(rowNet, rowOwn);}

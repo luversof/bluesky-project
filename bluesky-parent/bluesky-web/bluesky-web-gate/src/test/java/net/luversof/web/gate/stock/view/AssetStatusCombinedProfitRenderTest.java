@@ -58,7 +58,7 @@ class AssetStatusCombinedProfitRenderTest {
     return new BigDecimal(value);
   }
 
-  /** 실측 2026-09-03 의 한 종목: 평가 -12,444,645 · 실현 906,369 · 배당 5,385,714 -> 합산 -6,152,562. */
+  /** 실측 2026-09-03 의 한 종목: 평가 -N · 실현 N · 배당 N -> 합산 -N. */
   private static TradeProfit stock() {
     return TradeProfit.ofStockStatus(
         STOCK,
@@ -286,8 +286,8 @@ class AssetStatusCombinedProfitRenderTest {
   /**
    * 이 표에는 <b>보유 중인 종목만</b> 나온다는 것을 밝힌다.
    *
-   * <p>실현손익·배당을 열로 넣으면서 밝히지 않으면 합계를 전체 누적으로 오해한다 &mdash; 실측 2026-09-03: 보유 9 종목의 실현 140,350,295 ·
-   * 배당 59,067,537 인데, 이미 다 판 34 종목에 실현 85,279,840 · 배당 6,582,497 이 더 있다.
+   * <p>실현손익·배당을 열로 넣으면서 밝히지 않으면 합계를 전체 누적으로 오해한다 &mdash; 실측 2026-09-03: 보유 9 종목의 실현 N · 배당 N 인데, 이미
+   * 다 판 34 종목에 실현 N · 배당 N 이 더 있다.
    */
   @Test
   void 보유_중인_종목만_나온다는_것을_밝힌다() {
@@ -390,7 +390,7 @@ class AssetStatusCombinedProfitRenderTest {
     assertThat(table).as("정렬 값은 행의 일수여야 한다").contains("data-holding-days=\"2385\"");
   }
 
-  /** 실측의 한 종목(평가 -12,444,645 · 배당 5,385,714)은 배당이 손실의 43% 를 덮었다. */
+  /** 실측의 한 종목(평가 -N · 배당 N)은 배당이 손실의 43% 를 덮었다. */
   @Test
   void 배당_상쇄율을_평가손익_칸에_적는다() {
     String table =
@@ -432,7 +432,7 @@ class AssetStatusCombinedProfitRenderTest {
   }
 
   /**
-   * 연평균은 XIRR 이다(사용자 결정 2026-09-17). 1,000,000 을 한 번 넣어 꼬박 1 년 뒤 평가 1,200,000 이면 연 20.0% 이다.
+   * 연평균은 XIRR 이다(사용자 결정 2026-09-17). N 을 한 번 넣어 꼬박 1 년 뒤 평가 N 이면 연 20.0% 이다.
    *
    * <p>단순 환산이면 같은 값이 나오므로 이 줄만으로는 식을 가를 수 없다 - 아래 짧은 보유 검사와 유틸 검사(나눠 산 돈)가 그 일을 한다.
    */

@@ -51,7 +51,7 @@ class AverageCostProfitCalculatorOrderTest {
 
   @Test
   void sameInstantBuyAndSellIsOrderIndependent() {
-    // 실데이터: 쌍방울 2020-01-29 당일 매매
+    // 실데이터: 한 종목 2020-01-29 당일 매매
     Trade buy = trade(TradeType.BUY, 17939, "1295", "3484", "0");
     Trade sell = trade(TradeType.SELL, 17939, "1405", "3780", "56710");
 

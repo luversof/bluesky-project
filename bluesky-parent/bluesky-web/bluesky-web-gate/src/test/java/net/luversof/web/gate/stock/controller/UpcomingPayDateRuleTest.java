@@ -103,7 +103,7 @@ class UpcomingPayDateRuleTest {
   void 대시보드_시기별_다음_지급일() {
     List<RecordedPayout> all = new ArrayList<>(MID);
     all.addAll(END);
-    // SOL 코리아고배당처럼 결제 1 거래일인 월중 종목(실제: 10-15 기준 -> 10-16 지급).
+    // 한 ETF처럼 결제 1 거래일인 월중 종목(실제: 10-15 기준 -> 10-16 지급).
     all.add(rec("MIDY", "2026-08-14", "2026-08-18"));
     all.add(rec("MIDY", "2026-09-15", "2026-09-16"));
     all.add(rec("MIDY", "2026-10-15", "2026-10-16"));

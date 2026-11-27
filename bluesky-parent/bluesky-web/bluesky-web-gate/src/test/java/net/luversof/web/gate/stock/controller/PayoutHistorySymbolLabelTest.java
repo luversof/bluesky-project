@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  * <p>실측 2026-09-11: 이 표는 종목에 따라 29~58 행이라 위쪽 종목 선택기에서 한참 멀어지는데, 제목은 "저장된 지급 이력", 설명은 "선택한 종목의 최근
  * 월배당 지급 이력을 확인합니다." 뿐이고 <b>종목명도 코드도 어디에도 없었다</b>. 스크롤한 뒤에는 무엇을 보고 있는지 알 수 없다.
  *
- * <p>바로 위 등록 폼이 이미 쓰는 라벨({@code payoutSymbolLabel} = "476800 · KODEX 한국부동산리츠인프라")을 그대로 붙인다.
+ * <p>바로 위 등록 폼이 이미 쓰는 라벨({@code payoutSymbolLabel} = "종목코드 · 한 ETF")을 그대로 붙인다.
  */
 class PayoutHistorySymbolLabelTest {
 

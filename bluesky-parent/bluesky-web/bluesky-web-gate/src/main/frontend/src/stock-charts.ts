@@ -122,7 +122,7 @@ function compactNumber(value: any): string {
 	const locale = resolveLocale();
 
 	// 단위를 고른 뒤 반올림하면 경계에서 한 단위 아래 표기가 남는다
-	// (실측: 999,999 -> "1000K"(1M 이어야 한다), 99,999,999 -> "10,000만"(1억 이어야 한다)).
+	// (실측: N -> "1000K"(1M 이어야 한다), N -> "N만"(1억 이어야 한다)).
 	// 표시 자릿수로 먼저 반올림해 보고, 다음 단위에 닿으면 그 단위로 올린다.
 	const promote = (unit: number, next: number, digits: number) => {
 		if (abs >= unit && abs < next && Number((abs / unit).toFixed(digits)) >= next / unit) {
@@ -245,8 +245,8 @@ StockCharts.formatCurrency = function (value: any) {
 };
 
 /**
- * 차트의 최고 · 최저 표시 옆 "지금 대비" 글자. 1,000% 이상이면 배수로 적는다 - 위 요약 카드(assetGrowthPeriodReturnSummary)와
- * 같은 규칙이다. 예전에는 차트만 "+418794.23%" 로 적어 같은 화면의 카드("x4,189")와 읽기가 갈렸다(실측 2026-10-01 '전체').
+ * 차트의 최고 · 최저 표시 옆 "지금 대비" 글자. N% 이상이면 배수로 적는다 - 위 요약 카드(assetGrowthPeriodReturnSummary)와
+ * 같은 규칙이다. 예전에는 차트만 "+418794.23%" 로 적어 같은 화면의 카드("xN")와 읽기가 갈렸다(실측 2026-10-01 '전체').
  */
 function extremeGapText(lastV: number, extreme: number): string {
 	if (!extreme || isNaN(lastV)) return "";
@@ -261,8 +261,8 @@ function extremeGapText(lastV: number, extreme: number): string {
 StockCharts.extremeGapText = extremeGapText;
 
 /**
- * 최고 · 최저 표시의 글자. 예전엔 그 지점의 평가액("▼ 최고 ₩150,000,000 (-5.23%)")만 적었다. 자산 성장은 사용자 요청(2026-10-21)으로
- * 금액을 "최고 대비 / 최저 대비 손익" 으로 적는다 - 금액 = 지금 - 그 지점("▼ 최고 대비 -₩7,850,000 (-5.23%)"). 부호는 반올림 뒤에 정한다(0 엔
+ * 최고 · 최저 표시의 글자. 예전엔 그 지점의 평가액("▼ 최고 ₩N (N%)")만 적었다. 자산 성장은 사용자 요청(2026-10-21)으로
+ * 금액을 "최고 대비 / 최저 대비 손익" 으로 적는다 - 금액 = 지금 - 그 지점("▼ 최고 대비 -₩N (-5.23%)"). 부호는 반올림 뒤에 정한다(0 엔
  * 방향이 없다 - assetGrowth 의 formatSignedCurrency 와 같은 규칙).
  */
 function extremeLabelText(isMax: boolean, label: string, extreme: number, lastV: number, gapAmount: boolean): string {
@@ -569,7 +569,7 @@ function makeDonutTooltipHandler(
 			'<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' +
 			color +
 			'"></span>' +
-			// 이름은 제목 줄에 이미 있다 - 둘째 줄은 값만(2026-10-08 S76: "삼성전자" / "삼성전자: ▲ ₩..." 로 두 번 읽혔다).
+			// 이름은 제목 줄에 이미 있다 - 둘째 줄은 값만(2026-10-08 S76: "한 종목" / "한 종목: ▲ ₩..." 로 두 번 읽혔다).
 			"<span>" +
 			valText +
 			"</span>" +
@@ -1142,7 +1142,7 @@ StockCharts.holdingsChartConfig = function (series: any, texts: any, opts?: any)
 				if (isNaN(v)) continue;
 				// 마지막 값(현재)은 0 이어도 '지금' 이므로 세되, 고점/저점 후보에서는 평가액 0 인 날을 뺀다.
 				// 보유가 하나도 없던 날이라 기준점이 못 된다 - 예전에는 '전체' 기간에서 늘 "최저 0원" 이
-				// 그려졌다(실측 2026-08-27: 6,170 일 중 1,772 일이 평가액 0). 서버 요약도 같은 규칙이라
+				// 그려졌다(실측 2026-08-27: N 일 중 N 일이 평가액 0). 서버 요약도 같은 규칙이라
 				// 카드와 차트가 같은 지점을 가리킨다.
 				lastV = v;
 				if (v <= 0) continue;
@@ -1405,7 +1405,7 @@ if (typeof document !== "undefined" && typeof document.addEventListener === "fun
 });
 
 // 종목 상세 주가 추이 캔들(사용자 요청 2026-10-02: "일반적인 주식 막대 그래프(시가 · 종가 · 고가 · 저가)").
-// 서버는 일봉(시 · 고 · 저 · 종 · 그 날 평균 단가)을 준다. 봉이 너무 많으면(전체 기간 삼성전자 1,600 일) 뭉개지므로 증권사 앱처럼
+// 서버는 일봉(시 · 고 · 저 · 종 · 그 날 평균 단가)을 준다. 봉이 너무 많으면(전체 기간 한 종목 1,600 일) 뭉개지므로 증권사 앱처럼
 // 일봉 -> 주봉 -> 월봉으로 묶는다: 시가 = 첫날 시가, 종가 = 마지막 날 종가, 고가 = 최고, 저가 = 최저, 평단 = 마지막 날 평단(그 봉이 끝날 때).
 // 순수 계산이라 시험에서 직접 부른다.
 function candleBuckets(series: any, maxCandles?: number) {
@@ -1472,7 +1472,7 @@ StockCharts.candleBuckets = candleBuckets;
 
 // 세로축 범위(사용자 요청 2026-10-02: "평단이 너무 낮으면 세로축은 캔들 기준으로"). 평단을 넣으면 축이 캔들 범위(저가~고가)의 30% 넘게
 // 늘어나는 경우 축을 캔들에 맞추고(위아래 5% 여유) 평단 선은 축 밖에서 잘린다 - 그때는 범례에 축 위/아래와 마지막 평단 값을 적는다.
-// 실측: 삼성전자 최근 3 개월 캔들 25~30 만인데 평단 7.2 만이라 축이 5 만까지 내려가 캔들이 위쪽에 몰렸다. 아니면 null(Chart.js 자동).
+// 실측: 한 종목 최근 3 개월 캔들 25~30 만인데 평단 7.2 만이라 축이 5 만까지 내려가 캔들이 위쪽에 몰렸다. 아니면 null(Chart.js 자동).
 function candleYRange(candles: any[]) {
 	let low = Infinity;
 	let high = -Infinity;
@@ -1519,8 +1519,8 @@ function chartMarkerColors(): { buy: string; sell: string; dist: string } {
 		: { buy: "rgb(219, 39, 119)", sell: "rgb(37, 99, 235)", dist: "rgb(180, 83, 9)" };
 }
 /**
- * 툴팁 한 줄을 이름 · 금액 · 덧붙임으로 가른다(2026-10-07, 금액 열을 자리수대로 세우려고). "평가 손익: +₩1,009,170,921 (+278.37%)" ->
- * ["평가 손익", "+₩1,009,170,921", "(+278.37%)"]. ": " 가 없는 줄(▲ 매수 15주)은 이름 칸에만 둔다. 순수 계산이라 시험에서 직접 부른다.
+ * 툴팁 한 줄을 이름 · 금액 · 덧붙임으로 가른다(2026-10-07, 금액 열을 자리수대로 세우려고). "평가 손익: +₩N (+278.37%)" ->
+ * ["평가 손익", "+₩N", "(+278.37%)"]. ": " 가 없는 줄(▲ 매수 15주)은 이름 칸에만 둔다. 순수 계산이라 시험에서 직접 부른다.
  */
 function splitTooltipLine(line: string): string[] {
 	const text = String(line);

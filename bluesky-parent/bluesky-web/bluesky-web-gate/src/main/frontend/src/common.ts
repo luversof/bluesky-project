@@ -1995,10 +1995,10 @@ function resyncChartSummaries(root: ParentNode = document): number {
 	return n;
 }
 // 근거 문구는 백분율 옆에 붙어 있어 요소 자체는 가림 대상이 아니다 - 그래서 가리기를 켠 채 hover 하면
-// 툴팁(예전 title, 2026-11-10 부터 공용 툴팁 data-tip)으로 정확한 금액이 그대로 보였다(실측 2026-09-11, 대시보드 합산 수익률: "총 합산 수익 1,271,376,178 ...").
+// 툴팁(예전 title, 2026-11-10 부터 공용 툴팁 data-tip)으로 정확한 금액이 그대로 보였다(실측 2026-09-11, 대시보드 합산 수익률: "총 합산 수익 N ...").
 // 자릿수 구분이 있는 수만 가린다(백분율은 화면에서도 안 가리므로 그대로 둔다).
-// 숫자에 바로 붙은 "원" 도 같이 삼킨다 - 안 그러면 "1,622,109,770원" 이 "가림원" 이 된다(실측 2026-09-12).
-// 띄어쓰기가 있으면 삼키지 않는다("642,014,000 원금" 의 원금이 깨지지 않게).
+// 숫자에 바로 붙은 "원" 도 같이 삼킨다 - 안 그러면 "N원" 이 "가림원" 이 된다(실측 2026-09-12).
+// 띄어쓰기가 있으면 삼키지 않는다("N 원금" 의 원금이 깨지지 않게).
 const AMOUNT_IN_TEXT = /₩?-?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?:원)?/g;
 function maskAmountBasis(root: ParentNode = document): number {
 	const hidden = chartSummaryAmountsHidden();
@@ -2010,7 +2010,7 @@ function maskAmountBasis(root: ParentNode = document): number {
 		if (!original) return;
 		const next = hidden ? original.replace(AMOUNT_IN_TEXT, mask) : original;
 		// 금액이 본문 글자에 들어 있는 안내문(툴팁도 sr-only 도 아닌 자리)은 글자 자체를 바꿔야 한다 -
-		// 실측 2026-09-12: 자산 현황의 "이 표에 없는 35종목의 실현손익 85,279,840원…" 이 가리기를 켜도 그대로 보였다.
+		// 실측 2026-09-12: 자산 현황의 "이 표에 없는 35종목의 실현손익 N원…" 이 가리기를 켜도 그대로 보였다.
 		if (el.getAttribute("data-amount-basis-text") !== null) {
 			if (el.textContent !== next) el.textContent = next;
 			n++;
@@ -2023,7 +2023,7 @@ function maskAmountBasis(root: ParentNode = document): number {
 		n++;
 	});
 	// 흐리게 하는 자리(.amount-value)에 붙은 툴팁 문구(data-tip, 예전 title)는 흐림이 안 걸린다 - 켜 놓고 hover 하면 정확한 금액이 그대로 뜬다.
-	// 실측 2026-09-12(가리기 켜고 9 화면): 31 개가 그랬다(대시보드 "1,622,109,770원" · 종목 상세 "1,359,088,500원" 등).
+	// 실측 2026-09-12(가리기 켜고 9 화면): 31 개가 그랬다(대시보드 "N원" · 종목 상세 "N원" 등).
 	// 템플릿 52 곳이 이런 title 을 내므로 하나씩 표식을 다는 대신 여기서 한 번에 가린다. 원본은 되돌리려고 남겨 둔다.
 	// 글자를 자르는(truncate) 금액은 말풍선이 잘리지 않게 바깥 감싸개가 툴팁이다 - 그 감싸개도 같이 가린다.
 	root.querySelectorAll(".amount-value[data-tip], .tooltip[data-tip]:has(> .amount-value)").forEach((el) => {
@@ -2033,7 +2033,7 @@ function maskAmountBasis(root: ParentNode = document): number {
 		const next = hidden ? kept.replace(AMOUNT_IN_TEXT, mask) : kept;
 		if (el.getAttribute("data-tip") !== next) el.setAttribute("data-tip", next);
 		// 같은 값을 낭독기에 주는 sr-only 짝도 함께 가린다 - 2026-09-12 에 title 만 가렸더니
-		// 대시보드 10 곳에서 title 은 "가림" 인데 sr-only 는 "1,622,109,770원" 그대로였다.
+		// 대시보드 10 곳에서 title 은 "가림" 인데 sr-only 는 "N원" 그대로였다.
 		// data-amount-basis 쪽은 예전부터 둘을 같이 가려 왔다 - 규칙을 맞춘다.
 		const srExact = el.querySelector(".sr-only");
 		if (srExact) {
@@ -2155,7 +2155,7 @@ const ROW_SELECT_BOX = "[data-row-select-checkbox]";
  * 행을 알아볼 이름. 첫 칸 글자를 한 줄로 눌러 쓴다.
  *
  * 첫 칸에는 종목·계좌 이름 말고도 펼침 버튼("보유 종목 보기 (3)")이나 끌기 손잡이("::"), 정렬 번호가 같이 있다
- * - 실측 2026-09-10: 그대로 쓰면 이름이 "KB증권 위탁 보유 종목 보기 (3) 선택", ":: 1 476800 ..." 이 됐다.
+ * - 실측 2026-09-10: 그대로 쓰면 이름이 "위탁 계좌 보유 종목 보기 (3) 선택", ":: 1 종목코드 ..." 이 됐다.
  * 사본에서 그런 것들을 걷어내고 읽는다(원본은 건드리지 않는다). 자르는 것은 이름이지 템플릿이 아니다.
  */
 function rowSelectName(row: Element, template: string): string {
@@ -2192,7 +2192,7 @@ function ensureRowCheckbox(row: Element): boolean {
 	box.setAttribute("aria-label", rowSelectName(row, template));
 	box.checked = isRowSelected(row);
 	// 행 머리 칸의 이름은 자식들의 글자를 이어 붙여 만들어진다 - 체크박스 이름까지 삼켜
-	// "삼성전자 선택 삼성전자" 가 된다(실측 2026-09-12: 세 화면 행머리 127 중 83). 칸이 읽히는
+	// "한 종목 선택 한 종목" 가 된다(실측 2026-09-12: 세 화면 행머리 127 중 83). 칸이 읽히는
 	// 자리마다(행 안의 칸을 옮길 때마다) 같은 이름을 두 번 듣게 되므로 칸에 이름을 직접 준다.
 	// 넣기 전에 읽어야 한다 - 넣고 나면 사본에 빈 label 이 섞인다.
 	if (cell.tagName === "TH" && !cell.getAttribute("aria-label")) {
@@ -2379,7 +2379,7 @@ startRowSelection();
 const SECTION_MARK = "[data-page-section]";
 const SECTION_NAV_MIN = 3;
 // 짧은 화면에서는 막대가 자리만 차지한다 - 두 화면을 넘게 굴려야 하는 화면에만 만든다
-// (실측 2026-09-10: 자산 현황은 1,836~1,904px 라 2배로 잡으면 창 높이에 따라 막대가 생겼다 사라졌다 한다).
+// (실측 2026-09-10: 자산 현황은 N~1,904px 라 2배로 잡으면 창 높이에 따라 막대가 생겼다 사라졌다 한다).
 const SECTION_NAV_MIN_SCROLL = 2.5;
 
 function sectionLabel(element: Element): string {

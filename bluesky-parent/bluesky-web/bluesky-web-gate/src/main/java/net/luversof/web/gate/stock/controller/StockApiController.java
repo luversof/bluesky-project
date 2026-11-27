@@ -39,7 +39,7 @@ public class StockApiController {
     }
     request.setUserId(userId);
     // granularity 는 TradeProfitRequest 의 필드가 아니라 toParams() 에 실리지 않는다. 그래서 무엇을
-    // 넘기든 백엔드가 기본값(일별)으로 답했다(실측: AUTO/MONTHLY 를 줘도 1,546.5KB·6,165 점).
+    // 넘기든 백엔드가 기본값(일별)으로 답했다(실측: AUTO/MONTHLY 를 줘도 N.5KB·N 점).
     // 별도 파라미터로 받아 그대로 전달한다.
     var params = request.toParams();
     if (org.springframework.util.StringUtils.hasText(granularity)) {

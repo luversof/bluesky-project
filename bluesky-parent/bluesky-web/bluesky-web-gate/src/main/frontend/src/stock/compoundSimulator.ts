@@ -6,7 +6,7 @@ const COMPOUND_MAX_YEARS = 100;
 // 이율 허용 범위. 입력 필드의 min/max 와 같은 값이다.
 // HTML 의 min/max 는 타이핑을 막지 못하고 필드를 :invalid 로만 표시하므로(값은 그대로 읽힌다),
 // 연수처럼 코드에서도 잘라 준다. 특히 -100% 아래로 내려가면 잔액이 양수와 음수를 오간다
-// (실측: -150% 로 10년 -> 1년차 -5,500,000 / 2년차 +2,250,000 / 3년차 -1,625,000 ...).
+// (실측: -150% 로 10년 -> 1년차 -N / 2년차 +N / 3년차 -N ...).
 const COMPOUND_MIN_RATE_PCT = -100;
 const COMPOUND_MAX_RATE_PCT = 200;
 
@@ -83,7 +83,7 @@ function projectCompound(input: CompoundInput): YearRow[] {
 // 이 파일은 type="module" 없이 classic <script src> 로 로드된다. export 문을 넣으면 브라우저가
 // "Unexpected token 'export'" 로 파일 전체를 거부해 화면 기능이 통째로 죽는다(실제로 그렇게 깨뜨렸다).
 // 그래서 검증용으로는 export 대신 전역에 붙인다 - 브라우저에서는 쓰이지 않고 테스트만 읽는다.
-// 부호 있는 비율. 실측 2026-09-10: (-0.04).toFixed(1) 은 "-0.0" 이라 아주 작은 음의 실수익률이 "-0.0%" 로 찍힌다 - 반올림 뒤 영이면 부호를 지운다.
+// 부호 있는 비율. 실측 2026-09-10: (-0.04).toFixed(1) 은 "-0.0" 이라 아주 작은 음의 실수익률이 "N%" 로 찍힌다 - 반올림 뒤 영이면 부호를 지운다.
 function formatSignedPercent(value: number): string {
 	if (!Number.isFinite(value)) {
 		return "-";
@@ -364,7 +364,7 @@ function formatPercent(value: number, scale = 1): string {
 		if (!shares) {
 			// 연말 자산이 0 이하면 나눌 것이 없다. 대시만 두면 낭독기에는 하이픈 하나로만 가고,
 			// 이 표는 한 행에 다른 까닭이 없어 그 칸이 스스로 말해야 한다.
-			// 실측 2026-09-15(이율 -100% / 원금 0): 그런 칸이 여섯 개 남았다.
+			// 실측 2026-09-15(이율 N% / 원금 0): 그런 칸이 여섯 개 남았다.
 			const reason =
 				(root as HTMLElement).dataset.ratioNone || "No balance to split";
 			const mark = document.createElement("span");
@@ -506,7 +506,7 @@ function formatPercent(value: number, scale = 1): string {
 					y: {
 						stacked: true,
 						ticks: {
-							// 다른 그래프처럼 압축 표기("7,000만") - 원 단위 전체("70,000,000")는 이 그래프만이었다(2026-10-28). 공용 포맷터가 아직 없으면 전체 표기.
+							// 다른 그래프처럼 압축 표기("N만") - 원 단위 전체("N")는 이 그래프만이었다(2026-10-28). 공용 포맷터가 아직 없으면 전체 표기.
 							callback: (value: number) => {
 								const charts = (window as any).StockCharts;
 								return charts && charts.formatCompactNumber

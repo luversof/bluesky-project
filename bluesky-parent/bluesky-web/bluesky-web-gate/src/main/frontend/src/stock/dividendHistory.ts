@@ -437,7 +437,7 @@ interface MonthRange {
             }));
             if (othersSeries) {
                 // 라벨에 기준을 실어 카드의 "기타"(월중/월말 태그 없는 종목)와 가른다 - 같은 화면에 두 뜻이
-                // 있었고 수는 565 배까지 달랐다(실측 2026-09-12 올해: 카드 6,152,014 vs 차트 10,899).
+                // 있었고 수는 565 배까지 달랐다(실측 2026-09-12 올해: 카드 N vs 차트 N).
                 const othersCount = ranked.length - TOP;
                 const othersText = othersLabel
                     .replace("{0}", String(othersCount))
@@ -605,7 +605,7 @@ interface MonthRange {
                 // 총액은 실제 배당 합계라 '금액 숨김' 대상이다. amount-value 로 감싸지 않으면
                 // 숨김을 켜도 이 줄만 그대로 보인다(실측: 배당내역에서 유일한 누락).
                 // 표시한 개월수로 나누면 화면의 월평균이 다시 나와야 한다. 정수로 반올림하면 재현이 깨진다
-                // (실측 2026-09-11: 전체 기간 76.83개월을 '77개월' 로 적으면 65,652,134/77 = 852,625 로 화면값 854,475 와 다르다).
+                // (실측 2026-09-11: 전체 기간 76.83개월을 '77개월' 로 적으면 N/77 = N 로 화면값 N 와 다르다).
                 // 정수에 가까우면 정수로, 아니면 소수 한 자리로 적고, 정확한 구간과 개월수는 툴팁에 남긴다.
                 const monthText = Math.abs(monthCount - Math.round(monthCount)) < 0.05
                     ? formatNumber(Math.round(monthCount))

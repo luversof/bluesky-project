@@ -17,7 +17,7 @@ import net.luversof.api.stock.web.dto.request.TradeProfitRequest;
  * <pre>
  *   /api/yearlyCost                        14 행 → 0 행
  *   /api/tradeProfit/calculateProfit       43 행 → 0 행
- *   /api/tradeProfit/timeSeriesWithSummary 10,864 B → 506 B
+ *   /api/tradeProfit/timeSeriesWithSummary N B → 506 B
  *   /api/periodSummary                        275 B → 206 B
  * </pre>
  *

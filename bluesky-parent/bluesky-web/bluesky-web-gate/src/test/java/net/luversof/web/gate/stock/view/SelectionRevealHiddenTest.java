@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
  * 회): 접힌 패널 <b>3 개</b>의 버튼에 45 &middot; 69 &middot; 99 번째로 닿았다. 페이지를 열자마자 그렇다.
  *
  * <p>낭독기도 마찬가지다. JS 는 {@code selectedCount === 0} 이면 값을 지우지 않고 나가므로, 마지막 한 줄을 해제하면 접힌 패널이 "1개 종목 선택
- * &middot; 배당금(세전) 169,950" 을 그대로 붙들고 있었다(실측: {@code display:grid} &middot; {@code
- * visibility:visible} &middot; {@code checkVisibility()} true &mdash; 화면에는 안 보이는데 접근성 트리에는 남았다).
+ * &middot; 배당금(세전) N" 을 그대로 붙들고 있었다(실측: {@code display:grid} &middot; {@code visibility:visible}
+ * &middot; {@code checkVisibility()} true &mdash; 화면에는 안 보이는데 접근성 트리에는 남았다).
  *
  * <p>{@code visibility: hidden} 은 Tab 순서와 접근성 트리 양쪽에서 뺀다. 네 패널(자산현황 2 &middot; 배당 효율 &middot; 월배당
  * 시뮬레이터)이 같은 클래스를 쓰므로 CSS 한 곳으로 끝난다.

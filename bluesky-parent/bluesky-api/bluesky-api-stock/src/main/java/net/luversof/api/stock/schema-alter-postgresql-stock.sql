@@ -30,7 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_stockPriceHistory_item_date_close ON "StockPriceH
 
 -- (1) 시세 원주가(수정 전 종가) 열. 기존 행은 NULL 로 남고, 앱이 매매가 있던 날의 행만 채운다(KIS 일별 시세 FID_ORG_ADJ_PRC=1).
 --     평가 수량의 분할 · 병합 계수를 "원주가 / 수정 종가" 로 정확히 내려고 쓴다. 지금은 거래가 / 수정 종가를 정수배로 반올림해 추정해서
---     43 종목 중 14 종목이 어긋난다(공모주 1/2 오판 - 하이브 · HD현대중공업 · 나노팀, 비정수 계수 - 한화오션 4.45 · 쌍방울 1/40~48 · 초록뱀미디어).
+--     43 종목 중 14 종목이 어긋난다(공모주 1/2 오판 - 한 종목 · 한 종목 · 한 종목, 비정수 계수 - 한 종목 4.45 · 한 종목 1/40~48 · 한 종목).
 --     잠금은 짧다(기본값 없는 NULL 열 추가). 앱은 열이 없어도 동작한다(있으면 쓰고, 없으면 지금 추정 그대로).
 ALTER TABLE "StockPriceHistory" ADD COLUMN IF NOT EXISTS "rawClosePrice" NUMERIC;
 
@@ -90,9 +90,9 @@ ALTER TABLE "MonthlyDividendSnapshot" ALTER COLUMN "averageTaxableBaseRatio1y" D
 CREATE TABLE IF NOT EXISTS "StockNews" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"stockItem_id" UUID NOT NULL,
-	-- NAVER(뉴스) | DART(공시)
+	-- 한 종목(뉴스) | DART(공시)
 	"source" VARCHAR(10) NOT NULL,
-	-- NAVER: 기사 원문 URL, DART: 접수번호(rcept_no)
+	-- 한 종목: 기사 원문 URL, DART: 접수번호(rcept_no)
 	"externalId" VARCHAR(1000) NOT NULL,
 	"title" VARCHAR(500) NOT NULL,
 	"summary" VARCHAR(2000),

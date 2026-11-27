@@ -28,10 +28,9 @@ import net.luversof.web.gate.stock.dto.request.MonthlyDividendPayoutUpsertReques
 /**
  * 출처 사이트에서 가져올 때는 <b>잘못된 행만 건너뛴다</b>.
  *
- * <p>실측 2026-09-17: RISE 44J2(코리아밸류업위클리고정커버드콜) 표의 지급기준일 2026-05-15 행 실지급일이 <b>2025-05-19</b>(연도
- * 오타)였고, 그 한 줄 때문에 가져오기가 통째로 실패했다 &mdash; 사이트가 정정할 때까지 가져올 때마다 난다. 사용자 결정(2026-09-17): 잘못된 행만 건너뛰고
- * 결과에 밝힌다(설정 저장 없이). 저장된 이력에는 그 행의 올바른 값(2026-05-19)이 이미 있었다 &mdash; 저장은 행마다 덮어쓰기라 건너뛴 행이 이력을 지우지
- * 않는다.
+ * <p>실측 2026-09-17: 한 ETF 표의 지급기준일 2026-05-15 행 실지급일이 <b>2025-05-19</b>(연도 오타)였고, 그 한 줄 때문에 가져오기가
+ * 통째로 실패했다 &mdash; 사이트가 정정할 때까지 가져올 때마다 난다. 사용자 결정(2026-09-17): 잘못된 행만 건너뛰고 결과에 밝힌다(설정 저장 없이). 저장된
+ * 이력에는 그 행의 올바른 값(2026-05-19)이 이미 있었다 &mdash; 저장은 행마다 덮어쓰기라 건너뛴 행이 이력을 지우지 않는다.
  *
  * <p>사람이 붙여넣는 가져오기는 그대로 엄격하다 &mdash; 붙여넣은 사람은 그 자리에서 고칠 수 있다({@code
  * MonthlyDividendPayoutImportParserTest} 의 거절 검사가 그 약속이다).
@@ -40,7 +39,7 @@ class MonthlyDividendSourceImportSkipTest {
 
   private final MonthlyDividendPayoutImportParser parser = new MonthlyDividendPayoutImportParser();
 
-  /** 2026-09-17 RISE 44J2 표의 앞 다섯 행 그대로 - 둘째 행이 오타다. */
+  /** 2026-09-17 한 ETF 표의 앞 다섯 행 그대로 - 둘째 행이 오타다. */
   private static final String RISE_TABLE =
       String.join(
           "\n",

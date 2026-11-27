@@ -53,8 +53,8 @@ public final class DividendPeriodBreakdown {
   /**
    * 조회 구간을 함께 주면 그 해가 구간에 <b>온전히</b> 담겼는지도 표시한다.
    *
-   * <p>실측 2026-09-10: '3년' 을 고르면 첫 해(2023)는 9월부터만 들어와 1건 220만원으로 보이는데, 그 해 전체는 4건 761만원이다. 자산 성장의
-   * 연도별 성과도 같은 이유로 부분 연도를 표시한다.
+   * <p>실측 2026-09-10: '3년' 을 고르면 첫 해(2023)는 9월부터만 들어와 1건 N만원으로 보이는데, 그 해 전체는 4건 N만원이다. 자산 성장의 연도별
+   * 성과도 같은 이유로 부분 연도를 표시한다.
    */
   public static List<Row> byYear(
       List<DividendView> dividends, ZoneId zone, LocalDate rangeStart, LocalDate rangeEnd) {

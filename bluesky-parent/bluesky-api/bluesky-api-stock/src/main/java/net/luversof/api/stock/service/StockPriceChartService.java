@@ -107,8 +107,8 @@ public class StockPriceChartService {
   }
 
   /**
-   * 지급기준일마다 분배락일(지급기준일 전 마지막 거래일)에 주당 분배금을 모은다(실제 주식 1 주당, 원 단위). 실측 0094M0 2026-09-15 기준일 540 원:
-   * 원주가가 9-11 18,085 -> 9-14(분배락) 16,995. 기준일보다 앞선 시세가 없으면 뺀다.
+   * 지급기준일마다 분배락일(지급기준일 전 마지막 거래일)에 주당 분배금을 모은다(실제 주식 1 주당, 원 단위). 실측 종목코드 2026-09-15 기준일 540 원:
+   * 원주가가 9-11 N -> 9-14(분배락) N. 기준일보다 앞선 시세가 없으면 뺀다.
    */
   static Map<LocalDate, BigDecimal> exDateDistributions(
       List<StockOhlcRow> rowsAsc, List<MonthlyDividendPayout> payouts) {

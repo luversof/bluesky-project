@@ -52,8 +52,8 @@ public record MonthlyDividendCatalogResponse(
     /**
      * 최근 1 년 위험 지표: 전고점 대비 최대 낙폭(%) · 연환산 변동성(%) · 실제로 센 첫 거래일.
      *
-     * <p>합산 수익률만으로는 "어떻게 벌었는지" 를 못 본다(실측 2026-09-22: 합산 +165% 인 종목이 그 사이 43.1% 빠졌다). 이력이 1 년을 못 덮으면
-     * 있는 만큼으로 내고 {@code riskFromDate} 가 언제부터인지 말한다.
+     * <p>합산 수익률만으로는 "어떻게 벌었는지" 를 못 본다(실측 2026-09-22: 합산 N% 인 종목이 그 사이 43.1% 빠졌다). 이력이 1 년을 못 덮으면 있는
+     * 만큼으로 내고 {@code riskFromDate} 가 언제부터인지 말한다.
      */
     BigDecimal maxDrawdownPct,
     BigDecimal volatilityPct,

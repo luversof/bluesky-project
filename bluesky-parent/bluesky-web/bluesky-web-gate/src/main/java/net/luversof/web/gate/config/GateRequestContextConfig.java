@@ -18,8 +18,8 @@ import org.springframework.web.filter.RequestContextFilter;
  *
  * <p>Binding the request context outside Spring Session's filter keeps the request attributes
  * available for the whole chain, so the second lookup reuses the first instead of paying another
- * round trip. Measured 2026-09-10: fragments of 12,994 / 80,260 / 148,916 bytes each spent two
- * validate-session calls, fragments of 2,843 / 4,295 / 5,586 bytes spent one.
+ * round trip. Measured 2026-09-10: fragments of N / N / N bytes each spent two validate-session
+ * calls, fragments of N / N / N bytes spent one.
  */
 @Configuration
 public class GateRequestContextConfig {

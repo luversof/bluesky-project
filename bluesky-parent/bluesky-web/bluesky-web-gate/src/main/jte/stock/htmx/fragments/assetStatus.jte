@@ -415,9 +415,9 @@
 				<p class="text-xs text-base-content/60">${stockSelectionHelpLabel}</p>
 				<%-- 이 표에는 보유 중인 종목만 나온다. 실현손익·배당을 열로 넣으면서 밝히지 않으면
 					 합계를 전체 누적으로 오해한다(실측 2026-09-03: 이미 다 판 34 종목에
-					 실현 85,279,840 · 배당 6,582,497 이 더 있다). --%>
-				<%-- 얼마나 작은지도 적는다 - 실측 2026-09-11: 이 합계의 실현손익은 140,350,295 인데 대시보드·매매·
-					 자산 성장은 225,630,135 를 적는다(차이 85,279,840, 37.8%). 차이를 숫자로 밝히지 않으면
+					 실현 N · 배당 N 이 더 있다). --%>
+				<%-- 얼마나 작은지도 적는다 - 실측 2026-09-11: 이 합계의 실현손익은 N 인데 대시보드·매매·
+					 자산 성장은 N 를 적는다(차이 85,279,840, 37.8%). 차이를 숫자로 밝히지 않으면
 					 같은 이름의 값이 화면마다 다른 이유를 알 길이 없다. 판 종목이 없으면 종전 문구 그대로. --%>
 				<p class="text-xs text-base-content/60" data-asset-status-held-only-note data-amount-basis-text data-amount-basis="${soldOutStockCount > 0 ? MessageFormat.format(heldOnlyDetailNote, String.valueOf(soldOutStockCount), String.format("%,d", StockFormatUtil.displayWon(soldOutRealizedProfit)), String.format("%,d", StockFormatUtil.displayWon(soldOutDividend))) : heldOnlyNote}">${soldOutStockCount > 0 ? MessageFormat.format(heldOnlyDetailNote, String.valueOf(soldOutStockCount), String.format("%,d", StockFormatUtil.displayWon(soldOutRealizedProfit)), String.format("%,d", StockFormatUtil.displayWon(soldOutDividend))) : heldOnlyNote}</p>
 				<div class="selection-reveal"><div>
@@ -492,7 +492,7 @@
 		</style>
 		@template._components.ui.tableCard(cssClass = "overflow-x-auto", body = @`
 			<%-- 평균 단가·실현 손익·누적 배당 열은 xl(1280px)에서 폈는데, 그 폭에서 이 표는 1,125px 이 필요하고 본문 열은 1,022px 뿐이다.
-			     실측 2026-09-10: 1279px 8열·표 1,021·넘침 0 → 1280px 11열·표 1,125·컨테이너 1,022·넘침 103 → 1366px 17 → 1400px 0. 2026-09-10 헤더 접기 뒤 최소폭이 1,063px 이 되어 1340px 부터 넘침 0(1320px 1).
+			     실측 2026-09-10: 1279px 8열·표 N·넘침 0 → 1280px 11열·표 N·컨테이너 N·넘침 103 → 1366px 17 → 1400px 0. 2026-09-10 헤더 접기 뒤 최소폭이 1,063px 이 되어 1340px 부터 넘침 0(1320px 1).
 			     넓혔는데 더 나빠지는 구간이라 실제로 들어가는 폭에서 편다. 같은 파일의 계좌별 보유 상세 표(47열)는 xl 에서 들어가므로 그대로 둔다. --%>
 			<table class="table data-table w-full print-dense" data-sortable-table data-asset-status-stock-table aria-label="${stockSectionTitle}">
 				<thead>

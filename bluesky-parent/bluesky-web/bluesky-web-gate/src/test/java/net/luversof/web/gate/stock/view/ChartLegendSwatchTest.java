@@ -18,7 +18,7 @@ import net.luversof.web.gate.frontend.TsSource;
  *
  * <pre>
  *   범례 ■ text-indigo-400  rgb(129,140,248)   ↔  선 «누적 결산 손익» rgba( 99,102,241,1)
- *   범례 ■ text-green-400   rgb( 74,222,128)   ↔  선 «수익 합산»     rgba( 29,167, 80,1)
+ *   범례 ■ text-green-400   rgb( N)   ↔  선 «수익 합산»     rgba( 29,167, 80,1)
  * </pre>
  *
  * <p>색이 다르면 범례가 그림을 잘못 가리킨다. 게다가 흰 바탕에서 {@code text-green-400} 의 대비는 <b>1.78</b> 이라 사실상 보이지 않았다(같은

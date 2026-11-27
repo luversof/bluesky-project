@@ -12,11 +12,11 @@ import org.junit.jupiter.api.Test;
 /**
  * The asset-growth card that answers with money when the rate is meaningless.
  *
- * <p>Measured 2026-09-12 on the live screen: a period starting 2009-10-07 has an opening value of
- * 389,790 and a closing value of 1,622,109,770. The rate is suppressed there (the opening is under
- * 1% of opening + inflow), and the card printed the <b>closing value</b> under a title that says
- * "rate" in Korean. Two things were wrong at once - the unit did not match the title, and the
- * number was the level, not the increase.
+ * <p>Measured 2026-09-12 on the live screen: a period starting 2009-10-07 has an opening value of N
+ * and a closing value of N. The rate is suppressed there (the opening is under 1% of opening +
+ * inflow), and the card printed the <b>closing value</b> under a title that says "rate" in Korean.
+ * Two things were wrong at once - the unit did not match the title, and the number was the level,
+ * not the increase.
  */
 class AssetGrowthAmountCardTest {
 

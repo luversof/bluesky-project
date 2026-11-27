@@ -12,9 +12,9 @@ import org.junit.jupiter.api.Test;
 /**
  * "우선 검토 종목" 카드는 종목 이름도 적는다.
  *
- * <p>실측 2026-09-12(월배당 시뮬레이터 개요): 이 카드는 <b>"498400"</b> 다섯 글자뿐이었고 {@code title} 도 {@code
- * aria-label} 도 없었다. 같은 화면의 표는 줄마다 "498400 KODEX 200타겟위클리커버드콜" 처럼 코드와 이름을 함께 적는다 &mdash; 화면의 결론을
- * 말하는 자리만 코드로 남아 있었다(en 도 "Priority Candidate 498400").
+ * <p>실측 2026-09-12(월배당 시뮬레이터 개요): 이 카드는 <b>"종목코드"</b> 다섯 글자뿐이었고 {@code title} 도 {@code aria-label}
+ * 도 없었다. 같은 화면의 표는 줄마다 "종목코드 한 ETF" 처럼 코드와 이름을 함께 적는다 &mdash; 화면의 결론을 말하는 자리만 코드로 남아 있었다(en 도
+ * "Priority Candidate 종목코드").
  */
 class BestChoiceNameTest {
 

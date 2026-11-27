@@ -81,8 +81,8 @@
 			StockFormatUtil.fullKrw(StockFormatUtil.displayWon(currentQuantityTotal)))}
 	</div>
 	@endif
-	<%-- 합계는 다음 지급일 하루(예: 월말 · 10월 2일)에 받을 종목들의 평균이다. "평균 2,220,074 / 월" 이라 적었더니 한 달 전체 배당(배당 내역의 이번 달
-	     예정 3,973,543)으로 읽혔다(2026-10-01 자율 점검) - 어느 날 몫인지 적고 "/ 월" 은 뺀다. --%>
+	<%-- 합계는 다음 지급일 하루(예: 월말 · 10월 2일)에 받을 종목들의 평균이다. "평균 N / 월" 이라 적었더니 한 달 전체 배당(배당 내역의 이번 달
+	     예정 N)으로 읽혔다(2026-10-01 자율 점검) - 어느 날 몫인지 적고 "/ 월" 은 뺀다. --%>
 	@if(hasSnapshots)
 	<div class="text-right leading-tight tabular-nums mb-2">
 		<div class="font-mono font-semibold text-dividend amount-value tooltip" data-window-latest-total data-tip="${StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal))}"><span class="mr-1 text-2xs font-normal text-base-content/60" data-window-latest-label>${nextPayDateLabel != null && !nextPayDateLabel.isBlank() ? StockViewSupport.msg("stock.summary.upcoming.window.latest", nextPayDateLabel) : latestLabel}</span>${String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal))}@template._components.ui.srExact(text = StockFormatUtil.fullKrw(StockFormatUtil.displayWon(windowLatestTotal)), visible = String.format("%,d", StockFormatUtil.displayWon(windowLatestTotal)))</div>

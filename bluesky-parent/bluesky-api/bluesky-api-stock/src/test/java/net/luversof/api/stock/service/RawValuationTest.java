@@ -19,7 +19,7 @@ import net.luversof.api.stock.domain.StockRawClose;
 /**
  * 원주가 평가(2026-10-02): 평가액 = 원주가 x 그날의 실제 주식 수. 실제 주식 수는 매매와 기업행위(분할 · 병합 · 무상증자) 배율로만 바뀐다.
  *
- * <p>숫자는 실제 시세다(보유 기간 원주가 13,785 행에서 가격제한폭 밖 변화는 4 건 - NAVER · 원티드랩 · 한화오션 2).
+ * <p>숫자는 실제 시세다(보유 기간 원주가 13,785 행에서 가격제한폭 밖 변화는 4 건 - 한 종목 · 한 종목 · 한 종목 2).
  */
 class RawValuationTest {
 
@@ -29,7 +29,7 @@ class RawValuationTest {
 
   @Test
   void 분할은_단순_비율로_맞춘다() {
-    // NAVER 2018-10-11 -> 10-12: 원주가 704,000 -> 142,000, 수정 종가 140,999 -> 142,000 (5:1 분할, 비
+    // 한 종목 2018-10-11 -> 10-12: 원주가 N -> 142,000, 수정 종가 N -> N (5:1 분할, 비
     // 4.9929)
     BigDecimal multiplier =
         TradeProfitService.shareMultiplier(d("704000"), d("142000"), d("140999"), d("142000"));
@@ -38,7 +38,7 @@ class RawValuationTest {
 
   @Test
   void 무상증자는_2배() {
-    // 원티드랩 2021-10-07 -> 10-08 권리락: 53,400 -> 27,600, 수정 26,700 -> 27,600
+    // 한 종목 2021-10-07 -> 10-08 권리락: N -> 27,600, 수정 N -> N
     BigDecimal multiplier =
         TradeProfitService.shareMultiplier(d("53400"), d("27600"), d("26700"), d("27600"));
     assertEquals(0, d("2").compareTo(multiplier), multiplier.toPlainString());
@@ -46,7 +46,7 @@ class RawValuationTest {
 
   @Test
   void 병합은_1보다_작다() {
-    // 한화오션 2017-01-13 -> 01-16 (10:1 감자, 거래정지 중이라 수정 종가는 그대로)
+    // 한 종목 2017-01-13 -> 01-16 (10:1 감자, 거래정지 중이라 수정 종가는 그대로)
     BigDecimal multiplier =
         TradeProfitService.shareMultiplier(d("4480"), d("44800"), d("19900"), d("19900"));
     assertEquals(0, d("0.1").compareTo(multiplier), multiplier.toPlainString());
@@ -68,7 +68,7 @@ class RawValuationTest {
 
   @Test
   void 원장이_분할_뒤_단위면_그날_실제_주식_수로_되돌린다() {
-    // NAVER 2018-04-12 매수 220 주 @156,400 - 그날 원주가 약 782,000 · 수정 종가 156,400 -> 실제 44 주
+    // 한 종목 2018-04-12 매수 220 주 @N - 그날 원주가 약 N · 수정 종가 N -> 실제 44 주
     BigDecimal shares =
         TradeProfitService.rawShareQuantity(220, d("156400"), d("782000"), d("156400"));
     assertEquals(0, d("44").compareTo(shares.stripTrailingZeros()), shares.toPlainString());
@@ -76,7 +76,7 @@ class RawValuationTest {
 
   @Test
   void 고쳐_적힌_원장의_배율은_단순_비율로_맞춘다() {
-    // 실측 NAVER 2018-04-12: 원주가 757,000 · 수정 종가 151,190(분배금까지 조금 깎임, 배율 5.0069). 그대로 나누면 43.94 주 ->
+    // 실측 한 종목 2018-04-12: 원주가 N · 수정 종가 N(분배금까지 조금 깎임, 배율 5.0069). 그대로 나누면 43.94 주 ->
     // 평단 156,179.
     // 단순 비율 5 로 맞추면 정확히 44 주.
     BigDecimal shares =
@@ -89,7 +89,7 @@ class RawValuationTest {
 
   @Test
   void 원장이_그날_단위면_수량_그대로() {
-    // 카카오 2017-12-19 매수 221 주 @134,500 (분할 전 원주가 그대로 적힘, 수정 종가는 1/5)
+    // 한 종목 2017-12-19 매수 221 주 @N (분할 전 원주가 그대로 적힘, 수정 종가는 1/5)
     assertEquals(
         0,
         d("221")
@@ -105,7 +105,7 @@ class RawValuationTest {
 
   @Test
   void 공모가는_수정_종가에_더_가까워도_고쳐_적힌_것이_아니다() {
-    // 원티드랩 2021-08-11 상장일 공모 4 주 @35,000 - 원주가 91,000 · 수정 45,500(뒤의 1:1 무상증자). 2 주로 세면 무상증자 뒤 4 주가
+    // 한 종목 2021-08-11 상장일 공모 4 주 @N - 원주가 N · 수정 N(뒤의 1:1 무상증자). 2 주로 세면 무상증자 뒤 4 주가
     // 된다.
     assertEquals(
         0,
@@ -158,7 +158,7 @@ class RawValuationTest {
 
   @Test
   void 차트_가격은_원주가를_분할로만_맞춘다() {
-    // NAVER 2018-10-11 -> 10-12 5:1 분할. 수정 종가는 일부 구간만 분배금까지 깎여 이어지지 않으므로 쓰지 않는다 - 앞날은 원주가 / 5.
+    // 한 종목 2018-10-11 -> 10-12 5:1 분할. 수정 종가는 일부 구간만 분배금까지 깎여 이어지지 않으므로 쓰지 않는다 - 앞날은 원주가 / 5.
     UUID id = UUID.randomUUID();
     var points =
         TradeProfitService.splitAdjustedCloses(

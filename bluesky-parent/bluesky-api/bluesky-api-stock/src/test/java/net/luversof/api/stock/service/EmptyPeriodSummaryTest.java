@@ -20,7 +20,7 @@ import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
  * {@code null} 인데 {@code timeWeightedReturnPct} 와 {@code currentDrawdownPct} 만 {@code 0.0} 이 나갔다.
  * TWR 지수와 고점 지수가 둘 다 1.0 으로 초기화된 채 단 하루도 곱해지지 않아 {@code (1.0-1.0)*100} 이 그대로 나간 것이다.
  *
- * <p>화면은 이 두 값에 이미 null 분기를 갖고 있어서(-- 로 표시), 0.0 이 들어오면 오히려 "시간가중수익률 +0.00%" 로 그리고, 게다가 {@code
+ * <p>화면은 이 두 값에 이미 null 분기를 갖고 있어서(-- 로 표시), 0.0 이 들어오면 오히려 "시간가중수익률 N%" 로 그리고, 게다가 {@code
  * currentDrawdownPct > -0.01} 판정에 걸려 <b>"신고점"</b> 이라고 표시했다. 보유가 아예 없던 구간에 대한 답으로 틀렸다.
  */
 class EmptyPeriodSummaryTest {

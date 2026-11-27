@@ -20,7 +20,7 @@
 @param String icon = ""
 @param String accent = "primary"
 <%-- 같은 라벨의 카드가 한 화면에 둘 있을 때 범위를 밝힌다(화면에는 구역 제목으로 이미 나뉘어 있다).
-     실측 2026-09-11: 대시보드에 "실현 손익" 카드가 둘(전체 225,630,135 · 올해 131,261,409)인데
+     실측 2026-09-11: 대시보드에 "실현 손익" 카드가 둘(전체 N · 올해 N)인데
      라벨 글자가 같아 낭독기로는 구분되지 않았고, 카드를 덮는 링크 이름도 둘 다 "실현 손익" 이었다
      (목적지는 rangeMode=all 과 ytd 로 다르다). --%>
 @param String scopeNote = ""
@@ -48,7 +48,7 @@
 	<%-- valueTitle 은 2026-09-10 까지 title 속성에만 있었다. title 은 role 없는 div 에서 접근성 트리에 노출되지
 	     않아 마우스 호버 전용이었다. 판단 규칙은 srExact 가 갖는다 - 화면 값과 숫자가 같으면 내보내지 않는다. --%>
 	<div class="stat-card-value ${amount ? "amount-value" : ""} ${toneClass} tooltip" data-tip="${valueTitle}">${value}@template._components.ui.srExact(text = valueTitle, visible = value)</div>
-	<%-- sub 와 금액 줄을 함께 넘기면 두 줄이다 - 계좌 상세 실현 손익이 "+5.3% · 판 주식 원가 대비" 와 "이 계좌 기준 +2,063,739 · +33.6%" 를
+	<%-- sub 와 금액 줄을 함께 넘기면 두 줄이다 - 계좌 상세 실현 손익이 "N% · 판 주식 원가 대비" 와 "이 계좌 기준 +N · N%" 를
 	     함께 적는다(사용자 선택 2026-09-17). 한 알약에 이으면 두 비율이 어느 금액의 것인지 갈리지 않는다. 하나만 넘기면 예전과 같다. --%>
 	@if((sub != null && !sub.isEmpty()) || (subDate != null && !subDate.isEmpty()))
 	<div class="stat-card-sub ${subClass}">${sub}@if(subDate != null && !subDate.isEmpty())<span class="whitespace-nowrap date-whole">${subDate}</span>${subDateAfter}@endif</div>

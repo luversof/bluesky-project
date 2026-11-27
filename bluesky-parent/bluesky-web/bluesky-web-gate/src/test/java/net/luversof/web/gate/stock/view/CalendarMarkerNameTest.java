@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 /**
  * 활동 캘린더의 종류 표시는 색만으로 갈리면 안 된다.
  *
- * <p>실측 2026-09-12: 칸 하나가 {@code 4 ●8 ₩ 2,211,589} 처럼 읽혔다. {@code ●N} 세 가지(매수 {@code text-profit} ·
- * 매도 {@code text-loss} · 배당 {@code text-dividend})가 <b>색으로만</b> 갈려 있어, 낭독기에는 "● 8" 로만 들리고 색을 못 가르는
+ * <p>실측 2026-09-12: 칸 하나가 {@code 4 ●8 ₩N} 처럼 읽혔다. {@code ●N} 세 가지(매수 {@code text-profit} · 매도
+ * {@code text-loss} · 배당 {@code text-dividend})가 <b>색으로만</b> 갈려 있어, 낭독기에는 "● 8" 로만 들리고 색을 못 가르는
  * 사람에게도 뜻이 전해지지 않았다(WCAG 1.4.1).
  *
  * <p>보이는 글자(●N)는 그대로 두고 이름만 붙인다 &mdash; 같은 칸의 금액은 이미 {@code title} 을 갖고 있었다.
@@ -97,7 +97,7 @@ class CalendarMarkerNameTest {
    * 칸이 role=button 이니 이름에 온 날짜가 들어간다.
    *
    * <p>보이는 것은 날짜 숫자만이지만 칸이 버튼 목록에 오르므로 "6" 하나로는 어느 달인지 알 수 없다 &mdash; 실측 2026-09-15: 낭독 텍스트가 "6 ●1
-   * 매수 ₩ -347,060" 이었다.
+   * 매수 ₩ -N" 이었다.
    */
   @Test
   void 칸_이름에_온_날짜가_들어간다() throws IOException {

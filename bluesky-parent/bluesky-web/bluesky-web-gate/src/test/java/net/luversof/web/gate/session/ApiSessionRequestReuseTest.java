@@ -21,8 +21,8 @@ import net.luversof.client.user.session.ApiSessionRepository;
  * the Tomcat output buffer (8KB) commits while the view is still rendering, so the lookup happened
  * twice.
  *
- * <p>Measured 2026-09-10 on this gate: fragments of 2,843 / 4,295 / 5,586 bytes made one
- * validate-session call, fragments of 12,994 / 80,260 / 148,916 bytes made two.
+ * <p>Measured 2026-09-10 on this gate: fragments of N / N / N bytes made one validate-session call,
+ * fragments of N / N / N bytes made two.
  */
 class ApiSessionRequestReuseTest {
 

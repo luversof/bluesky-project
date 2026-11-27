@@ -204,7 +204,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
             : supplyRemote(() -> emptyIfNull(tradeProfitClient.calculateProfit(profitParams)));
     // 세후 배당 합계. 예전에는 전 기간 이력을 통째로 받아 더했고(193건 79,919 바이트), 그 다음에는
     // 사용자 전체 합계만 주는 meta 를 썼다. 후자는 계좌/종목 필터를 걸어도 배당만 전체 값이라
-    // '누적 확정 수익'이 실현손익(필터 적용)과 어긋났다(실측: KB증권 위탁 자리에 그 계좌 값의 6.1 배인
+    // '누적 확정 수익'이 실현손익(필터 적용)과 어긋났다(실측: 위탁 계좌 자리에 그 계좌 값의 6.1 배인
     // 전 계좌 합계가 들어갔다). 손익 조회와 같은 파라미터로 집계해 두 항의 조건을 맞춘다.
     // 계좌 선택이 빈 목록이면 이 조회도 건너뛴다. 빈 목록은 toParams() 에서 파라미터가 통째로 빠져
     // '필터 없음'(= 전체)이 되므로, 손익·추이는 0 인데 이 항만 전 기간 합계가 찍힌다.
@@ -322,7 +322,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
     // 배당을 얹어서 센다. totalProfitNet 은 실현+평가일 뿐 배당이 없다. 이 카드 바로 위에 누적 배당이
     // 있고 같은 카드의 '합산 손익'은 배당을 더하는데, 승패만 배당을 빼고 세면 배당이 큰 종목이 실제로는
-    // 이익인데 패로 잡힌다(실측 2026-08-24: TIGER 리츠부동산인프라는 실현+평가가 손실인데 배당이 그
+    // 이익인데 패로 잡힌다(실측 2026-08-24: 한 ETF는 실현+평가가 손실인데 배당이 그
     // 1.75 배라 합치면 이익이다. 42종목 중 이 1종목이 뒤집혀 76.19% 대신 78.57%).
     long winCount = countProfitableStocks(profitByStockItem, dividendByStockItem);
     double winRate =
@@ -694,7 +694,7 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
     boolean showSpread = !nextPayDateRuled && spreadTo > spreadFrom;
     model.addAttribute("payDaySpreadFrom", showSpread ? spreadFrom : 0);
     model.addAttribute("payDaySpreadTo", showSpread ? spreadTo : 0);
-    // 규칙 날짜인데 종목마다 하루 이틀 다르면(SOL 코리아고배당만 결제 1 거래일) 그 달 안의 범위를 적는다 - 첫 날만 적으면 나머지가 그 날 오는 걸로 읽힌다.
+    // 규칙 날짜인데 종목마다 하루 이틀 다르면(한 ETF만 결제 1 거래일) 그 달 안의 범위를 적는다 - 첫 날만 적으면 나머지가 그 날 오는 걸로 읽힌다.
     boolean showRange =
         ruledRange != null && ruledRange.lastSameMonth().isAfter(ruledRange.first());
     model.addAttribute("payDayRangeFrom", showRange ? ruledRange.first().getDayOfMonth() : 0);
@@ -867,8 +867,8 @@ public class StockSummaryHtmxController extends StockBaseHtmxController {
 
   /**
    * 그 시기의 다음 지급일(오늘 포함, 2026-10-20) - <b>들고 있는 종목마다</b> 제 규칙(기준일 + 결제 거래일 수)으로 낸 날 중 가장 이른 날과, 그 달
-   * 안에서 가장 늦은 날. 시기 전체의 최빈 거래일 수 하나로 내면 다른 종목(SOL 코리아고배당 1 거래일)의 날이 틀리고, 소수 종목이 더 늦으면 그 종목이 받는 날에
-   * 이미 다음 달을 가리켰다(검토 2026-10-20). 그 시기에 들고 있는 종목 중 하나라도 규칙이 없으면 null - 예전 추정으로 통째로 간다.
+   * 안에서 가장 늦은 날. 시기 전체의 최빈 거래일 수 하나로 내면 다른 종목(한 ETF 1 거래일)의 날이 틀리고, 소수 종목이 더 늦으면 그 종목이 받는 날에 이미 다음
+   * 달을 가리켰다(검토 2026-10-20). 그 시기에 들고 있는 종목 중 하나라도 규칙이 없으면 null - 예전 추정으로 통째로 간다.
    */
   static RuledPayDates ruledNextPayDates(
       LocalDate today,

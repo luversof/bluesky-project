@@ -20,7 +20,7 @@ import net.luversof.web.gate.stock.util.StockFormatUtil;
  * 비율 표기는 "-0.0%" 를 내지 않는다.
  *
  * <p>실측 2026-09-10: {@code String.format("%+.1f%%", -0.04)} 는 "-0.0%", {@code "%.2f%%"} 의 -0.004 는
- * "-0.00%". 2년 평가액 시계열의 프리셋 구간 3,978개 중 16개(하루 구간 위주)가 이 범위라 자산 성장 기간 수익률에 실제로 찍힐 수 있었다. 주식 템플릿의 비율
+ * "N%". 2년 평가액 시계열의 프리셋 구간 3,978개 중 16개(하루 구간 위주)가 이 범위라 자산 성장 기간 수익률에 실제로 찍힐 수 있었다. 주식 템플릿의 비율
  * String.format 40곳을 {@link StockFormatUtil#pct}/{@link StockFormatUtil#signedPct} 로 모았다.
  */
 class PercentNegativeZeroTest {

@@ -178,7 +178,7 @@
 			<span>${monthlyDividendReferenceResultMessage}</span>
 		</div>
 	@endif
-	<%-- 출처 사이트의 오타 한 줄 때문에 가져오기가 통째로 실패하던 것을, 그 줄만 건너뛰게 바꿨다(실측 2026-09-17: RISE 44J2
+	<%-- 출처 사이트의 오타 한 줄 때문에 가져오기가 통째로 실패하던 것을, 그 줄만 건너뛰게 바꿨다(실측 2026-09-17: 한 ETF
 	     실지급일 2025-05-19, 사용자 결정). 건너뛴 줄을 말하지 않으면 이력에 빈 달이 생겨도 모른다 - 그래서 사유를 그대로 적는다. --%>
 	@if(monthlyDividendReferenceWarningMessage != null && !monthlyDividendReferenceWarningMessage.isEmpty())
 		<div class="alert alert-warning" role="alert" data-import-skipped-warning>

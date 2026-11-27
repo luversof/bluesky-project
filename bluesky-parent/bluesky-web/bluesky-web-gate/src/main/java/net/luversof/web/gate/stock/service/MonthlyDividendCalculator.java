@@ -145,7 +145,7 @@ public class MonthlyDividendCalculator {
    * 최근 1 회 주당 배당 x 스냅샷 수량 &mdash; '최근' 기준 예상 월배당. 값이 없으면 0.
    *
    * <p>배당 내역의 다가올 배당과 대시보드의 다가올 배당이 같은 날 합계를 서로 다른 기준(최근 / 평균)으로만 보여 숫자가 달랐다(2026-10-13 사용자 지적: 10월
-   * 17일분 1,601,445 vs 997,459). 두 화면이 평균 · 최근을 함께 보이도록 같은 계산을 여기 둔다.
+   * 17일분 N vs N). 두 화면이 평균 · 최근을 함께 보이도록 같은 계산을 여기 둔다.
    */
   public static BigDecimal latestMonthlyDividend(MonthlyDividendSnapshotResponse row) {
     if (row == null) {

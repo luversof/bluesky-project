@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test;
  *
  * <p>실측 2026-09-10(qa/chart-resize-trace.cjs): Chart.js 4.5 retinaScale 은 컨테이너 폭을 0.1 단위로
  * 반올림(570.4)해 정수 canvas.width(570)와 비교하므로 소수 폭에선 resize() 마다 전부 다시 그렸다. htmx 교체 뒤 빈 차트 보정용
- * setTimeout resize() 7곳(0/60/200/250/500ms)이 매번 전체 재렌더(배당 780점 ~100ms, 종목 주가 3,198점 ~256ms @4x
- * CPU)였다. 동작은 chartResizeGuard.test.mjs 가 검증하고, 여기서는 맨 resize() 호출이 다시 생기지 않는지만 지킨다.
+ * setTimeout resize() 7곳(0/60/200/250/500ms)이 매번 전체 재렌더(배당 780점 ~100ms, 종목 주가 N점 ~256ms @4x CPU)였다.
+ * 동작은 chartResizeGuard.test.mjs 가 검증하고, 여기서는 맨 resize() 호출이 다시 생기지 않는지만 지킨다.
  */
 class ChartResizeGuardTest {
 

@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
  * · 그중 종가가 바뀐 행 1건 - 거래가 없으면 종가는 바뀔 수 없다
  * </pre>
  *
- * <p>두 "1건" 이 우연히 같은 숫자라 뒤 문장이 앞 문장의 1 건을 받는 것처럼 읽힌다. 실제로는 앞은 마지막 시세일(2026-09-09) 기준이고 뒤는 쌍방울
+ * <p>두 "1건" 이 우연히 같은 숫자라 뒤 문장이 앞 문장의 1 건을 받는 것처럼 읽힌다. 실제로는 앞은 마지막 시세일(2026-09-09) 기준이고 뒤는 한 종목
  * 2025-05-08 로 서로 무관한 행이다.
  */
 class AdminZeroVolumeClauseOrderTest {
@@ -44,7 +44,7 @@ class AdminZeroVolumeClauseOrderTest {
         .isLessThan(duplicateRows);
   }
 
-  /** 예시 행(쌍방울 …)도 그 문장에 붙어 있어야 한다 - 떨어지면 어느 문장의 예시인지 알 수 없다. */
+  /** 예시 행(한 종목 …)도 그 문장에 붙어 있어야 한다 - 떨어지면 어느 문장의 예시인지 알 수 없다. */
   @Test
   void 예시_행도_같이_따라간다() throws IOException {
     String template =

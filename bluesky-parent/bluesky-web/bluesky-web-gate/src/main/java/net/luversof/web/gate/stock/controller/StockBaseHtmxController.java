@@ -316,7 +316,7 @@ public abstract class StockBaseHtmxController {
    * 합이 api-stock 시계열 보유원가와 <b>1 원 오차 없이</b> 같다). 현재가가 없어 평가액이 0 이어도 항등식은 그대로 성립한다.
    *
    * <p>폴백은 {@code 평균단가 x 보유수량} 이다. 예전에는 {@code totalBuyAmount} 를 썼는데 그것은 <b>기간 누적 매수액</b>이라 성격이
-   * 다르다(실측: 포트폴리오 값이 실제 보유원가보다 16.4% 과대, 삼성전자 한 종목만 보면 29% 과대). 지금 api-stock 은 두 값을 항상 채우므로 이 폴백은
+   * 다르다(실측: 포트폴리오 값이 실제 보유원가보다 16.4% 과대, 한 종목 한 종목만 보면 29% 과대). 지금 api-stock 은 두 값을 항상 채우므로 이 폴백은
    * 실제로 타지 않지만, 타는 날에 틀린 값을 쓰면 안 된다.
    */
   protected BigDecimal resolveCurrentHoldingCost(

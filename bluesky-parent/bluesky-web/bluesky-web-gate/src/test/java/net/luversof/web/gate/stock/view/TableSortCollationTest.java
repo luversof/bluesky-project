@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test;
  * {@code dividendHistory.ts} 의 정렬기. 셋 다 {@code localeCompare} 로 텍스트 열을 정렬하는데, 로케일 인자를 하나만 비워 두면 그
  * 화면만 브라우저 로케일을 따라간다.
  *
- * <p>실측(같은 종목명 목록): {@code ko} 는 한글 먼저(가나다, 삼성전자, 하이닉스, CJ씨푸드, HD현대중공업, KODEX...), {@code en} 은 라틴
- * 먼저(CJ씨푸드, HD현대중공업, KODEX..., 가나다, 삼성전자, 하이닉스)로 <b>순서가 뒤집힌다</b>. 게이트는 영어 번들 ({@code
+ * <p>실측(같은 종목명 목록): {@code ko} 는 한글 먼저(가나다, 한 종목, 하이닉스, 한 종목, 한 종목, KODEX...), {@code en} 은 라틴 먼저(한
+ * 종목, 한 종목, KODEX..., 가나다, 한 종목, 하이닉스)로 <b>순서가 뒤집힌다</b>. 게이트는 영어 번들 ({@code
  * gateMessage_en.properties})이 있어 이 차이가 실제로 드러난다.
  */
 class TableSortCollationTest {

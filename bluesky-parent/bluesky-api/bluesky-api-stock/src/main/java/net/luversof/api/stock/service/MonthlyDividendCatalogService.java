@@ -156,7 +156,7 @@ public class MonthlyDividendCatalogService {
       }
       // 위험 지표는 1 년 기준이다(사용자 결정 2026-09-22). 추천 점수에는 안 섞고 표에 보여 주기만 한다.
       // 가격만 보는 지표라 기간 수익률과 같은 원주가 우선 시계열을 쓴다(2026-10-02). 수정 종가는 한꺼번에 받은 옛 구간만 분배금이 깎여
-      // 있어 그 경계에 가짜 하루 변동이 끼었다 - 15 개월 창에서 1% 넘게 어긋난 날 160 일, 0094M0 2026-03-25 수정 +18.65% / 실제
+      // 있어 그 경계에 가짜 하루 변동이 끼었다 - 15 개월 창에서 1% 넘게 어긋난 날 160 일, 종목코드 2026-03-25 수정 +18.65% / 실제
       // +1.92%.
       RiskMetricsCalculator.RiskMetrics risk =
           RiskMetricsCalculator.compute(periodHistory, today, RISK_MONTHS);
@@ -204,7 +204,7 @@ public class MonthlyDividendCatalogService {
               price != null ? price.tradeDate() : null,
               monthlyYieldPct,
               // 연 수익률은 주당 배당 x 12 를 바로 나눈다 - 소수 2 자리로 반올림한 월 % 에 12 를 곱하면 최대 0.06%p 어긋났다
-              // (280 / 8,520: 3.29% x 12 = 39.48% · 실제 39.44%, 검토 지적 2026-10-29).
+              // (280 / N: 3.29% x 12 = 39.48% · 실제 39.44%, 검토 지적 2026-10-29).
               percent(
                   averagePerShare != null ? averagePerShare.multiply(BigDecimal.valueOf(12)) : null,
                   currentPrice),

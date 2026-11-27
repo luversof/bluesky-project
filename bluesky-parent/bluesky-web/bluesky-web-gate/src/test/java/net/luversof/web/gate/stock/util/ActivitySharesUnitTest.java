@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
  * The share-count unit sits differently in the two languages.
  *
  * <p>Measured 2026-09-12 with locale=en: the dashboard's recent-activity rows read "111shares",
- * "42shares", "79shares" and the item-detail quantity card read "5,043shares" - no space. Korean
- * wants none ("111주"), English wants one, so a template that hard-codes either side is wrong in one
+ * "42shares", "79shares" and the item-detail quantity card read "Nshares" - no space. Korean wants
+ * none ("111주"), English wants one, so a template that hard-codes either side is wrong in one
  * language. The spacing now lives in the message ({@code {0} shares} / {@code {0}주}) and every call
  * site splits it at the placeholder, the same way {@link StockMessageSplitUtil} is used elsewhere.
  */

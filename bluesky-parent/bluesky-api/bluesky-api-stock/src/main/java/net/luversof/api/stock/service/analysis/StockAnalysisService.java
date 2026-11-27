@@ -126,7 +126,7 @@ public class StockAnalysisService {
 
   /**
    * 규칙 예측(사용자 결정 2026-11-19): KOSPI200 야간선물이 0.5% 이상 움직인 날, 규칙을 검증한 종목은 Claude 를 부르지 않고 야간선물 방향을
-   * 그대로 쓴다. 리플레이(삼성전자 245 일, v9)에서 그런 날 v9 의 D+1 판단은 야간선물 부호와 100% 같았고(적중 68.3), D+5 도 규칙이 55.7 로
+   * 그대로 쓴다. 리플레이(한 종목 245 일, v9)에서 그런 날 v9 의 D+1 판단은 야간선물 부호와 100% 같았고(적중 68.3), D+5 도 규칙이 55.7 로
    * v9 55.2 와 같거나 나았다. 0.5% 미만인 날(62 일)만 Claude 가 규칙보다 나았다(38.7 대 37.1).
    */
   static final Set<String> RULE_SYMBOLS = Set.of("005930");
@@ -846,7 +846,7 @@ public class StockAnalysisService {
 
   /**
    * 저녁 채점은 NXT 가 섞인 종가(KIS J 일봉이 장 마감 뒤 주는 값)로 매겨졌을 수 있다 - 시세가 KRX 종가로 고쳐지면 기준가 · 결과를 다시
-   * 매긴다(2026-11-21, 11-20 을 183,100 으로 채점했는데 KRX 종가는 180,900). 늦은 예측 여부는 그대로 둔다.
+   * 매긴다(2026-11-21, 11-20 을 N 으로 채점했는데 KRX 종가는 N). 늦은 예측 여부는 그대로 둔다.
    */
   private boolean regrade(StockPredictionGrade g, StockPrediction p) {
     StockPriceHistory target =

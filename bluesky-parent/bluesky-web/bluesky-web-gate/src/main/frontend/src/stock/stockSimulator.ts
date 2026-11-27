@@ -312,7 +312,7 @@ function simulateScenario(scenario) {
 	// 온전히 버틴 개월 수. 연 단위 지속 기간은 고갈이 일어난 해를 통째로 세므로 최대 11개월을 버린다
 	// (실측 2026-08-24: 4년차 1월에 고갈해도 "4년"으로 표시된다). 화면 표기는 그대로 두고, 시나리오
 	// 비교에서만 이 값을 1순위로 쓴다 - 연 단위로는 동률이 나서 무관한 기준이 승부를 갈랐다
-	// (실측: 고갈 시나리오 3,652개를 짝지은 141,648쌍 중 3,188쌍(2.25%)에서 실제로 더 오래 버틴
+	// (실측: 고갈 시나리오 3,652개를 짝지은 N쌍 중 N쌍(2.25%)에서 실제로 더 오래 버틴
 	//  쪽이 아래로 밀렸다. 예: 65개월 vs 62개월인데 마지막 해 커버리지가 높은 62개월 쪽이 이겼다).
 	const sustainableMonths =
 		depletionYear !== null
@@ -886,7 +886,7 @@ const simMilestonesPlugin = {
 			return normalizeScenario(nextScenario, index);
 		}
 
-		// 숫자 칸을 비우는 중이면 값을 바꾸지 않는다 - Number("") 이 0 이라 원금이 최솟값 1 만 원으로 저장됐다(검토 지적 2026-10-29).
+		// 숫자 칸을 비우는 중이면 값을 바꾸지 않는다 - Number("") 이 0 이라 원금이 최솟값 N 만 원으로 저장됐다(검토 지적 2026-10-29).
 		if (String(target.value).trim() === "") {
 			return scenario;
 		}
@@ -1985,7 +1985,7 @@ function renderMonthlyDetailsTable(record) {
 		let abs = Math.abs(value || 0);
 		const sign = Number(value || 0) < 0 ? "-" : "";
 		// 단위를 고른 뒤 반올림하면 경계에서 한 단위 아래 표기가 남는다. 압축 표기는 자릿수를
-		// 줄이려고 쓰는 것이라 그 목적을 정확히 어긴다 - 실측 2026-09-15: 99,999,999 는
+		// 줄이려고 쓰는 것이라 그 목적을 정확히 어긴다 - 실측 2026-09-15: N 는
 		// "₩10000만"(1 억이어야 한다), 999,999,999 는 "₩1000M"(1B) 으로 나갔다.
 		// 공용 포맷터(stock-charts.compactNumber)와 서버(StockFormatUtil)는 이미 올린다.
 		const promote = (unit, next, digits) => {

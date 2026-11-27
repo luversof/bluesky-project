@@ -83,7 +83,7 @@ class DashReasonSweepTest {
         .isZero();
   }
 
-  /** 기간 일평균 투입원금도 비면 까닭을 단다 - 매매 없이 배당만 있는 종목(실측: 하나금융지주)이 여기에 걸린다. */
+  /** 기간 일평균 투입원금도 비면 까닭을 단다 - 매매 없이 배당만 있는 종목(실측: 한 종목)이 여기에 걸린다. */
   @Test
   void 기간_투입원금이_없어_비는_칸도_그렇게_말한다() throws IOException {
     String template = YieldAnalyticsSource.expanded();

@@ -70,7 +70,7 @@ class TimeMonthlyDividendPayoutSourceParserTest {
 
   @Test
   void 구성_종목_표를_지급_이력으로_읽지_않는다() {
-    // 이 페이지에는 구성 종목 표(moreList1)가 먼저 나온다. 아무 표나 집으면 SK하이닉스 한 줄이 분배금이 된다.
+    // 이 페이지에는 구성 종목 표(moreList1)가 먼저 나온다. 아무 표나 집으면 한 종목 한 줄이 분배금이 된다.
     List<TimeDividendRow> rows = parser.parseRows(HTML);
 
     assertThat(rows).noneMatch(row -> "000660".equals(row.recordDate()));
@@ -100,7 +100,7 @@ class TimeMonthlyDividendPayoutSourceParserTest {
   void 종목코드와_이름은_제목에서_읽는다() {
     SourceMeta meta = metaParser.fromTimeHtml(HTML);
 
-    // 본문에는 구성 종목 코드(000660 등)가 수십 개 있다 - 아무 여섯 자리나 집으면 엉뚱한 종목이 걸린다.
+    // 본문에는 구성 종목 코드(종목코드 등)가 수십 개 있다 - 아무 여섯 자리나 집으면 엉뚱한 종목이 걸린다.
     assertThat(meta.symbol()).isEqualTo("441800");
     assertThat(meta.name()).isEqualTo("TIME Korea플러스배당액티브");
   }

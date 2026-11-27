@@ -86,11 +86,11 @@ public class MarketContextService {
    */
   static final String NIGHT_FUTURES_KEY = "K200NF";
 
-  /** NXT 장전가 줄의 key 앞부분(NXT_005930). 규칙 대상 종목의 다음 거래일 장전 가격 · 기준일 종가 대비 변화율(prompt v10). */
+  /** NXT 장전가 줄의 key 앞부분(NXT_종목코드). 규칙 대상 종목의 다음 거래일 장전 가격 · 기준일 종가 대비 변화율(prompt v10). */
   static final String PREMARKET_KEY_PREFIX = "NXT_";
 
   /**
-   * 아침 분석이 보는 장전 가격: 이 시각(HHmmss) 전 마지막 1 분봉. 아침 작업 시각(08:30)과 같다. 리플레이(삼성전자 247 일)에서 08:05 ~ 08:49
+   * 아침 분석이 보는 장전 가격: 이 시각(HHmmss) 전 마지막 1 분봉. 아침 작업 시각(08:30)과 같다. 리플레이(한 종목 247 일)에서 08:05 ~ 08:49
    * 어느 시각이든 D+1 64 ~ 66.5 로 같았다.
    */
   static final String PREMARKET_INPUT_CUTOFF = "083000";

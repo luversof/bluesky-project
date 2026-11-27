@@ -24,7 +24,7 @@
 	String taxLabel = MessageUtil.getMessage("stock.dividend.tax");
 	// 세금 0 은 형제 표(배당 이력 · 수익률 · 매매)와 같이 "-" 와 까닭으로 적는다. 이 표만 숫자 0 이었다 -
 	// 실측 2026-09-13: 전체로 보면 월 37 개 중 1 개(2025-07)뿐이지만, 이 표는 필터를 따르므로
-	// 절세계좌(연금저축1 · ISA · 연금저축2 - 배당 202 건 중 110 건)만 걸면 월 버킷 20 개가 모두 0 이 된다.
+	// 절세계좌(연금 계좌 · ISA · 연금 계좌 - 배당 202 건 중 110 건)만 걸면 월 버킷 20 개가 모두 0 이 된다.
 	String zeroAmountTitle = MessageUtil.getMessage("stock.dividend.zero.amount.title");
 	String netLabel = MessageUtil.getMessage("stock.dividend.net");
 	// 조회 구간에 그 해가 온전히 담기지 않았으면 밝힌다(자산 성장 연도별 성과와 같은 표기).

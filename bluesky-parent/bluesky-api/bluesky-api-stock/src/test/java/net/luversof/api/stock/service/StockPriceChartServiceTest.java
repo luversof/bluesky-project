@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesPoint;
 
-/** 종목 상세 캔들 차트 · 그 시점 평균 단가(사용자 요청 2026-10-02)의 계산. 숫자는 NAVER 2018 년 5:1 분할 꼴이다. */
+/** 종목 상세 캔들 차트 · 그 시점 평균 단가(사용자 요청 2026-10-02)의 계산. 숫자는 한 종목 2018 년 5:1 분할 꼴이다. */
 class StockPriceChartServiceTest {
 
   private static BigDecimal d(String value) {
@@ -50,9 +50,9 @@ class StockPriceChartServiceTest {
 
   @Test
   void 평균_단가는_원가_x_차트_종가_나누기_평가액() {
-    // 분할 전 실제 44 주 x 원주가 704,000 = 평가 30,976,000, 원가 6,881,600(220 주 x 156,400 원장). 차트 종가 140,800
+    // 분할 전 실제 44 주 x 원주가 704,000 = 평가 30,976,000, 원가 6,881,600(220 주 x N 원장). 차트 종가 140,800
     // ->
-    // 6,881,600 x 140,800 / 30,976,000 = 31,280 = 원가 / 실제 주식 수(156,400) 를 분할 뒤 단위(/5)로.
+    // 6,881,600 x 140,800 / 30,976,000 = 31,280 = 원가 / 실제 주식 수(N) 를 분할 뒤 단위(/5)로.
     assertEquals(
         0,
         d("31280")
@@ -71,7 +71,7 @@ class StockPriceChartServiceTest {
 
   @Test
   void 분배금은_지급기준일_전_마지막_거래일에_싣는다() {
-    // 0094M0 2026-09-15 기준일 540 원 - 9-12 · 9-13 은 주말이라 시세가 없고 분배락일은 9-14(기준일 전 마지막 거래일)
+    // 종목코드 2026-09-15 기준일 540 원 - 9-12 · 9-13 은 주말이라 시세가 없고 분배락일은 9-14(기준일 전 마지막 거래일)
     var rows =
         java.util.List.of(
             new net.luversof.api.stock.domain.StockOhlcRow(

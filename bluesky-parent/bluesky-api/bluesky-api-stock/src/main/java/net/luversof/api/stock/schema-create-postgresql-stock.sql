@@ -157,9 +157,9 @@ CREATE UNIQUE INDEX uk_openApiConfig_provider_userId ON "OpenApiConfig" ("provid
 CREATE TABLE IF NOT EXISTS "StockNews" (
 	"id" UUID NOT NULL PRIMARY KEY,
 	"stockItem_id" UUID NOT NULL,
-	-- NAVER(뉴스) | DART(공시)
+	-- 한 종목(뉴스) | DART(공시)
 	"source" VARCHAR(10) NOT NULL,
-	-- NAVER: 기사 원문 URL, DART: 접수번호(rcept_no)
+	-- 한 종목: 기사 원문 URL, DART: 접수번호(rcept_no)
 	"externalId" VARCHAR(1000) NOT NULL,
 	"title" VARCHAR(500) NOT NULL,
 	"summary" VARCHAR(2000),

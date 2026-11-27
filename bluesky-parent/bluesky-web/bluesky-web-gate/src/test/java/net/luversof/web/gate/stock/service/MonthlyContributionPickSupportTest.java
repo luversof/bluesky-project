@@ -172,7 +172,7 @@ class MonthlyContributionPickSupportTest {
         .as("월중 위탁 · 월중 연금 · 월말 위탁 · 월말 연금 순")
         .containsExactly("0094M0", "476800", "472150", "0104P0");
 
-    // 월중 · 연금은 감점이 결과를 뒤집는 자리다 - 0018C0 은 연배당이 더 높은데도 밀린다.
+    // 월중 · 연금은 감점이 결과를 뒤집는 자리다 - 종목코드 은 연배당이 더 높은데도 밀린다.
     ContributionPick midPension = picks.get(1);
     assertThat(midPension.score()).isEqualByComparingTo("9.24");
     assertThat(midPension.runnerUpSymbol()).isEqualTo("0018C0");
@@ -258,7 +258,7 @@ class MonthlyContributionPickSupportTest {
   /**
    * 시뮬레이터 월배당 표의 지급 시기 &middot; 계좌 필터(사용자 요청 2026-09-23, 결정: 적립 추천과 같은 규칙).
    *
-   * <p>실측 2026-09-23: 표에 적힌 저장 비중(0018C0 0%)으로 가르면 위탁이 되지만 카드는 카탈로그 비중(25.05%)으로 ISA/연금 자리에 둔다. 필터는
+   * <p>실측 2026-09-23: 표에 적힌 저장 비중(종목코드 0%)으로 가르면 위탁이 되지만 카드는 카탈로그 비중(25.05%)으로 ISA/연금 자리에 둔다. 필터는
    * 카드와 같은 답을 내야 한다.
    */
   @Test

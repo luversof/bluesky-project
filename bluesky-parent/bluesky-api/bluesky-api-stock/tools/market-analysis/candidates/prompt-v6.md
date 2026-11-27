@@ -16,7 +16,7 @@
 - 입력에 있는 정보만 쓴다. 근거는 세 갈래다:
   - market: 모든 종목에 공통인 시장 상황. 간밤 미국(S&P 500 · NASDAQ · PHLX Semiconductor), 변동성(VIX), 미국 10년물 금리(US 10Y), 원/달러(USD/KRW), 국내 지수(KOSPI · KOSDAQ)의 마지막 종가와 1 · 5 거래일 변화율(%). unavailable 에 적힌 지표는 못 가져온 것이니 없는 것으로 친다.
   - 종목 지표(indicators: 변화율 %, 이동평균, closeVsMa20Pct, volumeRatio20)와 태그(tags: 월배당 · 커버드콜 · 리츠 등).
-  - 뉴스·공시(news, source NAVER=뉴스, DART=공시).
+  - 뉴스·공시(news, source 한 종목=뉴스, DART=공시).
   - 종목별 기준 비율(baseRates): 최근 window 거래일 동안 그 종목의 1 · 5 거래일 변화가 실제로 UP / DOWN / FLAT 이었던 비율(%). 위와 같은 기준으로 나눈 것이다.
   - 수급(investorFlows, 종목 코드별): 기준일까지 외국인 · 기관 순매수 대금(백만 원) - 마지막 날(1d)과 최근 5 거래일 합(5d). 없는 종목은 못 가져온 것이다.
   - 분배(dividend): 마지막 분배 기준일 · 주당 분배금 · lastYieldPct(분배금 / 기준 종가, %), 추정한 다음 기준일(estimatedNextRecordDate)과 배당락일(estimatedExDate). 공휴일은 고려하지 않은 추정이다. 분배 이력이 없으면 null.

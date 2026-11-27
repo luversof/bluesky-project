@@ -211,7 +211,7 @@
 				 되는지 판단할 수 있고, 종가가 바뀐 행이 있으면 빼는 순간 과거 값이 달라진다.
 				 지금까지 api-stock 이 이 값들을 보내는데도 화면에 그리는 곳이 없어 판단할 수 없었다.
 				 (실측 2026-08-23: 57,459 행 중 1,352 행이 거래량 0, 그중 종가가 바뀐 것은
-				  쌍방울 2025-05-08 한 건이고 13,450 -> 2,690 으로 정확히 1/5 - 액면분할이다) --%>
+				  한 종목 2025-05-08 한 건이고 N -> N 으로 정확히 1/5 - 액면분할이다) --%>
 			@if(dataStatus.priceHistoryRowCount() > 0)
 				<div class="text-2xs text-base-content/60 mb-2">
 					${StockViewSupport.msg("stock.admin.price.quality", String.format("%,d", dataStatus.priceHistoryRowCount()),
@@ -219,7 +219,7 @@
 						String.format("%.2f", dataStatus.priceHistoryZeroVolumeRatioPercent()))}
 					<%-- "그중" 은 바로 위의 거래량 0 행을 받는다. 2026-09-12 까지 이 문장이 중복 행 문장 뒤에 있어
 						 화면에서는 "9종목 중 1건" 다음에 "그중 ... 1건" 이 붙었다 - 두 1 이 우연히 같은 숫자라
-						 앞 문장의 1 건을 받는 것처럼 읽혔다(실제로는 앞은 2026-09-09 기준, 이것은 쌍방울 2025-05-08 로 무관).
+						 앞 문장의 1 건을 받는 것처럼 읽혔다(실제로는 앞은 2026-09-09 기준, 이것은 한 종목 2025-05-08 로 무관).
 						 받는 말 바로 뒤로 옮긴다. --%>
 					@if(dataStatus.priceHistoryZeroVolumeChangedCloseCount() > 0)
 						&middot; ${StockViewSupport.msg("stock.admin.price.quality.changed", String.valueOf(dataStatus.priceHistoryZeroVolumeChangedCloseCount()))}
@@ -227,7 +227,7 @@
 					@if(dataStatus.priceHistoryZeroVolumeChangedCloseRows() != null)
 						@for(DataStatusResponse.ZeroVolumeChangedCloseRow row : dataStatus.priceHistoryZeroVolumeChangedCloseRows())
 							<%-- 두 숫자만 보면 시세 수집이 깨진 것처럼 보인다. 배율이 깔끔한 정수비면 액면분할·병합이므로
-								 그 비를 함께 적는다(실측 2026-08-23: 쌍방울 2025-05-08 13,450 -> 2,690 = 정확히 1/5). --%>
+								 그 비를 함께 적는다(실측 2026-08-23: 한 종목 2025-05-08 N -> N = 정확히 1/5). --%>
 							<div class="font-mono" data-zero-volume-split="${row.splitRatioLabel() != null ? row.splitRatioLabel() : ""}">${row.stockItemName()} ${row.tradeDate() != null ? row.tradeDate().toString() : "-"} &middot; ${row.previousClosePrice()} &rarr; ${row.closePrice()}@if(row.splitRatioLabel() != null) <span class="text-base-content/60">(${StockViewSupport.msg("stock.admin.price.quality.split", row.splitRatioLabel())})</span>@endif</div>
 						@endfor
 						<%-- 이 목록도 상한이 있다(질의 LIMIT 5). 같은 화면의 다른 두 목록과 같은 규칙으로 밝힌다. --%>
@@ -248,11 +248,11 @@
 							String.valueOf(dataStatus.priceHistorySameAllCount()))}</div>
 					@endif
 					<%-- 거래량 0 그물은 분할을 대부분 놓친다 - 분할은 보통 거래가 재개되며 거래량이 붙는다.
-						 (실측 2026-08-24: 그 그물에 걸린 유일한 행 쌍방울 2025-05-08 도 거래량이 우연히 0 이었을 뿐)
+						 (실측 2026-08-24: 그 그물에 걸린 유일한 행 한 종목 2025-05-08 도 거래량이 우연히 0 이었을 뿐)
 						 하루 변동이 제한폭(±30%)을 넘으면 거래로는 생길 수 없으므로 따로 센다. 다만 정리매매는
 						 제한폭이 적용되지 않으므로 '오류'라고 쓰지 않고 배율을 함께 적어 사람이 가리게 한다.
 						 정상적인 하한가는 기준을 0.301 로 둬 애초에 걸리지 않는다 - 상·하한가는 기준가에 0.7/1.3 을
-						 곱한 뒤 호가단위로 맞추므로 30% 를 아주 조금 넘길 수 있다(실측 2026-09-10: 한화오션
+						 곱한 뒤 호가단위로 맞추므로 30% 를 아주 조금 넘길 수 있다(실측 2026-09-10: 한 종목
 						 2015-07-15 -30.00036%). 그 한 행이 빠져 5행 -> 4행이 됐고, 남은 4행 중 분할로 설명되는 것은 1행이다. --%>
 					@if(dataStatus.priceHistoryPriceLimitBreachCount() > 0)
 						<div class="mt-1">${StockViewSupport.msg("stock.admin.price.quality.limit", String.valueOf(dataStatus.priceHistoryPriceLimitBreachCount()))}</div>
@@ -334,7 +334,7 @@
 			<%-- 한 행이 여러 규칙에 걸리는 경우를 먼저 묶어 보여 준다.
 				 규칙별로만 나열하면 같은 행을 규칙 그룹마다 다시 만나게 되고, 그 행들이 사실
 				 한 원인이라는 것도 드러나지 않는다
-				 (실측 2026-08-23: 발견 48건 = 30행, 그중 10행이 사유 2~4개. KODEX 한국부동산리츠인프라
+				 (실측 2026-08-23: 발견 48건 = 30행, 그중 10행이 사유 2~4개. 한 ETF
 				  배당 8행이 전부 여기 속하고 원인은 과세표준을 옛 수량 77주로 잡은 것 하나다). --%>
 			@if(ledgerIntegrity != null && ledgerIntegrity.hasMultiReasonRows())
 				<div class="alert alert-info mt-2 block" data-ledger-multi-rows="${ledgerIntegrity.multiReasonRows().size()}" role="status">

@@ -63,7 +63,7 @@ class DividendHoldingProfitUtilTest {
     assertThat(sold.combinedProfitPct()).isEqualByComparingTo("82.22");
   }
 
-  /** 매매 기록이 없고 배당만 있는 종목(실측: 하나금융지주): 합산은 배당뿐, 산 총액이 없어 수익률은 없다. 판 적 없으면 실현은 null(0 원과 다르다). */
+  /** 매매 기록이 없고 배당만 있는 종목(실측: 한 종목): 합산은 배당뿐, 산 총액이 없어 수익률은 없다. 판 적 없으면 실현은 null(0 원과 다르다). */
   @Test
   void 매매_없이_배당만_있으면_합산은_배당이고_수익률은_없다() {
     var dividendOnly =

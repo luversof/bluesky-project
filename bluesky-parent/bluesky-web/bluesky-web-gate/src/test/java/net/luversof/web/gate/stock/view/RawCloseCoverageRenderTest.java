@@ -21,7 +21,7 @@ import net.luversof.web.gate.stock.dto.response.DataStatusResponse;
 
 /**
  * 관리 화면 데이터 상태의 원주가 줄(2026-10-02). 평가액은 원주가 x 실제 주식 수라, 원주가가 빈 날은 직전 날 배율로 메운 추정값이 쓰인다 - 몇 날인지 보여야
- * 시세 갱신을 다시 할지 정할 수 있다. 실측: 보유 기간 13,665 일 중 빈 날 0.
+ * 시세 갱신을 다시 할지 정할 수 있다. 실측: 보유 기간 N 일 중 빈 날 0.
  */
 class RawCloseCoverageRenderTest {
 

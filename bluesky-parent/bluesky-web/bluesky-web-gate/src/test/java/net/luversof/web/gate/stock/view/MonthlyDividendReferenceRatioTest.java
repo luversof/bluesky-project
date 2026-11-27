@@ -82,7 +82,7 @@ class MonthlyDividendReferenceRatioTest {
     String fragment = read("src/main/jte/stock/fragments/monthlyDividendSimulator.jte");
 
     // 알리기만 하면 어디서 고치는지 모른다 - 실측 2026-09-11: 이 표의 행에는 링크가 하나도 없었다.
-    // 관리 화면은 symbol 로 그 종목을 골라 연다(실측: symbol=472150 이면 숨은 필드와 지급 주기가 그 종목 것으로 바뀐다).
+    // 관리 화면은 symbol 로 그 종목을 골라 연다(실측: symbol=종목코드 이면 숨은 필드와 지급 주기가 그 종목 것으로 바뀐다).
     int at = fragment.indexOf("data-reference-taxable-ratio=");
     assertThat(at).isGreaterThan(0);
     String cell = fragment.substring(at, fragment.indexOf("</div>", at));
@@ -98,7 +98,7 @@ class MonthlyDividendReferenceRatioTest {
     String page = read("src/main/jte/stock/simulator.jte");
     String fragment = read("src/main/jte/stock/fragments/monthlyDividendSimulator.jte");
 
-    // 실측 2026-09-11: 총 예상 월 과세표준액이 저장값 기준 220,539 인데 지급 이력 기준이면 994,375(4.5 배)였다.
+    // 실측 2026-09-11: 총 예상 월 과세표준액이 저장값 기준 N 인데 지급 이력 기준이면 N(4.5 배)였다.
     // 세금이 이 값에 붙으므로 행에만 알리고 합계는 조용하면 사용자는 합계를 현재 기준으로 읽는다.
     assertThat(controller).contains("monthlyDividendReferenceTaxableTotal");
     assertThat(controller)

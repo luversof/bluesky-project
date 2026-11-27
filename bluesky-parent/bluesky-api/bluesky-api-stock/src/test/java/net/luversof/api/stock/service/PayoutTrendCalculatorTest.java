@@ -145,7 +145,7 @@ class PayoutTrendCalculatorTest {
 
   @Test
   void 크게_늘어난_종목은_깎이지_않는다() {
-    // 변동계수로 재면 들쭉날쭉이지만 줄어든 적은 없다(실측 0094M0 같은 증가형)
+    // 변동계수로 재면 들쭉날쭉이지만 줄어든 적은 없다(실측 종목코드 같은 증가형)
     var cuts = PayoutTrendCalculator.countCuts(desc("200", "180", "150", "120", "100", "100"));
     assertThat(cuts.cutCount()).isZero();
   }

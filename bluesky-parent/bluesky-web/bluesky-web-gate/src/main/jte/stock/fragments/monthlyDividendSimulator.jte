@@ -134,7 +134,7 @@
 	String selectionOverviewLabel = MessageUtil.getMessage("stock.simulator.monthly.selection.card.overview");
 	// 이 표의 '저장된 기준값' 3열은 관리 탭의 기준 데이터를 그때그때 계산한 값이 아니라, 저장해 둔 스냅샷이다.
 	// 둘이 벌어질 수 있다 - 실측 2026-09-11, 같은 이름('1년 평균 과세표준 비중')인데 8종목 전부 달랐다:
-	//   476800 관리 82.79% / 여기 17.35%, 329200 관리 100.00% / 여기 13.42%, 498400 관리 4.46% / 여기 4.06%.
+	//   종목코드 관리 82.79% / 여기 17.35%, 종목코드 관리 100.00% / 여기 13.42%, 종목코드 관리 4.46% / 여기 4.06%.
 	// (주당 분배금은 두 화면이 일치한다 - 비중만 벌어졌다.) 그래서 열 이름을 '기준 데이터' 에서 바꿔
 	// 관리 탭의 값과 같은 것처럼 읽히지 않게 했다. 값 자체는 사용자가 관리 화면의 '이 값으로 시뮬레이터 채우기' 로 갱신한다.
 	// 기준 데이터의 '언제 시점' 값인지. asOfDate 는 그 종목 지급 이력의 최신 지급일과 같다.
@@ -327,8 +327,8 @@
 						@endif
 						<div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 text-sm">
 							<span class="text-base-content/60">${MessageUtil.getMessage("stock.simulator.monthly.summary.best.choice")}</span>
-							<%-- 이 카드는 화면의 결론이다 - 실측 2026-09-12: 종목코드만 적혀 "498400" 이었는데, 같은 화면의 표는
-								 줄마다 "498400 KODEX 200타겟위클리커버드콜" 처럼 코드와 이름을 함께 적는다. 코드만으로는 어느 종목인지 모른다. --%>
+							<%-- 이 카드는 화면의 결론이다 - 실측 2026-09-12: 종목코드만 적혀 "종목코드" 이었는데, 같은 화면의 표는
+								 줄마다 "종목코드 한 ETF" 처럼 코드와 이름을 함께 적는다. 코드만으로는 어느 종목인지 모른다. --%>
 							<span class="text-right font-semibold">
 								@if(bestChoice != null)
 									${bestChoice.stockItemSymbol()}

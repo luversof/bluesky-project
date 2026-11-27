@@ -19,7 +19,7 @@ import net.luversof.web.gate.stock.util.StockRangePresetUtil;
  *
  * <p>실측 2026-09-11: 상세 컨트롤러는 {@code rangeMode} 를 모델에 넘기기만 하고 기간으로 바꾸지 않았다. 저장된 기간이 없는 상태에서 {@code
  * /stock/item?stockItemId=..&rangeMode=ytd} 로 들어가면 배지가 "전체 · 2020-03-23 ~ 2026-09-11", 실현손익은 전 기간
- * 값인 +138,569,333(올해는 +119,289,504)이었고 프리셋 버튼도 하나도 눌린 상태가 아니었다.
+ * 값인 +N(올해는 +N)이었고 프리셋 버튼도 하나도 눌린 상태가 아니었다.
  *
  * <p>화면 쪽에도 같은 원인이 있었다. 상세 셸의 조각 요청이 전역 기간(hx-include)만 싣고 URL 쿼리는 싣지 않아, 저장된 기간이 1개월이면 {@code
  * ?rangeMode=ytd} 를 줘도 1개월이 그대로 나왔다.

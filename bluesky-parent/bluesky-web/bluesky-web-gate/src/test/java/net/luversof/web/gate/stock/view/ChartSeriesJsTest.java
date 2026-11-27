@@ -26,8 +26,8 @@ import net.luversof.web.gate.stock.util.ChartSeriesJs;
 /**
  * 상세 화면 차트 시리즈는 점마다 push 하는 줄이 아니라 배열 리터럴 한 줄로 나간다.
  *
- * <p>실측 2026-09-10(qa/item-requests.cjs): 종목 상세 조각 239 KB 중 대부분이 주가 이력 1,599일을 {@code @for} 로 점마다
- * 들여쓴 {@code series.labels.push(...)} 세 줄(약 120 바이트/점)로 찍은 몫이었다(api-stock 원본 71.8 KB).
+ * <p>실측 2026-09-10(qa/item-requests.cjs): 종목 상세 조각 239 KB 중 대부분이 주가 이력 N일을 {@code @for} 로 점마다 들여쓴
+ * {@code series.labels.push(...)} 세 줄(약 120 바이트/점)로 찍은 몫이었다(api-stock 원본 71.8 KB).
  */
 class ChartSeriesJsTest {
 

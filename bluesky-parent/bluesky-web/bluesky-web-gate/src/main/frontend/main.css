@@ -323,7 +323,7 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	.stat-card {
 		/* 값 글자를 키운 뒤(18px -> 26px) 좁은 카드에서 숫자가 카드 밖으로 삐져나왔다
 		   - 실측 2026-09-10: 종목 상세 375px 5개 · 1024px 4개, 계좌 상세 375px 4개 카드에서
-		   "1,359,088,500" 이 179px 을 요구하는데 카드 안쪽 폭은 128~145px 이었다. 종목 상세는
+		   "N" 이 179px 을 요구하는데 카드 안쪽 폭은 128~145px 이었다. 종목 상세는
 		   그 때문에 페이지 자체가 가로로 밀렸다(360px 24 · 375px 17 · 390px 9 · 408px 0).
 		   뷰포트가 아니라 카드 폭에 맞춰 줄여야 한다 - 같은 375px 에서도 1열이면 카드가 327px 로 넓다. */
 		container-type: inline-size;
@@ -358,7 +358,7 @@ html.poe-theme [data-theme-toggle] { display: none; }
 		font-variant-numeric: tabular-nums; font-family: var(--font-mono, ui-monospace, monospace);
 	}
 	/* 카드가 좁으면 값만 원래 크기(18px)로 되돌린다. 카드 기준이라 열 수가 바뀌어도 알아서 맞는다.
-	   기준 12rem(192px)은 카드 '안쪽' 폭이다 - 가장 긴 값 "1,359,088,500" 이 26px 에서 179px 을 쓰므로
+	   기준 12rem(192px)은 카드 '안쪽' 폭이다 - 가장 긴 값 "N" 이 26px 에서 179px 을 쓰므로
 	   192px 이면 들어간다. 13.5rem 으로 뒀더니 1280px 화면에서 안쪽 209px 인데도 굳이 줄었다(실측 2026-09-10). */
 	@container (max-width: 12rem) {
 		.stat-card-value { font-size: 1.125rem; }
@@ -576,7 +576,7 @@ html.poe-theme [data-theme-toggle] { display: none; }
 	}
 
 	/* 첫 칸이 좁은 표(배당 수익률의 종목 칸은 82px)에서는 24px 체크박스가 이름을 한 글자씩 끊는다
-	   - 실측 2026-09-10: 최대 행 높이 81 → 99px, 페이지 7,401 → 7,733px. 첫 칸에 최소 폭을 준다
+	   - 실측 2026-09-10: 최대 행 높이 81 → 99px, 페이지 N → 7,733px. 첫 칸에 최소 폭을 준다
 	   (130px 로 주면 끊김이 사라져 행 63px·페이지 7,247px 로 체크박스가 없던 때보다도 짧아진다). */
 	table:has(tr[data-row-select]) tr > :first-child { min-width: 8.125rem; }
 	.checkbox:checked { background-color: var(--color-primary); border-color: var(--color-primary);
@@ -883,7 +883,7 @@ html.poe-theme [data-theme-toggle] { display: none; }
    (3) 스티키 요소가 화면마다 1~4개 남아 쪽마다 끼어들 수 있다. */
 @media print {
 	/* 다크 테마로 인쇄하면 브라우저가 배경을 찍지 않아 흰 종이에 밝은 글자만 남는다
-	   (실측 2026-09-10 qa/print-dark.cjs: 본문 rgb(230,234,242)가 흰 종이 대비 1.21, 4화면 텍스트 1,765곳 중 1,765곳이 AA 미달).
+	   (실측 2026-09-10 qa/print-dark.cjs: 본문 rgb(230,234,242)가 흰 종이 대비 1.21, 4화면 텍스트 N곳 중 N곳이 AA 미달).
 	   인쇄에는 라이트 팔레트를 쓴다. 값은 위 @theme(라이트)와 같아야 하며 PrintDarkThemeTest 가 대조한다. */
 	[data-theme="dark"] {
 		--color-base-100: #ffffff;
@@ -1260,7 +1260,7 @@ header.navbar *, .page-section-nav * { scroll-margin-top: calc(-1 * var(--sticky
    그 안의 "선택 해제" 버튼이 Tab 순서에 남고, 낭독기도 지난 선택의 숫자를 계속 읽는다.
    실측 2026-09-12(배당 내역, 헤드풀 Tab 400 회): 접힌 패널 3 개의 버튼에 45 · 69 · 99 번째로 닿았다.
    또 마지막 한 줄을 해제하면 JS 가 값을 지우지 않고 나가므로("selectedCount === 0" 이면 early return)
-   접힌 패널이 "1개 종목 선택 · 배당금(세전) 169,950" 을 그대로 붙들고 있었다 - 화면에는 안 보이는데
+   접힌 패널이 "1개 종목 선택 · 배당금(세전) N" 을 그대로 붙들고 있었다 - 화면에는 안 보이는데
    접근성 트리에는 남아 있었다(display:grid · visibility:visible · checkVisibility() true).
    visibility 는 Tab 순서와 접근성 트리 양쪽에서 빼 준다. 펼침 애니메이션이 끝난 뒤 감추도록 지연을 준다. */
 .selection-reveal > * { min-height: 0; overflow: hidden; visibility: hidden; transition: visibility 0s linear .25s; }
@@ -1279,17 +1279,17 @@ html.hide-amounts .amount-value { filter: blur(10px); opacity: 0.6; user-select:
 /* 금액은 공백 없는 한 덩어리라 자리가 모자라도 안 끊긴다 - 실측 2026-09-16(320px·글꼴 200%):
    자산 성장 기간 손익이 226px, 배당 캘린더 총액이 146px 문서 밖으로 나갔다.
    카드 · 요약처럼 자리가 넉넉하면 아무 일도 일어나지 않는다 - 표는 다르다(아래). */
-/* 숫자와 한글 단위 사이("2,343,989 / 원")에서도 줄을 바꾸지 않는다(2026-09-30 실측: 대시보드 1280px 안내 문장) - 낱말 사이 빈칸에서 바꾸게.
+/* 숫자와 한글 단위 사이("N / 원")에서도 줄을 바꾸지 않는다(2026-09-30 실측: 대시보드 1280px 안내 문장) - 낱말 사이 빈칸에서 바꾸게.
    자리가 정말 모자라면 anywhere 가 그대로 받아 준다(넘침 없음). */
 .amount-value { overflow-wrap: anywhere; word-break: keep-all; }
 /* 표 안 금액은 자릿수 중간에서 끊지 않는다. anywhere 는 줄만 바꾸는 게 아니라 칸의 최소 폭을 한 글자로 만들고,
    표는 그 최소 폭까지 칸을 누른다 - 자리가 넉넉한 넓은 화면에서도 "362,525,/079" 로 끊겼다
-   (실측 2026-09-17: 9 화면 x 6 폭에서 7,534 곳, 지속가능성 1440px 243 · 배당 내역 1280px 523 · 자산 현황 1340px 41).
+   (실측 2026-09-17: 9 화면 x 6 폭에서 N 곳, 지속가능성 1440px 243 · 배당 내역 1280px 523 · 자산 현황 1340px 41).
    표는 가로 스크롤 상자 안에 있어 안 끊겨도 문서는 넘치지 않는다(같은 실측, 문서 넘침 0 - 대신 상자 안 스크롤이 는다).
    사용자 결정 2026-09-17: 표 안 금액만 안 끊기. */
 table .amount-value { overflow-wrap: normal; }
 /* 부호와 ₩ 사이도 끊지 않는다(2026-09-30). 유니코드 줄 나눔 규칙상 "-" 뒤 "₩" 앞은 줄을 바꿔도 되는 자리라, 위 규칙만으로는
-   넓은 화면에서도 부호만 윗줄에 남았다(실측: 시뮬 지속가능성 표 15 칸 "-" / "₩104,260,941", 1024~1920px 모두).
+   넓은 화면에서도 부호만 윗줄에 남았다(실측: 시뮬 지속가능성 표 15 칸 "-" / "₩N", 1024~1920px 모두).
    줄바꿈 자체를 막는 것은 가로 스크롤 상자 안 표만 - 넓은 화면에서 상자를 걷는 두 표(.table-head-sticky · -xl)는 칸이 넓어지면
    문서가 넘치므로 뺀다. */
 .overflow-x-auto:not(.table-head-sticky, .table-head-sticky-xl) > table .amount-value { white-space: nowrap; }

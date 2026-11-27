@@ -20,7 +20,7 @@ import net.luversof.web.gate.stock.dto.response.StockPriceHistoryPoint;
  * 거래한 적 없는 종목의 "현재가 0" 은 거짓이었다.
  *
  * <p>실측 2026-09-11: 전체 86 종목 중 43 종목은 이 사용자의 거래 이력이 없다. 그중 기업은행(024110) 상세 화면은 현재가를 {@code 0} 으로
- * 찍었는데, 같은 종목의 가격 이력에는 <b>2026-04-03 종가 21,350</b> 이 있었다(api-stock {@code
+ * 찍었는데, 같은 종목의 가격 이력에는 <b>2026-04-03 종가 N</b> 이 있었다(api-stock {@code
  * /api/stockItem/{id}/priceHistory} 8 점). 값이 없는 것과 0 원인 것은 다르고, 여기서는 값이 있다 &mdash; 화면이 이미 그 이력으로 가격
  * 차트를 그린다.
  */

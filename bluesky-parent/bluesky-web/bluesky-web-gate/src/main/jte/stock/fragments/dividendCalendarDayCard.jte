@@ -33,7 +33,7 @@
 	boolean estimatedDay = day.entries() != null && !day.entries().isEmpty() && day.entries().stream().noneMatch(DividendCalendarView.Entry::actualAmount);
 }
 <%-- 예상(실수령이 아닌) 칸은 최근을 앞에, 평균을 뒤에 함께 적는다(2026-10-13 사용자 선택 - 처음엔 평균을 앞에 뒀다가 "최근을 우선으로"). 이 칸 합계가 최근만 더해 대시보드의
-     다가올 배당(평균)과 같은 날 금액이 달랐다 - 10월 17일분 1,601,445 vs 997,459. 실수령 칸은 세전 · 실수령 그대로. --%>
+     다가올 배당(평균)과 같은 날 금액이 달랐다 - 10월 17일분 N vs N. 실수령 칸은 세전 · 실수령 그대로. --%>
 <li class="rounded-box border border-base-200 px-3 py-2" data-calendar-daylist-day="${day.date().toString()}">
 	<%-- 날짜 덩어리는 눈으로만 읽는다 - 낭독기에는 '4일 (화)' 를 한 번만 준다(숫자와 요일이 따로 읽히면 어수선하다). --%>
 	<span class="sr-only">${dayTitle}@if(dayHoliday != null), ${dayHoliday}@endif</span>

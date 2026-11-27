@@ -25,7 +25,7 @@ public record LedgerIntegrityResponse(
    * 한 행에 걸린 사유를 모은 것.
    *
    * <p>실측 2026-08-23: 발견 48 건이 30 행이고 그중 10 행이 사유를 2~4 개씩 달고 있었다. 규칙별 목록만 보여 주면 같은 행을 규칙 그룹마다 다시
-   * 만나게 되고, KODEX 한국부동산리츠인프라 8 행이 사실 한 원인(과세표준을 옛 수량 77 주로 잡은 것)이라는 것도 드러나지 않는다.
+   * 만나게 되고, 한 ETF 8 행이 사실 한 원인(과세표준을 옛 수량 77 주로 잡은 것)이라는 것도 드러나지 않는다.
    */
   public record RowFindingSummary(
       String date, String stockItemName, String accountName, List<String> codes) {}
@@ -33,8 +33,8 @@ public record LedgerIntegrityResponse(
   /**
    * 계좌별 발견 집계. 어느 계좌를 고치면 몇 건이 사라지는지.
    *
-   * <p>실측 2026-08-23: 발견 45 건이 계좌 3 개로 갈렸다 &mdash; KB증권 위탁 24(전부 과세표준, 실은 같은 배당 8 행), 동양증권
-   * 12(2010~2020 매도의 수수료·거래세 누락), 한국투자증권 위탁 7.
+   * <p>실측 2026-08-23: 발견 45 건이 계좌 3 개로 갈렸다 &mdash; 위탁 계좌 24(전부 과세표준, 실은 같은 배당 8 행), 옛 계좌
+   * 12(2010~2020 매도의 수수료·거래세 누락), 위탁 계좌 7.
    */
   public record AccountFindingSummary(
       String accountName, long findingCount, long distinctRowCount) {}
@@ -61,7 +61,7 @@ public record LedgerIntegrityResponse(
   /**
    * 건수가 서로 다른 행 수보다 많은지. 그러면 "45건" 이 할 일을 부풀린다.
    *
-   * <p>실측 2026-08-23: 45 건이 실제로는 29 개 행이었다 &mdash; KODEX 한국부동산리츠인프라 배당 8 건이 각각 2~4 개 규칙에 걸렸다.
+   * <p>실측 2026-08-23: 45 건이 실제로는 29 개 행이었다 &mdash; 한 ETF 배당 8 건이 각각 2~4 개 규칙에 걸렸다.
    */
   public boolean hasOverlappingRows() {
     return distinctRowCount > 0 && totalFindingCount() > distinctRowCount;

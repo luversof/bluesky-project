@@ -19,7 +19,7 @@ import net.luversof.api.stock.web.dto.response.TradeProfitTimeSeriesSummary;
  *
  * <p>왜 필요한가(실측, 사용자 실데이터 · {@code granularity=DAILY}): 게이트의 {@code
  * /stock/asset-growth/period-return} 은 이 엔드포인트를 부른 뒤 {@code summary()} 만 꺼내 쓰고 시리즈는 버린다. 전체 기간이면 응답
- * 1,655,289 바이트 중 실제로 쓰이는 부분은 8,420 바이트로 <b>99.5% 가 버려졌다</b>(6,442 포인트). 5 년 99.3%, 1 년 98.4%.
+ * 1,655,289 바이트 중 실제로 쓰이는 부분은 8,420 바이트로 <b>99.5% 가 버려졌다</b>(N 포인트). 5 년 99.3%, 1 년 98.4%.
  *
  * <p>기본값은 반드시 {@code true} 여야 한다 — 차트를 그리는 호출자가 파라미터를 주지 않기 때문이다.
  */

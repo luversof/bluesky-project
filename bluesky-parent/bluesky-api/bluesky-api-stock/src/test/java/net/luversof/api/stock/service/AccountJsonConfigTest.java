@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
  * 계좌 설정({@code jsonConfig})을 다루는 규칙을 고정한다.
  *
  * <p>이 맵에는 화면 수치를 바꾸는 값이 들어간다 &mdash; {@code isTaxDeferred}(과세이연 계좌는 세전을 세후로 본다)와 {@code
- * manualPrincipalAmount}(수익률 기준을 계산 원가 대신 실제 납입액으로 바꾼다. 실측: 연금저축1 이 -9.85% -> +13.80%).
+ * manualPrincipalAmount}(수익률 기준을 계산 원가 대신 실제 납입액으로 바꾼다. 실측: 연금 계좌 가 N% -> N%).
  *
  * <p>두 값의 성격이 다르다는 것이 핵심이다.
  *

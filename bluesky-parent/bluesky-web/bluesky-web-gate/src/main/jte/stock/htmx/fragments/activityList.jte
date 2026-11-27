@@ -326,7 +326,7 @@
 									String holidayName = inMonth ? net.luversof.web.gate.util.KoreanHolidays.holidayName(cellDate) : null;
 									boolean isRedDay = isWeekend || holidayName != null;
 								}
-								<%-- 칸 하나에 유틸리티 80자가 실려 전체 기간(2,625칸)에서 210KB 였다. 모양은 main.css 의 .cal-day / .cal-day-act 가 같은 토큰으로 낸다.
+								<%-- 칸 하나에 유틸리티 80자가 실려 전체 기간(N칸)에서 210KB 였다. 모양은 main.css 의 .cal-day / .cal-day-act 가 같은 토큰으로 낸다.
 								     빠지는 속성(data-cal-*, title)은 줄을 나누면 빈 줄의 탭이 그대로 실리므로 한 줄에 둔다.
 								     활동 있는 칸은 클릭으로 그날 상세를 펼치므로 버튼 역할·탭 포커스·aria-expanded 를 준다(수익률 표의 행과 같은 규칙,
 								     실측 2026-09-09: 전체 기간 181칸이 키보드로는 열 수 없었다). Enter/Space 는 common.ts 가 받는다. --%>
@@ -383,7 +383,7 @@
 													</span>
 													<%-- 이 줄은 (날짜·유형·종목·매매구분) 이 같은 활동을 계좌를 가로질러 묶은 것이라 한 줄이 여러 계좌를 뜻할 수 있다.
 													     목록 뷰는 계좌를 적는데 이 상세는 적지 않아 어느 계좌 것인지 알 수 없었다 - 실측 2026-09-11(2026-07-20):
-													     "매수 TIGER 리츠부동산인프라 62주" 한 줄이 목록에서는 계좌 3개(연금저축2·연금저축1·+1)였다.
+													     "매수 한 ETF 62주" 한 줄이 목록에서는 계좌 3개(연금 계좌·연금 계좌·+1)였다.
 													     목록 뷰와 같은 표기(최대 2개 + 나머지는 +N 툴팁)를 쓴다. --%>
 													@if(dayDetailActivity.accountIds() != null && !dayDetailActivity.accountIds().isEmpty())
 														<span class="flex flex-wrap items-center gap-1 min-w-0" data-cal-detail-accounts>

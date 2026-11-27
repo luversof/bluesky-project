@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import net.luversof.api.stock.service.analysis.StockAnalysisService.PredictionInput;
 
-/** 규칙 예측: 야간선물 0.5% 이상이면 검증한 종목(삼성전자)만 야간선물 방향을 따른다. */
+/** 규칙 예측: 야간선물 0.5% 이상이면 검증한 종목(한 종목)만 야간선물 방향을 따른다. */
 class StockAnalysisRuleTest {
 
   private static final List<String> SYMBOLS = List.of("005930", "000660");

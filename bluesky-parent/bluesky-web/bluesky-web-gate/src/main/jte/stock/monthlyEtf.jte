@@ -351,7 +351,7 @@
 						<table class="table data-table print-dense" aria-label="${MessageUtil.getMessage("stock.monthly.etf.section.table.title")}">
 							<thead hx-boost="true" data-swap-anchor-key="etf-thead">
 								<tr>
-									<%-- 종목 열 최소 폭 9rem -> 8rem(2026-09-30): 영어 1440px 표가 상자를 5px 넘었다(열 최소 폭 합 1,139 / 상자 1,134). 긴 종목명은 원래 줄을 바꾼다. --%>
+									<%-- 종목 열 최소 폭 9rem -> 8rem(2026-09-30): 영어 1440px 표가 상자를 5px 넘었다(열 최소 폭 합 N / 상자 N). 긴 종목명은 원래 줄을 바꾼다. --%>
 									<th scope="col" class="min-w-[8rem] align-bottom" aria-sort="${"symbol".equals(monthlyEtfSort) ? ("asc".equals(monthlyEtfDirection) ? "ascending" : "descending") : "none"}">
 										<a href="${baseUrl}sort=symbol&direction=${"symbol".equals(monthlyEtfSort) && "asc".equals(monthlyEtfDirection) ? "desc" : "asc"}" class="link link-hover inline-flex items-center gap-1 font-medium">
 											<span>${MessageUtil.getMessage("stock.monthly.etf.table.header.item")}</span>
@@ -461,7 +461,7 @@
 												<div><span class="mr-1 text-2xs text-base-content/60">${averageLabel}</span><span class="amount-value">${StockFormatUtil.fullKrw(row.averageDividendPerShare1y(), 2)}</span></div>
 												<div class="text-sm text-base-content/80"><span class="mr-1 text-2xs text-base-content/60">${latestLabel}</span><span class="amount-value">${StockFormatUtil.fullKrw(row.latestDividendPerShare(), 2)}</span></div>
 												<%-- 분배금 추세(사용자 결정 2026-09-22): 최근 3 회 평균을 바로 위 1 년 평균과 견준다. 연배당 수익률은 1 년 평균으로
-												     내는 값이라 최근 삭감을 앞쪽 큰 분배금이 가려 준다 - 그 삭감이 여기서 드러난다(실측: PLUS 고배당주위클리커버드콜 -23.3%).
+												     내는 값이라 최근 삭감을 앞쪽 큰 분배금이 가려 준다 - 그 삭감이 여기서 드러난다(실측: 한 ETF -23.3%).
 												     이력이 여섯 회에 못 미치면 0% 대신 "이력 부족" 이라 적는다. 0 은 "안정적" 으로 읽혀 거짓이 된다.
 												     금액과 증감률은 두 줄로 놓는다(사용자 결정 2026-09-22). 한 줄로 두면 이 칸이 106 → 196px 로 벌어져
 												     1440px 넘침이 24 → 114px 가 됐다(실측). 두 줄이면 116px · 넘침 35px 이고 행만 20px 높아진다. --%>
@@ -498,7 +498,7 @@
 											</div>
 										</td>
 										<%-- 시세가 없는 종목은 현재가 0 원이다. 그대로 두면 "수익률 0.00%" 가 사실처럼 읽힌다(실측 2026-09-21:
-										     KODEX 200커버드콜액티브가 이력 2 건인데 0.00%). 값이 없으면 '-' 로 적고 까닭을 함께 말한다. --%>
+										     한 ETF가 이력 2 건인데 0.00%). 값이 없으면 '-' 로 적고 까닭을 함께 말한다. --%>
 										!{boolean priceKnown = row.currentPrice() != null && row.currentPrice().signum() > 0;}
 										!{boolean priceStale = priceKnown && MonthlyEtfViewSupport.priceStale(row.currentPriceDate(), LocalDate.now(ZoneId.of("Asia/Seoul")));}
 										<td class="align-top text-right">

@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
  * <p>활동 한 줄은 (날짜 · 유형 · 종목 · 매매구분) 이 같은 활동을 <b>계좌를 가로질러</b> 묶은 것이라 한 줄이 여러 계좌를 뜻할 수 있다. 목록 뷰는 계좌를
  * 적는데 캘린더 날짜 상세는 적지 않아, 같은 줄이 어느 계좌 것인지 알 수 없었다.
  *
- * <p>실측 2026-09-11(2026-07-20, 활동 14건): 캘린더 상세와 목록의 7 줄·금액이 정확히 같았지만, 목록만 계좌를 보여 줬다 &mdash; "매수
- * TIGER 리츠부동산인프라 62주" 한 줄이 목록에서는 계좌 3 개(연금저축2 · 연금저축1 · +1)였다.
+ * <p>실측 2026-09-11(2026-07-20, 활동 14건): 캘린더 상세와 목록의 7 줄·금액이 정확히 같았지만, 목록만 계좌를 보여 줬다 &mdash; "매수 한
+ * ETF 62주" 한 줄이 목록에서는 계좌 3 개(연금 계좌 · 연금 계좌 · +1)였다.
  *
  * <p>목록 뷰와 같은 표기를 쓴다: 최대 2 개를 배지로 적고 나머지는 {@code +N} 툴팁.
  */
@@ -56,7 +56,7 @@ class CalendarDetailAccountTest {
   void 타임라인도_계좌를_적는다() throws IOException {
     String template = read();
 
-    // 실측 2026-09-11: 타임라인 뷰는 계좌 표기가 0 개였다(같은 7 줄·금액·일 순액 -29,350 인데 계좌만 없음).
+    // 실측 2026-09-11: 타임라인 뷰는 계좌 표기가 0 개였다(같은 7 줄·금액·일 순액 -N 인데 계좌만 없음).
     assertThat(template).contains("data-timeline-accounts");
     assertThat(template).contains("accountNames.getOrDefault(tlRowActivity.accountIds().get(ti)");
     assertThat(template)

@@ -92,7 +92,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
     if (userId == null) return loginRequiredView(model);
     request.setUserId(userId);
     // 이 화면은 '지금 보유'다. 기간이 실려 오면 api-stock 은 평가(현재가/평가금액/평가손익)를 아예
-    // 계산하지 않으므로 수량과 평단만 있고 평가가 0 인 모순된 표가 된다(실측: 수량 5,043 · 평단
+    // 계산하지 않으므로 수량과 평단만 있고 평가가 0 인 모순된 표가 된다(실측: 수량 N · 평단
     // 71,887 인데 현재가 0). 지금 화면에서는 기간을 보내지 않지만, 엔드포인트를 직접 부르면 그대로
     // 드러나므로 여기서 떨어낸다. 기간별 손익은 거래/자산추이 화면이 담당한다.
     request.setStartDate(null);
@@ -189,7 +189,7 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
                 : enrichTradeProfits(
                     StockAsyncSupport.join(rawStockGroupedFuture), userId, tradeProfitNames));
     // 걸러내기 전에 '이미 다 판 종목' 을 따로 잡는다(셈은 soldOutSummary). 이 표의 합계는 보유 종목만이라 전체 누적보다 작은데,
-    // 얼마나 작은지는 화면 어디에도 없었다 - 실측 2026-09-11: 실현손익 합계가 자산 현황 140,350,295 인데
+    // 얼마나 작은지는 화면 어디에도 없었다 - 실측 2026-09-11: 실현손익 합계가 자산 현황 N 인데
     // 대시보드·매매·자산 성장은 225,630,135 를 적는다(차이 85,279,840, 37.8%). 그 차이를 숫자로 밝힌다.
     List<TradeProfit> soldOutList =
         stockGroupedList.stream().filter(tp -> tp.holdingQuantity() == 0).toList();
@@ -295,9 +295,8 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
   /**
    * 표에 없는 종목 몫(2026-10-22 까지 assetStatus 안 두 곳에 나뉘어 적혀 있었다).
    *
-   * <p>이 표에 없는 종목 = 다 판 종목 + '거래는 없는데 배당만 있는 종목'. 후자를 빼면 합이 맞지 않는다 - 실측 2026-09-11: 하나금융지주가 거래 행 없이
-   * 배당 2,100 만 있어, 다 판 34 종목만 세면 59,067,537 + 6,582,497 = 65,650,034 로 전체 배당 65,652,134 에 2,100
-   * 모자랐다.
+   * <p>이 표에 없는 종목 = 다 판 종목 + '거래는 없는데 배당만 있는 종목'. 후자를 빼면 합이 맞지 않는다 - 실측 2026-09-11: 한 종목이 거래 행 없이
+   * 배당 N 만 있어, 다 판 34 종목만 세면 N + N = N 로 전체 배당 N 에 N 모자랐다.
    */
   static SoldOutSummary soldOutSummary(
       List<TradeProfit> soldOutList,
@@ -543,9 +542,9 @@ public class StockPortfolioHtmxController extends StockBaseHtmxController {
    * 백분율. <b>100 을 먼저 곱한 뒤</b> 나눈다 - 순서를 바꾸면 표시 자릿수보다 굵게 미리 반올림된다.
    *
    * <p>2026-09-12 까지는 {@code divide(base, 4).multiply(100)} 이라 <b>백분율이 소수 2 자리로 잘린 뒤</b> 화면이 다시 1
-   * 자리로 반올림했다. 실측 2026-09-12(자산 현황, 계좌별 보유 종목 상세): 연금저축2 의 TIGER 리츠부동산인프라 가 8,847,600 /
-   * 1,622,109,770 = 0.5454% 인데 0.0055 x 100 = 0.55% 를 거쳐 <b>0.6%</b> 로 나갔다(옳게 하면 0.5%). 같은 화면 37 행
-   * 중 이 한 줄이 걸렸다 - 나머지는 잔차가 0.x5 경계에 닿지 않았을 뿐이다.
+   * 자리로 반올림했다. 실측 2026-09-12(자산 현황, 계좌별 보유 종목 상세): 연금 계좌 의 한 ETF 가 N / N = 0.5454% 인데 0.0055 x 100
+   * = 0.55% 를 거쳐 <b>0.6%</b> 로 나갔다(옳게 하면 0.5%). 같은 화면 37 행 중 이 한 줄이 걸렸다 - 나머지는 잔차가 0.x5 경계에 닿지 않았을
+   * 뿐이다.
    *
    * <p>{@code StockDividendHtmxController.percentage} 는 처음부터 이 순서였다. 같은 규칙으로 맞춘다.
    */

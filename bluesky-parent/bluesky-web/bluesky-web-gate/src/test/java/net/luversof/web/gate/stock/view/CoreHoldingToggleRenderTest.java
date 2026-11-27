@@ -57,7 +57,7 @@ class CoreHoldingToggleRenderTest {
     assertThat(render(Map.of())).doesNotContain("data-exclude-core");
   }
 
-  /** 한 종목이면 그 이름으로 부른다("삼성전자 제외"). */
+  /** 한 종목이면 그 이름으로 부른다("한 종목 제외"). */
   @Test
   void 핵심이_한_종목이면_이름으로_부른다() {
     String html =

@@ -77,7 +77,7 @@
 	BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
 	double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
 	// 원가가 0 이면 수익률은 <b>없는 값</b>이다(0 / 0). 예전에는 0.0 으로 떨어져 "0 0.0%" 가 잰 값처럼 보였다 -
-	// 실측 2026-09-13: 보유가 없는 종목 77 개와 계좌 1 개(동양증권 - 매수 2.75 억 · 실현 +3,309 만)가 모두 그랬다.
+	// 실측 2026-09-13: 보유가 없는 종목 77 개와 계좌 1 개(옛 계좌 - 매수 2.75 억 · 실현 +N 만)가 모두 그랬다.
 	// 금액 0 은 맞지만 비율은 모른다. 모르면 적지 않는다.
 	boolean evalRateKnown = evalCostBasis.signum() != 0;
 	// 카드마다 그 원금 대비 비율 - 종목 상세와 같은 규칙(사용자 선택 2026-09-17: 계좌 상세도 같게). 평가 · 배당은 보유 원가, 실현은 판 주식 원가.
@@ -85,7 +85,7 @@
 	boolean realizedRateKnown = realizedCostBasis != null && realizedCostBasis.signum() > 0;
 	double realizedCostRatePct = realizedRateKnown && realizedProfit != null ? realizedProfit.doubleValue() * 100.0 / realizedCostBasis.doubleValue() : 0.0;
 	// '이 계좌 기준' 줄에는 그 기준의 비율을 붙인다 - 카드 금액은 계좌를 합친 원가라 같은 매도가 두 비율을 갖는다
-	// (실측 2026-09-17 연금저축1: 카드 금액 기준 +5.3%, 이 계좌 매매로는 +33.6%). 비율은 늘 바로 옆 금액과 같은 기준이다.
+	// (실측 2026-09-17 연금 계좌: 카드 금액 기준 +5.3%, 이 계좌 매매로는 +33.6%). 비율은 늘 바로 옆 금액과 같은 기준이다.
 	boolean realizedOwnRateKnown = realizedOwnCostBasis != null && realizedOwnCostBasis.signum() > 0;
 	double realizedOwnRatePct = realizedOwnRateKnown && realizedProfitOwnBasis != null ? realizedProfitOwnBasis.doubleValue() * 100.0 / realizedOwnCostBasis.doubleValue() : 0.0;
 	boolean dividendRateKnown = evalCostBasis.signum() > 0 && holdingCount > 0;
@@ -186,10 +186,10 @@
 			sub = evalRateKnown ? StockFormatUtil.signedPct(evalProfitRatePct, 1) + " · " + holdingBasisLabel : "",
 			tone = evalColor)
 		<%-- 기록된 실현손익은 계좌를 합친 원가를 따르므로 이 계좌의 매매와 크게 다를 수 있다
-		     (실측 2026-08-23: 연금저축1 은 그 계좌 매매 기준의 1/5, ISA 는 반대로 104 배).
+		     (실측 2026-08-23: 연금 계좌 는 그 계좌 매매 기준의 1/5, ISA 는 반대로 104 배).
 		     매매 화면의 계좌별 표와 같은 규칙(RealizedBasisGap)·같은 문구를 쓴다. --%>
 		<%-- 금액을 sub 로 넘기면 통째로 글자라 금액 숨김이 안 걸린다 - 실측 2026-09-12(숨김 켜고 10 화면 · 금액 텍스트 540 개):
-			 이 줄 "이 계좌 기준 +2,063,739" 한 곳만 흐려지지 않았다. 자리표시자 위치가 로케일마다 달라
+			 이 줄 "이 계좌 기준 +N" 한 곳만 흐려지지 않았다. 자리표시자 위치가 로케일마다 달라
 			 (한국어는 뒤, 영어는 앞) 앞/뒤 글자를 박을 수 없으므로 패턴을 쪼개 금액만 따로 넘긴다. --%>
 		!{
 			boolean basisGapNotable = RealizedBasisGap.isNotable(realizedProfit, realizedProfitOwnBasis);

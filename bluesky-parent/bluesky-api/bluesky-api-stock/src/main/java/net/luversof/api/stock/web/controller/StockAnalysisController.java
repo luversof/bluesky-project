@@ -71,7 +71,7 @@ public class StockAnalysisController {
   /**
    * 뉴스 수집
    *
-   * <p>symbols 를 주면 그 종목 뉴스만 모은다(2026-11-20: 삼성전자만 분석하는데 40 종목 뉴스를 계속 모았다).
+   * <p>symbols 를 주면 그 종목 뉴스만 모은다(2026-11-20: 한 종목만 분석하는데 40 종목 뉴스를 계속 모았다).
    */
   @PostMapping("/news")
   public StockNewsCollectService.CollectResult collectNews(

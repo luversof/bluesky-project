@@ -8,7 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-/** 시황 분석 입력으로 모은 종목 뉴스(NAVER) · 공시(DART). */
+/** 시황 분석 입력으로 모은 종목 뉴스(한 종목) · 공시(DART). */
 @Table("StockNews")
 public class StockNews {
 

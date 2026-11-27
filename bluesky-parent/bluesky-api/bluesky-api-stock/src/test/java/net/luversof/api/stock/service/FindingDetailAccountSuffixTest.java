@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
  * ${example.detail()}} 로 그대로 찍으므로 사용자가 그 중복을 본다.
  *
  * <p>실측 2026-08-24: {@code SELL_WITHOUT_FEE_AND_TAX} 가 그랬다 &mdash; <i>"매도금액=39380000, 수수료=0, 거래세=0
- * <b>[동양증권]</b> (같은 해 관측 거래세율 0.2500% 기준이면 98446원이 빠졌다) <b>[동양증권]</b>"</i>. 같은 {@code tradeRule} 을
+ * <b>[옛 계좌]</b> (같은 해 관측 거래세율 0.2500% 기준이면 98446원이 빠졌다) <b>[옛 계좌]</b>"</i>. 같은 {@code tradeRule} 을
  * 쓰는 다른 두 규칙({@code TRADE_ON_WEEKEND}, {@code TRADE_FEE_RATE_FAR_ABOVE_ACCOUNT_MEDIAN})은 한 번만 나왔다.
  *
  * <p>규칙이 늘 때 같은 실수가 되돌아오는 것을 막는다.

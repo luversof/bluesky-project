@@ -68,7 +68,7 @@
 	boolean amountFallbackAvailable = openingValue != null && closingValue != null;
 	// The fallback prints money, so the card title must not promise a rate. It also has to be the
 	// increase itself - printing the closing value under a growth label overstates it by the opening
-	// value (measured 2026-09-12, period from 2009-10-07: opening 389,790 vs closing 1,622,109,770).
+	// value (measured 2026-09-12, period from 2009-10-07: opening N vs closing N).
 	boolean growthShowsAmount = !(returnCalculable && periodReturnRatePct != null) && amountFallbackAvailable;
 	String growthAmountTitle = MessageUtil.getMessage("stock.asset.growth.summary.period.growth.amount.title");
 	BigDecimal growthAmountValue = amountFallbackAvailable ? closingValue.subtract(openingValue) : null;
@@ -92,7 +92,7 @@
 	String periodHighLabel = MessageUtil.getMessage("stock.asset.growth.summary.period.high");
 	String periodLowLabel = MessageUtil.getMessage("stock.asset.growth.summary.period.low");
 	// 이 비율의 분모는 '지금' 이 아니라 기간 말 평가액(closingValue)이다. 기간이 오늘로 끝날 때만 둘이 같다.
-	// 실측 2026-09-12: 2016 년만 보면 "기간 최고 26,408,200 · 지금 대비 -39.90%" 라고 적혔는데,
+	// 실측 2026-09-12: 2016 년만 보면 "기간 최고 N · 지금 대비 -39.90%" 라고 적혔는데,
 	// 지금 총 평가액은 16 억이라 그 말대로면 +6,000% 대여야 한다. 실제 분모는 2016 년 말 평가액(약 15.87M)이었다.
 	// 값은 맞고 이름만 틀렸으므로 이름을 기간에 맞춰 고른다.
 	String vsNowLabel = MessageUtil.getMessage(closingIsToday
@@ -101,7 +101,7 @@
 	String extremesDescription = MessageUtil.getMessage("stock.asset.growth.summary.extremes.desc");
 	String riskTitle = MessageUtil.getMessage("stock.asset.growth.summary.risk");
 	// 이 절의 낙폭은 입출금을 제거한 기준가(시간가중)로 잰다. 바로 위 "기간 최고 평가액" 옆의 비율은
-	// 원시 평가액(기간 말 / 최고)이라 분모가 다르다 - 실측 2026-09-12(전체 기간): 최고 대비가 -22.71%,
+	// 원시 평가액(기간 말 / 최고)이라 분모가 다르다 - 실측 2026-09-12(전체 기간): 최고 대비가 N%,
 	// 현재 전고점 대비가 -23.55% 로 갈렸다. 둘 다 맞지만 화면에는 둘 다 "전고점 대비" 로 읽혀
 	// 어느 쪽이 맞는지 알 수 없었다. 기준을 적어 둔다(옆의 투자 수익률 카드도 같은 문구를 쓴다).
 	String riskDescription = MessageUtil.getMessage("stock.asset.growth.summary.risk.desc");
@@ -114,7 +114,7 @@
 	double troughGapPct = troughAvailable
 		? closingValue.subtract(troughValue).doubleValue() / troughValue.doubleValue() * 100.0d : 0.0d;
 	// 전체 기간처럼 저점이 첫 매수일이면 비율이 수십만 %가 되어 읽히지 않는다. 그럴 땐 배수로 답한다
-	// (실측 2026-08-27 '전체': 최저 평가액 대비 +400,291% = 약 4,004 배).
+	// (실측 2026-08-27 '전체': 최저 평가액 대비 +N% = 약 N 배).
 	boolean peakAsMultiple = peakAvailable && Math.abs(peakGapPct) >= 1000.0d;
 	boolean troughAsMultiple = troughAvailable && Math.abs(troughGapPct) >= 1000.0d;
 	String peakGapText = !peakAvailable ? ""

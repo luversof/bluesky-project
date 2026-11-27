@@ -21,9 +21,9 @@ import net.luversof.web.gate.stock.dto.response.TradeResponse;
 /**
  * 상세 화면 차트 시리즈를 인라인 스크립트용 JS 객체 리터럴 한 줄로 만든다.
  *
- * <p>실측 2026-09-10(qa/item-requests.cjs): 종목 상세 조각이 239 KB 였는데, 주가 이력 1,599일을 템플릿 {@code @for} 가
- * 점마다 들여쓴 {@code series.labels.push(...)} 세 줄(약 120 바이트)로 찍은 몫이 대부분이었다(api-stock 원본은 71.8 KB). 배열
- * 리터럴로 모으면 점당 약 20 바이트다. 라벨은 JSON 문자열로 이스케이프하고, 금액은 원 단위 반올림 정수로 쓴다(예전 출력과 같은 값).
+ * <p>실측 2026-09-10(qa/item-requests.cjs): 종목 상세 조각이 239 KB 였는데, 주가 이력 N일을 템플릿 {@code @for} 가 점마다
+ * 들여쓴 {@code series.labels.push(...)} 세 줄(약 120 바이트)로 찍은 몫이 대부분이었다(api-stock 원본은 71.8 KB). 배열 리터럴로
+ * 모으면 점당 약 20 바이트다. 라벨은 JSON 문자열로 이스케이프하고, 금액은 원 단위 반올림 정수로 쓴다(예전 출력과 같은 값).
  */
 public final class ChartSeriesJs {
 
@@ -41,8 +41,8 @@ public final class ChartSeriesJs {
     }
     // 지금 보유가 없으면 평균단가가 0 이 아니라 "없음" 이다. 0 으로 채우면 종가가 20 만 원인 차트
     // 바닥에 "현재 평균단가 0" 선이 깔려 공짜로 산 것처럼 읽힌다 - 실측 2026-09-12: 매매 이력이 있는
-    // 43 종목 중 34 종목이 수량 0 이고, 표본 4 종목 모두 1,151~2,740 점이 전부 0 이었다(기아 · 나노팀 ·
-    // 삼성SDI · 에스디바이오센서). 보조기술에도 "최고 0, 최저 0" 으로 읽혔다. 비워서 선을 긋지 않는다.
+    // 43 종목 중 34 종목이 수량 0 이고, 표본 4 종목 모두 1,151~2,740 점이 전부 0 이었다(한 종목 · 한 종목 ·
+    // 한 종목 · 한 종목). 보조기술에도 "최고 0, 최저 0" 으로 읽혔다. 비워서 선을 긋지 않는다.
     boolean hasAverage = averageBuyPrice != null && averageBuyPrice.signum() != 0;
     String cost =
         hasAverage ? "new Array(" + safe.size() + ").fill(" + won(averageBuyPrice) + ")" : "[]";

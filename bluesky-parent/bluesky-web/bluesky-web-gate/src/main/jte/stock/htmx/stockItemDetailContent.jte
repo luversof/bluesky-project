@@ -77,12 +77,12 @@
 	BigDecimal evalCostBasis = (evaluationAmount != null ? evaluationAmount : BigDecimal.ZERO).subtract(evaluationProfit != null ? evaluationProfit : BigDecimal.ZERO);
 	double evalProfitRatePct = evalCostBasis.signum() != 0 && evaluationProfit != null ? evaluationProfit.doubleValue() / evalCostBasis.doubleValue() * 100.0 : 0.0;
 	// 원가가 0 이면 수익률은 <b>없는 값</b>이다(0 / 0). 예전에는 0.0 으로 떨어져 "0 0.0%" 가 잰 값처럼 보였다 -
-	// 실측 2026-09-13: 보유가 없는 종목 77 개와 계좌 1 개(동양증권 - 매수 2.75 억 · 실현 +3,309 만)가 모두 그랬다.
+	// 실측 2026-09-13: 보유가 없는 종목 77 개와 계좌 1 개(옛 계좌 - 매수 2.75 억 · 실현 +N 만)가 모두 그랬다.
 	// 금액 0 은 맞지만 비율은 모른다. 모르면 적지 않는다.
 	boolean evalRateKnown = evalCostBasis.signum() != 0;
 	// 카드마다 그 돈의 원금 대비 비율(사용자 선택 2026-09-17 "카드마다 그 원금 대비"): 평가 손익 = 보유 원가 · 실현 손익 = 판 주식 원가 ·
 	// 기간 배당 = 보유 원가. 위 합산 상자의 세 몫은 '넣어 둔 돈' 대비라 더하면 합산이 되지만 카드는 각자의 원금을 말한다 - 그래서 기준을 글자로 붙인다.
-	// 실측 2026-09-17 TIGER 리츠부동산인프라(전체): 평가 -7.1% · 실현 +2.4%(874,593 / 37,199,152) · 배당 9.3%(5,587,497 / 60,159,793).
+	// 실측 2026-09-17 한 ETF(전체): 평가 N% · 실현 N%(N / N) · 배당 9.3%(N / N).
 	String holdingBasisLabel = MessageUtil.getMessage("stock.item.detail.rate.basis.holding");
 	boolean realizedRateKnown = realizedCostBasis != null && realizedCostBasis.signum() > 0;
 	double realizedCostRatePct = realizedRateKnown && realizedProfit != null ? realizedProfit.doubleValue() * 100.0 / realizedCostBasis.doubleValue() : 0.0;
@@ -175,10 +175,10 @@
 	<%-- 보유/손익 요약 --%>
 	<%-- 이 카드 여덟 장 중 셋(실현 손익·기간 매수·기간 배당)은 고른 기간의 값이고, 나머지 다섯(수량·평균 단가·
 	     현재가·평가 금액·평가 손익)은 지금 보유분이다. 라벨이 축을 말하지 않으면 나란히 놓인 값끼리 검산이 안 된다 -
-	     실측 2026-09-11 삼성전자: "매수 원가 466,248,078" 옆의 평가 손익은 996,563,421 인데
-	     1,359,088,500 - 466,248,078 = 892,840,422 이라 맞지 않았고(평가 손익은 보유원가 362,525,079 기준),
+	     실측 2026-09-11 한 종목: "매수 원가 N" 옆의 평가 손익은 N 인데
+	     N - N = N 이라 맞지 않았고(평가 손익은 보유원가 N 기준),
 	     기간을 올해로 좁히면 "매수 원가 0원" 옆에 평가 손익 +9.9억이 그대로 섰다. "누적 배당" 도 한 달 기간에서
-	     1,595,632 를 누적이라고 적었다. 값이 아니라 이름을 고친다 - 기간 값이라는 정보를 잃지 않는다. --%>
+	     N 를 누적이라고 적었다. 값이 아니라 이름을 고친다 - 기간 값이라는 정보를 잃지 않는다. --%>
 	<div class="grid stat-card-grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3">
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("common.label.quantity"),
@@ -188,9 +188,9 @@
 					? StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares.one"))
 					: StockMessageSplitUtil.afterPlaceholder(MessageUtil.getMessage("stock.activity.label.shares"))))
 		<%-- 수량도 금액 숨김 대상이다 - 활동 목록·자산 현황은 수량을 amount-value 로 감싼다(공개 가격 x 수량 = 평가금액).
-		     실측 2026-09-11: 이 카드만 amount = false 라 숨김을 켜도 "5,043주" 가 그대로 보였다. --%>
+		     실측 2026-09-11: 이 카드만 amount = false 라 숨김을 켜도 "N주" 가 그대로 보였다. --%>
 		<%-- 보유가 없으면 평균 단가라는 값 자체가 없다 - 컨트롤러가 0 으로 떨어뜨린다. 실측 2026-09-13: 86 종목 중 77 개가
-	     "평균 단가 0" 을 찍었고, 바로 옆 현재가는 210,000(NAVER) 이라 0 원에 산 것처럼 읽혔다. --%>
+	     "평균 단가 0" 을 찍었고, 바로 옆 현재가는 N(한 종목) 이라 0 원에 산 것처럼 읽혔다. --%>
 		@if(holdingQuantity <= 0)
 		@template._components.ui.statCard(
 			label = MessageUtil.getMessage("stock.column.average.cost"),

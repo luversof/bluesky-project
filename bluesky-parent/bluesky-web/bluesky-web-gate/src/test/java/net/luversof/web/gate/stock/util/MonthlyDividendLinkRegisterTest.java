@@ -56,7 +56,7 @@ class MonthlyDividendLinkRegisterTest {
     assertThat(meta.name()).as("제목의 사이트 이름은 떼고 종목 이름만").isEqualTo("PLUS 고배당주위클리고정커버드콜");
   }
 
-  /** TIGER 는 주소에 표준코드(ISIN)가 실려 있다: KR7 <b>329200</b> 000. */
+  /** TIGER 는 주소에 표준코드(ISIN)가 실려 있다: KR7 <b>종목코드</b> 000. */
   @Test
   void TIGER_는_주소의_표준코드에서_종목코드를_얻는다() {
     URI uri =

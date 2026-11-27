@@ -27,7 +27,7 @@
 	String unrealizedDeltaLabel = MessageUtil.getMessage("stock.item.detail.breakdown.col.unrealized.delta");
 	String realizedProfitLabel = MessageUtil.getMessage("stock.profit.realized");
 	// 이 표는 기간이 걸린다 - 열 이름이 "누적 배당" 이면 안 된다.
-	// 실측 2026-09-12: 전체 65,652,134 / 2025 년 14,524,375 로 값이 기간을 따라갔다(2025 년 배당 세후와 일치).
+	// 실측 2026-09-12: 전체 N / 2025 년 N 로 값이 기간을 따라갔다(2025 년 배당 세후와 일치).
 	// 같은 이름을 쓰던 자산 현황(/stock/analytics)은 두 기간에서 59,067,537 로 같아 그쪽은 진짜 누적이다.
 	String dividendLabel = MessageUtil.getMessage("stock.asset.growth.contribution.col.dividend");
 	String soldOutLabel = MessageUtil.getMessage("stock.asset.growth.contribution.sold.out");
@@ -118,7 +118,7 @@
 							</tr>
 						@endfor
 						<%-- 접어 넣은 나머지. 기여가 작은 줄까지 다 내면 전 기간이 44 줄이 된다
-							 (실측 2026-09-07: 그중 25 줄이 100 만원 미만). 접어도 합계는 그대로다. --%>
+							 (실측 2026-09-07: 그중 25 줄이 N 만원 미만). 접어도 합계는 그대로다. --%>
 						@if(stockContributionOthers != null && stockContributionOthersCount > 0)
 							!{
 								boolean othersUp = stockContributionOthers.contribution().signum() >= 0;

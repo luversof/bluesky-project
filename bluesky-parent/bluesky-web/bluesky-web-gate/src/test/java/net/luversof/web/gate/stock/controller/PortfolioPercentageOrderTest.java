@@ -24,9 +24,9 @@ import net.luversof.web.gate.stock.util.StockAmountUtil;
  * <p>2026-09-12 까지 {@code StockPortfolioHtmxController.percentage} 는 {@code divide(base,
  * 4).multiply(100)} 이라 백분율이 <b>소수 2 자리</b>로 잘린 뒤 화면이 다시 1 자리로 반올림했다.
  *
- * <p>실측 2026-09-12(자산 현황, 계좌별 보유 종목 상세 37 행): 연금저축2 의 TIGER 리츠부동산인프라 가 8,847,600 / 1,622,109,770 =
- * <b>0.5454%</b> 인데 0.0055 x 100 = 0.55% 를 거쳐 <b>0.6%</b> 로 나갔다. 나머지 36 행은 잔차가 0.x5 경계에 닿지 않아 우연히
- * 맞았다. 같은 순서 실수가 {@code StockAssetStatusUtil.ratePctScaled} 에도 있었다.
+ * <p>실측 2026-09-12(자산 현황, 계좌별 보유 종목 상세 37 행): 연금 계좌 의 한 ETF 가 N / N = <b>0.5454%</b> 인데 0.0055 x
+ * 100 = 0.55% 를 거쳐 <b>0.6%</b> 로 나갔다. 나머지 36 행은 잔차가 0.x5 경계에 닿지 않아 우연히 맞았다. 같은 순서 실수가 {@code
+ * StockAssetStatusUtil.ratePctScaled} 에도 있었다.
  *
  * <p>2026-10-22: 같은 식이 주식 코드 열두 곳에 따로 있던 것을 {@link StockAmountUtil#percentOrNull} 하나로 모았다. 예전엔 세
  * 파일의 소스 글자를 고정했는데, 이제는 ① 공용 도우미의 <b>동작</b>을 실제로 걸렸던 값으로 보고 ② 주식 코드 <b>어디에도</b> "나누고 곱하는" 순서가 없는지

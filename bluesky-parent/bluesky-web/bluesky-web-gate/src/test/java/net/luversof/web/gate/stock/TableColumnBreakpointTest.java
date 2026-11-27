@@ -99,8 +99,8 @@ class TableColumnBreakpointTest {
 
   /**
    * 자산 현황의 종목별 표(11열). 평균 단가·실현 손익·누적 배당 열을 xl(1280px)에서 폈는데 그 폭에서 표는 1,125px 이 필요하고 본문 열은 1,022px
-   * 뿐이다. 실측 2026-09-10: 1279px 8열·표 1,021·넘침 0 → 1280px 11열·표 1,125·넘침 103 → 1366px 17 → 1400px 0.
-   * 같은 파일의 계좌별 보유 상세 표(47열)는 xl 에서 들어가므로 그대로 둔다.
+   * 뿐이다. 실측 2026-09-10: 1279px 8열·표 N·넘침 0 → 1280px 11열·표 N·넘침 103 → 1366px 17 → 1400px 0. 같은 파일의
+   * 계좌별 보유 상세 표(47열)는 xl 에서 들어가므로 그대로 둔다.
    */
   @Test
   void stockHoldingsTableRevealsColumnsWhereTheyFit() throws IOException {

@@ -1607,7 +1607,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
         // 기록된 54건 전부): 40건이 이 정의와 1원 이내로 일치했고, 수수료까지 뺀 정의와 일치한 건은 0건.
         //
         // 그래서 매도 '실수령'(수수료까지 뺀 금액)에서 역산하면 COGS 가 수수료만큼 작아지고 그만큼
-        // 원금이 부풀어 남는다. 실측: 삼성전자 원금이 api-stock 값보다 컸고, 그 차이가 마지막 전량매도
+        // 원금이 부풀어 남는다. 실측: 한 종목 원금이 api-stock 값보다 컸고, 그 차이가 마지막 전량매도
         // 이후의 매도 수수료 합과 1 원 오차 없이 같았다. 이 원금은 배당수익률의
         // 분모이므로 수익률이 그만큼 낮게 표시된다. api-stock 은 같은 계산을 이미 고쳤다.
         BigDecimal cogs = amount.subtract(nz(trade.tax())).subtract(nz(trade.realizedProfit()));
@@ -1751,7 +1751,7 @@ public class StockDividendHtmxController extends StockBaseHtmxController {
       //
       // 기준일에 원금이 있었다는 것은 그 날 그 종목을 들고 있었다는 뜻이므로, 그 배당은 일수 합계
       // (dailyPrincipalCostSum)에도 반드시 기여했다. 반대로 기준일 원금이 없는 배당은 기간에 따라
-      // 일수 합계에 기여했을 수도, 전혀 아닐 수도 있다 - 예컨대 NAVER 는 2021-01-18 에 전량 매도했는데
+      // 일수 합계에 기여했을 수도, 전혀 아닐 수도 있다 - 예컨대 한 종목 은 2021-01-18 에 전량 매도했는데
       // 배당이 2021-04-08 에 기록돼 있어, 4월만 보는 기간에서는 원금이 하루도 없는데 배당만 분자에 들어간다.
       // 그런 배당을 빼면 어떤 기간에서도 분모에 기여한 것만 분자에 남는다(실측 전 기간 기준 5건).
       BigDecimal yieldOnDailyAverageCostPct =

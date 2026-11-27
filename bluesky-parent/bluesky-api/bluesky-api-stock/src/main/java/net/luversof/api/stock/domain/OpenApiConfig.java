@@ -12,7 +12,7 @@ import org.springframework.data.relational.core.mapping.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 
-/** Open API 연동 설정 (한국투자증권 등) */
+/** Open API 연동 설정 (증권사 등) */
 @Table("OpenApiConfig")
 public class OpenApiConfig {
 

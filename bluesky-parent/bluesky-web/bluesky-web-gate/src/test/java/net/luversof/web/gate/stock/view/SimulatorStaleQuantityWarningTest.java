@@ -68,7 +68,7 @@ class SimulatorStaleQuantityWarningTest {
         java.text.MessageFormat.format(
             MessageUtil.getMessage("stock.summary.upcoming.dividend.stale.quantity"),
             "7",
-            // 2026-09-29: 세 곳의 표기를 로케일을 따르는 fullKrw 하나로 맞췄다(예전 여기만 "₩3,105,136").
+            // 2026-09-29: 세 곳의 표기를 로케일을 따르는 fullKrw 하나로 맞췄다(예전 여기만 "₩N").
             net.luversof.web.gate.stock.util.StockFormatUtil.fullKrw(3105136L));
 
     assertThat(html).as("전달이 빠지면 조각이 기본값 0 을 써서 경고가 통째로 사라진다").contains(expected);

@@ -37,8 +37,8 @@ import net.luversof.web.gate.stock.util.StockHoldingReturnUtil;
  * 실현손익)은 여러 계좌를 합친 원가를 따라서 같은 매도가 두 비율을 갖는다. 사용자 선택: <b>카드 금액 기준 비율</b> + 차이가 큰 계좌의 '이 계좌 기준' 줄에
  * <b>그 기준의 비율</b>. 그래서 어느 비율이든 바로 옆 금액과 기준이 같다.
  *
- * <p>실측 2026-09-17 한국투자증권 연금저축1(전체 기간): 평가 -1,591,181 / 보유 원가 15,213,471 = -10.5% · 실현 +415,053 / 판
- * 주식 원가 7,788,782 = +5.3% · 이 계좌 기준 +2,063,739 / 6,139,752 = +33.6% · 배당 1,183,752 / 보유 원가 = 7.8%.
+ * <p>실측 2026-09-17 연금 계좌(전체 기간): 평가 -N / 보유 원가 N = N% · 실현 +N / 판 주식 원가 N = +5.3% · 이 계좌 기준 +N / N
+ * = +33.6% · 배당 N / 보유 원가 = 7.8%.
  */
 class AccountDetailCardRatesTest {
 
@@ -68,7 +68,7 @@ class AccountDetailCardRatesTest {
     return MessageUtil.getMessage(key);
   }
 
-  /** 연금저축1 과 같은 모양(실측 값). */
+  /** 연금 계좌 와 같은 모양(실측 값). */
   private static Map<String, Object> pension() {
     Map<String, Object> model = new HashMap<>();
     model.put(
@@ -183,7 +183,7 @@ class AccountDetailCardRatesTest {
     assertThat(realized).doesNotContain("text-profit");
   }
 
-  /** 동양증권과 같은 모양: 다 팔아 보유가 없다. 보유 원가가 없으니 배당 비율도 연평균 카드도 없다(종목 상세와 같다). */
+  /** 옛 계좌와 같은 모양: 다 팔아 보유가 없다. 보유 원가가 없으니 배당 비율도 연평균 카드도 없다(종목 상세와 같다). */
   @Test
   void 보유가_없으면_배당_비율_대신_사유를_적고_연평균_카드도_없다() {
     Map<String, Object> model = pension();

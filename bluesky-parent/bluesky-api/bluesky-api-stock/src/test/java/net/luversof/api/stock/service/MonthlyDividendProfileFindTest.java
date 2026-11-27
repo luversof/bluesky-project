@@ -39,7 +39,7 @@ import net.luversof.api.stock.web.dto.response.MonthlyDividendProfileResponse;
  *   <li>활성 여부가 비어 있으면 꺼진 것으로 읽는다.
  * </ol>
  *
- * <p>실측 2026-09-12(운영): 전체 8행, `symbol=476800` 1행, 앞뒤 공백을 넣어도 1행, 없는 코드는 400.
+ * <p>실측 2026-09-12(운영): 전체 8행, `symbol=종목코드` 1행, 앞뒤 공백을 넣어도 1행, 없는 코드는 400.
  */
 @ExtendWith(MockitoExtension.class)
 class MonthlyDividendProfileFindTest {

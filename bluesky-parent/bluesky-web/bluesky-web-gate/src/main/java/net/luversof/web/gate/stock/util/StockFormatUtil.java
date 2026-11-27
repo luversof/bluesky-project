@@ -107,9 +107,9 @@ public final class StockFormatUtil {
   /**
    * 국제 표기(K/M/B). <b>반올림한 뒤</b> 10억 이상은 B, 100만 이상은 M, 1천 이상은 K, 그 미만은 그대로.
    *
-   * <p>단위는 <b>반올림한 뒤</b>의 크기로 고른다. 예전에는 원래 값으로 단위를 고른 다음 반올림해서, 반올림이 1,000 에 닿아도 단위가 그대로였다 &mdash;
-   * 실측: 999,999 → "1,000K"(1M 이어야 한다), 999,950,000 과 999,999,999 → "1,000M"(1B). 압축 표기는 자릿수를 줄이려고
-   * 쓰는 것인데 "1,000K" 는 그 목적을 정확히 어긴다. 같은 화면에 "1M" · "1B" 가 함께 나오므로 눈에도 어긋난다.
+   * <p>단위는 <b>반올림한 뒤</b>의 크기로 고른다. 예전에는 원래 값으로 단위를 고른 다음 반올림해서, 반올림이 N 에 닿아도 단위가 그대로였다 &mdash; 실측:
+   * N → "NK"(1M 이어야 한다), N 과 N → "NM"(1B). 압축 표기는 자릿수를 줄이려고 쓰는 것인데 "NK" 는 그 목적을 정확히 어긴다. 같은 화면에
+   * "1M" · "1B" 가 함께 나오므로 눈에도 어긋난다.
    */
   private static String compactWestern(long value, Locale locale) {
     String sign = value < 0 ? "-" : "";
@@ -163,9 +163,9 @@ public final class StockFormatUtil {
    * 원 단위 천 자리 표기 서식 &mdash; {@link #displayWon} 과 같은 반올림(HALF_UP)이다.
    *
    * <p>{@code new DecimalFormat("#,##0")} 의 기본 반올림은 HALF_EVEN 이라 x.5 원에서 짝수 쪽으로 내린다. 화면의 합계 · 연 값은
-   * {@link #displayWon} 으로 내므로, 같은 값이 칸에서는 258,054 로, 합계 쪽에서는 258,055 로 갈렸다 &mdash; 실측 2026-09-24:
-   * 시뮬레이터 월배당은 행마다 주당 260.5 원 같은 값에 수량을 곱해 x.5 원이 흔하고, 카드의 월 값(HALF_EVEN) x 12 가 연 값(HALF_UP x 12)과
-   * 12 원 어긋날 수 있었다. 원 표기는 이 서식 하나로 쓴다.
+   * {@link #displayWon} 으로 내므로, 같은 값이 칸에서는 N 로, 합계 쪽에서는 N 로 갈렸다 &mdash; 실측 2026-09-24: 시뮬레이터 월배당은
+   * 행마다 주당 260.5 원 같은 값에 수량을 곱해 x.5 원이 흔하고, 카드의 월 값(HALF_EVEN) x 12 가 연 값(HALF_UP x 12)과 12 원 어긋날 수
+   * 있었다. 원 표기는 이 서식 하나로 쓴다.
    */
   public static DecimalFormat wonFormat() {
     DecimalFormat format = new DecimalFormat("#,##0");
@@ -239,7 +239,7 @@ public final class StockFormatUtil {
    *
    * <p>{@code compactKrw} 는 음수에만 "-" 를 달고 양수는 맨 숫자로 낸다. 그래서 손익 카드는 방향을 <b>글자색</b>으로만 말하고 있었다
    * &mdash; 실측 2026-09-12(고대비 모드): {@code .text-profit}/{@code .text-loss} 의 색이 모두 검정 한 가지로 합쳐져, 그
-   * 상태에서 "9억 9,117만" 은 벌었는지 잃었는지 알 수 없다.
+   * 상태에서 "9억 N만" 은 벌었는지 잃었는지 알 수 없다.
    *
    * <p>손익이 아닌 값(총 자산·배당·매수 금액)에는 쓰지 않는다 &mdash; 나간 돈에 "+" 를 붙이면 번 돈처럼 읽힌다.
    */
@@ -269,8 +269,8 @@ public final class StockFormatUtil {
   /**
    * 비율(%) 표기. 반올림한 뒤 음의 영을 0 으로 고쳐 "-0.0%" 가 나가지 않게 한다.
    *
-   * <p>실측 2026-09-10: {@code String.format("%+.1f%%", -0.04)} 는 "-0.0%" 다. 2년 평가액 시계열 3,978 구간 중
-   * 16개(하루 구간 위주)가 그 범위에 들어 자산 성장 기간 수익률·일간 변동에 실제로 찍힐 수 있다. 반올림은 Formatter 와 같은 HALF_UP.
+   * <p>실측 2026-09-10: {@code String.format("%+.1f%%", -0.04)} 는 "N%" 다. 2년 평가액 시계열 N 구간 중 16개(하루 구간
+   * 위주)가 그 범위에 들어 자산 성장 기간 수익률·일간 변동에 실제로 찍힐 수 있다. 반올림은 Formatter 와 같은 HALF_UP.
    */
   public static String pct(double value, int scale) {
     return String.format("%." + scale + "f%%", roundForDisplay(value, scale));

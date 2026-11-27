@@ -68,7 +68,7 @@ class TextSpacingReflowTest {
         .contains("min-[360px]:grid-cols-2");
   }
 
-  // 2차 실측: 안내문 nowrap 을 풀어도 +26px 가 남았다 - 기간 수익 요약의 text-4xl 금액(-₩159,605,442, 13자)이 288px 로 262px
+  // 2차 실측: 안내문 nowrap 을 풀어도 +26px 가 남았다 - 기간 수익 요약의 text-4xl 금액(-₩N, 13자)이 288px 로 262px
   // 칸을 넘겼다.
   @Test
   void 기간_수익_요약_금액은_아주_좁은_폭에서_한_단계_작다() throws IOException {

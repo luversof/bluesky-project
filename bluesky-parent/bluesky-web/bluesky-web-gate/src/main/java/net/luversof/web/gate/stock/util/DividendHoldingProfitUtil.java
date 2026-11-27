@@ -21,7 +21,7 @@ import net.luversof.web.gate.stock.dto.view.DividendYieldGroupView;
  *   <li>실현 손익 = 판 것에서 난 손익({@code TradeProfit.realizedProfit} - 자산현황 합산 손익과 같은 값). 판 적이 없으면 null.
  *   <li>합산 손익 = 평가 + 실현 + 이 행의 세후 배당. 다 판 종목도 값이 있다(실현 + 배당).
  *   <li>합산 수익률 = 합산 손익 / 지금까지 산 총액({@code totalBuyCost} - 매수 수수료 포함). 지금 원금으로 나누면 예전에 판 분량의 수익까지 지금
- *       원금에 얹혀 부풀고(삼성전자 +306.90% &rarr; 약 +345%), 다 판 종목은 원금이 없어 낼 수 없다.
+ *       원금에 얹혀 부풀고(한 종목 N% &rarr; 약 N%), 다 판 종목은 원금이 없어 낼 수 없다.
  * </ul>
  */
 public final class DividendHoldingProfitUtil {

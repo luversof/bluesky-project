@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
  * {@code aria-label} 도 {@code data-tip} 도 없었고, 화면 어디에도 근거가 없었다 &mdash; 실측: 본문 전체에서 "태그" 라는 말은 필터
  * 드롭다운("태그: 전체") 한 곳뿐이었다.
  *
- * <p>실측 2026-09-12('올해'): 월중 5,807,436원 56건 &middot; 월말 15,203,050원 57건 &middot; <b>기타 6,152,014원
- * 3건</b>. 기타가 전체의 22.6% 인데 그것이 무엇인지 알 방법이 없었다.
+ * <p>실측 2026-09-12('올해'): 월중 N원 56건 &middot; 월말 N원 57건 &middot; <b>기타 N원 3건</b>. 기타가 전체의 22.6% 인데
+ * 그것이 무엇인지 알 방법이 없었다.
  */
 class DividendWindowBasisNoteTest {
 

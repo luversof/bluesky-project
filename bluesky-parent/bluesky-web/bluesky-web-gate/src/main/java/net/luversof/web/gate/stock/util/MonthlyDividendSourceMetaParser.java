@@ -24,8 +24,8 @@ import tools.jackson.databind.json.JsonMapper;
  * 링크만으로 등록하려면 코드와 이름을 링크 쪽에서 얻어야 해서 이 판이 따로 필요하다. 네 곳 모두 실측으로 확인했다(2026-09-21).
  *
  * <ul>
- *   <li>KODEX(samsungfund): 상세 HTML 안 JSON-LD 의 {@code "identifier": "476800"} · {@code "name"}
- *   <li>PLUS(plusetf): {@code <div class="summary__product-code">0018C0</div>} · {@code <title>… |
+ *   <li>KODEX(samsungfund): 상세 HTML 안 JSON-LD 의 {@code "identifier": "종목코드"} · {@code "name"}
+ *   <li>PLUS(plusetf): {@code <div class="summary__product-code">종목코드</div>} · {@code <title>… |
  *       PLUS ETF</title>}
  *   <li>TIGER(miraeasset): 주소의 {@code ksdFund=KR7329200000}(표준코드) 가운데 여섯 자리 · {@code <title>… | ETF
  *       상품 …</title>}
@@ -64,7 +64,7 @@ public class MonthlyDividendSourceMetaParser {
 
   private static final Pattern TITLE = Pattern.compile("(?is)<title[^>]*>(.*?)</title>");
 
-  /** 표준코드(ISIN) 가운데 여섯 자리가 단축코드다: KR7 <b>329200</b> 000. */
+  /** 표준코드(ISIN) 가운데 여섯 자리가 단축코드다: KR7 <b>종목코드</b> 000. */
   private static final Pattern ISIN = Pattern.compile("(?i)KR[0-9A-Z]([0-9A-Z]{6})[0-9A-Z]{3}");
 
   private final JsonMapper objectMapper;
@@ -102,7 +102,7 @@ public class MonthlyDividendSourceMetaParser {
 
   public SourceMeta fromPlusHtml(String html) {
     String symbol = first(PLUS_CODE, html);
-    // 제목은 "PLUS 고배당주위클리고정커버드콜 | PLUS ETF" - 앞부분만 이름이다.
+    // 제목은 "한 ETF | PLUS ETF" - 앞부분만 이름이다.
     String name = beforeBar(first(TITLE, html));
     return require(symbol, name, "PLUS");
   }
@@ -110,7 +110,7 @@ public class MonthlyDividendSourceMetaParser {
   /**
    * TIGER 는 주소에 표준코드가 실려 있어 페이지를 안 봐도 코드를 안다. 이름은 제목에서 가져온다.
    *
-   * <p>제목은 "TIGER 리츠부동산인프라 | ETF 상품 | 미래에셋 TIGER ETF" 꼴이다.
+   * <p>제목은 "한 ETF | ETF 상품 | 미래에셋 TIGER ETF" 꼴이다.
    */
   public SourceMeta fromTiger(URI sourceUri, String html) {
     String query = sourceUri.getQuery() != null ? sourceUri.getQuery() : "";

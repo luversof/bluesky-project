@@ -118,7 +118,7 @@
 		</div>
 		<%-- 우: 이번 달 요약 --%>
 		<%-- 금액은 가르지 않는다(whitespace-nowrap) - 칸(9rem)이 모자라면 금액 덩어리가 배지 아래로 통째로 내려간다(flex-wrap).
-		     실측 2026-10-02 1280px: 이번 달 배당 금액(2,570,932)이 "2,570," / "932" 로 갈렸다(token-break-sweep). --%>
+		     실측 2026-10-02 1280px: 이번 달 배당 금액(N)이 "2,570," / "932" 로 갈렸다(token-break-sweep). --%>
 		<div class="border-t border-base-200 pt-3 @[30rem]:w-36 @[30rem]:shrink-0 @[30rem]:border-t-0 @[30rem]:border-l @[30rem]:pt-0 @[30rem]:pl-3" data-month-summary>
 			<div class="text-xs font-semibold text-base-content/60 mb-2">${monthSummaryLabel}</div>
 			<div class="grid grid-cols-3 gap-3 @[30rem]:block @[30rem]:space-y-2" data-month-summary-rows>

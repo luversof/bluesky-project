@@ -29,8 +29,8 @@ import net.luversof.web.gate.stock.domain.TradeProfit;
  * <p>매도 원가 = {@code 매도금액 − 증권거래세 − 기록된 실현손익} 이다. 기록된 실현손익은 증권사가 세금까지 뺀 뒤의 값이라 세금을 빼지 않으면 원가가 그만큼
  * 부풀고 수익률은 그만큼 낮게 보인다.
  *
- * <p><b>실제로 그 사고가 있었다</b> &mdash; 2026-08-22 실측: 이 화면만 세금을 빠뜨려 두 계좌(한국투자증권 위탁 · ISA)의 매도 원가가 그 계좌
- * 증권거래세 합만큼 과대 계상됐다.
+ * <p><b>실제로 그 사고가 있었다</b> &mdash; 2026-08-22 실측: 이 화면만 세금을 빠뜨려 두 계좌(위탁 계좌 · ISA)의 매도 원가가 그 계좌 증권거래세
+ * 합만큼 과대 계상됐다.
  *
  * <p>그런데 그 식이 <b>두 곳에 따로</b> 있다 &mdash; 계좌 표는 {@code StockTradeHtmxController} 가 Java 로 계산해 {@code
  * AccountRealizedRow.soldCost} 로 넘기고, 종목 표는 <b>템플릿이 직접</b> ({@code

@@ -34,7 +34,7 @@ public class MonthlyDividendPayoutSourceImportService {
    * <p><b>이 한계에 걸려 멈추면 조용히 잘린다</b> &mdash; 마지막 페이지 표시({@code last})를 보지 못한 채 반복문이 끝나고, 호출자는 짧아진 목록을
    * 정상 결과로 받는다. 그러면 예상 월배당의 12 개월 평균이 일부 달만으로 계산된다.
    *
-   * <p>지금은 여유가 크다(실측 2026-08-24: PLUS 고배당주위클리고정커버드콜의 저장된 지급 이력 17 건). 그래서 한계를 바꾸지 않고 성질만 적어 둔다.
+   * <p>지금은 여유가 크다(실측 2026-08-24: 한 ETF의 저장된 지급 이력 17 건). 그래서 한계를 바꾸지 않고 성질만 적어 둔다.
    *
    * <p>이 상수와 {@link #TIGER_PAGE_SIZE} 는 <b>검사로 고정돼 있지 않다</b>. 값을 1 로 낮춰도 게이트 검사 360 개가 모두 통과한다 (실측
    * 2026-08-24). 이 코드 경로는 호스트 이름으로 출처를 가려 내므로(예: {@code PayoutSourceText.hostIs(host,
@@ -115,8 +115,7 @@ public class MonthlyDividendPayoutSourceImportService {
    * 출처 사이트에서 지급 이력을 받아 가져올 행으로 바꾼다.
    *
    * <p>표의 잘못된 행은 건너뛰고 사유와 함께 돌려준다({@link MonthlyDividendPayoutImportParser#parseLenient}) &mdash;
-   * 사이트의 오타 한 줄 때문에 가져오기 전체가 실패하던 것을 막는다(실측 2026-09-17: RISE 44J2, 사용자 결정). 사람이 붙여넣는 가져오기는 여전히
-   * 엄격하다.
+   * 사이트의 오타 한 줄 때문에 가져오기 전체가 실패하던 것을 막는다(실측 2026-09-17: 한 ETF, 사용자 결정). 사람이 붙여넣는 가져오기는 여전히 엄격하다.
    */
   public MonthlyDividendPayoutImportParser.LenientParseResult fetchImport(
       String symbol, String sourceUrl) {

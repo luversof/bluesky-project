@@ -32,7 +32,7 @@ import net.luversof.web.gate.stock.dto.response.HoldingsSnapshotItem;
  * <pre>
  *   2026-08-19  총평가 − 총원금 − 총평가손익 = +28원
  *   2026-06-18  같은 식 = −22원
- *   행별로는 KODEX 한국부동산리츠인프라 −16.85, RISE 200위클리커버드콜 −13.97
+ *   행별로는 한 ETF −16.85, 한 ETF −13.97
  * </pre>
  *
  * <p>api-stock 은 {@code unrealizedProfit} 을 {@code value − totalCost} 로 만든다. 그래서 {@code value −

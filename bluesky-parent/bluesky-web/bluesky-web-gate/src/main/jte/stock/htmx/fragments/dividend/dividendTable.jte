@@ -41,7 +41,7 @@
 	String sortDir = sort != null && sort.contains(",") ? sort.split(",")[1] : "";
 	DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	// 기준 가격·기준일 원금이 비는 줄이 왜 비었는지 그 자리에서 말한다. 실측 2026-09-11(전체 기간 202건 중 5건):
-	// 하나금융지주 2건은 매매 기록 자체가 없고, 삼성SDI·NAVER·HK이노엔 3건은 결산배당인데 배당 기준일이 기록돼 있지 않아
+	// 한 종목 2건은 매매 기록 자체가 없고, 한 종목·한 종목·한 종목 3건은 결산배당인데 배당 기준일이 기록돼 있지 않아
 	// 지급일로 되짚는다 - 그 사이에 팔았으니 그 날 보유가 0 이다(api 의 원장 점검도 같은 이유로 이 3건을 지적하지 않는다).
 	// 이 줄들은 수익률 분자·분모에서 함께 빠진다. 수익률 칸의 근거(stock.dividend.yield.basis.excluded)와 짝이다.
 	// 근거는 "항상 보이는" 수익률 칸 한 곳에만 단다. 세 칸에 달았더니 행 하나가 1,146B 가 되어

@@ -37,8 +37,8 @@ import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient.RecentPredic
 import net.luversof.web.gate.stock.support.StockViewSupport;
 
 /**
- * 시황 분석 화면: 한 종목(기본 삼성전자)을 골라 기간 안의 일자별 예측 적중, 확신도 · 버전별 적중률, 회차 비교, 그 종목 지표 · 뉴스를 본다 (사용자 요청
- * 2026-11-20: 삼성전자만 분석하는데 화면은 전 종목을 보여줬고, 회차별 · 기간별 적중률은 표본이 1 건 수준이라 의미가 없었다). 데이터는 작업 스케줄러 스크립트가
+ * 시황 분석 화면: 한 종목(기본 한 종목)을 골라 기간 안의 일자별 예측 적중, 확신도 · 버전별 적중률, 회차 비교, 그 종목 지표 · 뉴스를 본다 (사용자 요청
+ * 2026-11-20: 한 종목만 분석하는데 화면은 전 종목을 보여줬고, 회차별 · 기간별 적중률은 표본이 1 건 수준이라 의미가 없었다). 데이터는 작업 스케줄러 스크립트가
  * 쌓는다(api-stock tools/market-analysis).
  */
 @Controller
@@ -130,7 +130,7 @@ public class StockAnalysisViewController {
     try {
       StockAnalysisClient.AnalysisInput input = stockAnalysisClient.input(UserUtil.getUserId());
       List<StockAnalysisClient.AnalysisItem> items = input == null ? List.of() : input.items();
-      // 종목 고르기: symbol, 없으면 검색어(예전 링크 ?keyword=)가 가리키는 한 종목, 그것도 없으면 삼성전자.
+      // 종목 고르기: symbol, 없으면 검색어(예전 링크 ?keyword=)가 가리키는 한 종목, 그것도 없으면 한 종목.
       StockAnalysisClient.AnalysisItem byKeyword = focusOf(keyword, items);
       String selected =
           historySymbolOf(
@@ -599,7 +599,7 @@ public class StockAnalysisViewController {
     return hits.stream().filter(i -> keyword.strip().equals(i.symbol())).findFirst().orElse(null);
   }
 
-  /** 고른 종목이 분석 대상이면 그것, 아니면 삼성전자, 그것도 없으면 첫 대상. */
+  /** 고른 종목이 분석 대상이면 그것, 아니면 한 종목, 그것도 없으면 첫 대상. */
   static String historySymbolOf(String wanted, List<StockAnalysisClient.AnalysisItem> items) {
     for (String s : new String[] {wanted, DEFAULT_HISTORY_SYMBOL}) {
       if (s != null && items.stream().anyMatch(i -> s.equals(i.symbol()))) {

@@ -53,7 +53,7 @@
 			@if(loadError || summary == null)
 				<div role="alert" class="alert alert-warning">${MessageUtil.getMessage("stock.analysis.loadError")}</div>
 			@else
-				<%-- 종목 · 기간 고르기(사용자 요청 2026-11-20): 화면 전체가 고른 한 종목 기준이다. 기본은 삼성전자 · 3 개월. --%>
+				<%-- 종목 · 기간 고르기(사용자 요청 2026-11-20): 화면 전체가 고른 한 종목 기준이다. 기본은 한 종목 · 3 개월. --%>
 				<form method="get" action="/stock/analysis" class="flex flex-wrap items-center gap-2">
 					<label class="text-sm" for="analysis-symbol">${MessageUtil.getMessage("stock.analysis.history.symbol")}</label>
 					<select id="analysis-symbol" name="symbol" class="select select-bordered select-sm">

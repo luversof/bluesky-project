@@ -175,7 +175,7 @@ String stockYieldSelectionHelperLabel = MessageUtil.getMessage("stock.dividend.y
 	// 기준일 원금이 아예 없으면 금액도 수익률도 "-" 가 되는데, 2026-09-12 까지 그 "-" 에는 까닭이 없었다
 	// (실측: 연도별 2칸 + 종목별 랭킹 4칸). 왜 비었는지는 옆 칸 문구가 말하고 있었지만 이 칸 자체는 말이 없었다.
 	String basisNoneTitle = MessageUtil.getMessage("stock.dividend.yield.basis.none");
-	// 기간 일평균 투입원금도 마찬가지다 - 매매 없이 배당만 있는 종목(실측: 하나금융지주)은 이 칸이 비는데 까닭이 없었다.
+	// 기간 일평균 투입원금도 마찬가지다 - 매매 없이 배당만 있는 종목(실측: 한 종목)은 이 칸이 비는데 까닭이 없었다.
 	String dailyBasisNoneTitle = MessageUtil.getMessage("stock.dividend.yield.daily.basis.none");
 	Function<BigDecimal, String> basisNoneOrNull = DividendYieldViewUtil::basisNoneOrNull;
 }

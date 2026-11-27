@@ -22,12 +22,12 @@ import org.junit.jupiter.api.Test;
  * <p>실측 2026-08-24(이 사용자의 전 기간, api-stock 직접 호출):
  *
  * <pre>
- *   granularity 없음  -&gt; 6,167 점 · 1,592,715 바이트 · p50 110ms
+ *   granularity 없음  -&gt; N 점 · 1,592,715 바이트 · p50 110ms
  *   granularity=AUTO -&gt;   205 점 ·    61,399 바이트 · p50  40ms
  * </pre>
  *
- * <p>전송량 자체는 gzip 이 흡수한다(1,584,142 -&gt; 59,181 바이트, {@code BackendCompressionTest} 가 게이트가 실제로 gzip
- * 을 협상함을 확인한다). 남는 비용은 <b>서버가 30 배 많은 점을 만들고 직렬화하고 게이트가 다시 파싱하는 것</b>이다 &mdash; 위 p50 이 그 값이다.
+ * <p>전송량 자체는 gzip 이 흡수한다(N -&gt; 59,181 바이트, {@code BackendCompressionTest} 가 게이트가 실제로 gzip 을 협상함을
+ * 확인한다). 남는 비용은 <b>서버가 30 배 많은 점을 만들고 직렬화하고 게이트가 다시 파싱하는 것</b>이다 &mdash; 위 p50 이 그 값이다.
  *
  * <p>실측 2026-08-24: 게이트의 시계열 호출은 6 곳이고 모두 명시하고 있다(AUTO 3 · MONTHLY 1 · DAILY 1, 그리고 값을 받아 넘기는 통과
  * 엔드포인트 1). 새 호출부가 하나 빠지는 것을 막는다.

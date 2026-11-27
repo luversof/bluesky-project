@@ -79,7 +79,7 @@ class DashReasonAccessibleTest {
    * 배당 목록의 수익률 "-" 는 까닭이 툴팁에만 있었다.
    *
    * <p>실측 2026-09-11: 전체 기간 목록 473 행 중 5 행이 기준일 원금을 못 되짚어 "-" 로 남는데, 그 까닭이 마우스 전용이었다. 행당 1KB 예산
-   * (DividendTableCompactOutputTest) 때문에 미뤄뒀던 자리다 - 다섯 행뿐이라 조각은 397,532 → 398,212 자(+0.17%) 로 그쳤다.
+   * (DividendTableCompactOutputTest) 때문에 미뤄뒀던 자리다 - 다섯 행뿐이라 조각은 N → 398,212 자(+0.17%) 로 그쳤다.
    */
   @Test
   void 기준을_못_되짚은_수익률도_보조기술에_닿는다() throws IOException {

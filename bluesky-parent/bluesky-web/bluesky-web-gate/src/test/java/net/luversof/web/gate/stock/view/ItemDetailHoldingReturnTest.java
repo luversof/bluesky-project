@@ -35,8 +35,8 @@ import net.luversof.web.gate.stock.util.StockHoldingReturnUtil;
 /**
  * 종목 상세는 합산 손익의 <b>세 몫에도 비율</b>을 붙이고, 기간과 무관한 <b>보유 기간 · 연평균 수익률</b>을 함께 적는다.
  *
- * <p>사용자 요청 2026-09-17: "종목 상세 조회에서 보유 손익 + 배당 손익 표시(수익률 퍼센트도), 보유 기간 대비 손익 표시". 화면에는 합산 손익
- * +300.61% 하나만 비율이 있었고 평가 변동 · 실현 · 배당은 금액뿐이었다. 보유 기간과 연평균은 자산 현황의 종목 줄에만 있었다.
+ * <p>사용자 요청 2026-09-17: "종목 상세 조회에서 보유 손익 + 배당 손익 표시(수익률 퍼센트도), 보유 기간 대비 손익 표시". 화면에는 합산 손익 N% 하나만
+ * 비율이 있었고 평가 변동 · 실현 · 배당은 금액뿐이었다. 보유 기간과 연평균은 자산 현황의 종목 줄에만 있었다.
  *
  * <p>세 비율은 합산 비율과 같은 분모('넣어 둔 돈' = 기초 평가액 + max(기간 순유입, 0), api-stock 과 같은 정의)라 더하면 합산 비율이 된다. 연평균은
  * 자산 현황과 <b>같은 계산 · 같은 입력</b>이다(사용자 결정 2026-09-17: 연환산 수익률, 이어서 복리 환산 대신 XIRR &mdash; 매수 · 매도 · 배당이
@@ -48,7 +48,7 @@ class ItemDetailHoldingReturnTest {
 
   private static final LocalDate TODAY = LocalDate.parse("2026-09-17");
 
-  /** 2026-09-17 삼성전자 실측값('전체' 기간). */
+  /** 2026-09-17 한 종목 실측값('전체' 기간). */
   private static final BigDecimal EVALUATION_AMOUNT = new BigDecimal("1278400500");
 
   private static final BigDecimal EVALUATION_PROFIT = new BigDecimal("915875421");

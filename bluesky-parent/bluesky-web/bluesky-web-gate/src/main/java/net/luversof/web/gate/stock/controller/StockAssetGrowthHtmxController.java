@@ -813,8 +813,8 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
         stockItems.stream().collect(Collectors.toMap(StockItem::id, StockItem::name, (l, r) -> l));
 
     // 계좌명이 없으면 같은 날 같은 값의 다른 계좌 거래가 화면에서 완전히 같은 줄이 된다.
-    // 실측 2026-09-10: 258행 중 2쌍(2026-09-02 · 2026-07-02 PLUS 고배당주위클리고정커버드콜)이
-    // 연금저축1/연금저축2 로 갈리는 별개 거래인데 구분할 길이 없었다. 매매 화면의 같은 표는 계좌 열이 있다.
+    // 실측 2026-09-10: 258행 중 2쌍(2026-09-02 · 2026-07-02 한 ETF)이
+    // 연금 계좌/연금 계좌 로 갈리는 별개 거래인데 구분할 길이 없었다. 매매 화면의 같은 표는 계좌 열이 있다.
     // 자산성장 화면은 계좌를 이미 던져 뒀다 - 그 future 를 받으면 같은 요청에서 두 번 부르지 않는다.
     List<Account> accounts =
         preAccountsFuture != null
@@ -920,9 +920,9 @@ public class StockAssetGrowthHtmxController extends StockBaseHtmxController {
       /**
        * 기간 전체의 매도 건수.
        *
-       * <p>실현손익 카드의 금액은 기간 전체인데 건수만 현재 페이지에서 세고 있었다 &mdash; 실측 2026-09-10: 자산성장 화면이 "실현손익
-       * +225,630,135 · 매도 0건(페이지 기준)" 이라고 했다. 1페이지가 최근 매수로만 차 있어 0 이 나온 것이다. 같은 카드를 매매 화면은 "매도 55건"
-       * 으로 보여준다(원장도 55). 한 카드 안에서 금액과 건수의 범위가 달랐다.
+       * <p>실현손익 카드의 금액은 기간 전체인데 건수만 현재 페이지에서 세고 있었다 &mdash; 실측 2026-09-10: 자산성장 화면이 "실현손익 +N · 매도
+       * 0건(페이지 기준)" 이라고 했다. 1페이지가 최근 매수로만 차 있어 0 이 나온 것이다. 같은 카드를 매매 화면은 "매도 55건" 으로 보여준다(원장도 55).
+       * 한 카드 안에서 금액과 건수의 범위가 달랐다.
        */
       long totalSellCount,
       String tradePeriod,

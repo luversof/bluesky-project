@@ -21,7 +21,7 @@ public class StockItem {
   @Column("market")
   private String market;
 
-  /** KRX : 005930, NASDAQ : AAPL 등 */
+  /** KRX : 종목코드, NASDAQ : AAPL 등 */
   @Column("symbol")
   private String symbol;
 

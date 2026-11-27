@@ -111,7 +111,7 @@
 				<div class="mt-2 pt-2 border-t border-base-200 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
 					<%-- 무엇으로 가르는지 밝힌다. 2026-09-12 까지 이 세 항목에는 title 도 aria-label 도 없었고
 						 화면 어디에도 근거가 없었다(실측: 본문 전체에 "태그" 라는 말이 필터 드롭다운 말고는 없다).
-						 "기타 6,152,014원 3건" 만 보고는 그것이 월중도 월말도 아닌 무엇인지 알 수 없다. --%>
+						 "기타 N원 3건" 만 보고는 그것이 월중도 월말도 아닌 무엇인지 알 수 없다. --%>
 					<span data-window-basis>@template._components.ui.infoTip(desc = windowBasisLabel)</span>
 					<span class="inline-flex items-baseline gap-1">
 						<span class="inline-block w-1.5 h-1.5 rounded-full bg-info"></span>

@@ -32,7 +32,7 @@ import net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator.Goal;
 /**
  * 시뮬레이터 월배당 탭의 '목표 월배당까지'(2026-10-20 자율 개선) &mdash; 모자란 월배당 · 한 번에 더 살 금액 · 매달 적립 + 재투자로 걸리는 달.
  *
- * <p>판정은 순수 함수의 동작으로 본다. 기준: 분배율 10%(월배당 100 만 원 · 평가액 1 억 2 천만 원).
+ * <p>판정은 순수 함수의 동작으로 본다. 기준: 분배율 10%(월배당 N 만 원 · 평가액 1 억 2 천만 원).
  */
 class MonthlyDividendGoalTest {
 

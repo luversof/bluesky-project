@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Test;
  * <p>그 사이 배포본 게이트가 실제로 놓친 것(배포 이미지에서 직접 확인):
  *
  * <ul>
- *   <li>{@code js/stock/tableSort.js} 1,793B — 표 정렬의 키보드 지원 전체(aria-sort/Enter/tabindex, htmx
- *       재바인딩)가 빠진 판. 소스 반영본은 2,990B.
+ *   <li>{@code js/stock/tableSort.js} NB — 표 정렬의 키보드 지원 전체(aria-sort/Enter/tabindex, htmx 재바인딩)가 빠진
+ *       판. 소스 반영본은 NB.
  *   <li>{@code js/stock-charts.js} — 매수/매도 라벨 현지화 누락.
  *   <li>{@code js/common.js} — 활동 패널 로딩 누락.
  *   <li>{@code js/stock/stockSimulator.js} — 대비 수정 7곳 누락(라이트 테마 {@code text-xs} 라벨이 3.55:1, 4.17:1

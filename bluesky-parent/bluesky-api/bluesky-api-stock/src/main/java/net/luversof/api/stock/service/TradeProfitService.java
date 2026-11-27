@@ -453,7 +453,7 @@ public class TradeProfitService {
    * 모르는 granularity 는 거절한다.
    *
    * <p>예전에는 인식 못 하는 값이 조용히 일별 원본으로 떨어졌다. 일별은 가장 무거운 응답이라 오타 하나가 응답 30 배·시간 2.7 배를 냈다(실측: AUTO
-   * 51.6KB/29.4ms vs 오타 1,546.5KB/79.1ms). 시뮬레이션을 돌리기 전에 끊는다. 값을 아예 주지 않는 경우는 종전대로 일별이다.
+   * 51.6KB/29.4ms vs 오타 N.5KB/79.1ms). 시뮬레이션을 돌리기 전에 끊는다. 값을 아예 주지 않는 경우는 종전대로 일별이다.
    */
   private static void assertSupportedGranularity(String granularity) {
     if (granularity == null || granularity.isBlank()) {
@@ -720,7 +720,7 @@ public class TradeProfitService {
   /**
    * 조회 기간에 맞는 쪼갬 단위.
    *
-   * <p>연 단위만 쓰면 "올해" 처럼 짧은 구간이 한 줄로 끝나 아무것도 말해 주지 않는다(실측 2026-08-31 삼성전자 '올해': 연도별 1 행). 반대로 17 년치를
+   * <p>연 단위만 쓰면 "올해" 처럼 짧은 구간이 한 줄로 끝나 아무것도 말해 주지 않는다(실측 2026-08-31 한 종목 '올해': 연도별 1 행). 반대로 17 년치를
    * 달로 쪼개면 200 줄이 되어 읽히지 않는다.
    */
   static String resolveBreakdownUnit(
@@ -797,7 +797,7 @@ public class TradeProfitService {
     // 평균단가(WMA) 상태의 키는 '계좌 + 종목'이다. 종목만으로 묶으면 계좌를 가로질러 원가가 섞인다 —
     // A 계좌에서 판 수량의 원가가 B 계좌 평균단가로 빠져나가 남은 원가가 실제와 달라진다.
     // 실측: 같은 보유(수량 전부 일치)인데 이 경로의 원가 합이 계좌별로 계산하는 calculateProfit 과
-    // 0.030% 어긋났다. TIGER 리츠부동산인프라는 계좌별 단가가
+    // 0.030% 어긋났다. 한 ETF는 계좌별 단가가
     // 4,366~4,367 인데 합쳐 굴리면 4,380.85 가 나왔다(화면 두 곳이 서로 다른 평균단가를 보여줬다).
     // 표시(보유 스냅샷)는 예전처럼 종목 단위라, 아래에서 계좌별 상태를 종목으로 합산해 내보낸다.
     Function<Trade, String> getGroupKey =
@@ -834,7 +834,7 @@ public class TradeProfitService {
     // 아직 오지 않은 날은 시뮬레이션하지 않는다. 예전에는 요청한 끝날까지 그대로 굴려,
     // 마지막으로 아는 평가액을 미래로 끌고 갔다 - 실측 2026-09-13: 2030 년 구간을 물으면
     // 54 개 점이 오고 화면의 '월별 성과' 가 2030-01~12 를 손익 0 · 수익률 0.00% 로 그렸으며
-    // '연도별 성과' 는 2030 년 기말 평가액을 1,622,109,770 원이라고 적었다. 오지 않은 해의 기록이다.
+    // '연도별 성과' 는 2030 년 기말 평가액을 N 원이라고 적었다. 오지 않은 해의 기록이다.
     // 현실적인 경우도 같다 - 2026-01-01~2026-12-31 을 고르면 10 · 11 · 12 월이 0 원 줄로 붙었다.
     // 자료가 아예 없는 과거 구간(2000 년)은 이미 빈 표로 나오므로, 미래도 같게 만든다.
     LocalDate lastRealDay = LocalDate.now(zoneId);
@@ -910,7 +910,7 @@ public class TradeProfitService {
 
     // 폴백 시드(직전 최근 종가). 예전에는 (outputStart 이전 거래일 전체) x (전 종목) 을 다 조회했는데
     // 실제로 쓰이는 값은 '각 종목이 자기 거래일에 갖는 가격'과 '구간 첫날 값'뿐이다
-    // (실측: 날짜 115개 x 종목 42개 = 4,830 쌍 -> 실제 필요한 쌍 300개 미만).
+    // (실측: 날짜 115개 x 종목 42개 = N 쌍 -> 실제 필요한 쌍 300개 미만).
     Set<String> pairSeen = new HashSet<>();
     List<UUID> asOfIds = new ArrayList<>();
     List<LocalDate> asOfDayList = new ArrayList<>();
@@ -1248,7 +1248,7 @@ public class TradeProfitService {
 
     TradeProfitTimeSeriesPoint firstPoint = null;
     TradeProfitTimeSeriesPoint lastPoint = null;
-    // 이력 맨 앞부터면 첫 점 앞은 아무것도 없던 날이다 - 그 날을 0 으로 두어야 첫 매수일 손익도 센다. 실측 2026-10-02 하이브: 종목 하나의
+    // 이력 맨 앞부터면 첫 점 앞은 아무것도 없던 날이다 - 그 날을 0 으로 두어야 첫 매수일 손익도 센다. 실측 2026-10-02 한 종목: 종목 하나의
     // 시계열은 매수일(공모주 135,000 x 2, 상장일 종가 평가 516,000)이 첫 점이라 그 날이 빠져 -33.3%(실제 +27.8%).
     TradeProfitTimeSeriesPoint previousPoint = zeroOpening ? ZERO_POINT : null;
     // TWR(시간가중수익률): 일별로 입출금(원금 변동)을 제거한 수익률을 곱해 누적한다.
@@ -1269,7 +1269,7 @@ public class TradeProfitService {
     // 기간 중 평가액 고점/저점. 최대 낙폭(입출금 제거한 기준가 기준)과 달리 <b>화면에 찍히는 그 금액</b>이다.
     //
     // 평가액이 0 인 날은 세지 않는다 - 보유가 하나도 없던 날이라 "저점" 의 기준이 될 수 없다.
-    // 실측 2026-08-27 '전체' 기간: 6,170 일 중 1,772 일이 평가액 0 이라, 세면 저점이 늘 0 원이 되어
+    // 실측 2026-08-27 '전체' 기간: N 일 중 N 일이 평가액 0 이라, 세면 저점이 늘 0 원이 되어
     // 아무것도 말해 주지 않는다.
     TradeProfitTimeSeriesPoint peakPoint = null;
     TradeProfitTimeSeriesPoint troughPoint = null;
@@ -1302,7 +1302,7 @@ public class TradeProfitService {
       if (previousPoint != null) {
         BigDecimal previousValue = nz(previousPoint.totalHoldingsValue());
         // 보유가 없던 다음 날의 첫 매수도 센다(현금흐름을 알 때) - 분모 = 그날 들어간 돈, 손익 = 그날 종가 평가액 - 들어간 돈.
-        // 예전에는 전날 평가액이 0 이면 그날을 건너뛰어 공모주의 상장일 상승분이 통째로 빠졌다(실측 2026-10-02 하이브: 135,000 에 사
+        // 예전에는 전날 평가액이 0 이면 그날을 건너뛰어 공모주의 상장일 상승분이 통째로 빠졌다(실측 2026-10-02 한 종목: N 에 사
         // 172,500 에 팔았는데 상장일 종가 255,420 부터만 세어 -32.63% - 실제 +27.8%).
         // 그날 산 돈(총 매수액). 보유가 없던 날은 이것이 그날 운용한 돈이다 - 같은 날 사고팔아 번 날은 순현금흐름이 음수라 0 으로 읽혔다.
         BigDecimal grossInflow =
@@ -1336,7 +1336,7 @@ public class TradeProfitService {
                   .add(realizedGain)
                   .add(dividendGain);
           // 현금흐름을 알면 그것으로 잰다: 하루 손익 = 평가액 변화 - 순현금흐름 + 배당. 원가 변동 + 실현손익은 실현손익이
-          // 증권사 기록값이라 장부 원가와 어긋나면 그 차가 판 날 손익으로 튄다(실측 2026-10-01 PLUS 고배당주 2025-10-22:
+          // 증권사 기록값이라 장부 원가와 어긋나면 그 차가 판 날 손익으로 튄다(실측 2026-10-01 한 ETF 2025-10-22:
           // 장부 원가 5,966,415 인 403 주를 증권사는 실현 +405,412 로 기록 -> 하루 -19.23%, 현금 기준 +1.47%).
           if (point.cumulativeNetCashFlow() != null
               && previousPoint.cumulativeNetCashFlow() != null) {
@@ -1351,7 +1351,7 @@ public class TradeProfitService {
           // 그날 들어온 돈(매수)은 그날 처음부터 운용된 것으로 본다 - 분모에 더한다. 나간 돈(매도)은 그날 끝까지
           // 운용됐으므로 분모는 전날 평가액 그대로다. 예전에는 유입도 그날 끝에 들어온 것으로 봐 분모가 전날 평가액뿐이었다:
           // 작은 보유 위에 크게 산 날, 체결가와 종가 차(보통 1% 안쪽)가 작은 분모로 나뉘어 하루 수익률이 폭증했다
-          // (실측 2026-10-01 KODEX 한국부동산리츠인프라: 1/5 보유 2,050,200 위 25,865,180 매수, 그날 -318,074 ->
+          // (실측 2026-10-01 한 ETF: 1/5 보유 N 위 N 매수, 그날 -N ->
           // 하루 -15.51%, 1월 -16.90% - 가격은 한 달 1% 안쪽. 포트폴리오 '전체' 투자 수익률도 1561% 로 부풀었다 -> 804%).
           BigDecimal base =
               previousValue.signum() == 0 && grossInflow != null
@@ -1475,7 +1475,7 @@ public class TradeProfitService {
    * 54 건 전부): 40 건이 이 정의와 1 원 이내로 일치했고, 수수료까지 뺀 정의와 일치한 건은 <b>0 건</b>이었다. 나머지 14 건은 증권사 평균단가가 앱의
    * WMA 와 달라 어느 쪽과도 맞지 않는다.
    *
-   * <p>그래서 매도 <i>실수령</i>(수수료까지 뺀 금액)에서 역산하면 COGS 가 매도 수수료만큼 작아지고, 그만큼 보유 원가가 부풀어 남는다. 실측 피해: 삼성전자
+   * <p>그래서 매도 <i>실수령</i>(수수료까지 뺀 금액)에서 역산하면 COGS 가 매도 수수료만큼 작아지고, 그만큼 보유 원가가 부풀어 남는다. 실측 피해: 한 종목
    * 보유 원가가 시계열과 종목별 표(WMA)에서 어긋났는데, 그 차이가 마지막 전량매도 이후의 <b>매도 수수료 합과 1 원 오차 없이 같았다</b> &mdash; 원인이
    * 수수료라는 것을 그대로 보여 준다.
    *
@@ -1553,8 +1553,8 @@ public class TradeProfitService {
    * 거래 250건·배당 193건 전부 00:00:00Z). 그런 값을 요청 타임존으로 변환하면 UTC 서쪽에서 하루 앞당겨져, 가격(LocalDate)과 하루씩 어긋난 채로
    * 시뮬레이션이 돈다.
    *
-   * <p>실측 피해: {@code timeZone=America/New_York} 이면 TWR 이 +1,442% -> -292.65%, 최대 낙폭이 -57% ->
-   * -311.65% 로 나왔다. 낙폭은 정의상 -100% 를 넘을 수 없으므로 명백한 오류다.
+   * <p>실측 피해: {@code timeZone=America/New_York} 이면 TWR 이 +N% -> -292.65%, 최대 낙폭이 -57% -> -311.65% 로
+   * 나왔다. 낙폭은 정의상 -100% 를 넘을 수 없으므로 명백한 오류다.
    *
    * <p>자정 UTC 인 값은 날짜 전용으로 보고 UTC 날짜를 쓴다(= KST 날짜와 같다). 실제 시각이 들어 있는 데이터는 예전처럼 요청 타임존을 따른다.
    */
@@ -1599,7 +1599,7 @@ public class TradeProfitService {
    * 평가 수량(수정주가 기준). 그 날의 원주가와 수정 종가가 둘 다 있으면 계수 = 원주가 / 수정 종가로 정확히 환산하고, 없으면 거래가 / 수정 종가를 정수배로
    * 추정한다(resolveEvaluationQuantity).
    *
-   * <p>정수배 추정은 공모주(상장일 종가가 공모가 2 배 안팎 = 1/2 병합으로 오판)와 비정수 계수(감자 · 유상증자 조정 - 한화오션 4.45 · 쌍방울
+   * <p>정수배 추정은 공모주(상장일 종가가 공모가 2 배 안팎 = 1/2 병합으로 오판)와 비정수 계수(감자 · 유상증자 조정 - 한 종목 4.45 · 한 종목
    * 1/40~48)를 못 맞췄다(실측 2026-10-01: 43 종목 중 14 종목). 원주가는 그 날 이후의 기업행위를 모두 반영한 정확한 배율이다 - 기업행위가 없던 날은
    * 원주가 = 수정 종가라 계수 1.
    *
@@ -1621,7 +1621,7 @@ public class TradeProfitService {
         && tradePrice != null
         && tradePrice.signum() > 0) {
       // (1) 원장이 이미 수정 단위로 적혀 있으면(거래가가 원주가보다 수정 종가에 가깝다) 환산하지 않는다.
-      //     실측 2026-10-02: NAVER 2018 년 5:1 분할 전 매수가 원장에 분할 뒤 수량 · 가격(220 주 · 156,400 원)으로 적혀 있어
+      //     실측 2026-10-02: 한 종목 2018 년 5:1 분할 전 매수가 원장에 분할 뒤 수량 · 가격(220 주 · N 원)으로 적혀 있어
       //     원주가 / 수정 종가(5)를 곱하자 수량이 5 배로 부풀었다(수익률 99% -> -60%).
       double toRaw = Math.abs(Math.log(tradePrice.doubleValue() / dayRawClose.doubleValue()));
       double toAdjusted =
@@ -1671,11 +1671,11 @@ public class TradeProfitService {
   }
 
   /**
-   * 가격 차트용 종가 - 원주가를 분할 · 병합 배율로만 맞춘 값(2026-10-02). 그 날 이후에 있었던 배율로 나눈다(NAVER 2018-10-11 원주가
-   * 704,000 은 5:1 분할 뒤 단위로 140,800).
+   * 가격 차트용 종가 - 원주가를 분할 · 병합 배율로만 맞춘 값(2026-10-02). 그 날 이후에 있었던 배율로 나눈다(한 종목 2018-10-11 원주가 N 은 5:1
+   * 분할 뒤 단위로 N).
    *
    * <p>수정 종가는 분배금까지 깎는데 그 수정이 받은 때마다 달라, 처음 한꺼번에 받은 옛 구간만 깎인 채 매일 이어 받은 최근 구간과 붙어 있었다 - 경계에 가짜 하루
-   * 변동이 생겼다(0094M0 2026-03-25 수정 +18.65% / 실제 +1.92%). 실제 거래 가격에 분할만 맞추면 어디서나 같은 기준이다. 배율을 정하는 규칙은
+   * 변동이 생겼다(종목코드 2026-03-25 수정 +18.65% / 실제 +1.92%). 실제 거래 가격에 분할만 맞추면 어디서나 같은 기준이다. 배율을 정하는 규칙은
    * 평가와 같다(RawValuation · shareMultiplier). 원주가로 이을 수 없는 종목이면 null - 호출부가 수정 종가로 돌아간다.
    *
    * @param rowsAsc 한 종목의 원주가 · 수정 종가, 날짜순(거래량 0 인 날은 빠져 있다)
@@ -1741,7 +1741,7 @@ public class TradeProfitService {
       Map<LocalDate, Map<UUID, BigDecimal>> shareEventsByDay,
       Set<UUID> covered) {
 
-    /** 0 원 매수가 이 날수 안에서 배율 뒤에 오면 같은 기업행위다(무상증자 신주 입고 - 원티드랩 권리락 10-08, 입고 10-28). */
+    /** 0 원 매수가 이 날수 안에서 배율 뒤에 오면 같은 기업행위다(무상증자 신주 입고 - 한 종목 권리락 10-08, 입고 10-28). */
     static final int BONUS_LISTING_DAYS = 60;
 
     static RawValuation of(Map<UUID, List<StockRawClose>> rows) {
@@ -1849,11 +1849,11 @@ public class TradeProfitService {
    * 하루 사이 주식 수 배율(분할 5:1 이면 5, 병합 10:1 이면 0.1). 기업행위가 없으면 null.
    *
    * <p>원주가가 가격제한폭 밖으로 움직였을 때만 본다(시장 움직임으로는 못 넘는다). 배율은 (전날 원주가 / 수정 종가) / (그날 원주가 / 수정 종가) - 수정 종가는
-   * 그 기업행위를 지운 값이라 둘의 비가 정확한 배율이다. 단순 비율(snapToSimpleRatio)에 0.5% 안이면 그 비율로 맞춘다(NAVER 4.9929 -> 5).
+   * 그 기업행위를 지운 값이라 둘의 비가 정확한 배율이다. 단순 비율(snapToSimpleRatio)에 0.5% 안이면 그 비율로 맞춘다(한 종목 4.9929 -> 5).
    * 배율이 1 에서 15% 안이면(분배금 수정 수준) 주식 수는 그대로다. 수정 종가도 가격제한폭 밖으로 뛰었으면 둘을 가를 수 없어 null - 호출한 쪽이 그 종목을
    * 원주가 평가에서 뺀다.
    *
-   * <p>한계: 출자전환 같은 희석(한화오션 2017-10-30 재상장, 배율 2.0)도 수정 종가가 지운 값이라 분할처럼 읽힌다 - 그 날 보유가 없어 지금 결과에는 영향이
+   * <p>한계: 출자전환 같은 희석(한 종목 2017-10-30 재상장, 배율 2.0)도 수정 종가가 지운 값이라 분할처럼 읽힌다 - 그 날 보유가 없어 지금 결과에는 영향이
    * 없다.
    */
   static BigDecimal shareMultiplier(
@@ -1883,8 +1883,8 @@ public class TradeProfitService {
 
   /**
    * 매매 한 건의 실제 주식 수(원주가 평가용). 원장은 보통 그날의 실제 주식 수로 적혀 있다. 원장이 나중 기업행위 단위로 고쳐 적혀 있으면(거래가가 원주가보다 수정
-   * 종가에 가깝고, 둘의 배율이 1 에서 15% 밖) 수량 x 수정 종가 / 원주가 - NAVER 2018-04 매수가 분할 뒤 단위(220 주 · 156,400 원)로 적혀
-   * 그날 실제로는 44 주였다.
+   * 종가에 가깝고, 둘의 배율이 1 에서 15% 밖) 수량 x 수정 종가 / 원주가 - 한 종목 2018-04 매수가 분할 뒤 단위(220 주 · N 원)로 적혀 그날
+   * 실제로는 44 주였다.
    */
   static BigDecimal rawShareQuantity(
       int quantity, BigDecimal tradePrice, BigDecimal dayRawClose, BigDecimal dayAdjustedClose) {
@@ -1902,12 +1902,12 @@ public class TradeProfitService {
     double toAdjusted =
         Math.abs(Math.log(tradePrice.doubleValue() / dayAdjustedClose.doubleValue()));
     double factor = Math.abs(Math.log(dayRawClose.doubleValue() / dayAdjustedClose.doubleValue()));
-    // 고쳐 적힌 원장은 거래가가 수정 종가와 거의 같다(NAVER 156,400 / 156,400). 공모가는 그날 종가와 멀어 수정 종가 쪽이 "더 가까울" 뿐인
-    // 경우가 있다 - 원티드랩 공모 35,000 · 상장일 원주가 91,000 · 수정 45,500(뒤의 1:1 무상증자) 을 고쳐 적힌 것으로 읽어 4 주를 2 주로
+    // 고쳐 적힌 원장은 거래가가 수정 종가와 거의 같다(한 종목 N / N). 공모가는 그날 종가와 멀어 수정 종가 쪽이 "더 가까울" 뿐인
+    // 경우가 있다 - 한 종목 공모 35,000 · 상장일 원주가 91,000 · 수정 45,500(뒤의 1:1 무상증자) 을 고쳐 적힌 것으로 읽어 4 주를 2 주로
     // 셌다(2026-10-02). 그래서 수정 종가에서 10% 안일 때만 고쳐 적힌 것으로 본다.
     if (toAdjusted < toRaw && toAdjusted < Math.log(1.1d) && factor >= Math.log(1.15d)) {
-      // 배율은 단순 비율로 맞춘다 - 수정 종가는 분배금까지 조금 깎여 있어(NAVER 2018-04-12 원주가 / 수정 4.99) 그대로 나누면 주식 수가
-      // 0.1% 남짓 어긋나고 그 시점 평균 단가도 156,400 이 아니라 156,179 로 그려졌다(2026-10-02).
+      // 배율은 단순 비율로 맞춘다 - 수정 종가는 분배금까지 조금 깎여 있어(한 종목 2018-04-12 원주가 / 수정 4.99) 그대로 나누면 주식 수가
+      // 0.1% 남짓 어긋나고 그 시점 평균 단가도 N 이 아니라 N 로 그려졌다(2026-10-02).
       BigDecimal splitFactor =
           snapToSimpleRatio(dayRawClose.divide(dayAdjustedClose, 10, RoundingMode.HALF_UP));
       return shares.divide(splitFactor, 10, RoundingMode.HALF_UP);
@@ -2064,9 +2064,8 @@ public class TradeProfitService {
    * <p>다운샘플은 버킷마다 마지막 날만 남기므로 첫 버킷의 앞머리가 통째로 사라진다. 그런데 요약의 {@code openingValue} 는 그 사라진 첫 지점의 값이라,
    * 차트의 왼쪽 끝과 카드가 서로 다른 수를 말하게 된다.
    *
-   * <p>실측 2026-09-13: '2025년' 은 차트 첫 점이 2025-01-04 456,672,455 인데 기초는 2024-12-31 447,114,050 이었고,
-   * '최근 3년' 은 차트 2023-09-29 493,978,320 · 기초 2023-09-13 524,988,225 로 3,100 만 원 차이에 오르내림의 방향까지 달라
-   * 보였다. 끝 지점은 마지막 버킷의 마지막 날이라 이미 남는다.
+   * <p>실측 2026-09-13: '2025년' 은 차트 첫 점이 2025-01-04 N 인데 기초는 2024-12-31 N 이었고, '최근 3년' 은 차트
+   * 2023-09-29 N · 기초 2023-09-13 N 로 3,N 만 원 차이에 오르내림의 방향까지 달라 보였다. 끝 지점은 마지막 버킷의 마지막 날이라 이미 남는다.
    *
    * <p>흐름값(거래 건수 · 매도 수량 · 일별 실현손익)은 0 으로 둔다 - 그 날의 흐름은 이미 첫 버킷의 대표 지점에 합산돼 있어, 다시 실으면 두 번 세어진다. 최고
    * · 최저 waypoint 와 같은 규칙이다.
@@ -2178,7 +2177,7 @@ public class TradeProfitService {
    * dailyRealizedProfit)은 구간 합으로 바꾼다.
    *
    * <p>tradeVolume 도 흐름값(그 기간의 매도 수량)이라 합산해야 한다. 마지막 날 값을 그대로 쓰면 그 하루에 매도가 없었으면 0 이 되어, 같은 구간인데
-   * granularity 에 따라 합계가 달라진다(실측: 일 121,305 / 주 680 / 월 3,947).
+   * granularity 에 따라 합계가 달라진다(실측: 일 N / 주 680 / 월 N).
    */
   private static <K> List<TradeProfitTimeSeriesPoint> downsample(
       List<TradeProfitTimeSeriesPoint> series, Function<TradeProfitTimeSeriesPoint, K> bucketKey) {
@@ -2528,7 +2527,7 @@ public class TradeProfitService {
       // 수정주가가 반영된 종목은 시뮬레이션 내부 수량(state.getQuantity())과 실제 보유 주수
       // (rawQuantity)가 배수만큼 다르다. 이때 내부 가격을 그대로 내보내면 수량 x 가격 != 평가액 이 되고,
       // 게이트의 시가배당률(priceAtDate x 배당 수량)이 그 배수만큼 어긋난다
-      // (실측: 047820/329180 의 8개 스냅샷 행에서 최대 13배).
+      // (실측: 종목코드/종목코드 의 8개 스냅샷 행에서 최대 13배).
       BigDecimal displayPrice = rawValued ? state.getCapturedRawClose() : price;
       if (!rawValued && displayQty > 0 && state.getQuantity().compareTo(BigDecimal.ZERO) > 0) {
         BigDecimal ratio = state.getQuantity().divide(displayQtyBd, 10, RoundingMode.HALF_UP);

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
  * &mdash; title 도 sr-only 도 aria-label 도 없어 마우스로도 낭독기로도 까닭을 알 수 없었다.
  *
  * <p>필터를 걸지 않으면 모든 계좌·종목에 매도가 있어 이 자리가 드러나지 않는다. 그래서 대시를 훑은 지난 검사들이 이 넷을 지나쳤다({@link
- * DashMeaningInRowTest} 의 9,175 칸 훑기 포함).
+ * DashMeaningInRowTest} 의 N 칸 훑기 포함).
  *
  * <p>{@code opacity-40} 은 {@code _components/ui/amountCell} 이 2026-09-10 에 걷어낸 대비 미달 표기와 같은
  * 계열이다(라이트 2.00 · AA 4.5 미달). 같은 {@code text-base-content/60} 으로 맞춘다.
