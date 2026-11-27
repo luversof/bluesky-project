@@ -16,6 +16,7 @@ import net.luversof.web.gate.stock.httpexchange.ActivityFilterIdsClient;
 import net.luversof.web.gate.stock.httpexchange.DataFirstDateClient;
 import net.luversof.web.gate.stock.httpexchange.DataStatusClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
+import net.luversof.web.gate.stock.httpexchange.HighDividendDesignationClient;
 import net.luversof.web.gate.stock.httpexchange.LedgerIntegrityClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendCatalogClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
@@ -145,6 +146,13 @@ public class GateStockConfig {
       @Qualifier("stockHttpServiceProxyFactory")
           HttpServiceProxyFactory stockHttpServiceProxyFactory) {
     return stockHttpServiceProxyFactory.createClient(MonthlyDividendCatalogClient.class);
+  }
+
+  @Bean
+  HighDividendDesignationClient highDividendDesignationClient(
+      @Qualifier("stockHttpServiceProxyFactory")
+          HttpServiceProxyFactory stockHttpServiceProxyFactory) {
+    return stockHttpServiceProxyFactory.createClient(HighDividendDesignationClient.class);
   }
 
   @Bean

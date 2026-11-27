@@ -29,8 +29,7 @@ class AdminDataStatusScopeTest {
     assertThat(source)
         .as("탭을 보고 건너뛰는 조건이 있어야 한다")
         .contains(
-            flatten(
-                "boolean adminDataStatusNeeded = !MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE.equals(adminTab);"));
+            flatten("boolean adminDataStatusNeeded = ADMIN_TAB_DATA_MANAGEMENT.equals(adminTab);"));
     assertThat(source)
         .as("그 조건이 실제로 조회를 감싸야 한다")
         .contains(flatten("if (dataStatusUserId != null && adminDataStatusNeeded) {"));

@@ -188,3 +188,20 @@ ALTER TABLE "StockPrediction" ADD COLUMN IF NOT EXISTS "replay" VARCHAR(50);
 -- DELETE FROM "StockPredictionGrade" WHERE "prediction_id" IN (SELECT "id" FROM "StockPrediction" WHERE "replay" IS NOT NULL);
 -- DELETE FROM "StockPrediction" WHERE "replay" IS NOT NULL;
 -- ALTER TABLE "StockPrediction" DROP COLUMN "replay";
+
+-- =====================================================================
+-- 2026-11-27
+-- =====================================================================
+
+-- (1) 고배당기업 지정(조특법 제104조의27). 공용 값. 판정은 지급일 기간(시작 · 끝 포함), businessYear 는 표시용.
+CREATE TABLE IF NOT EXISTS "HighDividendDesignation" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"stockItem_id" UUID NOT NULL,
+	"businessYear" INTEGER NOT NULL,
+	"payDateFrom" DATE NOT NULL,
+	"payDateTo" DATE NOT NULL,
+	"note" VARCHAR(1000)
+);
+CREATE INDEX IF NOT EXISTS idx_highDividendDesignation_stockItemId ON "HighDividendDesignation" ("stockItem_id");
+-- 되돌리기
+-- DROP TABLE IF EXISTS "HighDividendDesignation";

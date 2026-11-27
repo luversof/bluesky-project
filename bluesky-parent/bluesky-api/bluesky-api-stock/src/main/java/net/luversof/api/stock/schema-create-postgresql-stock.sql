@@ -228,3 +228,15 @@ CREATE TABLE IF NOT EXISTS "StockPredictionGrade" (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_stockPredictionGrade_predictionId ON "StockPredictionGrade" ("prediction_id");
+
+-- 고배당기업 지정(조특법 제104조의27). 공용 값. 판정은 지급일 기간(시작 · 끝 포함), businessYear 는 표시용.
+CREATE TABLE IF NOT EXISTS "HighDividendDesignation" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"stockItem_id" UUID NOT NULL,
+	"businessYear" INTEGER NOT NULL,
+	"payDateFrom" DATE NOT NULL,
+	"payDateTo" DATE NOT NULL,
+	"note" VARCHAR(1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_highDividendDesignation_stockItemId ON "HighDividendDesignation" ("stockItem_id");

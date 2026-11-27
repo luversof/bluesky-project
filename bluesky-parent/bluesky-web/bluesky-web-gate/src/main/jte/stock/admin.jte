@@ -11,6 +11,7 @@
 @import net.luversof.web.gate.stock.dto.response.DataStatusResponse
 @import net.luversof.web.gate.stock.dto.response.LedgerIntegrityResponse
 @import net.luversof.web.gate.stock.dto.view.MonthlyDividendLatestPayoutView
+@import net.luversof.web.gate.stock.dto.response.HighDividendDesignationResponse
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -41,13 +42,20 @@
 @param String monthlyDividendReferenceResultMessage = ""
 @param boolean monthlyDividendReferenceResultIsError = false
 @param String monthlyDividendReferenceWarningMessage = ""
+@param List<HighDividendDesignationResponse> highDividendDesignations = List.of()
+@param List<StockItem> highDividendStockItems = List.of()
+@param HighDividendDesignationResponse highDividendEdit = null
+@param boolean highDividendLoadFailed = false
+@param String highDividendResult = ""
 
 !{
 	// 두 탭이 브라우저 탭·기록에서 같은 이름("관리")이었다 - 실측 2026-09-12: 13 화면 제목 전수에서
 	// 같은 제목을 쓰는 화면은 이곳뿐이었다. 화면 제목(H1)은 "관리" 그대로 두고 문서 제목에만 탭을 덧붙인다.
 	String adminTabLabel = "monthly-reference".equals(adminTab)
 		? MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference")
-		: MessageUtil.getMessage("stock.admin.label.data.management");
+		: "high-dividend".equals(adminTab)
+			? MessageUtil.getMessage("stock.admin.high.dividend.tab")
+			: MessageUtil.getMessage("stock.admin.label.data.management");
 	String adminPageTitle = MessageUtil.getMessage("stock.page.admin.title") + " · " + adminTabLabel;
 }
 @template._layout.stockLayout(
@@ -63,6 +71,7 @@
 				<div class="tabs tabs-scroll tabs-box w-full bg-base-200/70 p-1">
 					<a href="/stock/admin" aria-current="${"data-management".equals(adminTab) ? "page" : null}" class="${"data-management".equals(adminTab) ? "tab tab-lg flex-1 font-semibold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.admin.label.data.management")}</a>
 					<a href="/stock/admin?tab=monthly-reference" aria-current="${"monthly-reference".equals(adminTab) ? "page" : null}" class="${"monthly-reference".equals(adminTab) ? "tab tab-lg flex-1 font-semibold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.page.dividend.tab.monthly.reference")}</a>
+					<a href="/stock/admin?tab=high-dividend" aria-current="${"high-dividend".equals(adminTab) ? "page" : null}" class="${"high-dividend".equals(adminTab) ? "tab tab-lg flex-1 font-semibold tab-active !bg-primary !text-primary-content shadow-sm" : "tab tab-lg flex-1 text-base-content/60 hover:text-base-content"}">${MessageUtil.getMessage("stock.admin.high.dividend.tab")}</a>
 				</div>
 
 				@if("monthly-reference".equals(adminTab))
@@ -92,6 +101,13 @@
 					<script type="module" src="/js/stock/monthlyDividendProfileOrder.js"></script>
 					<script type="module" src="/js/stock/monthlyDividendPayoutPeek.js"></script>
 					<script type="module" src="/js/stock/submitOverlay.js"></script>
+				@elseif("high-dividend".equals(adminTab))
+					@template.stock.fragments.highDividendDesignation(
+						designations = highDividendDesignations,
+						stockItems = highDividendStockItems,
+						edit = highDividendEdit,
+						loadFailed = highDividendLoadFailed,
+						result = highDividendResult)
 				@else
 					@template.stock.htmx.fragments.adminActions(isAuthenticated = isAuthenticated, dataStatus = dataStatus, ledgerIntegrity = ledgerIntegrity)
 					@if(isAuthenticated)

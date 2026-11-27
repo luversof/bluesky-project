@@ -45,6 +45,7 @@ import net.luversof.web.gate.stock.httpexchange.LedgerIntegrityClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendCatalogClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendSnapshotClient;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
+import net.luversof.web.gate.stock.service.HighDividendAdminSupport;
 import net.luversof.web.gate.stock.service.MonthlyContributionPickSupport;
 import net.luversof.web.gate.stock.service.MonthlyDividendCalculator;
 import net.luversof.web.gate.stock.service.MonthlyDividendGoalCalculator;
@@ -90,6 +91,8 @@ public class StockViewController {
   private MonthlyDividendViewSupport monthlyDividendViewSupport;
 
   @Autowired private MonthlyDividendReferenceSupport monthlyDividendReferenceSupport;
+
+  @Autowired private HighDividendAdminSupport highDividendAdminSupport;
 
   @Autowired
   public void setMonthlyDividendViewSupport(MonthlyDividendViewSupport monthlyDividendViewSupport) {
@@ -396,8 +399,11 @@ public class StockViewController {
   }
 
   private String resolveAdminTab(String tab) {
-    return MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE.equalsIgnoreCase(tab)
-        ? MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE
+    if (MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE.equalsIgnoreCase(tab)) {
+      return MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE;
+    }
+    return HighDividendAdminSupport.ADMIN_TAB_HIGH_DIVIDEND.equalsIgnoreCase(tab)
+        ? HighDividendAdminSupport.ADMIN_TAB_HIGH_DIVIDEND
         : ADMIN_TAB_DATA_MANAGEMENT;
   }
 
@@ -930,7 +936,8 @@ public class StockViewController {
       @RequestParam(required = false) String profileDirection,
       @RequestParam(required = false) LocalDate payoutRecordDate,
       @RequestParam(required = false) LocalDate payoutPayDate,
-      @RequestParam(required = false) String profileWindow) {
+      @RequestParam(required = false) String profileWindow,
+      @RequestParam(required = false) UUID designationId) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
@@ -944,8 +951,7 @@ public class StockViewController {
     UUID dataStatusUserId = UserUtil.getUserId();
     // 이 두 값은 데이터 관리 탭의 adminActions 조각만 쓴다 - 월배당 기준 데이터 탭에서는 받아서 버렸다.
     // 실측 2026-09-12: 그 탭 문서가 89ms(64~96) 였고 데이터 관리 탭은 67ms 다. 안 쓰는 탭에서는 묻지 않는다.
-    boolean adminDataStatusNeeded =
-        !MonthlyDividendReferenceSupport.DIVIDEND_TAB_MONTHLY_REFERENCE.equals(adminTab);
+    boolean adminDataStatusNeeded = ADMIN_TAB_DATA_MANAGEMENT.equals(adminTab);
     if (dataStatusUserId != null && adminDataStatusNeeded) {
       // 두 조회는 서로 의존이 없는데 순차로 돌고 있었다 - 실측 2026-09-10: 데이터 상태 113ms +
       // 원장 점검 45ms 가 그대로 합산돼 이 화면만 TTFB 165~244ms 였다(대시보드 15ms·배당 25ms).
@@ -984,6 +990,9 @@ public class StockViewController {
           payoutRecordDate,
           payoutPayDate,
           profileWindow);
+    }
+    if (HighDividendAdminSupport.ADMIN_TAB_HIGH_DIVIDEND.equals(adminTab)) {
+      highDividendAdminSupport.populate(model, designationId);
     }
 
     return "stock/admin";

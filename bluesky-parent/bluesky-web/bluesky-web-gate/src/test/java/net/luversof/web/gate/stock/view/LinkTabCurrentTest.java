@@ -58,8 +58,9 @@ class LinkTabCurrentTest {
     String template =
         Files.readString(Path.of("src/main/jte/stock/admin.jte"), StandardCharsets.UTF_8);
 
-    assertThat(count(template, "aria-current=" + (char) 34 + "${")).as("탭 둘").isEqualTo(2);
+    assertThat(count(template, "aria-current=" + (char) 34 + "${")).as("탭 셋").isEqualTo(3);
     assertThat(template).contains("\"data-management\".equals(adminTab) ? \"page\" : null");
     assertThat(template).contains("\"monthly-reference\".equals(adminTab) ? \"page\" : null");
+    assertThat(template).contains("\"high-dividend\".equals(adminTab) ? \"page\" : null");
   }
 }
