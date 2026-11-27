@@ -100,7 +100,11 @@ class EmptyDataRenderTest {
           // "기준까지 2,000 만 원 남음" 으로 읽힌다.
           "stock/fragments/financialIncomeThreshold.jte",
           // 다음 기준일 · 매수 마감(2026-10-20): 지급 시기 규칙이 없으면(행 0) 적을 날짜가 없다.
-          "stock/fragments/recordDateBuyBy.jte");
+          "stock/fragments/recordDateBuyBy.jte",
+          // 종소세 신고 자료(2026-11-28): view 는 컨트롤러가 늘 채운다(DividendTaxReportSupport.load 는 null 을 돌려주지
+          // 않는다).
+          // 조회가 실패하면 view.report() 가 null 이 되어 구역 안에서 "-" 와 까닭을 적는다. view 없이 부르면 연도도 몰라 그리지 않는다.
+          "stock/fragments/dividendTaxReport.jte");
 
   @Test
   void 데이터가_없어도_조각이_예외를_내지_않는다() throws IOException {

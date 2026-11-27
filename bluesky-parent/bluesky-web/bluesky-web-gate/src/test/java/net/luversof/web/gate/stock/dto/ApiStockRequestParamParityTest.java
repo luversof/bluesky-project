@@ -46,8 +46,10 @@ class ApiStockRequestParamParityTest {
     SENDER_TO_API.put("TradeProfitRequest", "TradeProfitRequest");
   }
 
+  // 대문자 상수(PERIODS.put 같은 화면 이름 표)는 질의를 만드는 곳이 아니라 뺀다.
   private static final Pattern ADDED_KEY =
-      Pattern.compile("[.](?:add|set|addAll|put)[(]" + q() + "([A-Za-z][\\w.]*)" + q());
+      Pattern.compile(
+          "(?<![A-Z][A-Z0-9_])[.](?:add|set|addAll|put)[(]" + q() + "([A-Za-z][\\w.]*)" + q());
 
   private static String q() {
     return String.valueOf((char) 34);

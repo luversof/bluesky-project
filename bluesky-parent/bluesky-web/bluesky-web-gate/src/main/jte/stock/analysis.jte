@@ -4,6 +4,7 @@
 @import net.luversof.web.gate.stock.controller.StockAnalysisViewController
 @import net.luversof.web.gate.stock.httpexchange.StockAnalysisClient
 @import net.luversof.web.gate.stock.support.StockViewSupport
+@import net.luversof.web.gate.stock.util.StockAnalysisLabelUtil
 
 @param boolean isAuthenticated = false
 @param String username = ""
@@ -81,7 +82,7 @@
 					<label class="text-sm" for="analysis-slot">${MessageUtil.getMessage("stock.analysis.slot")}</label>
 					<select id="analysis-slot" name="slot" class="select select-bordered select-sm">
 						@for(var sl : slots)
-							<option value="${sl}" selected="${sl.equals(dailySlot)}">${MessageUtil.getMessage("stock.analysis.slot." + sl)}</option>
+							<option value="${sl}" selected="${sl.equals(dailySlot)}">${StockAnalysisLabelUtil.slot(sl)}</option>
 						@endfor
 					</select>
 					<button type="submit" class="btn btn-sm btn-primary">${MessageUtil.getMessage("stock.analysis.runs.show")}</button>
@@ -117,7 +118,7 @@
 											<td class="whitespace-nowrap">${r.createdDate() == null ? "-" : runTime.format(r.createdDate())}
 												<span class="badge badge-sm badge-outline ${r.live() ? "badge-primary" : "badge-info"}">${MessageUtil.getMessage(r.live() ? "stock.analysis.upcoming.live" : "stock.analysis.upcoming.backfill")}</span>
 											</td>
-											<td class="whitespace-nowrap">${r.slot() == null ? "-" : MessageUtil.getMessage("stock.analysis.slot." + r.slot())}</td>
+											<td class="whitespace-nowrap">${StockAnalysisLabelUtil.slot(r.slot())}</td>
 											<td class="whitespace-nowrap">${r.version()}</td>
 											@for(var p : java.util.Arrays.asList(r.d1(), r.d5()))
 												<td class="whitespace-nowrap">
@@ -150,7 +151,7 @@
 								<tbody>
 									@for(var h : slotHits)
 										<tr>
-											<td class="whitespace-nowrap">${MessageUtil.getMessage("stock.analysis.slot." + h.slot())}</td>
+											<td class="whitespace-nowrap">${StockAnalysisLabelUtil.slot(h.slot())}</td>
 											<td class="whitespace-nowrap text-right">${h.hits().d1Graded() == 0 ? "-" : StockViewSupport.msg("stock.analysis.slotHits.value", rate.apply(h.hits().d1RatePct()), String.valueOf(h.hits().d1Hit()), String.valueOf(h.hits().d1Graded()))}</td>
 											<td class="whitespace-nowrap text-right">${h.hits().d5Graded() == 0 ? "-" : StockViewSupport.msg("stock.analysis.slotHits.value", rate.apply(h.hits().d5RatePct()), String.valueOf(h.hits().d5Hit()), String.valueOf(h.hits().d5Graded()))}</td>
 										</tr>
