@@ -46,7 +46,6 @@
 				</div>
 				<div id="poeRegexImportNote" class="text-xs text-base-content/60 hidden"></div>
 				<div id="poeRegexCustom" class="flex flex-wrap items-center gap-1 hidden"></div>
-				<div id="poeRegexPicked" class="flex flex-wrap items-center gap-1 hidden"></div>
 			</div>
 
 			<%-- 프리셋 저장/불러오기 --%>
@@ -73,6 +72,10 @@
 					</div>
 					<input id="poeRegexSearch" type="search" class="input input-sm input-bordered w-full sm:w-64" placeholder="${MessageUtil.getMessage("poe.regex.search.placeholder")}" autocomplete="off" aria-label="${MessageUtil.getMessage("poe.regex.search.aria")}">
 					<span id="poeRegexCount" class="text-xs font-mono text-base-content/60"></span>
+					<label class="label cursor-pointer gap-1.5 py-0">
+						<input id="poeRegexOnlyPicked" type="checkbox" class="checkbox checkbox-xs">
+						<span class="label-text text-xs">${MessageUtil.getMessage("poe.regex.onlyPicked")}</span>
+					</label>
 					<label class="label cursor-pointer gap-1.5 py-0">
 						<input id="poeRegexEnglish" type="checkbox" class="checkbox checkbox-xs">
 						<span class="label-text text-xs">${MessageUtil.getMessage("poe.regex.english")}</span>

@@ -107,7 +107,7 @@
 	const importEl = el("poeRegexImport") as HTMLInputElement;
 	const importNoteEl = el("poeRegexImportNote");
 	const customEl = el("poeRegexCustom");
-	const pickedEl = el("poeRegexPicked");
+	const onlyPickedEl = el("poeRegexOnlyPicked") as HTMLInputElement;
 
 	const LIMIT = 250;
 
@@ -503,41 +503,7 @@
 			warnings.push(uiKo ? "250자 초과 — 선택을 줄이세요(인게임 검색창 한도)" : "Over 250 chars (in-game limit)");
 		warnEl.textContent = warnings.join(" · ");
 		warnEl.classList.toggle("hidden", warnings.length === 0);
-		renderPicked();
 		saveDraft();
-	}
-
-	/** 고른 모드 칩 — 목록이 길어 스크롤해서 찾지 않게 결과 아래에 모아 보여준다. ×로 해제 */
-	function renderPicked(): void {
-		pickedEl.textContent = "";
-		const picked = mods.filter((m) => state.picks[m.id]);
-		pickedEl.classList.toggle("hidden", picked.length === 0);
-		if (picked.length === 0) return;
-		const label = document.createElement("span");
-		label.className = "text-2xs text-base-content/60";
-		label.textContent = (uiKo ? "선택 " : "Picked ") + picked.length + ":";
-		pickedEl.appendChild(label);
-		for (const m of picked) {
-			const exclude = state.picks[m.id] === "exclude";
-			// 첫 줄이 같은 모드가 많아(아틀라스 획득물 …) 줄 전부를 잇는다
-			const text = (uiKo ? m.ko : m.en).join(" · ").trim() || m.id;
-			const span = document.createElement("span");
-			span.className = "badge badge-sm h-auto gap-1 text-left " + (exclude ? "badge-error badge-outline" : "badge-success badge-outline");
-			span.textContent = (exclude ? "!" : "") + text;
-			span.title = (uiKo ? m.ko : m.en).join("\n");
-			const x = document.createElement("button");
-			x.type = "button";
-			x.className = "cursor-pointer font-semibold";
-			x.textContent = "×";
-			x.setAttribute("aria-label", (uiKo ? "선택 해제: " : "Unpick: ") + text);
-			x.addEventListener("click", () => {
-				applyPick(m.id, null);
-				renderList();
-				updateOutput();
-			});
-			span.appendChild(x);
-			pickedEl.appendChild(span);
-		}
 	}
 
 	/** 역파싱에서 남은 수동 정규식 항 칩 — ×로 제거 가능 */
@@ -893,6 +859,7 @@
 		const shownByGen: { [gen: string]: number } = { prefix: 0, suffix: 0 };
 		for (const m of mods) {
 			if (state.tab === "normal" ? !m.normal : !m.uber) continue;
+			if (onlyPickedEl.checked && !state.picks[m.id]) continue;
 			const displayLines = uiKo ? m.ko : m.en;
 			const hay = (m.ko.join("\n") + "\n" + m.en.join("\n") + "\n" + m.nameKo + "\n" + m.name).toLowerCase().replace(/[ \t\u00a0]+/g, "");
 			if (q && hay.indexOf(q) === -1) continue;
@@ -1243,6 +1210,7 @@
 		state.pack = isNaN(v) || v <= 0 ? null : v;
 		updateOutput();
 	});
+	onlyPickedEl.addEventListener("change", renderList);
 	englishEl.addEventListener("change", () => {
 		state.english = englishEl.checked;
 		updateOutput();

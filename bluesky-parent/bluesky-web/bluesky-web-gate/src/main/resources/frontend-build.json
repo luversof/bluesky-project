@@ -8,7 +8,7 @@
 	"src/fetchClient.ts": "3a923e1136199a836f743045ee38b1c5a451cafc315ef89359fa8712bb57b21f",
 	"src/poe/filterUrl.ts": "8af06cfb8fecd0ee2c2b8aec99f2ab18af578d3993405bbc2edd3131e13b3cdd",
 	"src/poe/multiSelect.ts": "2c4bcf14f42f3657e5f6f214914179ab9c74c35ae7970ae94a17ecfcefe29d85",
-	"src/poe/regex.ts": "81d11ab21bf490fe00ad57c339af881e8ec6fa359cc774368d91e055c33768f6",
+	"src/poe/regex.ts": "f52b9e11a356020693980480dde17e000c2d60c4ea245987bb172a0bd39e4d62",
 	"src/poe/tree.ts": "609184049cb64e0047cf08f0124be5822b177c6de512994977e9cfc6643035cd",
 	"src/poe2/tree2.ts": "e99b0dc06ab40f77f2c4a199e9182f8c595adc7aec0ea000039b65701ac93889",
 	"src/stock-charts.ts": "075d47a86495ff3325a35ab077d35bd56924e980c9c39ebdbb5941b685f2a0b7",
