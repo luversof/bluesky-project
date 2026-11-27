@@ -65,6 +65,9 @@
 			@if(view.unknownTaxableCount() > 0)
 				<li data-financial-income-unknown><span class="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-base-content">${StockViewSupport.msg("stock.dividend.financial.income.unknown", String.valueOf(view.unknownTaxableCount()))}</span></li>
 			@endif
+			@if(view.separationApplied())
+				<li data-financial-income-separation>${MessageUtil.getMessage("stock.dividend.financial.income.separation")}</li>
+			@endif
 			<li data-financial-income-note>${MessageUtil.getMessage("stock.dividend.financial.income.note")}</li>
 		</ul>
 	</section>

@@ -36,6 +36,7 @@ import net.luversof.web.gate.stock.util.StockAmountUtil;
  * @param remainingDays 오늘 다음 날부터 12 월 31 일까지 남은 날
  * @param periodicRest 분기 · 연 배당 종목의 올해 남은 예상(원)
  * @param periodicCount 그 예상에 든 지급 횟수(작년 같은 때 기준)
+ * @param separationApplied 지금까지 합이 고배당 분리과세 신청 기준이다(신청이 유리할 때)
  */
 public record FinancialIncomeThresholdView(
     int year,
@@ -48,7 +49,29 @@ public record FinancialIncomeThresholdView(
     BigDecimal recentTaxable,
     long remainingDays,
     BigDecimal periodicRest,
-    int periodicCount) {
+    int periodicCount,
+    boolean separationApplied) {
+
+  /**
+   * 지금까지 합 · 빈 과세금액 수 · 작년 합을 종소세 신고 자료(api-stock)의 판정 금액으로 바꾼 사본(2026-11-28). 판정 금액은 신고 자료 화면과 같은
+   * 수다 - 앱 밖 금융소득을 넣었으면 그것까지, 고배당 분리과세가 유리하면 그 기준.
+   */
+  public FinancialIncomeThresholdView withJudgement(
+      BigDecimal ytd, long unknown, BigDecimal lastYear, boolean separation) {
+    return new FinancialIncomeThresholdView(
+        year,
+        asOf,
+        ytd,
+        unknown,
+        lastYear,
+        threshold,
+        recentWindowDays,
+        recentTaxable,
+        remainingDays,
+        periodicRest,
+        periodicCount,
+        separation);
+  }
 
   /** 금융소득 종합과세 기준 금액(이자 · 배당 합 2,000 만 원 초과분이 다른 소득과 합산된다). */
   public static final BigDecimal THRESHOLD = new BigDecimal("20000000");

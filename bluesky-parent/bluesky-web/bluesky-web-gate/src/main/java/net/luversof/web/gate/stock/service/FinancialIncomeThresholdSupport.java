@@ -23,18 +23,19 @@ import net.luversof.web.gate.stock.domain.Account;
 import net.luversof.web.gate.stock.domain.TradeProfit;
 import net.luversof.web.gate.stock.dto.request.TradeProfitRequestGroup;
 import net.luversof.web.gate.stock.dto.response.DividendResponse;
+import net.luversof.web.gate.stock.dto.response.DividendTaxReport;
 import net.luversof.web.gate.stock.dto.view.FinancialIncomeThresholdView;
 import net.luversof.web.gate.stock.httpexchange.AccountClient;
 import net.luversof.web.gate.stock.httpexchange.DividendClient;
+import net.luversof.web.gate.stock.httpexchange.DividendTaxReportClient;
 import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.stock.util.StockZoneUtil;
 
 /**
  * 올해 과세 대상 배당이 금융소득 종합과세 기준(2,000 만 원)에 얼마나 다가갔는지(2026-10-20 자율 개선).
  *
- * <p>실측 2026-10-20: 위탁 계좌 둘의 과세표준이 2024 년 N 만 원 &rarr; 2025 년 N 만 원 &rarr; 2026 년 10 월 20 일까지 N
- * 만 원이다. 월배당을 늘려 가는 중이라 기준에 다가가는지를 한 해 내내 볼 곳이 필요하다 &mdash; 배당 내역의 기간 합계는 고른 기간만 말하고, 과세이연 계좌까지
- * 섞인다.
+ * <p>실측 2026-10-20: 위탁 계좌 둘의 과세표준이 2024 년 N 만 원 &rarr; 2025 년 N 만 원 &rarr; 2026 년 10 월 20 일까지 N 만
+ * 원이다. 월배당을 늘려 가는 중이라 기준에 다가가는지를 한 해 내내 볼 곳이 필요하다 &mdash; 배당 내역의 기간 합계는 고른 기간만 말하고, 과세이연 계좌까지 섞인다.
  *
  * <p>계산은 {@link #compute} 에 있는 순수 함수다(조회 없이 시험한다). 조회가 실패하면 null &mdash; 구역을 숨긴다(없는 합을 0 으로 보이면
  * "여유가 2,000 만 원" 으로 읽힌다).
@@ -57,6 +58,14 @@ public class FinancialIncomeThresholdSupport {
 
   /** 과세 계좌에 지금 들고 있는 종목(연말 예상에서 판 종목을 빼려고). */
   @Autowired private TradeProfitClient tradeProfitClient;
+
+  /** 판정 금액을 신고 자료와 맞추려고(없으면 직접 더한 값을 쓴다). */
+  @Autowired(required = false)
+  private DividendTaxReportClient dividendTaxReportClient;
+
+  public void setDividendTaxReportClient(DividendTaxReportClient dividendTaxReportClient) {
+    this.dividendTaxReportClient = dividendTaxReportClient;
+  }
 
   public void setTradeProfitClient(TradeProfitClient tradeProfitClient) {
     this.tradeProfitClient = tradeProfitClient;
@@ -91,12 +100,14 @@ public class FinancialIncomeThresholdSupport {
           "startDate",
           LocalDate.of(today.getYear() - 1, 1, 1).atStartOfDay(zone).toInstant().toString());
       params.add("endDate", today.plusDays(1).atStartOfDay(zone).toInstant().toString());
-      return compute(
-          dividendClient.findDividends(params),
-          deferredAccountIds,
-          today,
-          zone,
-          loadHeldTaxableItemsQuietly(userId, deferredAccountIds));
+      FinancialIncomeThresholdView view =
+          compute(
+              dividendClient.findDividends(params),
+              deferredAccountIds,
+              today,
+              zone,
+              loadHeldTaxableItemsQuietly(userId, deferredAccountIds));
+      return applyJudgementQuietly(view, userId, today.getYear());
     } catch (RuntimeException ex) {
       log.warn("금융소득 종합과세 기준 계산용 배당 조회 실패: userId={}", userId, ex);
       return null;
@@ -128,6 +139,41 @@ public class FinancialIncomeThresholdSupport {
       log.warn("과세 계좌 보유 종목 조회 실패 - 연말 예상에서 판 종목을 빼지 못한다: userId={}", userId, ex);
       return null;
     }
+  }
+
+  /**
+   * 지금까지 합 · 작년 합을 종소세 신고 자료의 판정 금액으로 바꾼다(2026-11-28) - 신고 자료 화면과 같은 수를 보이려고. 신고 자료를 못 읽으면 직접 더한 값을
+   * 그대로 둔다. 연말 예상(더 받을 몫)은 직접 센 값 그대로다.
+   */
+  FinancialIncomeThresholdView applyJudgementQuietly(
+      FinancialIncomeThresholdView view, UUID userId, int year) {
+    if (view == null || dividendTaxReportClient == null) {
+      return view;
+    }
+    try {
+      DividendTaxReport thisYear = dividendTaxReportClient.report(userId, year);
+      DividendTaxReport lastYear = dividendTaxReportClient.report(userId, year - 1);
+      return applyJudgement(view, thisYear, lastYear);
+    } catch (RuntimeException ex) {
+      log.warn("종소세 신고 자료 조회 실패 - 직접 더한 합을 쓴다: userId={}", userId, ex);
+      return view;
+    }
+  }
+
+  static FinancialIncomeThresholdView applyJudgement(
+      FinancialIncomeThresholdView view, DividendTaxReport thisYear, DividendTaxReport lastYear) {
+    if (thisYear == null || thisYear.chosen() == null) {
+      return view;
+    }
+    BigDecimal last =
+        lastYear != null && lastYear.chosen() != null
+            ? lastYear.chosen().financialIncome()
+            : view.lastYearTaxable();
+    return view.withJudgement(
+        thisYear.chosen().financialIncome(),
+        thisYear.unknownTaxableCount(),
+        last,
+        thisYear.chosen() == thisYear.withSeparation());
   }
 
   /** 보유 종목을 모를 때(시험 · 조회 실패) - 아무 종목도 빼지 않는다. */
@@ -229,7 +275,8 @@ public class FinancialIncomeThresholdSupport {
         recentMonthly,
         remainingDays,
         periodicRest.setScale(0, RoundingMode.HALF_UP),
-        periodicCount);
+        periodicCount,
+        false);
   }
 
   /** 작년 지급일과 올해 같은 차례 지급을 짝짓는 폭(일). 분기 · 연 배당 지급일은 해마다 하루 이틀 ~ 몇 주 움직인다. */

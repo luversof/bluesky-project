@@ -99,7 +99,8 @@ class SummaryFinancialIncomeTest {
             BigDecimal.ZERO,
             72,
             BigDecimal.ZERO,
-            0);
+            0,
+            false);
     String expected =
         java.text.MessageFormat.format(
             MessageUtil.getMessage("stock.summary.financial.income.pct"), "40.9");
