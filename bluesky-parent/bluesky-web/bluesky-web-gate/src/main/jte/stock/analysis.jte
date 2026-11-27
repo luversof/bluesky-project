@@ -101,7 +101,7 @@
 
 				<%-- 다음 거래일 예측(사용자 요청 2026-11-27): 가장 최근 기준일의 회차를 모두, 늦게 만든 것부터. 아무 때나 돌린 회차가 쌓인다. --%>
 				@if(upcoming != null && !upcoming.runs().isEmpty())
-					@template._components.ui.card(title = StockViewSupport.msg("stock.analysis.upcoming.title", String.valueOf(upcoming.baseDate())), body = @`
+					@template._components.ui.card(title = StockViewSupport.msg("stock.analysis.upcoming.title", String.valueOf(upcoming.targetDate()), String.valueOf(upcoming.baseDate())), body = @`
 						<div class="overflow-x-auto">
 							<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.analysis.upcoming.aria")}">
 								<thead><tr>

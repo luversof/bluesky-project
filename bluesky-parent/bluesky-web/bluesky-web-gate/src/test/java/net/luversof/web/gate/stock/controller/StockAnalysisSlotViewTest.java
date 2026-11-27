@@ -69,6 +69,11 @@ class StockAnalysisSlotViewTest {
   void 다음_거래일_예측은_가장_최근_기준일의_회차를_늦게_만든_것부터() {
     var up = StockAnalysisViewController.upcoming(PREDS);
     assertThat(up.baseDate()).isEqualTo(LocalDate.of(2026, 11, 26));
+    assertThat(up.targetDate()).isEqualTo(LocalDate.of(2026, 11, 27));
+    assertThat(
+            new StockAnalysisViewController.Upcoming(LocalDate.of(2026, 11, 27), List.of())
+                .targetDate())
+        .isEqualTo(LocalDate.of(2026, 11, 30));
     assertThat(up.runs())
         .extracting(StockAnalysisViewController.UpcomingRun::slot)
         .containsExactly("PREMARKET", "CLOSE");

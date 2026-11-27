@@ -85,7 +85,9 @@ function Invoke-Analysis([string]$AsOf, [string]$Slot, [string]$Label) {
 
 # Live run + backfill. Throws the first live failure after the backfill ran.
 function Invoke-AnalysisRun {
-    $script:promptTemplate = Get-Content "$PSScriptRoot\prompt.md" -Raw -Encoding UTF8
+    # BLUESKY_PROMPT_FILE: a candidate prompt (candidates/prompt-vN.md) to compare with the adopted one on the same pairs
+    $promptFile = if ($env:BLUESKY_PROMPT_FILE) { $env:BLUESKY_PROMPT_FILE } else { "$PSScriptRoot\prompt.md" }
+    $script:promptTemplate = Get-Content $promptFile -Raw -Encoding UTF8
     if ($promptTemplate -notmatch 'promptVersion:\s*(\S+)') { throw 'prompt.md has no promptVersion line' }
     $script:promptVersion = $Matches[1]
     $script:schema = Get-Content "$PSScriptRoot\schema.json" -Raw -Encoding UTF8
@@ -111,6 +113,11 @@ function Invoke-AnalysisRun {
         try {
             $todo = @(Invoke-Api GET ("/api/stock/analysis/missing-slots?symbols={0}&lookback=60&version={1}" -f `
                         ($wanted -join ','), [uri]::EscapeDataString($promptVersion)) | ForEach-Object { $_ })
+            # BLUESKY_BACKFILL_SLOTS: comma list (e.g. EVENING) - a candidate that changes one slot's input only backfills that slot
+            if ($env:BLUESKY_BACKFILL_SLOTS) {
+                $onlySlots = @($env:BLUESKY_BACKFILL_SLOTS.Split(',') | ForEach-Object { $_.Trim() })
+                $todo = @($todo | Where-Object { $onlySlots -contains $_.slot })
+            }
             $todo = @($todo | Select-Object -First $(if ($backfillOnly -gt 0) { $backfillOnly } else { 10 }))
         } catch { Write-Log "backfill skipped: $_" }
         foreach ($t in $todo) {

@@ -319,7 +319,24 @@ public class StockAnalysisViewController {
       RecentPrediction d1,
       RecentPrediction d5) {}
 
-  public record Upcoming(LocalDate baseDate, List<UpcomingRun> runs) {}
+  public record Upcoming(LocalDate baseDate, List<UpcomingRun> runs) {
+    /** 예측 대상일(D+1): 채점됐으면 그 날, 아니면 기준일 다음 평일. */
+    public LocalDate targetDate() {
+      return runs.stream()
+          .map(UpcomingRun::d1)
+          .filter(p -> p != null && p.targetDate() != null)
+          .map(RecentPrediction::targetDate)
+          .findFirst()
+          .orElseGet(() -> {
+            // shortcut: 휴장일은 모른다 - 채점 전에는 평일만 건너뛴다
+            LocalDate d = baseDate.plusDays(1);
+            while (d.getDayOfWeek().getValue() > 5) {
+              d = d.plusDays(1);
+            }
+            return d;
+          });
+    }
+  }
 
   /**
    * 다음 거래일 예측(사용자 요청 2026-11-27: 전날 다음 날을 미리 본다): 가장 최근 기준일의 회차를 모두, 늦게 만든 것부터. 아무 때나 돌린 회차가 다 쌓여
