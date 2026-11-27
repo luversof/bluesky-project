@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import net.luversof.web.gate.stock.util.StockAmountUtil;
 
 /**
- * 배당 내역 위의 '올해 금융소득 종합과세 기준' &mdash; 올해 받은 과세 대상 배당이 2,N 만 원에 얼마나 다가갔는지(2026-10-20 자율 개선).
+ * 배당 내역 위의 '올해 금융소득 종합과세 기준' &mdash; 올해 받은 과세 대상 배당이 2,000 만 원에 얼마나 다가갔는지(2026-10-20 자율 개선).
  *
  * <p>합은 과세 계좌(ISA · 연금 같은 과세이연 계좌 제외)의 <b>과세표준</b>이다 &mdash; 세전 금액이 아니다. 리츠 · 인프라 분배금처럼 9.9% 분리과세로
  * 끝나는 부분과 비과세 분배금은 과세표준에 들지 않아 종합과세 합산에서도 빠진다(실측 2026-10-20: 한 ETF 세전 N 원 중 과세표준 N 원, 세금 N 원 = 세전의
@@ -30,7 +30,7 @@ import net.luversof.web.gate.stock.util.StockAmountUtil;
  * @param ytdTaxable 올해 1 월 1 일 ~ 오늘 지급분의 과세표준 합(과세 계좌)
  * @param unknownTaxableCount 그 기간 과세 계좌 배당 중 과세표준이 비어 합에 못 넣은 건수 &mdash; 0 이 아니면 합이 모자랄 수 있다
  * @param lastYearTaxable 작년 한 해의 같은 합(비교용, 과세표준이 빈 작년 행은 빠진다 - 0 이면 화면에 안 적는다)
- * @param threshold 기준 금액(2,N 만 원)
+ * @param threshold 기준 금액(2,000 만 원)
  * @param recentWindowDays 연말 예상에 쓴 최근 기간(일)
  * @param recentTaxable 최근 기간의 과세표준 합 &mdash; <b>달마다 나오는 종목만</b>
  * @param remainingDays 오늘 다음 날부터 12 월 31 일까지 남은 날

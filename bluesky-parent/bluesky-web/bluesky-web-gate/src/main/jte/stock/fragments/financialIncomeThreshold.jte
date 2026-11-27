@@ -3,9 +3,9 @@
 @import net.luversof.web.gate.stock.util.StockFormatUtil
 @import net.luversof.web.gate.stock.support.StockViewSupport
 
-<%-- 올해 금융소득 종합과세 기준(2026-10-20 자율 개선) - 과세 계좌의 과세표준이 2,N 만 원에 얼마나 다가갔는지.
+<%-- 올해 금융소득 종합과세 기준(2026-10-20 자율 개선) - 과세 계좌의 과세표준이 2,000 만 원에 얼마나 다가갔는지.
      배당 내역의 기간 합계는 고른 기간만 말하고 과세이연 계좌까지 섞여, 한 해 기준을 볼 곳이 없었다.
-     기간 · 필터와 무관하다(올해 1 월 1 일 ~ 오늘). 조회가 실패하면 view 가 null 이라 구역째 숨긴다 - 0 으로 보이면 "여유 2,N 만 원" 으로 읽힌다.
+     기간 · 필터와 무관하다(올해 1 월 1 일 ~ 오늘). 조회가 실패하면 view 가 null 이라 구역째 숨긴다 - 0 으로 보이면 "여유 2,000 만 원" 으로 읽힌다.
      숫자는 계산 흐름대로 지금까지 · 더 받을 예상 · 연말 예상(a · b · a+b). --%>
 @param FinancialIncomeThresholdView view = null
 

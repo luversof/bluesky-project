@@ -30,14 +30,14 @@ import net.luversof.web.gate.stock.httpexchange.TradeProfitClient;
 import net.luversof.web.gate.stock.util.StockZoneUtil;
 
 /**
- * 올해 과세 대상 배당이 금융소득 종합과세 기준(2,N 만 원)에 얼마나 다가갔는지(2026-10-20 자율 개선).
+ * 올해 과세 대상 배당이 금융소득 종합과세 기준(2,000 만 원)에 얼마나 다가갔는지(2026-10-20 자율 개선).
  *
- * <p>실측 2026-10-20: 위탁 계좌 둘의 과세표준이 2024 년 1,N 만 원 &rarr; 2025 년 1,N 만 원 &rarr; 2026 년 10 월 20 일까지 N
+ * <p>실측 2026-10-20: 위탁 계좌 둘의 과세표준이 2024 년 N 만 원 &rarr; 2025 년 N 만 원 &rarr; 2026 년 10 월 20 일까지 N
  * 만 원이다. 월배당을 늘려 가는 중이라 기준에 다가가는지를 한 해 내내 볼 곳이 필요하다 &mdash; 배당 내역의 기간 합계는 고른 기간만 말하고, 과세이연 계좌까지
  * 섞인다.
  *
  * <p>계산은 {@link #compute} 에 있는 순수 함수다(조회 없이 시험한다). 조회가 실패하면 null &mdash; 구역을 숨긴다(없는 합을 0 으로 보이면
- * "여유가 2,N 만 원" 으로 읽힌다).
+ * "여유가 2,000 만 원" 으로 읽힌다).
  */
 @Component
 public class FinancialIncomeThresholdSupport {
