@@ -107,6 +107,7 @@
 	const importEl = el("poeRegexImport") as HTMLInputElement;
 	const importNoteEl = el("poeRegexImportNote");
 	const customEl = el("poeRegexCustom");
+	const pickedEl = el("poeRegexPicked");
 
 	const LIMIT = 250;
 
@@ -502,6 +503,41 @@
 			warnings.push(uiKo ? "250자 초과 — 선택을 줄이세요(인게임 검색창 한도)" : "Over 250 chars (in-game limit)");
 		warnEl.textContent = warnings.join(" · ");
 		warnEl.classList.toggle("hidden", warnings.length === 0);
+		renderPicked();
+		saveDraft();
+	}
+
+	/** 고른 모드 칩 — 목록이 길어 스크롤해서 찾지 않게 결과 아래에 모아 보여준다. ×로 해제 */
+	function renderPicked(): void {
+		pickedEl.textContent = "";
+		const picked = mods.filter((m) => state.picks[m.id]);
+		pickedEl.classList.toggle("hidden", picked.length === 0);
+		if (picked.length === 0) return;
+		const label = document.createElement("span");
+		label.className = "text-2xs text-base-content/60";
+		label.textContent = (uiKo ? "선택 " : "Picked ") + picked.length + ":";
+		pickedEl.appendChild(label);
+		for (const m of picked) {
+			const exclude = state.picks[m.id] === "exclude";
+			// 첫 줄이 같은 모드가 많아(아틀라스 획득물 …) 줄 전부를 잇는다
+			const text = (uiKo ? m.ko : m.en).join(" · ").trim() || m.id;
+			const span = document.createElement("span");
+			span.className = "badge badge-sm h-auto gap-1 text-left " + (exclude ? "badge-error badge-outline" : "badge-success badge-outline");
+			span.textContent = (exclude ? "!" : "") + text;
+			span.title = (uiKo ? m.ko : m.en).join("\n");
+			const x = document.createElement("button");
+			x.type = "button";
+			x.className = "cursor-pointer font-semibold";
+			x.textContent = "×";
+			x.setAttribute("aria-label", (uiKo ? "선택 해제: " : "Unpick: ") + text);
+			x.addEventListener("click", () => {
+				applyPick(m.id, null);
+				renderList();
+				updateOutput();
+			});
+			span.appendChild(x);
+			pickedEl.appendChild(span);
+		}
 	}
 
 	/** 역파싱에서 남은 수동 정규식 항 칩 — ×로 제거 가능 */
@@ -1074,7 +1110,42 @@
 		saveAsNewEl.classList.add("hidden");
 	}
 
-	function applyState(data: any, name: string, id: number): void {
+	/** 프리셋 저장·새로고침 복원에 쓰는 화면 상태 */
+	function snapshot() {
+		return {
+			tab: state.tab,
+			english: state.english,
+			combine: state.combine,
+			quant: state.quant,
+			pack: state.pack,
+			exclude: Object.keys(state.picks).filter((id) => state.picks[id] === "exclude"),
+			include: Object.keys(state.picks).filter((id) => state.picks[id] === "include"),
+			customExclude: state.customExclude,
+			customInclude: state.customInclude,
+		};
+	}
+
+	// 저장 안 한 선택도 새로고침 뒤 그대로 — 게임마다 따로(데이터 URL 로 구분). 사생활·차단 모드면 조용히 건너뛴다.
+	const DRAFT_KEY = "poeRegexDraft:" + modsUrl;
+	let draftReady = false;
+	function saveDraft(): void {
+		if (!draftReady) return;
+		try {
+			localStorage.setItem(DRAFT_KEY, JSON.stringify({ data: snapshot(), name: presetNameEl.value, id: editingId }));
+		} catch (e) {
+			/* 저장 불가 — 무시 */
+		}
+	}
+	function restoreDraft(): void {
+		try {
+			const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+			if (d && d.data) applyState(d.data, typeof d.name === "string" ? d.name : "", typeof d.id === "number" ? d.id : null);
+		} catch (e) {
+			/* 깨진 값 — 무시 */
+		}
+	}
+
+	function applyState(data: any, name: string, id: number | null): void {
 		state.tab = data.tab === "uber" ? "uber" : "normal";
 		state.english = !!data.english;
 		state.combine = data.combine === "and" ? "and" : "or";
@@ -1091,10 +1162,13 @@
 		quantEl.value = state.quant != null ? String(state.quant) : "";
 		packEl.value = state.pack != null ? String(state.pack) : "";
 		presetNameEl.value = name;
-		editingId = id;
-		editingBadgeEl.textContent = (uiKo ? "편집 중: " : "Editing: ") + name;
-		editingBadgeEl.classList.remove("hidden");
-		saveAsNewEl.classList.remove("hidden");
+		if (id == null) clearEditing();
+		else {
+			editingId = id;
+			editingBadgeEl.textContent = (uiKo ? "편집 중: " : "Editing: ") + name;
+			editingBadgeEl.classList.remove("hidden");
+			saveAsNewEl.classList.remove("hidden");
+		}
 		renderList();
 		updateOutput();
 	}
@@ -1116,17 +1190,7 @@
 		}
 		if (!authenticated) return loginWarn();
 		const { text } = buildRegex();
-		const data = {
-			tab: state.tab,
-			english: state.english,
-			combine: state.combine,
-			quant: state.quant,
-			pack: state.pack,
-			exclude: Object.keys(state.picks).filter((id) => state.picks[id] === "exclude"),
-			include: Object.keys(state.picks).filter((id) => state.picks[id] === "include"),
-			customExclude: state.customExclude,
-			customInclude: state.customInclude,
-		};
+		const data = snapshot();
 		const res = await fetch(presetsUrl, {
 			method: "POST",
 			headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -1151,6 +1215,7 @@
 		b.addEventListener("click", () => {
 			state.tab = b.getAttribute("data-regex-tab") === "uber" ? "uber" : "normal";
 			renderList();
+			saveDraft();
 		});
 	});
 	document.querySelectorAll<HTMLElement>("[data-regex-combine]").forEach((b) => {
@@ -1262,6 +1327,9 @@
 			if (initQ) searchEl.value = initQ;
 			renderList();
 			updateOutput();
+			restoreDraft();
+			draftReady = true;
+			saveDraft();
 			refreshPresets();
 		})
 		.catch(() => {

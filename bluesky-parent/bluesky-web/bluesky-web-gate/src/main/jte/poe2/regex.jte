@@ -28,8 +28,11 @@
 			@template.poe2.header(title = pageTitle, meta = meta)
 			<p class="text-sm text-base-content/60">${MessageUtil.getMessage("poe2.regex.desc")}</p>
 
-			<%-- 결과 정규식 — 스크롤해도 상단에 붙어 따라온다 (navbar 가 sticky top-0 h-16 이라 그 아래에) --%>
-			<div class="sticky top-16 z-30 rounded-2xl bg-base-100 p-3 shadow-md space-y-2">
+			<%-- 결과 · 저장 · 조건을 한 덩어리로 상단에 붙인다 — 접두/접미 목록을 스크롤해도 바로 위까지 따라온다
+			     (navbar 가 sticky top-0 h-16 이라 그 아래에). 저장 목록이 길어져도 화면을 다 덮지 않게 70vh 안에서 스크롤 --%>
+			<div class="sticky top-16 z-30 -mx-4 px-4 pb-2 bg-base-100 space-y-4 max-h-[70vh] overflow-y-auto">
+			<%-- 결과 정규식 --%>
+			<div class="rounded-2xl bg-base-100 p-3 shadow-md space-y-2">
 				<div class="flex flex-wrap items-center gap-2">
 					<code id="poeRegexOut" class="flex-1 min-w-[min(16rem,100%)] rounded-lg bg-base-200 px-3 py-2 font-mono text-sm break-all select-all min-h-[2.5rem]"></code>
 					<span id="poeRegexLen" class="text-xs font-mono text-base-content/60 whitespace-nowrap">0 / 250</span>
@@ -43,6 +46,7 @@
 				</div>
 				<div id="poeRegexImportNote" class="text-xs text-base-content/60 hidden"></div>
 				<div id="poeRegexCustom" class="flex flex-wrap items-center gap-1 hidden"></div>
+				<div id="poeRegexPicked" class="flex flex-wrap items-center gap-1 hidden"></div>
 			</div>
 
 			<%-- 프리셋 저장/불러오기 — PoE1 지도 프리셋과 따로 저장된다 --%>
@@ -86,6 +90,8 @@
 					<span class="text-2xs text-base-content/60">${MessageUtil.getMessage("poe2.regex.combine.hint")}</span>
 				</div>
 				<div class="text-2xs text-base-content/60">${ko ? "옵션 클릭: 선택/해제(선택하면 제외 — 빨강, !로 거름) · \"제외\" 배지 클릭: 포함(초록, 강조)으로 전환 · 배지: 심연 = 심연 옵션, N등급+ = 그 등급 이상 경로석에만 붙음, 보상 = 최대 롤" : "Click a mod: select/clear (selected = exclude, red) · click the \"excl\" badge to switch it to include (green) · badges: Abyss, T6+ = tier 6+ only, reward = max roll"}</div>
+			</div>
+
 			</div>
 
 			<%-- 옵션 목록 (TS 렌더) --%>
