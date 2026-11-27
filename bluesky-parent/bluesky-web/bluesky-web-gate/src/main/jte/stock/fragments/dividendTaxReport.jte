@@ -21,6 +21,7 @@
 			case "WITHOUT" -> "stock.dividend.tax.recommend.without";
 			default -> null;
 		};
+		String needOther = MessageUtil.getMessage("stock.dividend.tax.need.other.short");
 		boolean isaWarning = report != null && report.chosen() != null && report.chosen().isaRestricted();
 	}
 	<section id="tax-report" class="scroll-mt-24 rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm" data-tax-report>
@@ -60,26 +61,39 @@
 				<p class="mt-2 text-xs" data-tax-unknown><span class="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-base-content">${StockViewSupport.msg("stock.dividend.tax.unknown", String.valueOf(report.unknownTaxableCount()))}</span></p>
 			@endif
 
-			<dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+			<%-- 총 배당(세전)이 일반 · 고배당기업 · 과세이연으로 어떻게 나뉘는지(사용자 요청 2026-11-28). 세전 합은 내역 줄을 더한 값, 과세금액은 api 가 준 값. --%>
+			<dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" data-tax-breakdown>
+				<div class="min-w-0 rounded-xl border border-primary/30 bg-primary/5 p-3">
+					<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.total")}</dt>
+					<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-tax-total>${won.apply(report.grossOf(null))}</dd>
+					<dd class="mt-1 text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.withheld")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.withheld")) <span class="tabular-nums amount-value" data-tax-withheld>${won.apply(report.withheldTax())}</span></dd>
+				</div>
 				<div class="min-w-0 rounded-xl bg-base-200/60 p-3">
 					<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.general")}</dt>
-					<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-tax-general>${won.apply(report.generalTaxable())}</dd>
+					<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-tax-general-gross>${won.apply(report.grossOf("GENERAL"))}</dd>
+					<dd class="mt-1 text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.col.taxable")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.taxable")) <span class="tabular-nums amount-value" data-tax-general>${won.apply(report.generalTaxable())}</span></dd>
 				</div>
 				<div class="min-w-0 rounded-xl bg-base-200/60 p-3">
-					<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.high")}</dt>
-					<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-tax-high>${won.apply(report.highDividendTaxable())}</dd>
+					<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.high")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.high"))</dt>
+					<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-tax-high-gross>${won.apply(report.grossOf("HIGH_DIVIDEND"))}</dd>
+					<dd class="mt-1 text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.col.taxable")} <span class="tabular-nums amount-value" data-tax-high>${won.apply(report.highDividendTaxable())}</span></dd>
 				</div>
 				<div class="min-w-0 rounded-xl bg-base-200/60 p-3">
-					<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.withheld")}</dt>
-					<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-tax-withheld>${won.apply(report.withheldTax())}</dd>
-				</div>
-				<div class="min-w-0 rounded-xl bg-base-200/60 p-3">
-					<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.deferred")}</dt>
+					<dt class="text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.deferred")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.deferred"))</dt>
 					<dd class="mt-1 font-mono text-lg font-semibold amount-value" data-tax-deferred>${won.apply(report.deferredGross())}</dd>
+					<dd class="mt-1 text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.deferred.excluded")}</dd>
 				</div>
 			</dl>
 
-			<div class="mt-4 overflow-x-auto">
+			<h3 class="mt-4 text-sm font-semibold">${MessageUtil.getMessage("stock.dividend.tax.scenario.title")}</h3>
+			<%-- 두 열이 무엇을 뜻하는지 먼저 말로 적는다(사용자 요청 2026-11-28: 표만으로는 차이를 알 수 없었다). --%>
+			<ul class="mt-2 grid gap-2 text-xs text-base-content/80 ${showWith ? "sm:grid-cols-2" : ""}" data-tax-scenario-explain>
+				<li class="rounded-lg bg-base-200/60 p-2"><span class="font-semibold">${MessageUtil.getMessage("stock.dividend.tax.scenario.without")}</span> - ${MessageUtil.getMessage(showWith ? "stock.dividend.tax.scenario.without.explain" : "stock.dividend.tax.scenario.only.explain")}</li>
+				@if(showWith)
+					<li class="rounded-lg bg-base-200/60 p-2"><span class="font-semibold">${MessageUtil.getMessage("stock.dividend.tax.scenario.with")}</span> - ${MessageUtil.getMessage("stock.dividend.tax.scenario.with.explain")}</li>
+				@endif
+			</ul>
+			<div class="mt-2 overflow-x-auto">
 				<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.dividend.tax.scenario.title")}" data-tax-scenarios>
 					<thead>
 						<tr>
@@ -92,42 +106,47 @@
 					</thead>
 					<tbody>
 						!{ var a = report.withoutSeparation(); var b = report.withSeparation(); }
+						<tr data-tax-filing>
+							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.filing")}</th>
+							<td class="text-right">${MessageUtil.getMessage(a.comprehensive() ? "stock.dividend.tax.filing.comprehensive" : "stock.dividend.tax.filing.none")}</td>
+							@if(showWith)<td class="text-right">${MessageUtil.getMessage(b.comprehensive() ? "stock.dividend.tax.filing.comprehensive.separation" : "stock.dividend.tax.filing.separation")}</td>@endif
+						</tr>
 						<tr>
-							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.financial")}</th>
+							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.financial")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.financial"), placement = "top")</th>
 							<td class="text-right tabular-nums amount-value">${won.apply(a.financialIncome())}</td>
 							@if(showWith)<td class="text-right tabular-nums amount-value">${won.apply(b.financialIncome())}</td>@endif
 						</tr>
 						<tr>
-							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.comprehensive")}</th>
+							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.comprehensive")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.comprehensive"), placement = "top")</th>
 							<td class="text-right">${MessageUtil.getMessage(a.comprehensive() ? "stock.dividend.tax.yes" : "stock.dividend.tax.no")}</td>
 							@if(showWith)<td class="text-right">${MessageUtil.getMessage(b.comprehensive() ? "stock.dividend.tax.yes" : "stock.dividend.tax.no")}</td>@endif
 						</tr>
 						<tr>
-							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.excess")}</th>
+							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.excess")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.excess"), placement = "top")</th>
 							<td class="text-right tabular-nums amount-value">${won.apply(a.excess())}</td>
 							@if(showWith)<td class="text-right tabular-nums amount-value">${won.apply(b.excess())}</td>@endif
 						</tr>
 						<tr>
-							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.grossup")}</th>
+							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.grossup")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.grossup"), placement = "top")</th>
 							<td class="text-right tabular-nums amount-value">${won.apply(a.grossUp())}</td>
 							@if(showWith)<td class="text-right tabular-nums amount-value">${won.apply(b.grossUp())}</td>@endif
 						</tr>
 						@if(showWith)
 							<tr>
-								<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.separate")}</th>
+								<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.separate")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.separate"), placement = "top")</th>
 								<td class="text-right">-</td>
 								<td class="text-right tabular-nums amount-value">${won.apply(b.highDividendSeparateTax())}</td>
 							</tr>
 						@endif
 						<tr>
-							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.additional")}</th>
-							<td class="text-right tabular-nums amount-value" data-tax-additional-without>${won.apply(a.additionalNationalTax())}</td>
-							@if(showWith)<td class="text-right tabular-nums amount-value" data-tax-additional-with>${won.apply(b.additionalNationalTax())}</td>@endif
+							<th scope="row" class="font-normal">${MessageUtil.getMessage("stock.dividend.tax.row.additional")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.additional"), placement = "top")</th>
+							<td class="text-right tabular-nums amount-value" data-tax-additional-without>${a.additionalNationalTax() == null && a.comprehensive() ? needOther : won.apply(a.additionalNationalTax())}</td>
+							@if(showWith)<td class="text-right tabular-nums amount-value" data-tax-additional-with>${b.additionalNationalTax() == null && b.comprehensive() ? needOther : won.apply(b.additionalNationalTax())}</td>@endif
 						</tr>
 						<tr>
-							<th scope="row" class="font-semibold">${MessageUtil.getMessage("stock.dividend.tax.row.additional.total")}</th>
-							<td class="text-right tabular-nums font-semibold amount-value">${won.apply(a.additionalTotalTax())}</td>
-							@if(showWith)<td class="text-right tabular-nums font-semibold amount-value">${won.apply(b.additionalTotalTax())}</td>@endif
+							<th scope="row" class="font-semibold">${MessageUtil.getMessage("stock.dividend.tax.row.additional.total")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.additional.total"), placement = "top")</th>
+							<td class="text-right tabular-nums font-semibold amount-value">${a.additionalTotalTax() == null && a.comprehensive() ? needOther : won.apply(a.additionalTotalTax())}</td>
+							@if(showWith)<td class="text-right tabular-nums font-semibold amount-value">${b.additionalTotalTax() == null && b.comprehensive() ? needOther : won.apply(b.additionalTotalTax())}</td>@endif
 						</tr>
 					</tbody>
 				</table>
@@ -141,11 +160,11 @@
 			<form method="post" action="/stock/dividend/tax-input" class="mt-4 grid gap-3 sm:grid-cols-3 sm:items-end" data-tax-input-form>
 				<input type="hidden" name="year" value="${view.year()}" />
 				<label class="form-control min-w-0">
-					<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.dividend.tax.input.other.income")}</span></div>
+					<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.dividend.tax.input.other.income")}</span> @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.other.income"))</div>
 					<input name="otherIncomeTaxBase" type="number" min="0" step="1" inputmode="numeric" value="${report.otherIncomeTaxBase() != null ? report.otherIncomeTaxBase().toPlainString() : ""}" class="input input-bordered w-full min-w-0 input-sm" />
 				</label>
 				<label class="form-control min-w-0">
-					<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.dividend.tax.input.other.financial")}</span></div>
+					<div class="label"><span class="label-text font-medium">${MessageUtil.getMessage("stock.dividend.tax.input.other.financial")}</span> @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.other.financial"))</div>
 					<input name="otherFinancialIncome" type="number" min="0" step="1" inputmode="numeric" value="${report.otherFinancialIncome() != null ? report.otherFinancialIncome().toPlainString() : ""}" class="input input-bordered w-full min-w-0 input-sm" />
 				</label>
 				<button type="submit" class="btn btn-primary btn-sm">${MessageUtil.getMessage("stock.dividend.tax.input.submit")}</button>

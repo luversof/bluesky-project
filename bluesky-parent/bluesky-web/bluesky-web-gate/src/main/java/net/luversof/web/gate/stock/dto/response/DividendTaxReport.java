@@ -39,6 +39,27 @@ public record DividendTaxReport(
         : withoutSeparation;
   }
 
+  /** 내역 줄의 세전 합. category 가 null 이면 전체(총 배당). */
+  public BigDecimal grossOf(String category) {
+    return sum(category, Row::grossAmount);
+  }
+
+  /** 내역 줄의 과세금액 합. category 가 null 이면 전체. */
+  public BigDecimal taxableOf(String category) {
+    return sum(category, Row::taxableAmount);
+  }
+
+  private BigDecimal sum(String category, java.util.function.Function<Row, BigDecimal> value) {
+    if (rows == null) {
+      return BigDecimal.ZERO;
+    }
+    return rows.stream()
+        .filter(r -> category == null || category.equals(r.category()))
+        .map(value)
+        .filter(java.util.Objects::nonNull)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Scenario(
       BigDecimal financialIncome,
