@@ -162,6 +162,14 @@ interface MonthRange {
             // 2026-09-28: 선택 요약의 수익률도 표의 기본 열(연 수익률)과 같은 규칙 - 세후 배당 x 365 / (날마다 들고 있던 원금의 합).
             // 들고 있던 날 평균 원금은 행끼리 더할 수 없지만(겹친 날) 원금 x 일 합은 더할 수 있어 합계행 · 서버와 같은 값이 나온다.
             let totalPrincipalCostDaySum = 0;
+            // 2026-11-28: 표의 나머지 열(평가 · 실현 · 합산 손익, 현재 평가금액, 열 더 보기 열)도 선택 합산에 싣는다.
+            let totalCurrentValue = 0;
+            let totalEvaluationProfit = 0;
+            let totalRealizedProfit = 0;
+            let totalCombinedProfit = 0;
+            let totalNetWithPrincipalMarket = 0;
+            let totalMarketValue = 0;
+            let totalDividendCount = 0;
 
             for (let i = 0; i < selectedRows.length; i++) {
                 const row = selectedRows[i];
@@ -173,6 +181,13 @@ interface MonthRange {
                 totalAveragePrincipalCost += Number(row.dataset.averagePrincipalCost || '0');
                 totalNetWithPrincipalCost += Number(row.dataset.netWithPrincipalCost || '0');
                 totalPrincipalCostDaySum += Number(row.dataset.principalCostDaySum || '0');
+                totalCurrentValue += Number(row.dataset.currentValue || '0');
+                totalEvaluationProfit += Number(row.dataset.evaluationProfit || '0');
+                totalRealizedProfit += Number(row.dataset.realizedProfit || '0');
+                totalCombinedProfit += Number(row.dataset.combinedProfit || '0');
+                totalNetWithPrincipalMarket += Number(row.dataset.netWithPrincipalMarket || '0');
+                totalMarketValue += Number(row.dataset.averagePrincipalMarketValue || '0');
+                totalDividendCount += Number(row.dataset.dividendCount || '0');
             }
 
             const totalNetReference = Number(summary.dataset.totalNetAmount || '0');
@@ -225,6 +240,24 @@ interface MonthRange {
             if (yieldLabel) {
                 yieldLabel.textContent = formatFixedNumber(annualizedYield, 2) + '%';
             }
+
+            // 합계행과 같은 식: 기준 금액이 있는 배당의 세후 / 분모 합.
+            const dailyYield = totalDailyPrincipalCost > 0 ? (totalNetWithPrincipalCost / totalDailyPrincipalCost) * 100 : 0;
+            const marketYield = totalMarketValue > 0 ? (totalNetWithPrincipalMarket / totalMarketValue) * 100 : 0;
+            const setText = (selector: string, text: string) => {
+                const el = summary.querySelector<HTMLElement>(selector);
+                if (el) {
+                    el.textContent = text;
+                }
+            };
+            setText('[data-dividend-yield-selection-current-value]', formatFixedNumber(totalCurrentValue, 0));
+            setText('[data-dividend-yield-selection-evaluation-profit]', formatFixedNumber(totalEvaluationProfit, 0));
+            setText('[data-dividend-yield-selection-realized-profit]', formatFixedNumber(totalRealizedProfit, 0));
+            setText('[data-dividend-yield-selection-combined-profit]', formatFixedNumber(totalCombinedProfit, 0));
+            setText('[data-dividend-yield-selection-daily-yield]', formatFixedNumber(dailyYield, 2) + '%');
+            setText('[data-dividend-yield-selection-basis-capital]', formatFixedNumber(totalAveragePrincipalCost, 0));
+            setText('[data-dividend-yield-selection-market-yield]', formatFixedNumber(marketYield, 2) + '%');
+            setText('[data-dividend-yield-selection-count-sum]', formatNumber(totalDividendCount));
 
             const basisYieldLabel = summary.querySelector<HTMLElement>('[data-dividend-yield-selection-basis-yield]');
             if (basisYieldLabel) {

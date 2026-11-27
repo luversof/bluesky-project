@@ -89,6 +89,74 @@ class DividendTaxReportViewTest {
   }
 
   @Test
+  void 종목별_구성은_계좌를_합치고_과세이연은_빼고_대상_먼저_큰_차례다() {
+    java.util.UUID a1 = java.util.UUID.randomUUID();
+    java.util.UUID a2 = java.util.UUID.randomUUID();
+    java.util.UUID etf = java.util.UUID.randomUUID();
+    java.util.UUID stock = java.util.UUID.randomUUID();
+    var rows =
+        List.of(
+            new DividendTaxReport.Row(
+                a1,
+                etf,
+                "가상 ETF",
+                "GENERAL",
+                BigDecimal.TEN,
+                new BigDecimal("500"),
+                null,
+                1,
+                false),
+            new DividendTaxReport.Row(
+                a1,
+                stock,
+                "가상전자",
+                "HIGH_DIVIDEND",
+                BigDecimal.TEN,
+                new BigDecimal("100"),
+                null,
+                1,
+                true),
+            new DividendTaxReport.Row(
+                a2,
+                stock,
+                "가상전자",
+                "HIGH_DIVIDEND",
+                BigDecimal.TEN,
+                new BigDecimal("50"),
+                null,
+                1,
+                true),
+            new DividendTaxReport.Row(
+                a2, etf, "가상 ETF", "DEFERRED", BigDecimal.TEN, null, null, 1, false));
+    var report =
+        new DividendTaxReport(
+            2026,
+            false,
+            true,
+            true,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            BigDecimal.ZERO,
+            null,
+            null,
+            0,
+            scenario("0"),
+            null,
+            null,
+            rows);
+
+    assertThat(report.taxableStocks())
+        .extracting(
+            DividendTaxReport.StockTotal::stockItemName,
+            s -> s.taxableAmount().intValue(),
+            DividendTaxReport.StockTotal::grossUpEligible)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("가상전자", 150, true),
+            org.assertj.core.groups.Tuple.tuple("가상 ETF", 500, false));
+  }
+
+  @Test
   void 신고_자료가_없으면_직접_더한_값을_그대로_둔다() {
     FinancialIncomeThresholdView result =
         FinancialIncomeThresholdSupport.applyJudgement(view(), null, null);

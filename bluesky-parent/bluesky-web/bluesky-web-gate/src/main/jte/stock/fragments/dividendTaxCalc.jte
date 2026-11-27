@@ -35,7 +35,20 @@
 	@else
 		<li class="tabular-nums">${StockViewSupport.msg("stock.dividend.tax.calc.excess", won.apply(scenario.financialIncome()), won.apply(scenario.excess()))}</li>
 		@if(d != null)
-			<li class="tabular-nums" data-tax-calc-grossup>${StockViewSupport.msg("stock.dividend.tax.calc.grossup", won.apply(d.grossUpEligible()), won.apply(scenario.excess()), won.apply(d.grossUpBase()), d.grossUpRate() == null ? "-" : d.grossUpRate().movePointRight(2).stripTrailingZeros().toPlainString(), won.apply(scenario.grossUp()))}
+			!{
+				BigDecimal ineligible = scenario.financialIncome().subtract(d.grossUpEligible());
+				BigDecimal ineligibleDividend = ineligible.subtract(other);
+				BigDecimal room = net.luversof.web.gate.stock.dto.view.FinancialIncomeThresholdView.THRESHOLD.subtract(ineligible).max(BigDecimal.ZERO);
+			}
+			<li data-tax-calc-grossup>
+				<p class="font-semibold">${MessageUtil.getMessage("stock.dividend.tax.calc.grossup.title")}</p>
+				<ul class="mt-1 space-y-0.5 tabular-nums">
+					<li>${StockViewSupport.msg("stock.dividend.tax.calc.grossup.eligible", won.apply(d.grossUpEligible()))}</li>
+					<li>${StockViewSupport.msg("stock.dividend.tax.calc.grossup.ineligible", won.apply(ineligibleDividend), won.apply(other), won.apply(ineligible))}</li>
+					<li>${StockViewSupport.msg("stock.dividend.tax.calc.grossup.room", won.apply(ineligible), won.apply(room))}</li>
+					<li>${StockViewSupport.msg("stock.dividend.tax.calc.grossup.base", won.apply(d.grossUpEligible()), won.apply(room), won.apply(d.grossUpBase()))}</li>
+					<li class="font-semibold">${StockViewSupport.msg("stock.dividend.tax.calc.grossup", won.apply(d.grossUpBase()), d.grossUpRate() == null ? "-" : d.grossUpRate().movePointRight(2).stripTrailingZeros().toPlainString(), won.apply(scenario.grossUp()))}</li>
+				</ul>
 				<p class="mt-0.5 text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.calc.grossup.note")}</p>
 			</li>
 		@endif

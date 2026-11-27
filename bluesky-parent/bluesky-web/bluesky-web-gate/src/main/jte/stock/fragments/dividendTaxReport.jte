@@ -161,6 +161,55 @@
 			<details class="mt-3 rounded-xl border border-base-300 p-3" data-tax-calc-section>
 				<summary class="cursor-pointer text-sm font-medium">${MessageUtil.getMessage("stock.dividend.tax.calc.title")}</summary>
 				<p class="mt-1 text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.calc.desc")}</p>
+				<%-- 종목별 구성(사용자 요청 2026-11-28: 어떤 종목이 Gross-up 대상이었는지 보고 싶다). 과세 계좌만, 계좌는 합친다. --%>
+				!{
+					var stocks = report.taxableStocks();
+					java.util.function.Function<DividendTaxReport.StockTotal, String> stockCategoryKey = st -> switch (st.category() == null ? "" : st.category()) {
+						case "HIGH_DIVIDEND" -> "stock.dividend.tax.category.high";
+						default -> "stock.dividend.tax.category.general";
+					};
+					BigDecimal eligibleSum = stocks.stream().filter(DividendTaxReport.StockTotal::grossUpEligible).map(DividendTaxReport.StockTotal::taxableAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+					BigDecimal ineligibleSum = stocks.stream().filter(st -> !st.grossUpEligible()).map(DividendTaxReport.StockTotal::taxableAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+				}
+				@if(!stocks.isEmpty())
+					<h4 class="mt-3 text-sm font-semibold">${MessageUtil.getMessage("stock.dividend.tax.calc.stocks.title")}</h4>
+					<div class="mt-2 overflow-x-auto">
+						<table class="table data-table" aria-label="${MessageUtil.getMessage("stock.dividend.tax.calc.stocks.title")}" data-tax-calc-stocks>
+							<thead>
+								<tr>
+									<th scope="col">${MessageUtil.getMessage("stock.dividend.tax.col.stock")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.dividend.tax.col.category")}</th>
+									<th scope="col" class="text-right">${MessageUtil.getMessage("stock.dividend.tax.col.taxable")}</th>
+									<th scope="col" class="text-center whitespace-nowrap">${MessageUtil.getMessage("stock.dividend.tax.col.grossup")}</th>
+									<th scope="col">${MessageUtil.getMessage("stock.dividend.tax.calc.stocks.reason")}</th>
+								</tr>
+							</thead>
+							<tbody>
+								@for(DividendTaxReport.StockTotal st : stocks)
+									<tr data-tax-calc-stock-grossup="${st.grossUpEligible()}">
+										<td>${st.stockItemName() != null ? st.stockItemName() : "-"}</td>
+										<td class="whitespace-nowrap">${MessageUtil.getMessage(stockCategoryKey.apply(st))}</td>
+										<td class="text-right tabular-nums amount-value">${won.apply(st.taxableAmount())}</td>
+										<td class="text-center">${MessageUtil.getMessage(st.grossUpEligible() ? "stock.dividend.tax.yes" : "stock.dividend.tax.no")}</td>
+										<td class="text-xs text-base-content/70">${MessageUtil.getMessage(st.grossUpEligible() ? "stock.dividend.tax.calc.stocks.reason.eligible" : "stock.dividend.tax.calc.stocks.reason.ineligible")}</td>
+									</tr>
+								@endfor
+							</tbody>
+							<tfoot>
+								<tr>
+									<th scope="row" colspan="2">${MessageUtil.getMessage("stock.dividend.tax.calc.stocks.eligible.sum")}</th>
+									<td class="text-right tabular-nums amount-value" data-tax-calc-eligible-sum>${won.apply(eligibleSum)}</td>
+									<td colspan="2"></td>
+								</tr>
+								<tr>
+									<th scope="row" colspan="2">${MessageUtil.getMessage("stock.dividend.tax.calc.stocks.ineligible.sum")}</th>
+									<td class="text-right tabular-nums amount-value" data-tax-calc-ineligible-sum>${won.apply(ineligibleSum)}</td>
+									<td colspan="2"></td>
+								</tr>
+							</tfoot>
+						</table>
+					</div>
+				@endif
 				<div class="mt-3 grid gap-4 ${showWith ? "lg:grid-cols-2" : ""}">
 					<div class="min-w-0 rounded-lg bg-base-200/60 p-3">
 						<h4 class="mb-2 text-sm font-semibold">${MessageUtil.getMessage("stock.dividend.tax.scenario.without")}</h4>

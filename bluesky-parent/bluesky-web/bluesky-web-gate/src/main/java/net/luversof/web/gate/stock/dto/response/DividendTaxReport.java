@@ -39,6 +39,39 @@ public record DividendTaxReport(
         : withoutSeparation;
   }
 
+  /** 과세 계좌 종목 하나(계좌를 합친 값) - 계산 과정의 종목별 구성 표. */
+  public record StockTotal(
+      String stockItemName, String category, BigDecimal taxableAmount, boolean grossUpEligible) {}
+
+  /** 과세 계좌 배당을 종목 · 구분별로 합친다. Gross-up 대상 먼저, 그다음 과세 금액이 큰 차례. */
+  public List<StockTotal> taxableStocks() {
+    if (rows == null) {
+      return List.of();
+    }
+    java.util.Map<String, StockTotal> totals = new java.util.LinkedHashMap<>();
+    for (Row r : rows) {
+      if ("DEFERRED".equals(r.category())) {
+        continue;
+      }
+      String key = r.stockItemId() + "|" + r.category();
+      BigDecimal taxable = r.taxableAmount() == null ? BigDecimal.ZERO : r.taxableAmount();
+      StockTotal prev = totals.get(key);
+      totals.put(
+          key,
+          new StockTotal(
+              r.stockItemName(),
+              r.category(),
+              prev == null ? taxable : prev.taxableAmount().add(taxable),
+              r.grossUpEligible()));
+    }
+    return totals.values().stream()
+        .sorted(
+            java.util.Comparator.comparing(StockTotal::grossUpEligible)
+                .reversed()
+                .thenComparing(StockTotal::taxableAmount, java.util.Comparator.reverseOrder()))
+        .toList();
+  }
+
   /** 내역 줄의 세전 합. category 가 null 이면 전체(총 배당). */
   public BigDecimal grossOf(String category) {
     return sum(category, Row::grossAmount);

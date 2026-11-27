@@ -35,6 +35,23 @@ function appTimeZone(): string {
 (globalThis as any).appTimeZone = appTimeZone;
 (globalThis as any).__appTimeZoneInternals = { appTimeZone };
 
+// 선택 패널(.selection-reveal)은 펴고 접는 동안 overflow:hidden 이라 다 펴진 뒤에도 안쪽 ⓘ 툴팁이 잘렸다(사용자 신고 2026-11-28).
+// is-open 이 붙고 펴기(0.25s)가 끝나면 is-settled 를 달아 잘라 내지 않게 하고(main.css), is-open 이 빠지면 곧바로 뗀다.
+// overflow 는 CSS 로 늦춰 바꿀 수 없다. transitionend 는 탭이 뒤에 있으면 오지 않아(실측) is-open 바뀜을 지켜보고 타이머로 단다.
+const SELECTION_REVEAL_MS = 260;
+const selectionRevealTimers = new WeakMap<Element, number>();
+new MutationObserver((records) => {
+	for (const r of records) {
+		const el = r.target as HTMLElement;
+		if (!el.classList.contains("selection-reveal")) continue;
+		const open = el.classList.contains("is-open");
+		if (open === (r.oldValue ?? "").split(/\s+/).includes("is-open")) continue;
+		clearTimeout(selectionRevealTimers.get(el));
+		el.classList.remove("is-settled");
+		if (open) selectionRevealTimers.set(el, window.setTimeout(() => el.classList.toggle("is-settled", el.classList.contains("is-open")), SELECTION_REVEAL_MS));
+	}
+}).observe(document.documentElement, { attributes: true, attributeFilter: ["class"], attributeOldValue: true, subtree: true });
+
 // 테마 토글([data-theme-toggle]): light/dark 전환 + localStorage 저장.
 // 초기 적용은 defaultLayout <head>의 early-apply 스크립트가 담당한다.
 document.addEventListener("click", (event) => {

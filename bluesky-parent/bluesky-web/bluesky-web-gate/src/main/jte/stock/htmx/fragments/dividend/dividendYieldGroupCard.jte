@@ -164,6 +164,40 @@
 								<div class="mt-1 font-mono font-semibold text-dividend" data-dividend-yield-selection-yield>0.00%</div>
 									<div class="text-xs text-base-content/60" data-dividend-yield-selection-basis-yield>${yieldOnBasisAverageCostLabel} 0.00%</div>
 								</div>
+								<%-- 표의 나머지 열도 같은 이름으로 합한다(사용자 요청 2026-11-28). 열 더 보기 열은 표처럼 토글을 켜야 나온다(.yield-extra-card).
+								     보유 중 평균 원금은 겹친 날 때문에 행끼리 더할 수 없어 뺐다(합계행은 서버가 따로 셈). --%>
+								<div class="rounded-box bg-base-100/80 px-3 py-2">
+									<div class="text-xs text-base-content/60">${currentValueLabel}</div>
+									<div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-current-value>0</div>
+								</div>
+								<div class="rounded-box bg-base-100/80 px-3 py-2">
+									<div class="text-xs text-base-content/60">${evaluationProfitLabel}</div>
+									<div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-evaluation-profit>0</div>
+								</div>
+								<div class="rounded-box bg-base-100/80 px-3 py-2">
+									<div class="text-xs text-base-content/60">${realizedProfitLabel}</div>
+									<div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-realized-profit>0</div>
+								</div>
+								<div class="rounded-box bg-base-100/80 px-3 py-2">
+									<div class="text-xs text-base-content/60">${combinedProfitLabel}</div>
+									<div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-combined-profit>0</div>
+								</div>
+								<div class="yield-extra-card rounded-box bg-base-100/80 px-3 py-2">
+									<div class="text-xs text-base-content/60">${yieldOnDailyAverageCostLabel}</div>
+									<div class="mt-1 font-mono font-semibold text-dividend" data-dividend-yield-selection-daily-yield>0.00%</div>
+								</div>
+								<div class="yield-extra-card rounded-box bg-base-100/80 px-3 py-2">
+									<div class="text-xs text-base-content/60">${basisAverageInvestedCapitalLabel}</div>
+									<div class="mt-1 font-mono font-semibold amount-value" data-dividend-yield-selection-basis-capital>0</div>
+								</div>
+								<div class="yield-extra-card rounded-box bg-base-100/80 px-3 py-2">
+									<div class="text-xs text-base-content/60">${yieldOnBasisMarketLabel}</div>
+									<div class="mt-1 font-mono font-semibold" data-dividend-yield-selection-market-yield>0.00%</div>
+								</div>
+								<div class="yield-extra-card rounded-box bg-base-100/80 px-3 py-2">
+									<div class="text-xs text-base-content/60">${dividendCountLabel}</div>
+									<div class="mt-1 font-mono font-semibold" data-dividend-yield-selection-count-sum>0</div>
+								</div>
 							</div>
 						</div>
 						</div></div>
@@ -216,6 +250,8 @@
 										data-average-principal-cost="${row.averagePrincipalCost() != null ? row.averagePrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-net-with-principal-cost="${row.netAmountWithPrincipalCost() != null ? row.netAmountWithPrincipalCost().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-yield-on-cost="${row.yieldOnCostPct() != null ? row.yieldOnCostPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+										data-net-with-principal-market="${row.netAmountWithPrincipalMarket() != null ? row.netAmountWithPrincipalMarket().toPlainString() : BigDecimal.ZERO.toPlainString()}"
+										data-average-principal-market-value="${row.averagePrincipalMarketValue() != null ? row.averagePrincipalMarketValue().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-yield-on-market="${row.yieldOnMarketPct() != null ? row.yieldOnMarketPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"
 										data-dividend-count="${String.valueOf(row.dividendCount())}"
 										data-annualized-yield="${row.annualizedYieldPct() != null ? row.annualizedYieldPct().toPlainString() : BigDecimal.ZERO.toPlainString()}"

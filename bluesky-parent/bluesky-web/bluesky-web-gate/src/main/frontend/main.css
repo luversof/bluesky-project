@@ -1266,6 +1266,10 @@ header.navbar *, .page-section-nav * { scroll-margin-top: calc(-1 * var(--sticky
 .selection-reveal > * { min-height: 0; overflow: hidden; visibility: hidden; transition: visibility 0s linear .25s; }
 .selection-reveal.is-open > * { visibility: visible; transition-delay: 0s; }
 .selection-reveal.is-open { grid-template-rows: 1fr; }
+/* 다 펴진 뒤에는 잘라 내지 않는다 - 패널 안 ⓘ 툴팁이 패널 아래로 잘렸다(사용자 신고 2026-11-28, 종목별 배당 효율 랭킹).
+   펴는 0.25s 동안은 hidden 그대로(내용이 넘쳐 보이지 않게), 끝나면 common.ts 가 is-settled 를 달아 visible.
+   접으면 is-open 이 빠져 곧바로 hidden 으로 돌아간다. */
+.selection-reveal.is-open.is-settled > * { overflow: visible; }
 /* 주의: reduced-motion 예외를 두지 않는다 — Windows "애니메이션 효과" off 환경에서도
    명시적으로 원하는 핵심 피드백 효과라 항상 동작해야 한다. */
 
@@ -2099,6 +2103,13 @@ thead [data-sort-key] {
 }
 [data-yield-extra-scope]:has([data-yield-extra-toggle]:checked) .yield-extra-col {
 	display: table-cell;
+}
+/* 선택 합산 패널의 같은 열 카드(2026-11-28 사용자 요청: 열 더 보기를 켜면 선택 합산도 그 열의 합을 보인다). */
+.yield-extra-card {
+	display: none;
+}
+[data-yield-extra-scope]:has([data-yield-extra-toggle]:checked) .yield-extra-card {
+	display: block;
 }
 /* 연도별 연 수익률 옆 막대. 채움은 배당 글자색(text-dividend - 라이트/다크 각각 정의됨)을 그대로 쓴다. */
 .yield-bar-fill {
