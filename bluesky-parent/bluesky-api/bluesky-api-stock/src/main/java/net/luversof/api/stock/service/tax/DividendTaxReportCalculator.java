@@ -13,10 +13,13 @@ import java.util.regex.Pattern;
 
 import net.luversof.api.stock.domain.HighDividendDesignation;
 import net.luversof.api.stock.web.dto.response.DividendTaxReport;
+import net.luversof.api.stock.web.dto.response.DividendTaxReport.BasicTax;
 import net.luversof.api.stock.web.dto.response.DividendTaxReport.Category;
+import net.luversof.api.stock.web.dto.response.DividendTaxReport.Detail;
 import net.luversof.api.stock.web.dto.response.DividendTaxReport.Recommendation;
 import net.luversof.api.stock.web.dto.response.DividendTaxReport.Row;
 import net.luversof.api.stock.web.dto.response.DividendTaxReport.Scenario;
+import net.luversof.api.stock.web.dto.response.DividendTaxReport.Slice;
 
 /**
  * 귀속연도 배당의 종합소득세 신고 자료 계산(DB 없음).
@@ -112,7 +115,9 @@ public final class DividendTaxReportCalculator {
                   ? null
                   : nz(prev == null ? null : prev.taxableAmount()).add(nz(d.taxableAmount())),
               nz(prev == null ? null : prev.tax()).add(nz(d.tax())),
-              (prev == null ? 0 : prev.count()) + 1));
+              (prev == null ? 0 : prev.count()) + 1,
+              category == Category.HIGH_DIVIDEND
+                  || (category == Category.GENERAL && grossUpEligible(d.stockItemName()))));
     }
 
     BigDecimal otherFinancial = nz(otherFinancialIncome);
@@ -167,21 +172,25 @@ public final class DividendTaxReportCalculator {
     boolean comprehensive = financial.compareTo(TaxRuleTable.THRESHOLD) > 0;
     BigDecimal excess =
         comprehensive ? financial.subtract(TaxRuleTable.THRESHOLD) : BigDecimal.ZERO;
-    BigDecimal grossUp =
-        comprehensive
-            ? TaxRuleTable.floor(grossUpEligible.min(excess).multiply(rule.grossUpRate()))
-            : BigDecimal.ZERO;
+    BigDecimal grossUpBase = comprehensive ? grossUpEligible.min(excess) : BigDecimal.ZERO;
+    BigDecimal grossUp = TaxRuleTable.floor(grossUpBase.multiply(rule.grossUpRate()));
 
     BigDecimal separatedTax = null;
+    BigDecimal separatedWithheld = null;
     BigDecimal separatedExtra = BigDecimal.ZERO;
+    List<Slice> slices = List.of();
     if (separated != null && rule.supported()) {
+      slices = rule.highDividendSlices(separated);
       separatedTax = rule.highDividendTax(separated);
-      separatedExtra =
-          separatedTax.subtract(
-              TaxRuleTable.floor(separated.multiply(TaxRuleTable.WITHHOLDING_RATE)));
+      separatedWithheld = TaxRuleTable.floor(separated.multiply(TaxRuleTable.WITHHOLDING_RATE));
+      separatedExtra = separatedTax.subtract(separatedWithheld);
     }
 
     BigDecimal financialExtra;
+    BigDecimal thresholdTax = null;
+    BasicTax combinedTax = null;
+    BasicTax otherTax = null;
+    BigDecimal financialWithheld = null;
     if (!rule.supported()) {
       financialExtra = null;
     } else if (!comprehensive) {
@@ -189,22 +198,26 @@ public final class DividendTaxReportCalculator {
     } else if (otherIncomeTaxBase == null) {
       financialExtra = null;
     } else {
-      BigDecimal method1 =
-          TaxRuleTable.floor(TaxRuleTable.THRESHOLD.multiply(TaxRuleTable.WITHHOLDING_RATE))
-              .add(rule.basicTax(otherIncomeTaxBase.add(excess).add(grossUp)));
+      thresholdTax =
+          TaxRuleTable.floor(TaxRuleTable.THRESHOLD.multiply(TaxRuleTable.WITHHOLDING_RATE));
+      combinedTax = rule.basicTaxDetail(otherIncomeTaxBase.add(excess).add(grossUp));
+      otherTax = rule.basicTaxDetail(otherIncomeTaxBase);
+      financialWithheld = TaxRuleTable.floor(financial.multiply(TaxRuleTable.WITHHOLDING_RATE));
       BigDecimal extra =
-          method1
+          thresholdTax
+              .add(combinedTax.tax())
               .subtract(grossUp)
-              .subtract(rule.basicTax(otherIncomeTaxBase))
-              .subtract(TaxRuleTable.floor(financial.multiply(TaxRuleTable.WITHHOLDING_RATE)));
+              .subtract(otherTax.tax())
+              .subtract(financialWithheld);
       financialExtra = extra.max(BigDecimal.ZERO);
     }
 
     BigDecimal additional = financialExtra == null ? null : financialExtra.add(separatedExtra);
-    BigDecimal additionalTotal =
+    BigDecimal localTax =
         additional == null
             ? null
-            : additional.add(TaxRuleTable.floor(additional.multiply(TaxRuleTable.LOCAL_TAX_RATE)));
+            : TaxRuleTable.floor(additional.multiply(TaxRuleTable.LOCAL_TAX_RATE));
+    BigDecimal additionalTotal = additional == null ? null : additional.add(localTax);
     return new Scenario(
         financial,
         comprehensive,
@@ -213,7 +226,20 @@ public final class DividendTaxReportCalculator {
         separatedTax,
         additional,
         additionalTotal,
-        comprehensive);
+        comprehensive,
+        new Detail(
+            grossUpEligible,
+            grossUpBase,
+            rule.grossUpRate(),
+            slices,
+            separatedWithheld,
+            separatedTax == null ? null : separatedExtra,
+            thresholdTax,
+            combinedTax,
+            otherTax,
+            financialWithheld,
+            financialExtra,
+            localTax));
   }
 
   static Recommendation recommend(Scenario without, Scenario with, BigDecimal high) {

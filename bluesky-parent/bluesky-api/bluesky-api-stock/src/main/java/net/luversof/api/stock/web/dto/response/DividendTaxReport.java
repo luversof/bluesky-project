@@ -61,6 +61,7 @@ public record DividendTaxReport(
    * @param additionalNationalTax 원천징수 뒤 더 낼 국세
    * @param additionalTotalTax 위에 지방소득세를 더한 값
    * @param isaRestricted 종합과세 대상이라 이후 3 년 ISA 가입 · 연장 때 특례를 받을 수 없다
+   * @param detail 위 금액들의 계산 과정(화면 "계산 과정" 이 그린다)
    */
   public record Scenario(
       BigDecimal financialIncome,
@@ -70,9 +71,46 @@ public record DividendTaxReport(
       BigDecimal highDividendSeparateTax,
       BigDecimal additionalNationalTax,
       BigDecimal additionalTotalTax,
-      boolean isaRestricted) {}
+      boolean isaRestricted,
+      Detail detail) {}
 
-  /** 계좌 · 종목 · 구분별 합. 과세이연 줄은 과세금액이 null 이다. */
+  /**
+   * 한 시나리오의 계산 과정. 세율표가 없는 해나 다른 종합소득을 모르는 칸은 null.
+   *
+   * @param grossUpEligible 판정 금융소득 중 Gross-up 대상 배당(국내 법인 배당 - ETF · 리츠 분배금 제외)
+   * @param grossUpBase Gross-up 을 붙이는 몫 = min(대상 배당, 초과분)
+   * @param grossUpRate Gross-up 율(0.10 등)
+   * @param separatedSlices 분리과세한 고배당 배당의 구간별 몫과 세액(신청 안 하면 빈 목록)
+   * @param separatedWithheld 분리과세한 고배당 배당에서 이미 떼인 국세(14%)
+   * @param separatedExtra 분리과세 세액 - 이미 떼인 국세
+   * @param thresholdTax 2천만 원 x 14%
+   * @param combinedTax 기본세율(다른 종합소득 + 초과분 + Gross-up)
+   * @param otherTax 기본세율(다른 종합소득) - 금융소득이 없어도 내는 세금이라 뺀다
+   * @param financialWithheld 판정 금융소득에서 이미 떼인 국세(14%)
+   * @param financialExtra 금융소득 종합과세로 더 낼 국세(0 아래면 0)
+   * @param localTax 추가 납부 국세의 10%
+   */
+  public record Detail(
+      BigDecimal grossUpEligible,
+      BigDecimal grossUpBase,
+      BigDecimal grossUpRate,
+      List<Slice> separatedSlices,
+      BigDecimal separatedWithheld,
+      BigDecimal separatedExtra,
+      BigDecimal thresholdTax,
+      BasicTax combinedTax,
+      BasicTax otherTax,
+      BigDecimal financialWithheld,
+      BigDecimal financialExtra,
+      BigDecimal localTax) {}
+
+  /** 기본세율 산출세액: 과세표준 x 세율 - 누진공제(원 미만 버림). */
+  public record BasicTax(BigDecimal base, int rate, BigDecimal deduction, BigDecimal tax) {}
+
+  /** 누진 구간 하나의 몫과 세율, 세액(버리기 전). */
+  public record Slice(BigDecimal amount, int rate, BigDecimal tax) {}
+
+  /** 계좌 · 종목 · 구분별 합. 과세이연 줄은 과세금액이 null 이다. grossUpEligible: Gross-up 대상 배당(과세이연은 false). */
   public record Row(
       UUID accountId,
       UUID stockItemId,
@@ -81,5 +119,6 @@ public record DividendTaxReport(
       BigDecimal grossAmount,
       BigDecimal taxableAmount,
       BigDecimal tax,
-      long count) {}
+      long count,
+      boolean grossUpEligible) {}
 }

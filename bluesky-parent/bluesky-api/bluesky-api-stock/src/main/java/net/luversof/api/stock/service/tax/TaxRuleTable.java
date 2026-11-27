@@ -2,6 +2,11 @@ package net.luversof.api.stock.service.tax;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
+
+import net.luversof.api.stock.web.dto.response.DividendTaxReport.BasicTax;
+import net.luversof.api.stock.web.dto.response.DividendTaxReport.Slice;
 
 /**
  * 귀속연도별 배당 세금 규칙(국세 기준, 지방소득세는 국세의 10% 를 따로 붙인다).
@@ -55,16 +60,21 @@ public record TaxRuleTable(
 
   /** 종합소득 과세표준에 대한 기본세율 산출세액(원 미만 버림). */
   public BigDecimal basicTax(BigDecimal taxBase) {
+    return basicTaxDetail(taxBase).tax();
+  }
+
+  /** 기본세율 산출세액과 그 구간(세율 · 누진공제) - 화면에 계산 과정을 보이려고 함께 낸다. */
+  public BasicTax basicTaxDetail(BigDecimal taxBase) {
     if (taxBase == null || taxBase.signum() <= 0) {
-      return BigDecimal.ZERO;
+      return new BasicTax(
+          taxBase == null ? BigDecimal.ZERO : taxBase, 0, BigDecimal.ZERO, BigDecimal.ZERO);
     }
     for (long[] b : BASIC) {
       if (taxBase.compareTo(BigDecimal.valueOf(b[0])) <= 0) {
-        return floor(
-            taxBase
-                .multiply(BigDecimal.valueOf(b[1]))
-                .movePointLeft(2)
-                .subtract(BigDecimal.valueOf(b[2])));
+        BigDecimal deduction = BigDecimal.valueOf(b[2]);
+        BigDecimal tax =
+            floor(taxBase.multiply(BigDecimal.valueOf(b[1])).movePointLeft(2).subtract(deduction));
+        return new BasicTax(taxBase, (int) b[1], deduction, tax);
       }
     }
     throw new IllegalStateException("unreachable");
@@ -72,10 +82,18 @@ public record TaxRuleTable(
 
   /** 고배당 분리과세 산출세액(구간마다 그 구간 몫에 세율, 원 미만 버림). */
   public BigDecimal highDividendTax(BigDecimal amount) {
+    return floor(
+        highDividendSlices(amount).stream()
+            .map(Slice::tax)
+            .reduce(BigDecimal.ZERO, BigDecimal::add));
+  }
+
+  /** 고배당 분리과세 구간별 몫과 세액(구간 세액은 버리지 않는다 - 합을 버린다). */
+  public List<Slice> highDividendSlices(BigDecimal amount) {
+    List<Slice> slices = new ArrayList<>();
     if (amount == null || amount.signum() <= 0) {
-      return BigDecimal.ZERO;
+      return slices;
     }
-    BigDecimal tax = BigDecimal.ZERO;
     BigDecimal lower = BigDecimal.ZERO;
     for (long[] b : HIGH_DIVIDEND) {
       BigDecimal upper = BigDecimal.valueOf(b[0]);
@@ -83,10 +101,11 @@ public record TaxRuleTable(
       if (slice.signum() <= 0) {
         break;
       }
-      tax = tax.add(slice.multiply(BigDecimal.valueOf(b[1])).movePointLeft(2));
+      slices.add(
+          new Slice(slice, (int) b[1], slice.multiply(BigDecimal.valueOf(b[1])).movePointLeft(2)));
       lower = upper;
     }
-    return floor(tax);
+    return slices;
   }
 
   static BigDecimal floor(BigDecimal value) {

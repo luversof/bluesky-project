@@ -62,6 +62,16 @@ class DividendTaxReportCalculatorTest {
     assertThat(rule.highDividendTax(new BigDecimal("10000000"))).isEqualByComparingTo("1400000");
     // 2천만 x 14% + 1천만 x 20%
     assertThat(rule.highDividendTax(new BigDecimal("30000000"))).isEqualByComparingTo("4800000");
+    assertThat(rule.highDividendSlices(new BigDecimal("30000000")))
+        .extracting(
+            DividendTaxReport.Slice::rate, s -> s.amount().longValue(), s -> s.tax().longValue())
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple(14, 20_000_000L, 2_800_000L),
+            org.assertj.core.groups.Tuple.tuple(20, 10_000_000L, 2_000_000L));
+    var basic = rule.basicTaxDetail(new BigDecimal("61000000"));
+    assertThat(basic.rate()).isEqualTo(24);
+    assertThat(basic.deduction()).isEqualByComparingTo("5760000");
+    assertThat(basic.tax()).isEqualByComparingTo("8880000");
     assertThat(TaxRuleTable.forYear(2030).highDividendRule()).isFalse();
     assertThat(TaxRuleTable.forYear(2025).highDividendRule()).isFalse();
   }
@@ -113,6 +123,18 @@ class DividendTaxReportCalculatorTest {
     // 4,200,000
     assertThat(s.additionalNationalTax()).isEqualByComparingTo("240000");
     assertThat(s.additionalTotalTax()).isEqualByComparingTo("264000");
+    var d = s.detail();
+    assertThat(d.grossUpEligible()).isEqualByComparingTo("30000000");
+    assertThat(d.grossUpBase()).isEqualByComparingTo("10000000");
+    assertThat(d.thresholdTax()).isEqualByComparingTo("2800000");
+    assertThat(d.combinedTax().base()).isEqualByComparingTo("61000000");
+    assertThat(d.combinedTax().tax()).isEqualByComparingTo("8880000");
+    assertThat(d.otherTax().tax()).isEqualByComparingTo("6240000");
+    assertThat(d.financialWithheld()).isEqualByComparingTo("4200000");
+    assertThat(d.financialExtra()).isEqualByComparingTo("240000");
+    assertThat(d.localTax()).isEqualByComparingTo("24000");
+    assertThat(d.separatedSlices()).isEmpty();
+    assertThat(d.separatedExtra()).isNull();
     assertThat(s.isaRestricted()).isTrue();
     assertThat(report.recommendation()).isEqualTo(Recommendation.WITHOUT);
   }
@@ -143,6 +165,15 @@ class DividendTaxReportCalculatorTest {
     assertThat(with.financialIncome()).isEqualByComparingTo("15000000");
     assertThat(with.comprehensive()).isFalse();
     assertThat(with.highDividendSeparateTax()).isEqualByComparingTo("1400000");
+    assertThat(with.detail().separatedWithheld()).isEqualByComparingTo("1400000");
+    assertThat(with.detail().separatedExtra()).isEqualByComparingTo("0");
+    assertThat(with.detail().separatedSlices()).hasSize(1);
+    assertThat(without.detail().grossUpEligible()).isEqualByComparingTo("10000000");
+    assertThat(report.rows())
+        .extracting(DividendTaxReport.Row::stockItemName, DividendTaxReport.Row::grossUpEligible)
+        .containsExactlyInAnyOrder(
+            org.assertj.core.groups.Tuple.tuple("KODEX 가상", false),
+            org.assertj.core.groups.Tuple.tuple("가상전자", true));
     assertThat(with.additionalNationalTax()).isEqualByComparingTo("0");
     assertThat(with.isaRestricted()).isFalse();
     assertThat(report.recommendation()).isEqualTo(Recommendation.WITH);

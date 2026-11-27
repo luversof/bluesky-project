@@ -35,7 +35,8 @@ class DividendTaxReportViewTest {
         null,
         null,
         null,
-        false);
+        false,
+        null);
   }
 
   private static DividendTaxReport report(String recommendation, Scenario without, Scenario with) {

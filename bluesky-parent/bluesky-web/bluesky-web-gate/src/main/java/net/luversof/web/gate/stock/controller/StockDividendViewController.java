@@ -55,7 +55,6 @@ import net.luversof.web.gate.stock.httpexchange.DividendClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendPayoutClient;
 import net.luversof.web.gate.stock.httpexchange.MonthlyDividendProfileClient;
 import net.luversof.web.gate.stock.httpexchange.StockAdminClient;
-import net.luversof.web.gate.stock.service.DividendTaxReportSupport;
 import net.luversof.web.gate.stock.service.FinancialIncomeThresholdSupport;
 import net.luversof.web.gate.stock.service.MonthlyDividendCalculator;
 import net.luversof.web.gate.stock.service.MonthlyDividendLinkRegisterService;
@@ -118,8 +117,6 @@ public class StockDividendViewController {
 
   @Autowired private FinancialIncomeThresholdSupport financialIncomeThresholdSupport;
 
-  @Autowired private DividendTaxReportSupport dividendTaxReportSupport;
-
   @Autowired private MonthlyDividendReferenceSupport monthlyDividendReferenceSupport;
 
   public void setMonthlyDividendReferenceSupport(
@@ -153,8 +150,7 @@ public class StockDividendViewController {
       @RequestParam(required = false) LocalDate payoutRecordDate,
       @RequestParam(required = false) LocalDate payoutPayDate,
       @RequestParam(required = false) String month,
-      @RequestParam(required = false) String profileWindow,
-      @RequestParam(required = false) Integer taxYear) {
+      @RequestParam(required = false) String profileWindow) {
     if (StockViewSupport.isNotAuthenticated()) {
       return StockViewSupport.loginRedirectView(request);
     }
@@ -182,12 +178,8 @@ public class StockDividendViewController {
         stockAsync.supply(() ->
             financialIncomeThresholdSupport.load(
                 financialIncomeUserId, LocalDate.now(taxZone), taxZone));
-    // 종소세 신고 자료(2026-11-28): 귀속연도 하나. 기본은 직전 연도(5 월에 신고하는 해).
-    var taxReportFuture =
-        stockAsync.supply(() -> dividendTaxReportSupport.load(financialIncomeUserId, taxYear));
     populateUpcomingDividendModel(UserUtil.getUserId(), model);
     model.addAttribute("financialIncome", StockAsyncSupport.join(financialIncomeFuture));
-    model.addAttribute("taxReport", StockAsyncSupport.join(taxReportFuture));
     return "stock/dividend";
   }
 

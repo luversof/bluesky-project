@@ -31,7 +31,7 @@
 		<nav class="mt-3" aria-label="${MessageUtil.getMessage("stock.dividend.tax.year.label")}">
 			<div class="tabs tabs-box w-full bg-base-200/70 p-1">
 				@for(Integer y : view.years())
-					<a href="/stock/dividend?taxYear=${y}#tax-report" aria-current="${y == view.year() ? "page" : null}" class="${y == view.year() ? "tab flex-1 tab-active !bg-primary !text-primary-content font-semibold" : "tab flex-1 text-base-content/60 hover:text-base-content"}">${y}</a>
+					<a href="/stock/dividend/tax?taxYear=${y}" aria-current="${y == view.year() ? "page" : null}" class="${y == view.year() ? "tab flex-1 tab-active !bg-primary !text-primary-content font-semibold" : "tab flex-1 text-base-content/60 hover:text-base-content"}">${y}</a>
 				@endfor
 			</div>
 		</nav>
@@ -157,6 +157,24 @@
 				<p class="mt-2 text-xs text-base-content/60" data-tax-need-other-income>${MessageUtil.getMessage("stock.dividend.tax.need.other.income")}</p>
 			@endif
 
+			<%-- 표의 각 금액이 어떻게 나왔는지(사용자 요청 2026-11-28). 시나리오마다 한 칸. --%>
+			<details class="mt-3 rounded-xl border border-base-300 p-3" data-tax-calc-section>
+				<summary class="cursor-pointer text-sm font-medium">${MessageUtil.getMessage("stock.dividend.tax.calc.title")}</summary>
+				<p class="mt-1 text-xs text-base-content/60">${MessageUtil.getMessage("stock.dividend.tax.calc.desc")}</p>
+				<div class="mt-3 grid gap-4 ${showWith ? "lg:grid-cols-2" : ""}">
+					<div class="min-w-0 rounded-lg bg-base-200/60 p-3">
+						<h4 class="mb-2 text-sm font-semibold">${MessageUtil.getMessage("stock.dividend.tax.scenario.without")}</h4>
+						@template.stock.fragments.dividendTaxCalc(report = report, scenario = report.withoutSeparation(), separated = false, hasHigh = showWith)
+					</div>
+					@if(showWith)
+						<div class="min-w-0 rounded-lg bg-base-200/60 p-3">
+							<h4 class="mb-2 text-sm font-semibold">${MessageUtil.getMessage("stock.dividend.tax.scenario.with")}</h4>
+							@template.stock.fragments.dividendTaxCalc(report = report, scenario = report.withSeparation(), separated = true, hasHigh = true)
+						</div>
+					@endif
+				</div>
+			</details>
+
 			<form method="post" action="/stock/dividend/tax-input" class="mt-4 grid gap-3 sm:grid-cols-3 sm:items-end" data-tax-input-form>
 				<input type="hidden" name="year" value="${view.year()}" />
 				<label class="form-control min-w-0">
@@ -187,6 +205,7 @@
 									<th scope="col" class="text-right">${MessageUtil.getMessage("stock.dividend.tax.col.gross")}</th>
 									<th scope="col" class="text-right">${MessageUtil.getMessage("stock.dividend.tax.col.taxable")}</th>
 									<th scope="col" class="text-right">${MessageUtil.getMessage("stock.dividend.tax.col.tax")}</th>
+									<th scope="col" class="text-center whitespace-nowrap">${MessageUtil.getMessage("stock.dividend.tax.col.grossup")} @template._components.ui.infoTip(desc = MessageUtil.getMessage("stock.dividend.tax.help.col.grossup"))</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -206,6 +225,7 @@
 										<td class="text-right tabular-nums amount-value">${won.apply(row.grossAmount())}</td>
 										<td class="text-right tabular-nums amount-value">${won.apply(row.taxableAmount())}</td>
 										<td class="text-right tabular-nums amount-value">${won.apply(row.tax())}</td>
+										<td class="text-center" data-tax-row-grossup="${row.grossUpEligible()}">${"DEFERRED".equals(row.category()) ? "-" : MessageUtil.getMessage(row.grossUpEligible() ? "stock.dividend.tax.yes" : "stock.dividend.tax.no")}</td>
 									</tr>
 								@endfor
 							</tbody>

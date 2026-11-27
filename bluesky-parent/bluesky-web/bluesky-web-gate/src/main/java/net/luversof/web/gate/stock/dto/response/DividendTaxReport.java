@@ -69,7 +69,32 @@ public record DividendTaxReport(
       BigDecimal highDividendSeparateTax,
       BigDecimal additionalNationalTax,
       BigDecimal additionalTotalTax,
-      boolean isaRestricted) {}
+      boolean isaRestricted,
+      Detail detail) {}
+
+  /** 시나리오 금액들의 계산 과정(api-stock DividendTaxReport.Detail). 모르는 칸은 null. */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Detail(
+      BigDecimal grossUpEligible,
+      BigDecimal grossUpBase,
+      BigDecimal grossUpRate,
+      List<Slice> separatedSlices,
+      BigDecimal separatedWithheld,
+      BigDecimal separatedExtra,
+      BigDecimal thresholdTax,
+      BasicTax combinedTax,
+      BasicTax otherTax,
+      BigDecimal financialWithheld,
+      BigDecimal financialExtra,
+      BigDecimal localTax) {}
+
+  /** 기본세율 산출세액: 과세표준 x 세율 - 누진공제. */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record BasicTax(BigDecimal base, int rate, BigDecimal deduction, BigDecimal tax) {}
+
+  /** 누진 구간 하나의 몫과 세율, 세액. */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Slice(BigDecimal amount, int rate, BigDecimal tax) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Row(
@@ -80,5 +105,6 @@ public record DividendTaxReport(
       BigDecimal grossAmount,
       BigDecimal taxableAmount,
       BigDecimal tax,
-      long count) {}
+      long count,
+      boolean grossUpEligible) {}
 }

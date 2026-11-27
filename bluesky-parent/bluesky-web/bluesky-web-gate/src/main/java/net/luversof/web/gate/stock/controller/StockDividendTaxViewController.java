@@ -8,11 +8,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import io.github.luversof.boot.security.access.prepost.BlueskyPreAuthorize;
 import jakarta.servlet.http.HttpServletRequest;
 import net.luversof.client.user.util.UserUtil;
 import net.luversof.web.gate.stock.dto.request.TaxYearInputUpsertRequest;
@@ -20,16 +24,32 @@ import net.luversof.web.gate.stock.httpexchange.DividendTaxReportClient;
 import net.luversof.web.gate.stock.service.DividendTaxReportSupport;
 import net.luversof.web.gate.stock.support.StockViewSupport;
 
-/** 배당 화면 "종소세 신고 자료" 구역의 입력값(다른 종합소득 과세표준 · 기타 금융소득) 저장. */
+/**
+ * 배당 화면의 "종소세 신고" 탭(사용자 요청 2026-11-28: 배당 내역 조회와 성격이 달라 탭으로 나눈다). 귀속연도 신고 자료를 보이고, 입력값(다른 종합소득 과세표준
+ * · 기타 금융소득)을 저장한다.
+ */
 @Controller
-@RequestMapping(value = "/stock/dividend/tax-input", produces = MediaType.TEXT_HTML_VALUE)
+@RequestMapping(value = "/stock/dividend", produces = MediaType.TEXT_HTML_VALUE)
 public class StockDividendTaxViewController {
 
   private static final Logger log = LoggerFactory.getLogger(StockDividendTaxViewController.class);
 
   @Autowired private DividendTaxReportClient dividendTaxReportClient;
 
-  @PostMapping
+  @Autowired private DividendTaxReportSupport dividendTaxReportSupport;
+
+  @BlueskyPreAuthorize
+  @GetMapping("/tax")
+  public String taxPage(
+      HttpServletRequest request, Model model, @RequestParam(required = false) Integer taxYear) {
+    if (StockViewSupport.isNotAuthenticated()) {
+      return StockViewSupport.loginRedirectView(request);
+    }
+    model.addAttribute("taxReport", dividendTaxReportSupport.load(UserUtil.getUserId(), taxYear));
+    return "stock/dividendTax";
+  }
+
+  @PostMapping("/tax-input")
   public String save(
       HttpServletRequest request,
       RedirectAttributes redirectAttributes,
@@ -50,6 +70,6 @@ public class StockDividendTaxViewController {
     int year =
         DividendTaxReportSupport.resolveYear(
             form.getYear(), LocalDate.now(DividendTaxReportSupport.TAX_ZONE));
-    return "redirect:/stock/dividend?taxYear=" + year + "#tax-report";
+    return "redirect:/stock/dividend/tax?taxYear=" + year;
   }
 }

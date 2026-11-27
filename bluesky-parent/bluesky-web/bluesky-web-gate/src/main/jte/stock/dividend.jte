@@ -20,8 +20,6 @@
 @param BigDecimal upcomingCurrentQuantityLatestTotal = BigDecimal.ZERO
 @param List<String> shortHistorySymbols = List.of()
 @param FinancialIncomeThresholdView financialIncome = null
-@param net.luversof.web.gate.stock.service.DividendTaxReportSupport.View taxReport = null
-@param String taxInputResult = ""
 
 @template._layout.stockLayout(
 	pageTitle = MessageUtil.getMessage("stock.page.dividend.title"),
@@ -32,6 +30,7 @@
 	contentStock = @`
 		<div class="space-y-6" data-sync-url="/stock/htmx/dividend/list">
 			@template._components.ui.pageHeader(title = MessageUtil.getMessage("stock.page.dividend.title"))
+			@template.stock.fragments.dividendTabs(current = "history")
 
 			<%-- 월배당 도구: 별도 페이지로 이동(링크). --%>
 			<div class="flex flex-wrap items-center gap-2 text-sm">
@@ -62,9 +61,6 @@
 
 			<%-- 올해 금융소득 종합과세 기준(2026-10-20) - 다가올 배당처럼 기간 · 필터와 무관한 한 해 단위. 조회 실패면 숨는다. --%>
 			@template.stock.fragments.financialIncomeThreshold(view = financialIncome)
-
-			<%-- 종소세 신고 자료(2026-11-28) - 귀속연도 단위. 기본은 직전 연도. --%>
-			@template.stock.fragments.dividendTaxReport(view = taxReport, inputResult = taxInputResult)
 
 			<div class="min-h-[200px]" data-params-from-query="true" hx-get="/stock/htmx/dividend/list" hx-trigger="load" hx-target="this" hx-swap="outerHTML" hx-include="#globalDateRangeInputs input">
 				<div class="flex items-center gap-2 text-base-content/60">
