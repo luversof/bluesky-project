@@ -240,3 +240,14 @@ CREATE TABLE IF NOT EXISTS "HighDividendDesignation" (
 );
 
 CREATE INDEX IF NOT EXISTS idx_highDividendDesignation_stockItemId ON "HighDividendDesignation" ("stockItem_id");
+
+-- 귀속연도 세금 입력값(사용자 · 연도마다 한 줄). 두 값 모두 NULL = 모름(0 과 다르다).
+CREATE TABLE IF NOT EXISTS "TaxYearInput" (
+	"id" UUID NOT NULL PRIMARY KEY,
+	"user_id" UUID NOT NULL,
+	"year" INTEGER NOT NULL,
+	"otherIncomeTaxBase" NUMERIC,
+	"otherFinancialIncome" NUMERIC
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_taxYearInput_userId_year ON "TaxYearInput" ("user_id", "year");
