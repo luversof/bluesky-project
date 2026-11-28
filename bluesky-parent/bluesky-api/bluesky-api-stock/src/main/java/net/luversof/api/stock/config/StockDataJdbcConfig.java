@@ -26,8 +26,9 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 @EnableJdbcAuditing
 @EnableJdbcRepositories(
     basePackages = {"net.luversof.api.stock.**", "net.luversof.app.google.**"},
-    transactionManagerRef = "stockTransactionManager",
-    jdbcOperationsRef = "stockNamedParameterJdbcTemplate")
+    transactionManagerRef = "stockTransactionManager")
+// jdbcOperationsRef 는 지정하지 않는다: 지정하면 저장소가 BeforeConvertCallback 을 거치지 않아 id 없이 INSERT 된다(실측
+// 2026-11-29).
 public class StockDataJdbcConfig {
 
   /*
