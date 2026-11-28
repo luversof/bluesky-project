@@ -12,6 +12,8 @@ import org.springframework.data.jdbc.core.dialect.JdbcPostgresDialect;
 import org.springframework.data.jdbc.repository.config.EnableJdbcAuditing;
 import org.springframework.data.jdbc.repository.config.EnableJdbcRepositories;
 import org.springframework.data.relational.core.mapping.event.BeforeConvertCallback;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -24,10 +26,26 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 @EnableJdbcAuditing
 @EnableJdbcRepositories(
     basePackages = {"net.luversof.api.stock.**", "net.luversof.app.google.**"},
-    transactionManagerRef = "stockTransactionManager")
+    transactionManagerRef = "stockTransactionManager",
+    jdbcOperationsRef = "stockNamedParameterJdbcTemplate")
 public class StockDataJdbcConfig {
 
-  // connection-info가 connections.stock alias로 등록하는 빈
+  /*
+   * 모든 JDBC 경로가 트랜잭션 매니저와 같은 stockDataSource(connection-info가 connections.stock alias로 등록하는 빈)를 쓴다.
+   * Spring 은 DataSource 객체를 key 로 트랜잭션 연결을 묶는다. 저장소/쿼리가 @Primary routingDataSource 를 쓰면 key 가 달라
+   * @Transactional 안의 쓰기가 다른 연결(autocommit)로 실행되어 롤백되지 않았다. 아래 두 빈이 있으면 Spring Boot 의 같은 타입 빈은
+   * 만들어지지 않으므로 이름 없이 주입받는 곳(쿼리 클래스, StockAdminService)도 이 빈을 받는다.
+   */
+  @Bean
+  JdbcTemplate stockJdbcTemplate(@Qualifier("stockDataSource") DataSource dataSource) {
+    return new JdbcTemplate(dataSource);
+  }
+
+  @Bean
+  NamedParameterJdbcTemplate stockNamedParameterJdbcTemplate(JdbcTemplate stockJdbcTemplate) {
+    return new NamedParameterJdbcTemplate(stockJdbcTemplate);
+  }
+
   @Bean
   JdbcClient stockJdbcClient(@Qualifier("stockDataSource") DataSource dataSource) {
     return JdbcClient.create(dataSource);
