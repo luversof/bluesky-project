@@ -5,13 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import net.luversof.GeneralTest;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.service.BoardService;
@@ -21,11 +19,6 @@ class BoardTest implements GeneralTest {
   private static final Logger log = LoggerFactory.getLogger(BoardTest.class);
 
   @Autowired private BoardService boardService;
-
-  @BeforeAll
-  static void beforeAll() {
-    RoutingDataSourceContextHolder.setContext(() -> "board_postgresql");
-  }
 
   @Test
   void create() {

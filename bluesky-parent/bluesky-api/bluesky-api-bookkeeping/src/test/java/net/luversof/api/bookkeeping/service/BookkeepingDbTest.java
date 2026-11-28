@@ -30,8 +30,6 @@ import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.jdbc.core.JdbcAggregateOperations;
 import org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.datasource.init.ScriptUtils;
@@ -78,17 +76,13 @@ class BookkeepingDbTest {
   @ComponentScan(basePackageClasses = {BookService.class, EntryQuery.class})
   static class Config extends AbstractJdbcConfiguration {
 
+    // BookkeepingDataJdbcConfig 가 connection-info 의 alias 빈 이름으로 받는다
     @Bean
-    DataSource routingDataSource() {
+    DataSource bookkeepingDataSource() {
       return new DriverManagerDataSource(
           System.getProperty("bookkeeping.db.url"),
           System.getProperty("bookkeeping.db.user", "postgres"),
           System.getProperty("bookkeeping.db.password", ""));
-    }
-
-    @Bean
-    NamedParameterJdbcOperations namedParameterJdbcOperations(DataSource routingDataSource) {
-      return new NamedParameterJdbcTemplate(routingDataSource);
     }
 
     @Bean
@@ -118,8 +112,8 @@ class BookkeepingDbTest {
   @Autowired JdbcClient bookkeepingJdbcClient;
 
   @BeforeAll
-  static void schema(@Autowired DataSource routingDataSource) throws Exception {
-    try (var connection = routingDataSource.getConnection()) {
+  static void schema(@Autowired DataSource bookkeepingDataSource) throws Exception {
+    try (var connection = bookkeepingDataSource.getConnection()) {
       ScriptUtils.executeSqlScript(
           connection,
           new FileSystemResource(

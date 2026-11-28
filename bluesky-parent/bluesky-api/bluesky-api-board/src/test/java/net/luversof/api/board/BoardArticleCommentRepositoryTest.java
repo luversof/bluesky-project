@@ -6,14 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import net.luversof.GeneralTest;
 import net.luversof.api.board.domain.BoardArticleCommentCount;
 import net.luversof.api.board.repository.BoardArticleCommentRepository;
@@ -26,11 +24,6 @@ class BoardArticleCommentRepositoryTest implements GeneralTest {
   @Autowired private BoardArticleRepository boardArticleRepository;
 
   @Autowired private BoardArticleCommentRepository boardArticleCommentRepository;
-
-  @BeforeAll
-  static void beforeAll() {
-    RoutingDataSourceContextHolder.setContext(() -> "board_postgresql");
-  }
 
   @Test
   @DisplayName("batch countByBoardArticleIds should return non-null ids and counts")

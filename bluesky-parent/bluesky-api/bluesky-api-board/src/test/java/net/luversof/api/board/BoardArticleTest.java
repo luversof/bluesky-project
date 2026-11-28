@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.UUID;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
@@ -18,7 +17,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.github.luversof.boot.jdbc.datasource.context.RoutingDataSourceContextHolder;
 import net.luversof.GeneralTest;
 import net.luversof.api.board.domain.Board;
 import net.luversof.api.board.domain.BoardArticle;
@@ -37,11 +35,6 @@ class BoardArticleTest implements GeneralTest {
   @Autowired private BoardService boardService;
 
   @Autowired private BoardArticleService boardArticleService;
-
-  @BeforeAll
-  static void beforeAll() {
-    RoutingDataSourceContextHolder.setContext(() -> "board_postgresql");
-  }
 
   @Test
   @DisplayName("게시글 생성")
