@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
@@ -15,7 +16,6 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import io.github.luversof.boot.connectioninfo.ConnectionInfoUtil;
 import io.github.luversof.boot.data.convert.MapToPGobjectConverter;
 import io.github.luversof.boot.data.convert.PGobjectToMapConverter;
 import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
@@ -27,18 +27,16 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
     transactionManagerRef = "stockTransactionManager")
 public class StockDataJdbcConfig {
 
-  private DataSource getDataSource() {
-    return ConnectionInfoUtil.getConnection("stock", DataSource.class);
+  // connection-info가 connections.stock alias로 등록하는 빈
+  @Bean
+  JdbcClient stockJdbcClient(@Qualifier("stockDataSource") DataSource dataSource) {
+    return JdbcClient.create(dataSource);
   }
 
   @Bean
-  JdbcClient stockJdbcClient() {
-    return JdbcClient.create(getDataSource());
-  }
-
-  @Bean
-  PlatformTransactionManager stockTransactionManager() {
-    return new DataSourceTransactionManager(getDataSource());
+  PlatformTransactionManager stockTransactionManager(
+      @Qualifier("stockDataSource") DataSource dataSource) {
+    return new DataSourceTransactionManager(dataSource);
   }
 
   @Bean
