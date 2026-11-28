@@ -40,10 +40,12 @@ public final class DividendTaxReportCalculator {
    * Gross-up 대상이 아닌 배당(ETF 분배금 · 리츠). 법인세를 낸 국내 법인의 배당만 대상이다.
    *
    * <p>shortcut: 종목 종류 칸이 없어 이름의 운용사 접두어로 ETF 를 가른다. 새 운용사가 생기면 여기에 더하거나, 종목 종류를 저장하게 되면 그 값으로 바꾼다.
+   *
+   * <p>{@code (?U)}: Java 19 부터 {@code \b} 는 영문 · 숫자만 단어 글자로 봐서, 없으면 "마이티 ..." 같은 한글 접두어가 걸리지 않는다.
    */
   static final Pattern NOT_GROSS_UP =
       Pattern.compile(
-          "^(KODEX|TIGER|RISE|KBSTAR|PLUS|ACE|SOL|KoAct|TIMEFOLIO|HANARO|ARIRANG|KOSEF|"
+          "(?U)^(KODEX|TIGER|RISE|KBSTAR|PLUS|ACE|SOL|KoAct|TIMEFOLIO|HANARO|ARIRANG|KOSEF|"
               + "1Q|WON|BNK|TRUSTON|UNICORN|마이티|히어로즈|에셋플러스|파워)\\b.*|.*리츠.*");
 
   /** 계산에 쓰는 배당 한 건. 날짜는 서버 존(Asia/Seoul) 기준 지급일. */

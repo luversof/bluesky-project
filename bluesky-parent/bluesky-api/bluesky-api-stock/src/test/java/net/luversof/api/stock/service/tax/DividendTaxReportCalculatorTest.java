@@ -243,6 +243,11 @@ class DividendTaxReportCalculatorTest {
     assertThat(DividendTaxReportCalculator.grossUpEligible("가상전자")).isTrue();
     assertThat(DividendTaxReportCalculator.grossUpEligible("KODEX 가상")).isFalse();
     assertThat(DividendTaxReportCalculator.grossUpEligible("가상리츠")).isFalse();
+    // 한글 운용사 접두어도 단어 경계로 걸린다(2026-11-29 전에는 \b 가 한글을 못 봐 Gross-up 대상이 됐다)
+    assertThat(DividendTaxReportCalculator.grossUpEligible("마이티 가상")).isFalse();
+    assertThat(DividendTaxReportCalculator.grossUpEligible("파워 가상")).isFalse();
+    // 접두어로 시작하는 회사 이름은 그대로 대상이다
+    assertThat(DividendTaxReportCalculator.grossUpEligible("파워가상전자")).isTrue();
     assertThat(DividendTaxReportCalculator.grossUpEligible(null)).isFalse();
   }
 }

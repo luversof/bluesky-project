@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ import org.junit.jupiter.api.Test;
 class DuplicateConstantGuardTest {
 
   private static final Path SERVICE_DIR = Path.of("src/main/java/net/luversof/api/stock/service");
+
+  /** 값이 우연히 같을 뿐 따로 움직이는 상수("파일 값"). 네이버 뉴스 쪽 상한은 API 가 정한 값이고 DART 쪽 상한은 우리가 정한 값이다. */
+  private static final Set<String> INDEPENDENT = Set.of("StockNewsCollectService.java 100");
 
   private record Constant(String name, String value) {}
 
@@ -73,7 +77,7 @@ class DuplicateConstantGuardTest {
           byValue.computeIfAbsent(constant.value(), key -> new ArrayList<>()).add(constant.name());
         }
         byValue.forEach((value, names) -> {
-          if (names.size() > 1) {
+          if (names.size() > 1 && !INDEPENDENT.contains(file.getFileName() + " " + value)) {
             duplicates.put(file.getFileName() + " " + value, names);
           }
         });

@@ -117,7 +117,8 @@ public class GateDevCheckController {
 
   private ServerProperties serverProperties;
 
-  @Autowired
+  // 웹 서버 없이 뜨는 테스트 컨텍스트에는 이 빈이 없다(BasicTest 가 컨텍스트 단계에서 죽었다)
+  @Autowired(required = false)
   public void setServerProperties(ServerProperties serverProperties) {
     this.serverProperties = serverProperties;
   }

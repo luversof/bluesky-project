@@ -53,7 +53,7 @@ class BlogApiDocsTest {
         .perform(get("/v3/api-docs"))
         .andExpect(status().isOk())
         // Javadoc
-        .andExpect(jsonPath(blog + ".summary").value("블로그를 만든다."))
+        .andExpect(jsonPath(blog + ".summary").value("블로그 생성"))
         .andExpect(jsonPath(blog + ".requestBody.description").value("만들 블로그(userId 필수)"))
         .andExpect(
             jsonPath(
@@ -63,7 +63,7 @@ class BlogApiDocsTest {
             jsonPath(
                     "$.paths['/api/blogArticleComment/search/countByBlogArticleId/{blogArticleId}']"
                         + ".get.summary")
-                .value("글의 댓글 수."))
+                .value("블로그 글의 댓글 수 조회"))
         // BlogControllerDocs
         .andExpect(
             jsonPath(blog + ".requestBody.content['application/json'].examples['사용자 블로그 만들기']")
