@@ -28,7 +28,7 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
 public class StockDataJdbcConfig {
 
   private DataSource getDataSource() {
-    return ConnectionInfoUtil.getConnection("stock_postgresql", DataSource.class);
+    return ConnectionInfoUtil.getConnection("stock", DataSource.class);
   }
 
   @Bean

@@ -4,7 +4,6 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
@@ -28,11 +27,8 @@ import io.github.luversof.boot.data.convert.jdbc.util.DataJdbcConverterUtil;
     enableDefaultTransactions = false)
 public class GoogleAppDataJdbcConfig {
 
-  @Value("${bluesky-boot.connection-info.loaders.hikaridatasource.connections.google_api}")
-  private String connectionKey;
-
   private DataSource getDataSource() {
-    return ConnectionInfoUtil.getConnection(connectionKey, DataSource.class);
+    return ConnectionInfoUtil.getConnection("google_api", DataSource.class);
   }
 
   @Bean
